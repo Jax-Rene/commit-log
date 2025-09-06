@@ -1,0 +1,17 @@
+# Go build output
+commitlog
+
+# Database file
+*.db
+
+# Node dependencies
+node_modules/
+
+# Build artifacts
+web/static/css/output.css
+
+# Env file
+.env
+
+# OS-specific
+.DS_Store
