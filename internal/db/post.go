@@ -8,6 +8,7 @@ type Post struct {
 	Title       string
 	Content     string
 	Summary     string
+	Status      string `gorm:"default:draft"` // draft, published
 	ReadingTime int
 	UserID      uint
 	User        User
