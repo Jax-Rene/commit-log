@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://unpkg.com/htmx.org@1.x.x/dist/htmx.min.js"></script>
 </head>
+
 <body class="bg-gray-100">
     <!-- 导航栏 -->
     <nav class="bg-white shadow-sm">
@@ -18,7 +20,8 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="/admin/dashboard" class="text-gray-600 hover:text-gray-900">返回面板</a>
-                    <a href="/admin/posts/new" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">新建文章</a>
+                    <a href="/admin/posts/new"
+                        class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">新建文章</a>
                     <a href="/admin/logout" class="text-red-600 hover:text-red-800">退出</a>
                 </div>
             </div>
@@ -30,61 +33,66 @@
         <div class="px-4 py-6 sm:px-0">
             <div class="bg-white shadow overflow-hidden sm:rounded-md">
                 <ul id="post-list" class="divide-y divide-gray-200">
-                    <!-- 文章列表将通过HTMX加载 -->
+                    {{if .error}}
+                    <li class="px-4 py-4 sm:px-6 text-center text-red-500">{{.error}}</li>
+                    {{else if .posts}}
+                    {{range .posts}}
+                    <li class="px-4 py-4 sm:px-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-indigo-600 truncate">{{.Title}}</p>
+                                <div class="flex items-center mt-1">
+                                    <span
+                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{if eq .Status `published`}}green{{else}}yellow{{end}}-100 text-{{if eq .Status `published`}}green{{else}}yellow{{end}}-800 mr-2">
+                                        {{if eq .Status `published`}}已发布{{else}}草稿{{end}}
+                                    </span>
+                                    {{if .Tags}}
+                                    {{range .Tags}}
+                                    <span
+                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-1">
+                                        {{.Name}}
+                                    </span>
+                                    {{end}}
+                                    {{end}}
+                                </div>
+                                <p class="text-sm text-gray-500 mt-1">创建于 {{.CreatedAt.Format "2006-01-02"}}</p>
+                            </div>
+                            <div class="ml-4 flex-shrink-0 flex space-x-2">
+                                <a href="/admin/posts/{{.ID}}/edit"
+                                    class="text-indigo-600 hover:text-indigo-900 text-sm">编辑</a>
+                                <button onclick="deletePost({{.ID}})"
+                                    class="text-red-600 hover:text-red-900 text-sm">删除</button>
+                            </div>
+                        </div>
+                    </li>
+                    {{end}}
+                    {{else}}
+                    <li class="px-4 py-4 sm:px-6 text-center text-gray-500">暂无文章</li>
+                    {{end}}
                 </ul>
             </div>
         </div>
     </div>
 
     <script>
-        // 页面加载完成后获取文章列表
-        document.addEventListener('DOMContentLoaded', function() {
-            fetch('/admin/api/posts')
-                .then(response => response.json())
-                .then(data => {
-                    const postList = document.getElementById('post-list');
-                    if (data.posts && data.posts.length > 0) {
-                        postList.innerHTML = data.posts.map(post => `
-                            <li class="px-4 py-4 sm:px-6">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-indigo-600 truncate">${post.title}</p>
-                                        <p class="text-sm text-gray-500">创建于 ${new Date(post.created_at).toLocaleDateString()}</p>
-                                    </div>
-                                    <div class="ml-4 flex-shrink-0 flex space-x-2">
-                                        <a href="/admin/posts/${post.id}/edit" class="text-indigo-600 hover:text-indigo-900 text-sm">编辑</a>
-                                        <button onclick="deletePost(${post.id})" class="text-red-600 hover:text-red-900 text-sm">删除</button>
-                                    </div>
-                                </div>
-                            </li>
-                        `).join('');
-                    } else {
-                        postList.innerHTML = '<li class="px-4 py-4 sm:px-6 text-center text-gray-500">暂无文章</li>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('post-list').innerHTML = '<li class="px-4 py-4 sm:px-6 text-center text-red-500">加载失败</li>';
-                });
-        });
-
         // 删除文章函数
         function deletePost(id) {
             if (confirm('确定要删除这篇文章吗？')) {
                 fetch(`/admin/api/posts/${id}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
                 })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message || '删除成功');
-                    location.reload();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('删除失败');
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message || '删除成功');
+                        location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('删除失败');
+                    });
             }
         }
     </script>
 </body>
+
 </html>

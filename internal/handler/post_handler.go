@@ -18,7 +18,7 @@ func GetPosts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取文章列表失败"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"posts": posts})
 }
 
@@ -104,19 +104,30 @@ func DeletePost(c *gin.Context) {
 
 // ShowPostList 渲染文章管理列表页面
 func ShowPostList(c *gin.Context) {
+	// 获取所有文章
+	var posts []db.Post
+	if err := db.DB.Preload("Tags").Order("created_at desc").Find(&posts).Error; err != nil {
+		c.HTML(http.StatusInternalServerError, "post_list.html", gin.H{
+			"title": "文章管理",
+			"error": "获取文章列表失败",
+		})
+		return
+	}
+
 	c.HTML(http.StatusOK, "post_list.html", gin.H{
 		"title": "文章管理",
+		"posts": posts,
 	})
 }
 
 // ShowPostEdit 渲染文章编辑页面
 func ShowPostEdit(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	data := gin.H{
 		"title": "编辑文章",
 	}
-	
+
 	if id != "" {
 		// 编辑现有文章
 		var post db.Post
@@ -127,6 +138,6 @@ func ShowPostEdit(c *gin.Context) {
 		// 创建新文章
 		data["title"] = "创建文章"
 	}
-	
+
 	c.HTML(http.StatusOK, "post_edit.html", data)
 }

@@ -60,9 +60,19 @@ func ShowDashboard(c *gin.Context) {
 	session := sessions.Default(c)
 	username := session.Get("username")
 
+	// 获取文章总数
+	var postCount int64
+	db.DB.Model(&db.Post{}).Count(&postCount)
+
+	// 获取标签总数
+	var tagCount int64
+	db.DB.Model(&db.Tag{}).Count(&tagCount)
+
 	c.HTML(http.StatusOK, "dashboard.html", gin.H{
-		"title":    "管理面板",
-		"username": username,
+		"title":     "管理面板",
+		"username":  username,
+		"postCount": postCount,
+		"tagCount":  tagCount,
 	})
 }
 
