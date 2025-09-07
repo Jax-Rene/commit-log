@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标签管理 - CommitLog Admin</title>
+    <link href="/static/css/output.css" rel="stylesheet">
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://unpkg.com/htmx.org@1.x.x/dist/htmx.min.js"></script>
+</head>
+
+<body class="bg-gray-100" x-data="{ showCreateForm: false, newTagName: '' }">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold">标签管理</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/admin/dashboard" class="text-gray-600 hover:text-gray-900">返回面板</a>
+                    <a href="/admin/logout" class="text-red-600 hover:text-red-800">退出</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">标签列表</h3>
+                        <button @click="showCreateForm = true"
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            添加标签
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 创建标签表单 (默认隐藏) -->
+                <div x-show="showCreateForm" class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                    <form @submit.prevent="createTag" class="space-y-4">
+                        <div>
+                            <label for="tag-name" class="block text-sm font-medium text-gray-700">标签名称</label>
+                            <input type="text" id="tag-name" x-model="newTagName"
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                required>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button type="submit"
+                                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                创建标签
+                            </button>
+                            <button type="button" @click="showCreateForm = false"
+                                class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                取消
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 标签列表 -->
+                <ul id="tag-list" class="divide-y divide-gray-200">
+                    {{if .error}}
+                    <li class="px-4 py-4 sm:px-6 text-center text-red-500">{{.error}}</li>
+                    {{else if .tags}}
+                    {{range .tags}}
+                    <li class="px-4 py-4 sm:px-6" x-data="{ showEditForm: false, editTagName: '{{.Name}}' }">
+                        <div x-show="!showEditForm" class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                    {{.Name}}
+                                </span>
+                                <span class="ml-3 text-sm text-gray-500">
+                                    关联文章数: {{len .Posts}}
+                                </span>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button @click="showEditForm = true"
+                                    class="text-indigo-600 hover:text-indigo-900 text-sm">编辑</button>
+                                <button @click="deleteTag({{.ID}})"
+                                    class="text-red-600 hover:text-red-900 text-sm">删除</button>
+                            </div>
+                        </div>
+                        <!-- 编辑标签表单 (默认隐藏) -->
+                        <div x-show="showEditForm" class="mt-4 space-y-4">
+                            <div>
+                                <label for="edit-tag-name-{{.ID}}" class="block text-sm font-medium text-gray-700">标签名称</label>
+                                <input type="text" id="edit-tag-name-{{.ID}}" x-model="editTagName"
+                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    required>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button @click="updateTag({{.ID}})"
+                                    class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    保存
+                                </button>
+                                <button @click="showEditForm = false"
+                                    class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    取消
+                                </button>
+                            </div>
+                        </div>
+                    </li>
+                    {{end}}
+                    {{else}}
+                    <li class="px-4 py-4 sm:px-6 text-center text-gray-500">暂无标签</li>
+                    {{end}}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 创建标签函数
+        function createTag() {
+            const tagName = document.getElementById('tag-name').value.trim();
+
+            if (!tagName) {
+                alert('请输入标签名称');
+                return;
+            }
+
+            fetch('/admin/api/tags', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: tagName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('创建失败: ' + data.error);
+                } else {
+                    alert('标签创建成功');
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('创建失败');
+            });
+        }
+
+        // 更新标签函数
+        function updateTag(id) {
+            const editTagNameInput = document.getElementById('edit-tag-name-' + id);
+            const tagName = editTagNameInput.value.trim();
+
+            if (!tagName) {
+                alert('请输入标签名称');
+                return;
+            }
+
+            fetch(`/admin/api/tags/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: tagName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('更新失败: ' + data.error);
+                } else {
+                    alert('标签更新成功');
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('更新失败');
+            });
+        }
+
+        // 删除标签函数
+        function deleteTag(id) {
+            if (confirm('确定要删除这个标签吗？')) {
+                fetch(`/admin/api/tags/${id}`, {
+                    method: 'DELETE',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('删除失败: ' + data.error);
+                    } else {
+                        alert('标签删除成功');
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('删除失败');
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>

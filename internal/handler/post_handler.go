@@ -1,12 +1,16 @@
 package handler
 
 import (
+	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/commitlog/internal/db"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // PostHandler 处理文章相关的请求
@@ -104,9 +108,104 @@ func DeletePost(c *gin.Context) {
 
 // ShowPostList 渲染文章管理列表页面
 func ShowPostList(c *gin.Context) {
-	// 获取所有文章
+	// 获取查询参数
+	page := 1
+	perPage := 10
+	search := c.Query("search")
+	status := c.Query("status")
+	tags := c.QueryArray("tags")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	// 打印接收到的参数用于调试
+	log.Printf("[DEBUG] ShowPostList - 接收到的参数:")
+	log.Printf("  - page: %d", page)
+	log.Printf("  - search: %q", search)
+	log.Printf("  - status: %q", status)
+	log.Printf("  - tags: %v", tags)
+	log.Printf("  - start_date: %q", startDate)
+	log.Printf("  - end_date: %q", endDate)
+
+	if p, err := strconv.Atoi(c.Query("page")); err == nil && p > 0 {
+		page = p
+		log.Printf("  - 解析后的page: %d", page)
+	}
+
+	// 开启GORM调试模式
+	db.DB = db.DB.Session(&gorm.Session{Logger: logger.Default.LogMode(logger.Info)})
+
+	// 基础查询
+	log.Printf("[DEBUG] 开始构建查询...")
+	query := db.DB.Model(&db.Post{}).Preload("Tags").Preload("User")
+
+	// 搜索条件
+	if search != "" {
+		searchQuery := "%" + search + "%"
+		query = query.Where("posts.title LIKE ? OR posts.content LIKE ? OR posts.summary LIKE ?", searchQuery, searchQuery, searchQuery)
+		log.Printf("[DEBUG] 应用搜索条件: %q", search)
+	}
+
+	// 状态筛选
+	if status != "" {
+		query = query.Where("posts.status = ?", status)
+		log.Printf("[DEBUG] 应用状态筛选: %q", status)
+	}
+
+	// 标签筛选
+	if len(tags) > 0 {
+		log.Printf("[DEBUG] 应用标签筛选: %v", tags)
+		query = query.Joins("JOIN post_tags ON posts.id = post_tags.post_id").
+			Joins("JOIN tags ON tags.id = post_tags.tag_id").
+			Where("posts.id IN (?)", db.DB.Model(&db.Post{}).
+				Select("posts.id").
+				Joins("JOIN post_tags ON posts.id = post_tags.post_id").
+				Joins("JOIN tags ON tags.id = post_tags.tag_id").
+				Where("tags.name IN ?", tags))
+	}
+
+	// 时间范围筛选
+	if startDate != "" {
+		if start, err := time.Parse("2006-01-02", startDate); err == nil {
+			query = query.Where("posts.created_at >= ?", start)
+			log.Printf("[DEBUG] 应用开始日期: %v", start)
+		} else {
+			log.Printf("[ERROR] 解析开始日期失败: %v", err)
+		}
+	}
+	if endDate != "" {
+		if end, err := time.Parse("2006-01-02", endDate); err == nil {
+			// 将结束时间设为当天的23:59:59
+			end = end.Add(24*time.Hour - time.Second)
+			query = query.Where("posts.created_at <= ?", end)
+			log.Printf("[DEBUG] 应用结束日期: %v", end)
+		} else {
+			log.Printf("[ERROR] 解析结束日期失败: %v", err)
+		}
+	}
+
+	// 获取总记录数
+	var total int64
+	log.Printf("[DEBUG] 开始计算总记录数...")
+	query.Count(&total)
+	log.Printf("[DEBUG] 总记录数: %d", total)
+
+	// 计算分页信息
+	totalPages := int((total + int64(perPage) - 1) / int64(perPage))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+	log.Printf("[DEBUG] 总页数: %d (每页%d条)", totalPages, perPage)
+
+	// 计算分页
+	offset := (page - 1) * perPage
+	log.Printf("[DEBUG] 分页参数: offset=%d, limit=%d, page=%d", offset, perPage, page)
+
 	var posts []db.Post
-	if err := db.DB.Preload("Tags").Order("created_at desc").Find(&posts).Error; err != nil {
+	log.Printf("[DEBUG] 开始执行查询...")
+	err := query.Order("posts.created_at desc").Limit(perPage).Offset(offset).Find(&posts).Error
+
+	if err != nil {
+		log.Printf("[ERROR] 查询文章失败: %v", err)
 		c.HTML(http.StatusInternalServerError, "post_list.html", gin.H{
 			"title": "文章管理",
 			"error": "获取文章列表失败",
@@ -114,9 +213,54 @@ func ShowPostList(c *gin.Context) {
 		return
 	}
 
+	log.Printf("[DEBUG] 查询完成，返回 %d 篇文章", len(posts))
+
+	// 获取所有标签用于筛选
+	var allTags []db.Tag
+	db.DB.Find(&allTags)
+	log.Printf("[DEBUG] 获取标签列表: %d 个标签", len(allTags))
+
+	// 生成分页数字范围
+	var pages []int
+	for i := 1; i <= totalPages; i++ {
+		pages = append(pages, i)
+	}
+
+	// 构建查询参数字符串（使用URL编码确保特殊字符正确处理）
+	queryParams := ""
+	if search != "" {
+		queryParams += "&search=" + url.QueryEscape(search)
+	}
+	if status != "" {
+		queryParams += "&status=" + url.QueryEscape(status)
+	}
+	if startDate != "" {
+		queryParams += "&start_date=" + url.QueryEscape(startDate)
+	}
+	if endDate != "" {
+		queryParams += "&end_date=" + url.QueryEscape(endDate)
+	}
+	for _, tag := range tags {
+		queryParams += "&tags=" + url.QueryEscape(tag)
+	}
+
+	log.Printf("[DEBUG] 准备渲染模板 - 参数: page=%d, total=%d, totalPages=%d", page, total, totalPages)
+
 	c.HTML(http.StatusOK, "post_list.html", gin.H{
-		"title": "文章管理",
-		"posts": posts,
+		"title":       "文章管理",
+		"posts":       posts,
+		"allTags":     allTags,
+		"search":      search,
+		"status":      status,
+		"tags":        tags,
+		"startDate":   startDate,
+		"endDate":     endDate,
+		"page":        page,
+		"perPage":     perPage,
+		"total":       total,
+		"totalPages":  totalPages,
+		"pages":       pages,
+		"queryParams": queryParams,
 	})
 }
 

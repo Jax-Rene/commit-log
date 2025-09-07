@@ -1,6 +1,8 @@
 package router
 
 import (
+	"html/template"
+
 	"github.com/commitlog/internal/handler"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -15,6 +17,27 @@ func SetupRouter() *gin.Engine {
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("commitlog_session", store))
 
+	// 加载模板并添加自定义函数
+	r.SetFuncMap(template.FuncMap{
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
+		"mul": func(a, b int) int {
+			return a * b
+		},
+		"gt": func(a, b int) bool {
+			return a > b
+		},
+		"lt": func(a, b int) bool {
+			return a < b
+		},
+		"eq": func(a, b interface{}) bool {
+			return a == b
+		},
+	})
 	r.LoadHTMLGlob("web/template/admin/*.html")
 
 	// 静态文件服务
@@ -42,6 +65,7 @@ func SetupRouter() *gin.Engine {
 			auth.GET("/posts", handler.ShowPostList)
 			auth.GET("/posts/new", handler.ShowPostEdit)
 			auth.GET("/posts/:id/edit", handler.ShowPostEdit)
+			auth.GET("/tags", handler.ShowTagList)
 
 			// API路由
 			api := auth.Group("/api")
@@ -51,6 +75,11 @@ func SetupRouter() *gin.Engine {
 				api.POST("/posts", handler.CreatePost)
 				api.PUT("/posts/:id", handler.UpdatePost)
 				api.DELETE("/posts/:id", handler.DeletePost)
+
+				api.GET("/tags", handler.GetTags)
+				api.POST("/tags", handler.CreateTag)
+				api.PUT("/tags/:id", handler.UpdateTag)
+				api.DELETE("/tags/:id", handler.DeleteTag)
 			}
 		}
 	}

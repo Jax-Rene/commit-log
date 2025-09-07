@@ -31,16 +31,135 @@
     <!-- 主要内容 -->
     <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div class="px-4 py-6 sm:px-0">
+            <!-- 搜索和筛选区域 -->
+            <div class="bg-white shadow sm:rounded-md mb-6 p-4">
+                <form method="GET" action="/admin/posts" class="space-y-4">
+                    <!-- 搜索区域 - 更突出的布局 -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="flex flex-col sm:flex-row gap-4 items-end">
+                            <!-- 搜索框 - 占据更多空间 -->
+                            <div class="flex-1">
+                                <label for="search" class="block text-sm font-medium text-gray-700 mb-1">关键词搜索</label>
+                                <div class="relative">
+                                    <input type="text" id="search" name="search" value="{{.search}}"
+                                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                        placeholder="搜索文章标题、内容或摘要...">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 搜索按钮 -->
+                            <div class="flex-shrink-0">
+                                <button type="submit"
+                                    class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                    搜索
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 高级筛选区域 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- 状态筛选 -->
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-gray-700">文章状态</label>
+                            <select id="status" name="status"
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">全部状态</option>
+                                <option value="draft" {{if eq .status "draft"}}selected{{end}}>草稿</option>
+                                <option value="published" {{if eq .status "published"}}selected{{end}}>已发布</option>
+                            </select>
+                        </div>
+
+                        <!-- 开始日期 -->
+                        <div>
+                            <label for="start_date" class="block text-sm font-medium text-gray-700">开始日期</label>
+                            <input type="date" id="start_date" name="start_date" value="{{.startDate}}"
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+
+                        <!-- 结束日期 -->
+                        <div>
+                            <label for="end_date" class="block text-sm font-medium text-gray-700">结束日期</label>
+                            <input type="date" id="end_date" name="end_date" value="{{.endDate}}"
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+
+                        <!-- 快速操作 -->
+                        <div class="flex items-end">
+                            <a href="/admin/posts"
+                                class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                重置筛选
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 标签筛选 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">标签筛选</label>
+                        <div class="flex flex-wrap gap-2">
+                            {{range .allTags}}
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="tags" value="{{.Name}}" 
+                                    {{range $.tags}}{{if eq . $.Name}}checked{{end}}{{end}}
+                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-gray-700">{{.Name}}</span>
+                            </label>
+                            {{end}}
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button type="submit"
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            搜索
+                        </button>
+                        <a href="/admin/posts"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            重置
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 文章列表和分页 -->
             <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">
+                            文章列表 (共 {{.total}} 篇)
+                        </h3>
+                        <div class="text-sm text-gray-500">
+                            第 {{.page}} 页，每页 {{.perPage}} 篇
+                        </div>
+                    </div>
+                </div>
+
                 <ul id="post-list" class="divide-y divide-gray-200">
                     {{if .error}}
                     <li class="px-4 py-4 sm:px-6 text-center text-red-500">{{.error}}</li>
                     {{else if .posts}}
                     {{range .posts}}
-                    <li class="px-4 py-4 sm:px-6">
+                    <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
                         <div class="flex items-center justify-between">
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-indigo-600 truncate">{{.Title}}</p>
+                                <p class="text-sm font-medium text-indigo-600 truncate" title="{{.Title}}">{{.Title}}</p>
                                 <div class="flex items-center mt-1">
                                     <span
                                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{if eq .Status `published`}}green{{else}}yellow{{end}}-100 text-{{if eq .Status `published`}}green{{else}}yellow{{end}}-800 mr-2">
@@ -55,7 +174,12 @@
                                     {{end}}
                                     {{end}}
                                 </div>
-                                <p class="text-sm text-gray-500 mt-1">创建于 {{.CreatedAt.Format "2006-01-02"}}</p>
+                                <div class="flex items-center mt-1 text-xs text-gray-500">
+                                    <span>创建于 {{.CreatedAt.Format "2006-01-02 15:04"}}</span>
+                                    {{if .User}}
+                                    <span class="ml-2">作者: {{.User.Username}}</span>
+                                    {{end}}
+                                </div>
                             </div>
                             <div class="ml-4 flex-shrink-0 flex space-x-2">
                                 <a href="/admin/posts/{{.ID}}/edit"
@@ -67,9 +191,67 @@
                     </li>
                     {{end}}
                     {{else}}
-                    <li class="px-4 py-4 sm:px-6 text-center text-gray-500">暂无文章</li>
+                    <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
+                        <div class="py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">没有找到文章</h3>
+                            <p class="mt-1 text-sm text-gray-500">请尝试调整筛选条件</p>
+                        </div>
+                    </li>
                     {{end}}
                 </ul>
+
+                <!-- 分页 -->
+                {{if gt .totalPages 1}}
+                <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-700">
+                                共 <span class="font-medium">{{.total}}</span> 条记录，
+                                第 <span class="font-medium">{{.page}}</span> 页，
+                                共 <span class="font-medium">{{.totalPages}}</span> 页
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="分页">
+                                {{if gt .page 1}}
+                                <a href="/admin/posts?page={{sub .page 1}}{{.queryParams}}"
+                                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </a>
+                                {{end}}
+
+                                {{range $i := .pages}}
+                                {{if eq $i $.page}}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-indigo-500 bg-indigo-50 text-sm font-medium text-indigo-600">
+                                    {{$i}}
+                                </span>
+                                {{else}}
+                                <a href="/admin/posts?page={{$i}}{{$.queryParams}}"
+                                    class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    {{$i}}
+                                </a>
+                                {{end}}
+                                {{end}}
+
+                                {{if lt .page .totalPages}}
+                                <a href="/admin/posts?page={{add .page 1}}{{.queryParams}}"
+                                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </a>
+                                {{end}}
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
             </div>
         </div>
     </div>
@@ -92,6 +274,50 @@
                     });
             }
         }
+
+        // 搜索增强功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search');
+            const searchForm = document.querySelector('form');
+            
+            // 回车键触发搜索
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchForm.submit();
+                }
+            });
+
+            // 搜索框获得焦点时显示提示
+            searchInput.addEventListener('focus', function() {
+                this.setAttribute('placeholder', '输入关键词后按回车搜索...');
+            });
+
+            searchInput.addEventListener('blur', function() {
+                this.setAttribute('placeholder', '搜索文章标题、内容或摘要...');
+            });
+
+            // 清除搜索按钮
+            const clearSearchBtn = document.createElement('button');
+            clearSearchBtn.type = 'button';
+            clearSearchBtn.innerHTML = '×';
+            clearSearchBtn.className = 'absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600';
+            clearSearchBtn.style.display = searchInput.value ? 'block' : 'none';
+            
+            const searchContainer = searchInput.parentElement;
+            searchContainer.style.position = 'relative';
+            searchContainer.appendChild(clearSearchBtn);
+            
+            clearSearchBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                this.style.display = 'none';
+                searchInput.focus();
+            });
+
+            searchInput.addEventListener('input', function() {
+                clearSearchBtn.style.display = this.value ? 'block' : 'none';
+            });
+        });
     </script>
 </body>
 
