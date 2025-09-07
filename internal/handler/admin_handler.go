@@ -16,7 +16,7 @@ func ShowLoginPage(c *gin.Context) {
 	})
 }
 
-// Login 处理用户登录请求
+// Login 处理用户登录请求 - 简化版，假设所有请求都来自HTMX
 func Login(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
@@ -24,13 +24,13 @@ func Login(c *gin.Context) {
 	// 查找用户
 	var user db.User
 	if err := db.DB.Where("username = ?", username).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
+		c.HTML(http.StatusUnauthorized, "login_error.html", gin.H{"error": "用户名或密码错误"})
 		return
 	}
 
 	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
+		c.HTML(http.StatusUnauthorized, "login_error.html", gin.H{"error": "用户名或密码错误"})
 		return
 	}
 
@@ -39,11 +39,12 @@ func Login(c *gin.Context) {
 	session.Set("user_id", user.ID)
 	session.Set("username", user.Username)
 	if err := session.Save(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "会话保存失败"})
+		c.HTML(http.StatusInternalServerError, "login_error.html", gin.H{"error": "会话保存失败"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "登录成功", "redirect": "/admin/dashboard"})
+	// HTMX重定向
+	c.Redirect(http.StatusFound, "/admin/dashboard")
 }
 
 // Logout 处理用户登出
@@ -58,9 +59,9 @@ func Logout(c *gin.Context) {
 func ShowDashboard(c *gin.Context) {
 	session := sessions.Default(c)
 	username := session.Get("username")
-	
+
 	c.HTML(http.StatusOK, "dashboard.html", gin.H{
-		"title":   "管理面板",
+		"title":    "管理面板",
 		"username": username,
 	})
 }
