@@ -1,205 +1,173 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
+{{template "base" .}}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.title}} - CommitLog Admin</title>
-    <link href="/static/css/output.css" rel="stylesheet">
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <script src="https://unpkg.com/htmx.org@1.x.x/dist/htmx.min.js"></script>
-    <script src="https://unpkg.com/easymde@2.x.x/dist/easymde.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/easymde@2.x.x/dist/easymde.min.css">
-</head>
-
-<body class="bg-gray-100">
-    <!-- 导航栏 -->
-    <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <h1 class="text-xl font-semibold">{{.title}}</h1>
+{{define "content"}}
+<div class="px-4 py-6 sm:px-0">
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
+        <form id="post-form" x-data="postForm()" @submit.prevent="submitForm">
+            <div class="space-y-6">
+                <!-- 标题 -->
+                <div>
+                    <label for="title" class="block text-sm font-medium text-gray-700">标题</label>
+                    <input type="text" id="title" x-model="post.title"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        required>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <a href="/admin/posts" class="text-gray-600 hover:text-gray-900">返回列表</a>
-                    <a href="/admin/logout" class="text-red-600 hover:text-red-800">退出</a>
+
+                <!-- 摘要 -->
+                <div>
+                    <label for="summary" class="block text-sm font-medium text-gray-700">摘要</label>
+                    <textarea id="summary" x-model="post.summary" rows="3"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+
+                <!-- 内容 -->
+                <div>
+                    <label for="content" class="block text-sm font-medium text-gray-700">内容</label>
+                    <textarea id="content" x-model="post.content" rows="20"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        required></textarea>
+                </div>
+
+                <!-- 状态 -->
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700">状态</label>
+                    <select id="status" x-model="post.status"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="draft">草稿</option>
+                        <option value="published">已发布</option>
+                    </select>
+                </div>
+
+                <!-- 标签 -->
+                <div>
+                    <label for="tags" class="block text-sm font-medium text-gray-700">标签（用逗号分隔）</label>
+                    <input type="text" id="tags" x-model="tagsText" placeholder="例如: 技术, 编程, Go"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <!-- 提交按钮 -->
+                <div class="flex justify-end space-x-3">
+                    <button type="button" @click="previewPost"
+                        class="inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        预览
+                    </button>
+                    <button type="submit" :disabled="loading"
+                        class="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
+                        <span x-show="loading">保存中...</span>
+                        <span x-show="!loading">保存文章</span>
+                    </button>
                 </div>
             </div>
-        </div>
-    </nav>
-
-    <!-- 主要内容 -->
-    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div class="px-4 py-6 sm:px-0">
-            <div class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
-                <form id="post-form" x-data="postForm()" @submit.prevent="submitForm">
-                    <div class="space-y-6">
-                        <!-- 标题 -->
-                        <div>
-                            <label for="title" class="block text-sm font-medium text-gray-700">标题</label>
-                            <input type="text" id="title" x-model="post.title"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                required>
-                        </div>
-
-                        <!-- 摘要 -->
-                        <div>
-                            <label for="summary" class="block text-sm font-medium text-gray-700">摘要</label>
-                            <textarea id="summary" x-model="post.summary" rows="3"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
-                        </div>
-
-                        <!-- 内容 -->
-                        <div>
-                            <label for="content" class="block text-sm font-medium text-gray-700">内容</label>
-                            <textarea id="content" x-model="post.content" rows="20"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                required></textarea>
-                        </div>
-
-                        <!-- 状态 -->
-                        <div>
-                            <label for="status" class="block text-sm font-medium text-gray-700">状态</label>
-                            <select id="status" x-model="post.status"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <option value="draft">草稿</option>
-                                <option value="published">已发布</option>
-                            </select>
-                        </div>
-
-                        <!-- 标签 -->
-                        <div>
-                            <label for="tags" class="block text-sm font-medium text-gray-700">标签（用逗号分隔）</label>
-                            <input type="text" id="tags" x-model="tagsText" placeholder="例如: 技术, 编程, Go"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-
-                        <!-- 提交按钮 -->
-                        <div class="flex justify-end space-x-3">
-                            <button type="button" @click="previewPost"
-                                class="inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                预览
-                            </button>
-                            <button type="submit" :disabled="loading"
-                                class="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
-                                <span x-show="loading">保存中...</span>
-                                <span x-show="!loading">保存文章</span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
+        </form>
     </div>
+</div>
 
-    <script>
-        function postForm() {
-            return {
-                loading: false,
-                post: {
-                    title: '{{.post.Title}}' || '',
-                    summary: '{{.post.Summary}}' || '',
-                    content: '{{.post.Content}}' || '',
-                    status: '{{.post.Status}}' || 'draft',
-                    tags: []
-                },
-                tagsText: '{{range .post.Tags}}{{.Name}},{{end}}' || '',
+<script>
+    function postForm() {
+        return {
+            loading: false,
+            post: {
+                title: '{{.post.Title}}' || '',
+                summary: '{{.post.Summary}}' || '',
+                content: '{{.post.Content}}' || '',
+                status: '{{.post.Status}}' || 'draft',
+                tags: []
+            },
+            tagsText: '{{range .post.Tags}}{{.Name}},{{end}}' || '',
 
-                init() {
-                    // 初始化EasyMDE编辑器
-                    const easyMDE = new EasyMDE({
-                        element: document.getElementById('content'),
-                        spellChecker: false,
-                        status: false,
-                        toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen"],
-                        autosave: {
-                            enabled: true,
-                            uniqueId: "post-content",
-                            delay: 1000,
-                        }
-                    });
-
-                    // 监听编辑器变化
-                    easyMDE.codemirror.on('change', () => {
-                        this.post.content = easyMDE.value();
-                    });
-                },
-
-                submitForm() {
-                    this.loading = true;
-
-                    // 处理标签
-                    if (this.tagsText) {
-                        this.post.tags = this.tagsText.split(',').map(tag => ({
-                            name: tag.trim()
-                        })).filter(tag => tag.name);
+            init() {
+                // 初始化EasyMDE编辑器
+                const easyMDE = new EasyMDE({
+                    element: document.getElementById('content'),
+                    spellChecker: false,
+                    status: false,
+                    toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen"],
+                    autosave: {
+                        enabled: true,
+                        uniqueId: "post-content",
+                        delay: 1000,
                     }
+                });
 
-                    // 从URL中提取文章ID
-                    let url, method;
-                    if (window.location.pathname.includes('/edit')) {
-                        // 提取文章ID（例如：/admin/posts/123/edit -> 123）
-                        const pathParts = window.location.pathname.split('/');
-                        const postId = pathParts[pathParts.length - 2];
-                        url = `/admin/api/posts/${postId}`;
-                        method = 'PUT';
-                    } else {
-                        url = '/admin/api/posts';
-                        method = 'POST';
-                    }
+                // 监听编辑器变化
+                easyMDE.codemirror.on('change', () => {
+                    this.post.content = easyMDE.value();
+                });
+            },
 
-                    fetch(url, {
-                        method: method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(this.post)
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.message) {
-                                alert(data.message);
-                                if (!window.location.pathname.includes('/edit/')) {
-                                    window.location.href = '/admin/posts';
-                                }
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('保存失败');
-                        })
-                        .finally(() => {
-                            this.loading = false;
-                        });
-                },
+            submitForm() {
+                this.loading = true;
 
-                previewPost() {
-                    // 简单的预览功能
-                    const preview = window.open('', '_blank');
-                    preview.document.write(`
-                        <html>
-                            <head>
-                                <title>预览: ${this.post.title}</title>
-                                <style>
-                                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; }
-                                    h1 { color: #1f2937; }
-                                    .content { margin-top: 2rem; }
-                                    pre { background: #f3f4f6; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; }
-                                    code { background: #f3f4f6; padding: 0.125rem 0.25rem; border-radius: 0.25rem; }
-                                </style>
-                            </head>
-                            <body>
-                                <h1>${this.post.title}</h1>
-                                <p><strong>摘要:</strong> ${this.post.summary}</p>
-                                <div class="content">${this.post.content.replace(/\n/g, '<br>')}</div>
-                            </body>
-                        </html>
-                    `);
-                    preview.document.close();
+                // 处理标签
+                if (this.tagsText) {
+                    this.post.tags = this.tagsText.split(',').map(tag => ({
+                        name: tag.trim()
+                    })).filter(tag => tag.name);
                 }
+
+                // 从URL中提取文章ID
+                let url, method;
+                if (window.location.pathname.includes('/edit')) {
+                    // 提取文章ID（例如：/admin/posts/123/edit -> 123）
+                    const pathParts = window.location.pathname.split('/');
+                    const postId = pathParts[pathParts.length - 2];
+                    url = `/admin/api/posts/${postId}`;
+                    method = 'PUT';
+                } else {
+                    url = '/admin/api/posts';
+                    method = 'POST';
+                }
+
+                fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(this.post)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message) {
+                            alert(data.message);
+                            if (!window.location.pathname.includes('/edit/')) {
+                                window.location.href = '/admin/posts';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('保存失败');
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                    });
+            },
+
+            previewPost() {
+                // 简单的预览功能
+                const preview = window.open('', '_blank');
+                preview.document.write(`
+                    <html>
+                        <head>
+                            <title>预览: ${this.post.title}</title>
+                            <style>
+                                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; }
+                                h1 { color: #1f2937; }
+                                .content { margin-top: 2rem; }
+                                pre { background: #f3f4f6; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; }
+                                code { background: #f3f4f6; padding: 0.125rem 0.25rem; border-radius: 0.25rem; }
+                            </style>
+                        </head>
+                        <body>
+                            <h1>${this.post.title}</h1>
+                            <p><strong>摘要:</strong> ${this.post.summary}</p>
+                            <div class="content">${this.post.content.replace(/\n/g, '<br>')}</div>
+                        </body>
+                    </html>
+                `);
+                preview.document.close();
             }
         }
-    </script>
-</body>
-
-</html>
+    }
+</script>
+{{end}}
