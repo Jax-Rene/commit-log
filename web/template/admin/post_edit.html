@@ -1,60 +1,122 @@
 {{template "base" .}}
 
 {{define "content"}}
-<div class="px-4 py-6 sm:px-0">
-    <div class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
-        <form id="post-form" x-data="postForm()" @submit.prevent="submitForm">
-            <div class="space-y-6">
+<!-- Apple 风格文章编辑页面 -->
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <!-- 动态背景装饰 -->
+    <div class="fixed inset-0 -z-10 overflow-hidden">
+        <div class="absolute top-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+        <div class="absolute bottom-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-green-100 via-blue-100 to-purple-100 rounded-full blur-3xl opacity-30 animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 页面头部 -->
+        <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl shadow-xl mb-8">
+            <div class="px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-display font-bold text-gray-900">
+                            {{if .post.ID}}编辑文章{{else}}创建新文章{{end}}
+                        </h1>
+                        <p class="mt-2 text-gray-600">使用 Markdown 格式编写您的技术文章</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a href="/admin/posts"
+                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white/50 border border-gray-200 rounded-xl hover:bg-white/80 transition-all duration-200">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            返回列表
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑表单 -->
+        <form id="post-form" x-data="postForm()" @submit.prevent="submitForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 主要内容区域 -->
+            <div class="lg:col-span-2 space-y-6">
                 <!-- 标题 -->
-                <div>
-                    <label for="title" class="block text-sm font-medium text-gray-700">标题</label>
+                <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg">
+                    <label for="title" class="block text-sm font-medium text-gray-700 mb-3">
+                        文章标题
+                        <span class="text-red-500 ml-1">*</span>
+                    </label>
                     <input type="text" id="title" x-model="post.title"
-                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        required>
+                        class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        placeholder="请输入文章标题..." required>
                 </div>
 
                 <!-- 摘要 -->
-                <div>
-                    <label for="summary" class="block text-sm font-medium text-gray-700">摘要</label>
+                <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg">
+                    <label for="summary" class="block text-sm font-medium text-gray-700 mb-3">
+                        文章摘要
+                        <span class="text-gray-400 text-xs ml-2">建议 50-200 字</span>
+                    </label>
                     <textarea id="summary" x-model="post.summary" rows="3"
-                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                        placeholder="用简洁的语言描述这篇文章的核心内容..."></textarea>
                 </div>
 
-                <!-- 内容 -->
-                <div>
-                    <label for="content" class="block text-sm font-medium text-gray-700">内容</label>
+                <!-- 内容编辑器 -->
+                <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg">
+                    <label for="content" class="block text-sm font-medium text-gray-700 mb-3">
+                        文章内容
+                        <span class="text-red-500 ml-1">*</span>
+                        <span class="text-gray-400 text-xs ml-2">支持 Markdown 格式</span>
+                    </label>
                     <textarea id="content" x-model="post.content" rows="20"
-                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        required></textarea>
+                        class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        placeholder="开始创作您的精彩内容..."></textarea>
+                </div>
+            </div>
+
+            <!-- 侧边栏设置 -->
+            <div class="space-y-6">
+                <!-- 文章设置 -->
+                <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">文章设置</h3>
+                    
+                    <!-- 状态 -->
+                    <div class="mb-4">
+                        <label for="status" class="block text-sm font-medium text-gray-700 mb-2">发布状态</label>
+                        <select id="status" x-model="post.status"
+                            class="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                            <option value="draft">草稿</option>
+                            <option value="published">已发布</option>
+                        </select>
+                    </div>
+
+                    <!-- 标签 -->
+                    <div>
+                        <label for="tags" class="block text-sm font-medium text-gray-700 mb-2">文章标签</label>
+                        <input type="text" id="tags" x-model="tagsText" 
+                            class="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                            placeholder="技术, 编程, Go">
+                        <p class="mt-1 text-xs text-gray-500">多个标签用逗号分隔</p>
+                    </div>
                 </div>
 
-                <!-- 状态 -->
-                <div>
-                    <label for="status" class="block text-sm font-medium text-gray-700">状态</label>
-                    <select id="status" x-model="post.status"
-                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        <option value="draft">草稿</option>
-                        <option value="published">已发布</option>
-                    </select>
-                </div>
-
-                <!-- 标签 -->
-                <div>
-                    <label for="tags" class="block text-sm font-medium text-gray-700">标签（用逗号分隔）</label>
-                    <input type="text" id="tags" x-model="tagsText" placeholder="例如: 技术, 编程, Go"
-                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                </div>
-
-                <!-- 提交按钮 -->
-                <div class="flex justify-end space-x-3">
+                <!-- 操作按钮 -->
+                <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg space-y-3">
                     <button type="button" @click="previewPost"
-                        class="inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        预览
+                        class="w-full inline-flex justify-center items-center py-3 px-4 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white/50 hover:bg-white/80 transition-all duration-200">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        预览文章
                     </button>
+                    
                     <button type="submit" :disabled="loading"
-                        class="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
+                        class="w-full inline-flex justify-center items-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path x-show="!loading" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            <path x-show="loading" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span x-show="!loading">{{if .post.ID}}更新文章{{else}}发布文章{{end}}</span>
                         <span x-show="loading">保存中...</span>
-                        <span x-show="!loading">保存文章</span>
                     </button>
                 </div>
             </div>
