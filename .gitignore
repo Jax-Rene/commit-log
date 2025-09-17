@@ -9,6 +9,7 @@ node_modules/
 
 # Build artifacts
 web/static/css/output.css
+web/static/uploads/
 
 # Env file
 .env

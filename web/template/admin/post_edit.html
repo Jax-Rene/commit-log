@@ -5,8 +5,11 @@
 <div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
     <!-- 动态背景装饰 -->
     <div class="fixed inset-0 -z-10 overflow-hidden">
-        <div class="absolute top-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 rounded-full blur-3xl opacity-30 animate-pulse"></div>
-        <div class="absolute bottom-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-green-100 via-blue-100 to-purple-100 rounded-full blur-3xl opacity-30 animate-pulse" style="animation-delay: 2s;"></div>
+        <div
+            class="absolute top-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 rounded-full blur-3xl opacity-30 animate-pulse">
+        </div>
+        <div class="absolute bottom-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-green-100 via-blue-100 to-purple-100 rounded-full blur-3xl opacity-30 animate-pulse"
+            style="animation-delay: 2s;"></div>
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -24,7 +27,8 @@
                         <a href="/admin/posts"
                             class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white/50 border border-gray-200 rounded-xl hover:bg-white/80 transition-all duration-200">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
                             返回列表
                         </a>
@@ -34,7 +38,8 @@
         </div>
 
         <!-- 编辑表单 -->
-        <form id="post-form" x-data="postForm()" @submit.prevent="submitForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <form id="post-form" x-data="postForm()" @submit.prevent="submitForm"
+            class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- 主要内容区域 -->
             <div class="lg:col-span-2 space-y-6">
                 <!-- 标题 -->
@@ -77,7 +82,7 @@
                 <!-- 文章设置 -->
                 <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">文章设置</h3>
-                    
+
                     <!-- 状态 -->
                     <div class="mb-4">
                         <label for="status" class="block text-sm font-medium text-gray-700 mb-2">发布状态</label>
@@ -91,7 +96,7 @@
                     <!-- 标签 -->
                     <div>
                         <label for="tags" class="block text-sm font-medium text-gray-700 mb-2">文章标签</label>
-                        <input type="text" id="tags" x-model="tagsText" 
+                        <input type="text" id="tags" x-model="tagsText"
                             class="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                             placeholder="技术, 编程, Go">
                         <p class="mt-1 text-xs text-gray-500">多个标签用逗号分隔</p>
@@ -103,17 +108,23 @@
                     <button type="button" @click="previewPost"
                         class="w-full inline-flex justify-center items-center py-3 px-4 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white/50 hover:bg-white/80 transition-all duration-200">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                            </path>
                         </svg>
                         预览文章
                     </button>
-                    
+
                     <button type="submit" :disabled="loading"
                         class="w-full inline-flex justify-center items-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path x-show="!loading" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            <path x-show="loading" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            <path x-show="!loading" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 13l4 4L19 7"></path>
+                            <path x-show="loading" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                            </path>
                         </svg>
                         <span x-show="!loading">{{if .post.ID}}更新文章{{else}}发布文章{{end}}</span>
                         <span x-show="loading">保存中...</span>
@@ -144,16 +155,16 @@
                     spellChecker: false,
                     status: ['lines', 'words', 'cursor'],
                     toolbar: [
-                        "bold", "italic", "heading", "|", 
-                        "quote", "unordered-list", "ordered-list", "|", 
-                        "link", 
+                        "bold", "italic", "heading", "|",
+                        "quote", "unordered-list", "ordered-list", "|",
+                        "link",
                         {
                             name: "image",
                             action: EasyMDE.drawImage,
                             className: "fa fa-picture-o",
                             title: "插入图片"
                         },
-                        "table", "code", "|", 
+                        "table", "code", "|",
                         "preview", "side-by-side", "fullscreen"
                     ],
                     autosave: {
@@ -170,14 +181,35 @@
                         sbInit: '拖放图片或点击上传',
                         sbOnDragEnter: '释放以上传图片',
                         sbOnDrop: '上传中...',
-                        sbProgress: function(progress) { return '上传中... ' + progress + '%'; },
+                        sbProgress: function (progress) { return '上传中... ' + progress + '%'; },
                         sbOnUploaded: '上传完成',
                         sizeUnits: ' B, KB, MB'
+                    },
+                    imageUploadFunction: function (file, onSuccess, onError) {
+                        const formData = new FormData();
+                        formData.append('image', file);
+
+                        fetch('/admin/api/upload/image', {
+                            method: 'POST',
+                            body: formData
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success === 1) {
+                                    // 上传成功，插入不带文件名的图片
+                                    onSuccess(data.data.url);
+                                } else {
+                                    onError(data.message || '上传失败');
+                                }
+                            })
+                            .catch(error => {
+                                onError('上传失败: ' + error.message);
+                            });
                     },
                     renderingConfig: {
                         codeSyntaxHighlighting: false
                     },
-                    previewRender: function(plainText) {
+                    previewRender: function (plainText) {
                         // 自定义预览渲染，不依赖 hljs
                         // 自定义预览渲染
                         return this.customMarkdownParser(plainText);
@@ -189,14 +221,14 @@
                 easyMDE.codemirror.on('change', () => {
                     this.post.content = easyMDE.value();
                 });
-                
+
                 // 保存编辑器实例
                 this.editor = easyMDE;
             },
 
             submitForm() {
                 this.loading = true;
-                
+
                 // 确保获取最新的编辑器内容
                 if (this.editor) {
                     this.post.content = this.editor.value();
@@ -251,20 +283,20 @@
             customMarkdownParser(text) {
                 // 使用编辑器内置的 markdown 方法解析内容
                 const html = this.parent.markdown(text);
-                
+
                 // 简单的代码高亮处理，不依赖 hljs
-                const styledHtml = html.replace(/<code class="([^"]+)">/g, function(match, language) {
+                const styledHtml = html.replace(/<code class="([^"]+)">/g, function (match, language) {
                     return '<code class="language-' + language + '" style="display: block; padding: 1em; background: #f5f5f5; border-radius: 5px; overflow-x: auto;">';
                 });
-                
+
                 return styledHtml;
             },
-            
+
             previewPost() {
                 // 增强的预览功能
                 const preview = window.open('', '_blank');
                 const parsedContent = this.editor ? this.editor.markdown(this.post.content) : this.post.content.replace(/\n/g, '<br>');
-                
+
                 preview.document.write(`
                     <html>
                         <head>
@@ -297,23 +329,25 @@
                                 .summary { background-color: #f9fafb; padding: 1rem; border-radius: 0.375rem; margin-bottom: 2rem; border-left: 4px solid #3b82f6; }
                             </style>
                             <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
-                        </head>
-                        <body>
-                            <h1>${this.post.title}</h1>
-                            <div class="summary"><strong>摘要:</strong> ${this.post.summary}</div>
-                            <div class="content">${parsedContent}</div>
-                            <script>
+</head>
+
+<body>
+    <h1>${this.post.title}</h1>
+    <div class="summary"><strong>摘要:</strong> ${this.post.summary}</div>
+    <div class="content">${parsedContent}</div>
+    <script>
                                 // 代码高亮
                                 document.querySelectorAll('pre code').forEach((block) => {
                                     hljs.highlightElement(block);
                                 });
-                            </script>
-                        </body>
-                    </html>
-                `);
-                preview.document.close();
-            }
-        }
-    };
+    </script>
+</body>
+
+</html>
+`);
+preview.document.close();
+}
+}
+};
 </script>
 {{end}}

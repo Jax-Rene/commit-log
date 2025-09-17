@@ -46,12 +46,14 @@ func UploadImage(c *gin.Context) {
 		return
 	}
 
-	// 返回文件URL
+	// 返回文件URL - 符合EasyMDE的预期格式
 	fileURL := fmt.Sprintf("/static/uploads/%s", newFilename)
 	c.JSON(http.StatusOK, gin.H{
 		"success": 1,
-		"file": gin.H{
-			"url": fileURL,
+		"message": "上传成功",
+		"data": gin.H{
+			"filePath": fileURL,
+			"url":      fileURL,
 		},
 	})
 }
