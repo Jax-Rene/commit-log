@@ -75,7 +75,7 @@
                             <div>
                                 <label for="start_date"
                                     class="block text-sm font-medium text-gray-700 mb-2">开始日期</label>
-                                <div class="relative group cursor-pointer" onclick="openDatePicker('start_date')">
+                                <div class="relative group cursor-pointer" id="start_date_picker">
                                     <input type="text" id="start_date" name="start_date" value="{{.startDate}}"
                                         class="w-full px-3 py-2 pl-10 pr-10 bg-white/50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
                                         placeholder="选择开始日期" readonly>
@@ -88,8 +88,7 @@
                                         </svg>
                                     </div>
                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                        <button type="button" class="text-gray-400 hover:text-gray-600"
-                                            onclick="event.stopPropagation(); clearDate('start_date')">
+                                        <button type="button" class="text-gray-400 hover:text-gray-600" id="clear_start_date">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M6 18L18 6M6 6l12 12"></path>
@@ -101,7 +100,7 @@
 
                             <div>
                                 <label for="end_date" class="block text-sm font-medium text-gray-700 mb-2">结束日期</label>
-                                <div class="relative group cursor-pointer" onclick="openDatePicker('end_date')">
+                                <div class="relative group cursor-pointer" id="end_date_picker">
                                     <input type="text" id="end_date" name="end_date" value="{{.endDate}}"
                                         class="w-full px-3 py-2 pl-10 pr-10 bg-white/50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
                                         placeholder="选择结束日期" readonly>
@@ -114,8 +113,7 @@
                                         </svg>
                                     </div>
                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                        <button type="button" class="text-gray-400 hover:text-gray-600"
-                                            onclick="event.stopPropagation(); clearDate('end_date')">
+                                        <button type="button" class="text-gray-400 hover:text-gray-600" id="clear_end_date">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M6 18L18 6M6 6l12 12"></path>
@@ -248,7 +246,7 @@
                                 </svg>
                                 编辑
                             </a>
-                            <button onclick="deletePost({{.ID}})"
+                            <button onclick="deletePost('{{.ID}}')"
                                 class="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 text-xs font-medium rounded-full hover:bg-red-200 transition-colors">
                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -375,6 +373,26 @@
 
     // 搜索增强功能
     document.addEventListener('DOMContentLoaded', function () {
+        // 绑定日期选择器点击事件
+        document.getElementById('start_date_picker')?.addEventListener('click', function() {
+            openDatePicker('start_date');
+        });
+        
+        document.getElementById('end_date_picker')?.addEventListener('click', function() {
+            openDatePicker('end_date');
+        });
+        
+        // 绑定清除日期按钮点击事件
+        document.getElementById('clear_start_date')?.addEventListener('click', function(event) {
+            event.stopPropagation();
+            clearDate('start_date');
+        });
+        
+        document.getElementById('clear_end_date')?.addEventListener('click', function(event) {
+            event.stopPropagation();
+            clearDate('end_date');
+        });
+        
         // 初始化 Flatpickr 日期选择器
         const dateOptions = {
             locale: 'zh',
@@ -393,20 +411,24 @@
 
         // 初始化开始日期
         if (document.getElementById('start_date')) {
-            flatpickr('#start_date', {
+            const startDatePicker = flatpickr('#start_date', {
                 ...dateOptions,
                 placeholder: '选择开始日期',
                 maxDate: document.getElementById('end_date').value || null
             });
+            // 确保_flatpickr属性被正确设置
+            document.getElementById('start_date')._flatpickr = startDatePicker;
         }
 
         // 初始化结束日期
         if (document.getElementById('end_date')) {
-            flatpickr('#end_date', {
+            const endDatePicker = flatpickr('#end_date', {
                 ...dateOptions,
                 placeholder: '选择结束日期',
                 minDate: document.getElementById('start_date').value || null
             });
+            // 确保_flatpickr属性被正确设置
+            document.getElementById('end_date')._flatpickr = endDatePicker;
         }
 
         // 监听日期变化，动态更新日期范围限制
