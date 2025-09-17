@@ -133,7 +133,7 @@
                                     </svg>
                                     搜索
                                 </button>
-                                <a href="/admin/posts"
+                                <button type="button" id="reset_button"
                                     class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors duration-200">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -141,7 +141,7 @@
                                         </path>
                                     </svg>
                                     重置
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -152,7 +152,7 @@
                         <div class="flex flex-wrap gap-3">
                             {{range .allTags}}
                             <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="tags" value="{{.Name}}" {{range $.tags}}{{if eq .Name $.Name}}checked{{end}}{{end}} class="sr-only peer">
+                                <input type="checkbox" name="tags" value="{{.Name}}" {{range $.tags}}{{if eq . $.Name}}checked{{end}}{{end}} class="sr-only peer">
                                 <span
                                     class="px-3 py-1.5 bg-white/50 border border-gray-200 rounded-full text-sm text-gray-700 peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-all duration-200">
                                     {{.Name}}
@@ -448,13 +448,148 @@
 
         const searchInput = document.getElementById('search');
         const searchForm = document.querySelector('form');
+        const searchButton = document.querySelector('button[type="submit"]');
 
+        // 使用AJAX提交表单，避免页面刷新
+        function submitFormWithAjax(e) {
+            e.preventDefault();
+            
+            // 手动构建FormData，确保所有字段都被正确获取
+            const formData = new FormData();
+            
+            // 获取搜索关键词
+            const searchValue = document.getElementById('search').value;
+            if (searchValue) formData.append('search', searchValue);
+            
+            // 获取状态筛选值
+            const statusSelect = document.getElementById('status');
+            // 无论是否为空，都添加状态参数
+            formData.append('status', statusSelect ? statusSelect.value : '');
+            console.log('状态筛选值:', statusSelect ? statusSelect.value : '空值'); // 调试日志
+            
+            // 获取日期范围
+            const startDate = document.getElementById('start_date').value;
+            if (startDate) formData.append('start_date', startDate);
+            
+            const endDate = document.getElementById('end_date').value;
+            if (endDate) formData.append('end_date', endDate);
+            
+            // 获取选中的标签
+            const tagCheckboxes = document.querySelectorAll('input[name="tags"]:checked');
+            tagCheckboxes.forEach(checkbox => {
+                formData.append('tags', checkbox.value);
+            });
+            
+            // 构建查询字符串
+            const queryString = new URLSearchParams(formData).toString();
+            console.log('查询字符串:', queryString); // 调试日志
+            
+            const url = searchForm.action + '?' + queryString;
+            
+            // 使用History API更新URL，不刷新页面
+            history.pushState(null, '', url);
+            
+            // 使用fetch获取新页面内容
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    // 解析HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // 更新文章列表部分
+                    const newPostList = doc.querySelector('.divide-y.divide-white\\/20');
+                    const currentPostList = document.querySelector('.divide-y.divide-white\\/20');
+                    if (newPostList && currentPostList) {
+                        currentPostList.innerHTML = newPostList.innerHTML;
+                    }
+                    
+                    // 更新统计卡片
+                    const newStats = doc.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-4.gap-6.mb-8 .bg-white\\/80');
+                    const currentStats = document.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-4.gap-6.mb-8 .bg-white\\/80');
+                    if (newStats.length === currentStats.length) {
+                        for (let i = 0; i < newStats.length; i++) {
+                            currentStats[i].innerHTML = newStats[i].innerHTML;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('搜索请求失败:', error);
+                });
+        }
+
+        // 为搜索按钮添加事件监听器
+        searchButton?.addEventListener('click', submitFormWithAjax);
+        
         // 回车键触发搜索
         searchInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                searchForm.submit();
+                submitFormWithAjax(e);
             }
+        });
+        
+        // 为重置按钮添加事件监听器
+        const resetButton = document.getElementById('reset_button');
+        resetButton?.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // 清空所有输入字段
+            document.getElementById('search').value = '';
+            
+            // 重置状态选择器
+            const statusSelect = document.getElementById('status');
+            if (statusSelect) {
+                statusSelect.value = '';
+                console.log('重置状态选择器:', statusSelect.value); // 调试日志
+            }
+            
+            // 清空日期字段
+            document.getElementById('start_date').value = '';
+            document.getElementById('end_date').value = '';
+            
+            // 取消选中所有标签
+            const tagCheckboxes = document.querySelectorAll('input[name="tags"]');
+            tagCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            console.log('表单已重置'); // 调试日志
+            
+            // 构建空的查询参数，确保明确传递空状态
+            const emptyParams = new URLSearchParams();
+            emptyParams.append('status', '');
+            
+            // 使用AJAX加载重置后的页面，明确传递空状态参数
+            fetch('/admin/posts?' + emptyParams.toString())
+                .then(response => response.text())
+                .then(html => {
+                    // 解析HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // 更新文章列表部分 - 使用更简单的选择器
+                    const newPostList = doc.querySelector('.divide-y');
+                    const currentPostList = document.querySelector('.divide-y');
+                    if (newPostList && currentPostList) {
+                        currentPostList.innerHTML = newPostList.innerHTML;
+                    }
+                    
+                    // 更新统计卡片 - 使用更简单的选择器
+                    const newStats = doc.querySelectorAll('.grid .bg-white');
+                    const currentStats = document.querySelectorAll('.grid .bg-white');
+                    if (newStats.length === currentStats.length) {
+                        for (let i = 0; i < newStats.length; i++) {
+                            currentStats[i].innerHTML = newStats[i].innerHTML;
+                        }
+                    }
+                    
+                    // 更新URL
+                    history.pushState(null, '', '/admin/posts');
+                })
+                .catch(error => {
+                    console.error('重置请求失败:', error);
+                });
         });
 
         // 搜索框获得焦点时显示提示
