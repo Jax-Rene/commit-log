@@ -142,23 +142,65 @@
                 const easyMDE = new EasyMDE({
                     element: document.getElementById('content'),
                     spellChecker: false,
-                    status: false,
-                    toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen"],
+                    status: ['lines', 'words', 'cursor'],
+                    toolbar: [
+                        "bold", "italic", "heading", "|", 
+                        "quote", "unordered-list", "ordered-list", "|", 
+                        "link", 
+                        {
+                            name: "image",
+                            action: EasyMDE.drawImage,
+                            className: "fa fa-picture-o",
+                            title: "插入图片"
+                        },
+                        "table", "code", "|", 
+                        "preview", "side-by-side", "fullscreen"
+                    ],
                     autosave: {
                         enabled: true,
                         uniqueId: "post-content",
                         delay: 1000,
-                    }
+                    },
+                    uploadImage: true,
+                    imageUploadEndpoint: '/admin/api/upload/image',
+                    imagePathAbsolute: true,
+                    imageAccept: 'image/png, image/jpeg, image/gif, image/webp',
+                    imageMaxSize: 5 * 1024 * 1024, // 5MB
+                    imageTexts: {
+                        sbInit: '拖放图片或点击上传',
+                        sbOnDragEnter: '释放以上传图片',
+                        sbOnDrop: '上传中...',
+                        sbProgress: function(progress) { return '上传中... ' + progress + '%'; },
+                        sbOnUploaded: '上传完成',
+                        sizeUnits: ' B, KB, MB'
+                    },
+                    renderingConfig: {
+                        codeSyntaxHighlighting: false
+                    },
+                    previewRender: function(plainText) {
+                        // 自定义预览渲染，不依赖 hljs
+                        // 自定义预览渲染
+                        return this.customMarkdownParser(plainText);
+                    },
+                    initialValue: this.post.content // 设置初始值
                 });
 
                 // 监听编辑器变化
                 easyMDE.codemirror.on('change', () => {
                     this.post.content = easyMDE.value();
                 });
+                
+                // 保存编辑器实例
+                this.editor = easyMDE;
             },
 
             submitForm() {
                 this.loading = true;
+                
+                // 确保获取最新的编辑器内容
+                if (this.editor) {
+                    this.post.content = this.editor.value();
+                }
 
                 // 处理标签
                 if (this.tagsText) {
@@ -205,31 +247,73 @@
                     });
             },
 
+            // 自定义 Markdown 解析函数
+            customMarkdownParser(text) {
+                // 使用编辑器内置的 markdown 方法解析内容
+                const html = this.parent.markdown(text);
+                
+                // 简单的代码高亮处理，不依赖 hljs
+                const styledHtml = html.replace(/<code class="([^"]+)">/g, function(match, language) {
+                    return '<code class="language-' + language + '" style="display: block; padding: 1em; background: #f5f5f5; border-radius: 5px; overflow-x: auto;">';
+                });
+                
+                return styledHtml;
+            },
+            
             previewPost() {
-                // 简单的预览功能
+                // 增强的预览功能
                 const preview = window.open('', '_blank');
+                const parsedContent = this.editor ? this.editor.markdown(this.post.content) : this.post.content.replace(/\n/g, '<br>');
+                
                 preview.document.write(`
                     <html>
                         <head>
                             <title>预览: ${this.post.title}</title>
+                            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.min.css">
                             <style>
-                                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; }
-                                h1 { color: #1f2937; }
+                                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #333; }
+                                h1, h2, h3, h4, h5, h6 { color: #1f2937; margin-top: 1.5em; margin-bottom: 0.5em; }
+                                h1 { font-size: 2.25rem; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+                                h2 { font-size: 1.75rem; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+                                h3 { font-size: 1.5rem; }
+                                h4 { font-size: 1.25rem; }
+                                h5 { font-size: 1rem; }
+                                h6 { font-size: 0.875rem; color: #6b7280; }
+                                p { margin: 1em 0; }
+                                a { color: #3b82f6; text-decoration: none; }
+                                a:hover { text-decoration: underline; }
+                                blockquote { border-left: 4px solid #e5e7eb; padding-left: 1rem; margin-left: 0; color: #6b7280; }
+                                hr { height: 1px; background-color: #e5e7eb; border: none; margin: 2rem 0; }
                                 .content { margin-top: 2rem; }
-                                pre { background: #f3f4f6; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; }
-                                code { background: #f3f4f6; padding: 0.125rem 0.25rem; border-radius: 0.25rem; }
+                                pre { background: #f3f4f6; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; margin: 1em 0; }
+                                code { background: #f3f4f6; padding: 0.125rem 0.25rem; border-radius: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875em; }
+                                pre code { background: transparent; padding: 0; border-radius: 0; }
+                                table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+                                table th, table td { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: left; }
+                                table th { background-color: #f9fafb; }
+                                img { max-width: 100%; height: auto; border-radius: 0.375rem; }
+                                ul, ol { padding-left: 2rem; margin: 1em 0; }
+                                li { margin: 0.5em 0; }
+                                .summary { background-color: #f9fafb; padding: 1rem; border-radius: 0.375rem; margin-bottom: 2rem; border-left: 4px solid #3b82f6; }
                             </style>
+                            <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
                         </head>
                         <body>
                             <h1>${this.post.title}</h1>
-                            <p><strong>摘要:</strong> ${this.post.summary}</p>
-                            <div class="content">${this.post.content.replace(/\n/g, '<br>')}</div>
+                            <div class="summary"><strong>摘要:</strong> ${this.post.summary}</div>
+                            <div class="content">${parsedContent}</div>
+                            <script>
+                                // 代码高亮
+                                document.querySelectorAll('pre code').forEach((block) => {
+                                    hljs.highlightElement(block);
+                                });
+                            </script>
                         </body>
                     </html>
                 `);
                 preview.document.close();
             }
         }
-    }
+    };
 </script>
 {{end}}

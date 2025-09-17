@@ -45,19 +45,74 @@ func GetPost(c *gin.Context) {
 
 // CreatePost 创建新文章
 func CreatePost(c *gin.Context) {
-	var post db.Post
-	if err := c.ShouldBindJSON(&post); err != nil {
+	// 解析请求体中的数据
+	var postData struct {
+		Title   string   `json:"title"`
+		Content string   `json:"content"`
+		Summary string   `json:"summary"`
+		Status  string   `json:"status"`
+		Tags    []db.Tag `json:"tags"`
+	}
+
+	if err := c.ShouldBindJSON(&postData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	post.CreatedAt = time.Now()
-	post.UpdatedAt = time.Now()
+	// 创建新文章
+	post := db.Post{
+		Title:   postData.Title,
+		Content: postData.Content,
+		Summary: postData.Summary,
+		Status:  postData.Status,
+		UserID:  1, // 默认用户ID，实际应从会话中获取
+	}
 
-	if err := db.DB.Create(&post).Error; err != nil {
+	// 开启事务
+	tx := db.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 创建文章
+	if err := tx.Create(&post).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建文章失败"})
 		return
 	}
+
+	// 处理标签
+	if len(postData.Tags) > 0 {
+		for i := range postData.Tags {
+			var tag db.Tag
+			// 查找或创建标签
+			result := tx.Where("name = ?", postData.Tags[i].Name).FirstOrCreate(&tag)
+			if result.Error != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "处理标签失败"})
+				return
+			}
+			postData.Tags[i] = tag
+		}
+
+		// 添加标签关联
+		if err := tx.Model(&post).Association("Tags").Append(postData.Tags); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "添加标签关联失败"})
+			return
+		}
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败"})
+		return
+	}
+
+	// 重新加载文章及其关联的标签
+	db.DB.Preload("Tags").First(&post, post.ID)
 
 	c.JSON(http.StatusOK, gin.H{"message": "文章创建成功", "post": post})
 }
@@ -70,24 +125,88 @@ func UpdatePost(c *gin.Context) {
 		return
 	}
 
-	var post db.Post
-	if err := db.DB.First(&post, id).Error; err != nil {
+	// 先获取现有文章
+	var existingPost db.Post
+	if err := db.DB.First(&existingPost, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
 		return
 	}
 
-	if err := c.ShouldBindJSON(&post); err != nil {
+	// 解析请求体中的更新数据
+	var updateData struct {
+		Title   string   `json:"title"`
+		Content string   `json:"content"`
+		Summary string   `json:"summary"`
+		Status  string   `json:"status"`
+		Tags    []db.Tag `json:"tags"`
+	}
+
+	if err := c.ShouldBindJSON(&updateData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	post.UpdatedAt = time.Now()
-	if err := db.DB.Save(&post).Error; err != nil {
+	// 更新文章字段
+	existingPost.Title = updateData.Title
+	existingPost.Content = updateData.Content
+	existingPost.Summary = updateData.Summary
+	existingPost.Status = updateData.Status
+
+	// 开启事务处理标签和文章更新
+	tx := db.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 更新文章
+	if err := tx.Save(&existingPost).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新文章失败"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "文章更新成功", "post": post})
+	// 处理标签
+	if len(updateData.Tags) > 0 {
+		// 清除现有标签关联
+		if err := tx.Model(&existingPost).Association("Tags").Clear(); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新标签失败"})
+			return
+		}
+
+		// 处理新标签
+		for i := range updateData.Tags {
+			var tag db.Tag
+			// 查找或创建标签
+			result := tx.Where("name = ?", updateData.Tags[i].Name).FirstOrCreate(&tag)
+			if result.Error != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "处理标签失败"})
+				return
+			}
+			updateData.Tags[i] = tag
+		}
+
+		// 添加新标签关联
+		if err := tx.Model(&existingPost).Association("Tags").Append(updateData.Tags); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "添加标签关联失败"})
+			return
+		}
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败"})
+		return
+	}
+
+	// 重新加载文章及其关联的标签
+	db.DB.Preload("Tags").First(&existingPost, id)
+
+	c.JSON(http.StatusOK, gin.H{"message": "文章更新成功", "post": existingPost})
 }
 
 // DeletePost 删除文章

@@ -156,6 +156,9 @@ func SetupRouter() *gin.Engine {
 				api.POST("/tags", handler.CreateTag)
 				api.PUT("/tags/:id", handler.UpdateTag)
 				api.DELETE("/tags/:id", handler.DeleteTag)
+
+				// 图片上传接口
+				api.POST("/upload/image", handler.UploadImage)
 			}
 		}
 	}

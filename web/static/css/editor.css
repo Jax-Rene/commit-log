@@ -1,0 +1,122 @@
+/* EasyMDE 编辑器自定义样式 */
+.EasyMDEContainer {
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.EasyMDEContainer .CodeMirror {
+    border-radius: 0.75rem;
+    border-color: rgba(229, 231, 235, 0.8);
+    background-color: rgba(255, 255, 255, 0.5);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    padding: 0.5rem;
+}
+
+.EasyMDEContainer .CodeMirror-focused {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.editor-toolbar {
+    border-radius: 0.75rem 0.75rem 0 0;
+    border-color: rgba(229, 231, 235, 0.8);
+    background-color: rgba(249, 250, 251, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 0.5rem;
+}
+
+.editor-toolbar button {
+    border-radius: 0.5rem;
+    color: #4b5563;
+    transition: all 0.2s ease;
+}
+
+.editor-toolbar button:hover, 
+.editor-toolbar button.active {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.editor-toolbar i.separator {
+    border-color: rgba(229, 231, 235, 0.8);
+}
+
+.editor-preview,
+.editor-preview-side {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(229, 231, 235, 0.8);
+    padding: 1rem;
+}
+
+.editor-preview-side {
+    border-radius: 0 0.75rem 0.75rem 0;
+}
+
+/* 图片上传样式 */
+.image-upload-wrapper {
+    border: 2px dashed rgba(59, 130, 246, 0.3);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    background-color: rgba(59, 130, 246, 0.05);
+    transition: all 0.2s ease;
+}
+
+.image-upload-wrapper:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.image-upload-wrapper.drag-over {
+    border-color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.15);
+}
+
+/* 编辑器内容样式 */
+.CodeMirror .cm-header {
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.CodeMirror .cm-header-1 {
+    font-size: 1.5em;
+}
+
+.CodeMirror .cm-header-2 {
+    font-size: 1.3em;
+}
+
+.CodeMirror .cm-header-3 {
+    font-size: 1.15em;
+}
+
+.CodeMirror .cm-link {
+    color: #3b82f6;
+}
+
+.CodeMirror .cm-url {
+    color: #6b7280;
+}
+
+.CodeMirror .cm-quote {
+    color: #6b7280;
+    font-style: italic;
+    border-left: 3px solid #e5e7eb;
+    padding-left: 10px;
+}
+
+.CodeMirror .cm-comment {
+    color: #10b981;
+}
+
+.CodeMirror .cm-strong {
+    color: #111827;
+    font-weight: 700;
+}
+
+.CodeMirror .cm-em {
+    color: #111827;
+    font-style: italic;
+}
