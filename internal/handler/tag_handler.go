@@ -13,12 +13,20 @@ import (
 // GetTags 获取标签列表
 func GetTags(c *gin.Context) {
 	var tags []db.Tag
-	if err := db.DB.Preload("Posts").Find(&tags).Error; err != nil {
+	if err := db.DB.Order("name ASC").Find(&tags).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取标签列表失败"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"tags": tags})
+	response := make([]gin.H, 0, len(tags))
+	for _, tag := range tags {
+		response = append(response, gin.H{
+			"id":   tag.ID,
+			"name": tag.Name,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"tags": response})
 }
 
 // ShowTagList 渲染标签管理列表页面

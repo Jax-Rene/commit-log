@@ -96,10 +96,15 @@
                     <!-- 标签 -->
                     <div>
                         <label for="tags" class="block text-sm font-medium text-gray-700 mb-2">文章标签</label>
-                        <input type="text" id="tags" x-model="tagsText"
-                            class="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                            placeholder="技术, 编程, Go">
-                        <p class="mt-1 text-xs text-gray-500">多个标签用逗号分隔</p>
+                        <div class="space-y-2">
+                            <select id="tags" x-model="post.tagIds" multiple size="6"
+                                class="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                                <template x-for="tag in allTags" :key="tag.id">
+                                    <option :value="tag.id" x-text="tag.name"></option>
+                                </template>
+                            </select>
+                            <p class="text-xs text-gray-500">按住 Command/Control 多选；标签来源于后台标签管理。</p>
+                        </div>
                     </div>
                 </div>
 
@@ -139,17 +144,52 @@
     function postForm() {
         return {
             loading: false,
+            editor: null,
+            allTags: [],
+            initialTagIds: '{{- range $index, $tag := .post.Tags -}}{{if $index}},{{end}}{{ $tag.ID }}{{- end -}}',
             post: {
                 title: '{{.post.Title}}' || '',
                 summary: '{{.post.Summary}}' || '',
                 content: '{{.post.Content}}' || '',
                 status: '{{.post.Status}}' || 'draft',
-                tags: []
+                tagIds: []
             },
-            tagsText: '{{range .post.Tags}}{{.Name}},{{end}}' || '',
 
             init() {
-                // 初始化EasyMDE编辑器
+                this.applyInitialTagSelection();
+                this.initializeEditor();
+                this.fetchTags();
+            },
+
+            applyInitialTagSelection() {
+                if (!this.initialTagIds) {
+                    return;
+                }
+
+                this.post.tagIds = this.initialTagIds.split(',')
+                    .map(id => id.trim())
+                    .filter(Boolean);
+            },
+
+            fetchTags() {
+                fetch('/admin/api/tags')
+                    .then(response => response.json())
+                    .then(data => {
+                        this.allTags = data.tags || [];
+
+                        if (this.post.tagIds.length === 0) {
+                            return;
+                        }
+
+                        const available = new Set(this.allTags.map(tag => tag.id.toString()));
+                        this.post.tagIds = this.post.tagIds.filter(id => available.has(id.toString()));
+                    })
+                    .catch(() => {
+                        this.allTags = [];
+                    });
+            },
+
+            initializeEditor() {
                 const easyMDE = new EasyMDE({
                     element: document.getElementById('content'),
                     spellChecker: false,
@@ -176,7 +216,7 @@
                     imageUploadEndpoint: '/admin/api/upload/image',
                     imagePathAbsolute: true,
                     imageAccept: 'image/png, image/jpeg, image/gif, image/webp',
-                    imageMaxSize: 5 * 1024 * 1024, // 5MB
+                    imageMaxSize: 5 * 1024 * 1024,
                     imageTexts: {
                         sbInit: '拖放图片或点击上传',
                         sbOnDragEnter: '释放以上传图片',
@@ -196,7 +236,6 @@
                             .then(response => response.json())
                             .then(data => {
                                 if (data.success === 1) {
-                                    // 上传成功，插入不带文件名的图片
                                     onSuccess(data.data.url);
                                 } else {
                                     onError(data.message || '上传失败');
@@ -210,41 +249,37 @@
                         codeSyntaxHighlighting: false
                     },
                     previewRender: function (plainText) {
-                        // 自定义预览渲染，不依赖 hljs
-                        // 自定义预览渲染
                         return this.customMarkdownParser(plainText);
                     },
-                    initialValue: this.post.content // 设置初始值
+                    initialValue: this.post.content
                 });
 
-                // 监听编辑器变化
                 easyMDE.codemirror.on('change', () => {
                     this.post.content = easyMDE.value();
                 });
 
-                // 保存编辑器实例
                 this.editor = easyMDE;
             },
 
             submitForm() {
                 this.loading = true;
 
-                // 确保获取最新的编辑器内容
                 if (this.editor) {
                     this.post.content = this.editor.value();
                 }
 
-                // 处理标签
-                if (this.tagsText) {
-                    this.post.tags = this.tagsText.split(',').map(tag => ({
-                        name: tag.trim()
-                    })).filter(tag => tag.name);
-                }
+                const payload = {
+                    title: this.post.title,
+                    summary: this.post.summary,
+                    content: this.post.content,
+                    status: this.post.status,
+                    tag_ids: this.post.tagIds
+                        .map(id => Number(id))
+                        .filter(id => !Number.isNaN(id))
+                };
 
-                // 从URL中提取文章ID
                 let url, method;
                 if (window.location.pathname.includes('/edit')) {
-                    // 提取文章ID（例如：/admin/posts/123/edit -> 123）
                     const pathParts = window.location.pathname.split('/');
                     const postId = pathParts[pathParts.length - 2];
                     url = `/admin/api/posts/${postId}`;
@@ -259,7 +294,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(this.post)
+                    body: JSON.stringify(payload)
                 })
                     .then(response => response.json())
                     .then(data => {

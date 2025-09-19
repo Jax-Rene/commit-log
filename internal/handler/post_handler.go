@@ -47,11 +47,11 @@ func GetPost(c *gin.Context) {
 func CreatePost(c *gin.Context) {
 	// 解析请求体中的数据
 	var postData struct {
-		Title   string   `json:"title"`
-		Content string   `json:"content"`
-		Summary string   `json:"summary"`
-		Status  string   `json:"status"`
-		Tags    []db.Tag `json:"tags"`
+		Title   string `json:"title"`
+		Content string `json:"content"`
+		Summary string `json:"summary"`
+		Status  string `json:"status"`
+		TagIDs  []uint `json:"tag_ids"`
 	}
 
 	if err := c.ShouldBindJSON(&postData); err != nil {
@@ -84,23 +84,23 @@ func CreatePost(c *gin.Context) {
 	}
 
 	// 处理标签
-	if len(postData.Tags) > 0 {
-		for i := range postData.Tags {
-			var tag db.Tag
-			// 查找或创建标签
-			result := tx.Where("name = ?", postData.Tags[i].Name).FirstOrCreate(&tag)
-			if result.Error != nil {
-				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "处理标签失败"})
-				return
-			}
-			postData.Tags[i] = tag
+	if len(postData.TagIDs) > 0 {
+		var tags []db.Tag
+		if err := tx.Where("id IN ?", postData.TagIDs).Find(&tags).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "获取标签信息失败"})
+			return
 		}
 
-		// 添加标签关联
-		if err := tx.Model(&post).Association("Tags").Append(postData.Tags); err != nil {
+		if len(tags) != len(postData.TagIDs) {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "添加标签关联失败"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "部分标签不存在"})
+			return
+		}
+
+		if err := tx.Model(&post).Association("Tags").Replace(tags); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "关联标签失败"})
 			return
 		}
 	}
@@ -134,11 +134,11 @@ func UpdatePost(c *gin.Context) {
 
 	// 解析请求体中的更新数据
 	var updateData struct {
-		Title   string   `json:"title"`
-		Content string   `json:"content"`
-		Summary string   `json:"summary"`
-		Status  string   `json:"status"`
-		Tags    []db.Tag `json:"tags"`
+		Title   string `json:"title"`
+		Content string `json:"content"`
+		Summary string `json:"summary"`
+		Status  string `json:"status"`
+		TagIDs  []uint `json:"tag_ids"`
 	}
 
 	if err := c.ShouldBindJSON(&updateData); err != nil {
@@ -168,33 +168,25 @@ func UpdatePost(c *gin.Context) {
 	}
 
 	// 处理标签
-	if len(updateData.Tags) > 0 {
-		// 清除现有标签关联
-		if err := tx.Model(&existingPost).Association("Tags").Clear(); err != nil {
+	var tags []db.Tag
+	if len(updateData.TagIDs) > 0 {
+		if err := tx.Where("id IN ?", updateData.TagIDs).Find(&tags).Error; err != nil {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新标签失败"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "获取标签信息失败"})
 			return
 		}
 
-		// 处理新标签
-		for i := range updateData.Tags {
-			var tag db.Tag
-			// 查找或创建标签
-			result := tx.Where("name = ?", updateData.Tags[i].Name).FirstOrCreate(&tag)
-			if result.Error != nil {
-				tx.Rollback()
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "处理标签失败"})
-				return
-			}
-			updateData.Tags[i] = tag
-		}
-
-		// 添加新标签关联
-		if err := tx.Model(&existingPost).Association("Tags").Append(updateData.Tags); err != nil {
+		if len(tags) != len(updateData.TagIDs) {
 			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "添加标签关联失败"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "部分标签不存在"})
 			return
 		}
+	}
+
+	if err := tx.Model(&existingPost).Association("Tags").Replace(tags); err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新标签失败"})
+		return
 	}
 
 	// 提交事务
