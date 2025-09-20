@@ -131,6 +131,7 @@
 			editor: null,
 			allTags: [],
 			initialTagIds: '{{- range $index, $tag := .post.Tags -}}{{if $index}},{{end}}{{ $tag.ID }}{{- end -}}',
+			postId: '{{if .post.ID}}{{.post.ID}}{{else}}new{{end}}',
 			post: {
 				title: '{{.post.Title}}' || '',
 				summary: '{{.post.Summary}}' || '',
@@ -151,8 +152,8 @@
 			init() {
 				this.applyInitialTagSelection();
 				this.initializeEditor();
-				this.fetchTags();
-			},
+			this.fetchTags();
+		},
 
 			applyInitialTagSelection() {
 				if (!this.initialTagIds) {
@@ -347,6 +348,9 @@
 			},
 
 			initializeEditor() {
+				if (this.editor) {
+					return;
+				}
 				const easyMDE = new EasyMDE({
 					element: document.getElementById('content'),
 					spellChecker: false,
@@ -357,7 +361,7 @@
 						className: 'fa fa-picture-o',
 						title: '插入图片'
 					}, 'table', 'code', '|', 'preview', 'side-by-side', 'fullscreen'],
-					autosave: { enabled: true, uniqueId: 'post-content', delay: 1000 },
+					autosave: { enabled: true, uniqueId: `post-content-${this.postId}`, delay: 1000 },
 					uploadImage: true,
 					imageUploadEndpoint: '/admin/api/upload/image',
 					imagePathAbsolute: true,
@@ -428,6 +432,9 @@
 					.then(response => response.json())
 					.then(data => {
 						if (data.message) {
+							if (this.editor && this.editor.clearAutosavedValue) {
+								this.editor.clearAutosavedValue();
+							}
 							alert(data.message);
 							if (!window.location.pathname.includes('/edit')) {
 								window.location.href = '/admin/posts';

@@ -234,13 +234,10 @@ func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeSta
 			Select("posts.id").
 			Joins("JOIN post_tags ON posts.id = post_tags.post_id").
 			Joins("JOIN tags ON tags.id = post_tags.tag_id").
-			Where("tags.name IN ?", filter.TagNames)
+			Where("tags.name IN ?", filter.TagNames).
+			Distinct()
 
-		query = query.
-			Joins("JOIN post_tags ON posts.id = post_tags.post_id").
-			Joins("JOIN tags ON tags.id = post_tags.tag_id").
-			Where("posts.id IN (?)", subQuery).
-			Distinct("posts.id")
+		query = query.Where("posts.id IN (?)", subQuery)
 	}
 
 	if filter.StartDate != nil {

@@ -13,17 +13,16 @@
 			<span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600">{{.Name}}</span>
 			{{end}}
 		</div>
-			{{if .post.CoverURL}}
-			<div class="relative w-full overflow-hidden rounded-3xl shadow-md"
-				style="aspect-ratio: {{if and (gt .post.CoverWidth 0) (gt .post.CoverHeight 0)}}{{printf "%d / %d" .post.CoverWidth .post.CoverHeight}}{{else}}16 / 9{{end}};">
-				<img src="{{.post.CoverURL}}" alt="{{.post.Title}} 封面" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
-			</div>
-			{{else}}
-			<div
-				class="flex h-72 w-full items-center justify-center rounded-3xl bg-gradient-to-br {{accent .post.Title}} text-5xl font-semibold text-white shadow-md">
-				{{initials .post.Title}}
-			</div>
-			{{end}}
+		{{if .post.CoverURL}}
+		<div class="relative w-full overflow-hidden rounded-3xl shadow-md" style="padding-top: {{aspectPadding .post.CoverWidth .post.CoverHeight}};">
+			<img src="{{.post.CoverURL}}" alt="{{.post.Title}} 封面" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+		</div>
+		{{else}}
+		<div
+			class="flex h-72 w-full items-center justify-center rounded-3xl bg-gradient-to-br {{accent .post.Title}} text-5xl font-semibold text-white shadow-md">
+			{{initials .post.Title}}
+		</div>
+		{{end}}
 	</header>
 
 	<section class="post-content">

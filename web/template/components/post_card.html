@@ -4,11 +4,10 @@
 	class="mb-6 break-inside-avoid rounded-3xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
 	<a href="/posts/{{$post.ID}}" class="block">
 		{{- if $post.CoverURL -}}
-				<div class="relative w-full overflow-hidden rounded-3xl"
-					style="aspect-ratio: {{if and (gt $post.CoverWidth 0) (gt $post.CoverHeight 0)}}{{printf "%d / %d" $post.CoverWidth $post.CoverHeight}}{{else}}4 / 5{{end}};">
-			<img src="{{$post.CoverURL}}" alt="{{$post.Title}} 封面" loading="lazy"
-				class="absolute inset-0 h-full w-full object-cover">
-		</div>
+			<div class="relative w-full overflow-hidden rounded-3xl" style="padding-top: {{aspectPadding $post.CoverWidth $post.CoverHeight}};">
+				<img src="{{$post.CoverURL}}" alt="{{$post.Title}} 封面" loading="lazy"
+					class="absolute inset-0 h-full w-full object-cover">
+			</div>
 		{{- else -}}
 		<div
 			class="flex h-56 w-full items-center justify-center rounded-3xl bg-gradient-to-br {{accent $post.Title}} text-3xl font-semibold text-white">

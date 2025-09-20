@@ -2,6 +2,7 @@ package router
 
 import (
 	"errors"
+	"fmt"
 	"html/template"
 	"os"
 	"path/filepath"
@@ -99,6 +100,13 @@ func newTemplateRegistry() *templateRegistry {
 				}
 				idx := sum % len(palette)
 				return palette[idx]
+			},
+			"aspectPadding": func(width, height int) string {
+				if width <= 0 || height <= 0 {
+					return "66.67%"
+				}
+				ratio := float64(height) / float64(width) * 100
+				return fmt.Sprintf("%.2f%%", ratio)
 			},
 			"truncate": func(text string, length int) string {
 				runes := []rune(strings.TrimSpace(text))

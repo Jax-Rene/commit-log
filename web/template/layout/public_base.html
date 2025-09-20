@@ -25,19 +25,20 @@
 	<header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
 		<nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
 			<a href="/" class="flex items-center gap-3">
-				<span class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 text-lg font-semibold text-white shadow-lg">CL</span>
+				<span
+					class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 text-lg font-semibold text-white shadow-lg">CL</span>
 				<span class="flex flex-col">
 					<span class="text-base font-semibold">CommitLog</span>
 					<span class="text-xs text-slate-500">AI 全栈工程师的创作橱窗</span>
 				</span>
 			</a>
-			<ul class="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-				<li><a href="/" class="transition-colors hover:text-slate-900">首页</a></li>
-				<li><a href="/tags" class="transition-colors hover:text-slate-900">标签</a></li>
-				<li><a href="/about" class="transition-colors hover:text-slate-900">关于</a></li>
+			<ul class="hidden items-center gap-3 text-sm font-medium text-slate-600 md:flex">
+				<li><a href="/" class="transition-colors hover:text-slate-900">文章</a></li>
+				<li><a href="/about" class="transition-colors hover:text-slate-900">关于我</a></li>
 			</ul>
 			<div class="flex items-center gap-3 text-sm">
-				<a href="/admin/dashboard" class="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-600 transition-colors hover:bg-slate-100">后台</a>
+				<a href="/admin/dashboard"
+					class="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-600 transition-colors hover:bg-slate-100">后台</a>
 			</div>
 		</nav>
 	</header>
@@ -47,7 +48,8 @@
 	</main>
 
 	<footer class="border-t border-slate-200 bg-white/90">
-		<div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+		<div
+			class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
 			<span>© {{if .year}}{{.year}}{{else}}CommitLog{{end}} · 创造长期价值</span>
 			<span>Powered by Go · HTMX · Tailwind CSS</span>
 		</div>
