@@ -3,7 +3,11 @@ package router
 import (
 	"errors"
 	"html/template"
+	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
+	"time"
 
 	"github.com/commitlog/internal/handler"
 	"github.com/gin-contrib/sessions"
@@ -17,6 +21,8 @@ type templateRegistry struct {
 	templates map[string]*template.Template
 	funcMap   template.FuncMap
 }
+
+var imagePattern = regexp.MustCompile(`!\[[^\]]*\]\(([^)]+)\)`)
 
 // newTemplateRegistry creates a new template registry.
 func newTemplateRegistry() *templateRegistry {
@@ -55,37 +61,115 @@ func newTemplateRegistry() *templateRegistry {
 				}
 				return dict, nil
 			},
+			"formatDate": func(t time.Time) string {
+				if t.IsZero() {
+					return ""
+				}
+				return t.Format("2006-01-02")
+			},
+			"firstImage": func(content string) string {
+				match := imagePattern.FindStringSubmatch(content)
+				if len(match) >= 2 {
+					return match[1]
+				}
+				return ""
+			},
+			"initials": func(title string) string {
+				title = strings.TrimSpace(title)
+				if title == "" {
+					return "CL"
+				}
+				runes := []rune(title)
+				if len(runes) == 1 {
+					return strings.ToUpper(string(runes[0]))
+				}
+				return strings.ToUpper(string(runes[0:2]))
+			},
+			"accent": func(text string) string {
+				palette := []string{
+					"from-sky-400 via-blue-500 to-indigo-500",
+					"from-emerald-400 via-teal-500 to-blue-500",
+					"from-rose-400 via-pink-500 to-fuchsia-500",
+					"from-amber-300 via-orange-400 to-rose-400",
+					"from-purple-400 via-indigo-500 to-blue-500",
+				}
+				sum := 0
+				for _, r := range text {
+					sum += int(r)
+				}
+				idx := sum % len(palette)
+				return palette[idx]
+			},
+			"truncate": func(text string, length int) string {
+				runes := []rune(strings.TrimSpace(text))
+				if length <= 0 || len(runes) <= length {
+					return strings.TrimSpace(text)
+				}
+				return strings.TrimSpace(string(runes[:length])) + "…"
+			},
 		},
 	}
 }
 
 // LoadTemplates loads all templates from the given path.
 func (r *templateRegistry) LoadTemplates(path string) {
-	baseTemplates, err := filepath.Glob(filepath.Join(path, "layout", "*.html"))
-	if err != nil {
-		panic(err)
-	}
-	componentTemplates, err := filepath.Glob(filepath.Join(path, "components", "*.html"))
-	if err != nil {
-		panic(err)
-	}
+	root := resolveTemplateRoot(path)
 
-	pageTemplates, err := filepath.Glob(filepath.Join(path, "admin", "*.html"))
+	componentTemplates, err := filepath.Glob(filepath.Join(root, "components", "*.html"))
 	if err != nil {
 		panic(err)
 	}
 
-	for _, page := range pageTemplates {
-		templateName := filepath.Base(page)
+	adminBase := filepath.Join(root, "layout", "admin_base.html")
+	publicBase := filepath.Join(root, "layout", "public_base.html")
 
-		files := []string{}
-		files = append(files, baseTemplates...)
-		files = append(files, componentTemplates...)
-		files = append(files, page)
+	adminPages, err := filepath.Glob(filepath.Join(root, "admin", "*.html"))
+	if err != nil {
+		panic(err)
+	}
+	publicPages, err := filepath.Glob(filepath.Join(root, "public", "*.html"))
+	if err != nil {
+		panic(err)
+	}
+	partialTemplates, err := filepath.Glob(filepath.Join(root, "public", "partials", "*.html"))
+	if err != nil {
+		panic(err)
+	}
 
+	build := func(pages []string, base string) {
+		for _, page := range pages {
+			templateName := filepath.Base(page)
+			files := append([]string{base}, componentTemplates...)
+			files = append(files, page)
+			tmpl := template.New(templateName).Funcs(r.funcMap)
+			r.templates[templateName] = template.Must(tmpl.ParseFiles(files...))
+		}
+	}
+
+	build(adminPages, adminBase)
+	build(publicPages, publicBase)
+
+	for _, partial := range partialTemplates {
+		templateName := filepath.Base(partial)
+		files := append([]string{}, componentTemplates...)
+		files = append(files, partial)
 		tmpl := template.New(templateName).Funcs(r.funcMap)
 		r.templates[templateName] = template.Must(tmpl.ParseFiles(files...))
 	}
+}
+
+func resolveTemplateRoot(path string) string {
+	candidates := []string{
+		path,
+		filepath.Join("..", path),
+		filepath.Join("..", "..", path),
+	}
+	for _, candidate := range candidates {
+		if stat, err := os.Stat(candidate); err == nil && stat.IsDir() {
+			return candidate
+		}
+	}
+	return path
 }
 
 // Instance returns a render.Render instance for the given template name.
@@ -118,6 +202,13 @@ func SetupRouter() *gin.Engine {
 
 	// 静态文件服务
 	r.Static("/static", "./web/static")
+
+	// 公共站点路由
+	r.GET("/", handler.ShowHome)
+	r.GET("/posts/more", handler.LoadMorePosts)
+	r.GET("/posts/:id", handler.ShowPostDetail)
+	r.GET("/tags", handler.ShowTagArchive)
+	r.GET("/about", handler.ShowAbout)
 
 	// 在这里定义你的路由
 	r.GET("/ping", func(c *gin.Context) {

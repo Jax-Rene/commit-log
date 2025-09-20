@@ -1,0 +1,34 @@
+{{define "post_card"}}
+{{- $post := .Post -}}
+<article class="mb-6 break-inside-avoid rounded-2xl border border-slate-200 bg-white shadow-sm transition-transform hover:-translate-y-1 hover:shadow-lg">
+	<a href="/posts/{{$post.ID}}" class="block overflow-hidden rounded-t-2xl">
+		{{- $cover := firstImage $post.Content -}}
+		{{- if $cover -}}
+		<img src="{{$cover}}" alt="{{$post.Title}} 封面" class="h-56 w-full object-cover" loading="lazy">
+		{{- else -}}
+		<div class="flex h-56 w-full items-center justify-center bg-gradient-to-br {{accent $post.Title}} text-3xl font-semibold text-white">
+			{{initials $post.Title}}
+		</div>
+		{{- end -}}
+	</a>
+	<div class="flex flex-col gap-4 p-6">
+		<div class="space-y-2">
+			<a href="/posts/{{$post.ID}}" class="text-xl font-semibold text-slate-900 transition-colors hover:text-blue-600">{{$post.Title}}</a>
+			<p class="text-sm text-slate-600">{{if $post.Summary}}{{truncate $post.Summary 110}}{{else}}{{truncate $post.Content 110}}{{end}}</p>
+		</div>
+		<div class="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+			<span>{{formatDate $post.CreatedAt}}</span>
+			{{if gt $post.ReadingTime 0}}
+			<span>· {{$post.ReadingTime}} 分钟阅读</span>
+			{{end}}
+		</div>
+		{{if $post.Tags}}
+		<ul class="flex flex-wrap gap-2 text-xs">
+			{{range $post.Tags}}
+			<li class="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-600">{{.Name}}</li>
+			{{end}}
+		</ul>
+		{{end}}
+	</div>
+</article>
+{{end}}

@@ -17,8 +17,8 @@ func Init() error {
 		return err
 	}
 
-	// 自动迁移模式，为 User, Post, 和 Tag 模型创建表
-	err = DB.AutoMigrate(&User{}, &Post{}, &Tag{})
+	// 自动迁移模式，为核心模型创建表
+	err = DB.AutoMigrate(&User{}, &Post{}, &Tag{}, &Page{})
 	if err != nil {
 		return err
 	}

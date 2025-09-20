@@ -1,3 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .post-content {
+    @apply space-y-6 text-slate-700 leading-relaxed text-base;
+  }
+  .post-content h2 {
+    @apply text-2xl font-semibold text-slate-900 mt-8;
+  }
+  .post-content h3 {
+    @apply text-xl font-semibold text-slate-900 mt-6;
+  }
+  .post-content p {
+    @apply text-slate-700;
+  }
+  .post-content a {
+    @apply text-blue-600 underline-offset-4 hover:underline;
+  }
+  .post-content ul {
+    @apply list-disc pl-6 space-y-2;
+  }
+  .post-content ol {
+    @apply list-decimal pl-6 space-y-2;
+  }
+  .post-content blockquote {
+    @apply border-l-4 border-blue-200 bg-blue-50/60 px-4 py-3 text-slate-700 italic;
+  }
+  .post-content code {
+    @apply rounded bg-slate-100 px-1.5 py-0.5 text-sm font-mono text-slate-700;
+  }
+  .post-content pre {
+    @apply overflow-x-auto rounded-xl bg-slate-900 p-4 text-sm text-slate-100;
+  }
+  .post-content img {
+    @apply rounded-xl shadow-md;
+  }
+  .post-content hr {
+    @apply my-10 border-slate-200;
+  }
+}

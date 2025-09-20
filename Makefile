@@ -6,5 +6,8 @@ dev:
 	@echo "Gin 会自动重载模板文件"
 	GIN_MODE=debug go run cmd/server/main.go
 
+test:
+	go test -v ./...
+
 generate-test-data:
 	go run scripts/generate_test_data.go

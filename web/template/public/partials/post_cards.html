@@ -1,0 +1,14 @@
+{{if gt (len .posts) 0}}
+<div hx-swap-oob="beforeend:#post-grid">
+	{{range .posts}}
+	{{template "post_card" (dict "Post" .)}}
+	{{end}}
+</div>
+{{end}}
+{{if .hasMore}}
+<div id="load-more" hx-get="/posts/more?page={{.nextPage}}{{.queryParams}}" hx-trigger="revealed" hx-target="#load-more" hx-swap="outerHTML">
+	<div class="flex justify-center py-8 text-sm text-slate-500">加载中…</div>
+</div>
+{{else}}
+<div id="load-more" class="py-8 text-center text-sm text-slate-400">已经到底啦 ✨</div>
+{{end}}

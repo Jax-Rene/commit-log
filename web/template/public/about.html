@@ -1,0 +1,17 @@
+{{template "base" .}}
+
+{{define "content"}}
+<section class="mx-auto max-w-3xl space-y-8">
+	<header class="space-y-3 text-center">
+		<p class="text-sm font-medium text-blue-600">About Me</p>
+		<h1 class="text-4xl font-semibold text-slate-900">{{.page.Title}}</h1>
+		{{if .page.Summary}}
+		<p class="text-sm text-slate-600">{{.page.Summary}}</p>
+		{{end}}
+	</header>
+
+	<section class="post-content">
+		{{.content}}
+	</section>
+</section>
+{{end}}
