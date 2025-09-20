@@ -121,6 +121,7 @@ func (r *templateRegistry) LoadTemplates(path string) {
 	}
 
 	adminBase := filepath.Join(root, "layout", "admin_base.html")
+	authBase := filepath.Join(root, "layout", "auth_base.html")
 	publicBase := filepath.Join(root, "layout", "public_base.html")
 
 	adminPages, err := filepath.Glob(filepath.Join(root, "admin", "*.html"))
@@ -136,18 +137,27 @@ func (r *templateRegistry) LoadTemplates(path string) {
 		panic(err)
 	}
 
-	build := func(pages []string, base string) {
+	build := func(pages []string, base string, overrides map[string]string) {
 		for _, page := range pages {
 			templateName := filepath.Base(page)
-			files := append([]string{base}, componentTemplates...)
+			baseFile := base
+			if overrides != nil {
+				if override, ok := overrides[templateName]; ok && override != "" {
+					baseFile = override
+				}
+			}
+			files := append([]string{baseFile}, componentTemplates...)
 			files = append(files, page)
 			tmpl := template.New(templateName).Funcs(r.funcMap)
 			r.templates[templateName] = template.Must(tmpl.ParseFiles(files...))
 		}
 	}
 
-	build(adminPages, adminBase)
-	build(publicPages, publicBase)
+	build(adminPages, adminBase, map[string]string{
+		"login.html":       authBase,
+		"login_error.html": authBase,
+	})
+	build(publicPages, publicBase, nil)
 
 	for _, partial := range partialTemplates {
 		templateName := filepath.Base(partial)

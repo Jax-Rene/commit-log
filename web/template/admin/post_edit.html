@@ -22,6 +22,35 @@
 				<textarea x-model="post.summary" rows="4" placeholder="简要描述文章的核心观点" class="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"></textarea>
 			</label>
 
+			<section class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+				<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+					<div>
+						<h2 class="text-sm font-semibold text-slate-900">文章封面<span class="ml-1 text-rose-500">*</span></h2>
+						<p class="text-xs text-slate-500">支持横图或竖图，建议尺寸 ≥ 1200px，上传后可裁剪。</p>
+					</div>
+					<label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50">
+						<input type="file" accept="image/*" class="hidden" @change="handleCoverFile">
+						<span>选择图片</span>
+					</label>
+				</div>
+				<div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-4" x-show="cover.url" x-cloak>
+					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+						<div class="flex items-center gap-4">
+							<img :src="cover.url" alt="封面预览" class="h-28 w-28 rounded-lg object-cover" />
+							<div class="space-y-2 text-xs text-slate-600">
+								<p class="font-medium text-slate-800">当前封面</p>
+								<p>尺寸：<span x-text="cover.width"></span> × <span x-text="cover.height"></span> px</p>
+								<p class="text-[11px] text-slate-400">保存后首页将根据比例自动排版。</p>
+							</div>
+						</div>
+						<div class="flex gap-3 text-xs">
+							<button type="button" @click="reCropCover" class="rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100">重新裁剪</button>
+							<button type="button" @click="removeCover" class="rounded-lg border border-rose-200 px-3 py-1.5 font-medium text-rose-600 transition-colors hover:bg-rose-50">移除</button>
+						</div>
+					</div>
+				</div>
+			</section>
+
 			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 				<label class="flex flex-col gap-2">
 					<span class="text-sm font-medium text-slate-700">文章内容<span class="ml-1 text-rose-500">*</span></span>
@@ -70,6 +99,29 @@
 			</section>
 		</aside>
 	</form>
+	<div x-show="coverModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
+		<div class="relative w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl">
+			<h3 class="text-lg font-semibold text-slate-900">裁剪封面</h3>
+			<div class="mt-4 flex flex-col gap-4">
+				<div class="flex justify-end gap-2 text-xs text-slate-500">
+					<span class="self-center">裁剪比例：</span>
+					<button type="button" @click="setAspect('16:9')"
+						:class="cropAspect === '16:9' ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 text-slate-600 hover:bg-slate-100'"
+						class="rounded-lg border px-3 py-1.5 transition-colors">16 : 9</button>
+					<button type="button" @click="setAspect('3:4')"
+						:class="cropAspect === '3:4' ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 text-slate-600 hover:bg-slate-100'"
+						class="rounded-lg border px-3 py-1.5 transition-colors">3 : 4</button>
+				</div>
+				<div class="max-h-[60vh] overflow-hidden rounded-xl border border-slate-200">
+					<img x-ref="cropperImage" :src="coverSource" alt="裁剪预览" class="max-h-[60vh] w-full object-contain" />
+				</div>
+			</div>
+			<div class="mt-6 flex justify-end gap-3 text-sm">
+				<button type="button" class="rounded-lg border border-slate-200 px-4 py-2 text-slate-600 hover:bg-slate-100" @click="closeCropper">取消</button>
+				<button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-500" @click="confirmCrop">确认裁剪</button>
+			</div>
+		</div>
+	</div>
 </div>
 
 <script>
@@ -86,6 +138,15 @@
 				status: '{{if .post.Status}}{{.post.Status}}{{else}}draft{{end}}',
 				tagIds: []
 			},
+			cover: {
+				url: '{{with .post}}{{.CoverURL}}{{end}}' || '',
+				width: {{with .post}}{{if gt .CoverWidth 0}}{{.CoverWidth}}{{else}}0{{end}}{{else}}0{{end}},
+				height: {{with .post}}{{if gt .CoverHeight 0}}{{.CoverHeight}}{{else}}0{{end}}{{else}}0{{end}}
+			},
+			coverSource: '',
+			coverModal: false,
+			cropper: null,
+			cropAspect: '16:9',
 
 			init() {
 				this.applyInitialTagSelection();
@@ -123,6 +184,166 @@
 				} else {
 					this.post.tagIds.push(value);
 				}
+			},
+
+			handleCoverFile(event) {
+				const input = event.target;
+				const [file] = input.files || [];
+				if (!file) {
+					return;
+				}
+				if (typeof window.Cropper === 'undefined') {
+					alert('封面裁剪模块尚未加载，请刷新页面后重试');
+					return;
+				}
+				this.resetCropper();
+				this.coverSource = URL.createObjectURL(file);
+				this.coverModal = true;
+				this.initCropperWhenReady();
+				input.value = '';
+			},
+
+			reCropCover() {
+				if (!this.cover.url) {
+					return;
+				}
+				try {
+					const url = new URL(this.cover.url, window.location.origin);
+					if (url.origin !== window.location.origin) {
+						alert('该封面来自外部链接，请重新上传新的封面图片');
+						return;
+					}
+				} catch (error) {
+					return;
+				}
+				if (typeof window.Cropper === 'undefined') {
+					alert('封面裁剪模块尚未加载，请刷新页面后重试');
+					return;
+				}
+				if (this.cover.width > 0 && this.cover.height > 0) {
+					this.cropAspect = this.cover.width >= this.cover.height ? '16:9' : '3:4';
+				}
+				this.resetCropper();
+				this.coverSource = this.cover.url;
+				this.coverModal = true;
+				this.initCropperWhenReady();
+			},
+
+			confirmCrop() {
+				if (!this.cropper) {
+					return;
+				}
+				this.cropper.getCroppedCanvas().toBlob(blob => {
+					if (!blob) {
+						return;
+					}
+					const formData = new FormData();
+					formData.append('image', blob, `cover-${Date.now()}.png`);
+					fetch('/admin/api/upload/image', {
+						method: 'POST',
+						body: formData
+					})
+						.then(response => response.json())
+						.then(data => {
+							if (data.success === 1) {
+								this.cover.url = data.data.url;
+								this.cover.width = data.data.width || 0;
+								this.cover.height = data.data.height || 0;
+							} else {
+								alert(data.error || data.message || '封面上传失败');
+							}
+						})
+						.catch(() => {
+							alert('封面上传失败，请稍后重试');
+						})
+						.finally(() => {
+							this.closeCropper();
+						});
+				}, 'image/png');
+			},
+
+			closeCropper() {
+				this.resetCropper();
+				if (this.coverSource && this.coverSource.startsWith('blob:')) {
+					URL.revokeObjectURL(this.coverSource);
+				}
+				this.coverModal = false;
+				this.coverSource = '';
+			},
+
+			removeCover() {
+				this.cover = { url: '', width: 0, height: 0 };
+			},
+
+			setAspect(ratio) {
+				this.cropAspect = ratio;
+				if (this.cropper) {
+					this.cropper.setAspectRatio(this.aspectValue());
+					this.adjustCropBox();
+				}
+			},
+
+			aspectValue() {
+				return this.cropAspect === '3:4' ? 3 / 4 : 16 / 9;
+			},
+
+			resetCropper() {
+				if (this.cropper) {
+					this.cropper.destroy();
+					this.cropper = null;
+				}
+			},
+
+			initCropperWhenReady() {
+				this.$nextTick(() => {
+					const image = this.$refs.cropperImage;
+					if (!image) {
+						return;
+					}
+					const create = () => {
+						this.resetCropper();
+						this.cropper = new Cropper(image, {
+							viewMode: 1,
+							dragMode: 'move',
+							autoCropArea: 0.85,
+							background: true,
+							responsive: true,
+							movable: true,
+							zoomable: true,
+							minCropBoxWidth: 240,
+							minCropBoxHeight: 240,
+							aspectRatio: this.aspectValue(),
+							ready: () => {
+								this.adjustCropBox();
+							},
+						});
+					};
+					if (image.complete) {
+						create();
+					} else {
+						image.addEventListener('load', create, { once: true });
+					}
+				});
+			},
+
+			adjustCropBox() {
+				if (!this.cropper) {
+					return;
+				}
+				const container = this.cropper.getContainerData();
+				const ratio = this.aspectValue();
+				let width = container.width * 0.8;
+				let height = width / ratio;
+				if (height > container.height) {
+					height = container.height * 0.8;
+					width = height * ratio;
+				}
+				this.cropper.setCropBoxData({
+					left: (container.width - width) / 2,
+					top: (container.height - height) / 2,
+					width,
+					height,
+				});
 			},
 
 			initializeEditor() {
@@ -174,12 +395,20 @@
 				if (this.editor) {
 					this.post.content = this.editor.value();
 				}
+				if (!this.cover.url || this.cover.width <= 0 || this.cover.height <= 0) {
+					alert('请上传并裁剪文章封面');
+					this.loading = false;
+					return;
+				}
 				const payload = {
 					title: this.post.title,
 					summary: this.post.summary,
 					content: this.post.content,
 					status: this.post.status,
-					tag_ids: this.post.tagIds.map(id => Number(id)).filter(id => !Number.isNaN(id))
+					tag_ids: this.post.tagIds.map(id => Number(id)).filter(id => !Number.isNaN(id)),
+					cover_url: this.cover.url,
+					cover_width: this.cover.width,
+					cover_height: this.cover.height
 				};
 
 				let url = '/admin/api/posts';

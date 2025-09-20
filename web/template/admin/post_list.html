@@ -88,8 +88,16 @@
 			{{if .error}}
 			<div class="px-6 py-20 text-center text-sm text-rose-500">{{.error}}</div>
 			{{else if gt (len .posts) 0}}
-				{{range .posts}}
-				<article class="flex flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+			{{range .posts}}
+			<article class="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+				<div class="flex w-full flex-1 items-start gap-4">
+					<div class="hidden h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:block">
+						{{if .CoverURL}}
+						<img src="{{.CoverURL}}" alt="{{.Title}}" class="h-full w-full object-cover">
+						{{else}}
+						<div class="flex h-full w-full items-center justify-center bg-gradient-to-br {{accent .Title}} text-sm font-semibold text-white">{{initials .Title}}</div>
+						{{end}}
+					</div>
 					<div class="min-w-0 space-y-2">
 						<h3 class="truncate text-lg font-medium text-slate-900" title="{{.Title}}">{{.Title}}</h3>
 						<div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -100,6 +108,9 @@
 							{{if .User}}
 							<span>· {{.User.Username}}</span>
 							{{end}}
+							{{if gt .CoverWidth 0}}
+							<span>· {{.CoverWidth}}×{{.CoverHeight}}</span>
+							{{end}}
 						</div>
 						{{if .Tags}}
 						<ul class="flex flex-wrap gap-2 text-xs">
@@ -109,7 +120,8 @@
 						</ul>
 						{{end}}
 					</div>
-					<div class="flex items-center gap-2 text-xs">
+				</div>
+				<div class="flex items-center gap-2 text-xs">
 						<a href="/admin/posts/{{.ID}}/edit" class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100">编辑</a>
 						<button type="button" onclick="deletePost('{{.ID}}')" class="inline-flex items-center rounded-lg border border-rose-200 px-3 py-1.5 font-medium text-rose-600 transition-colors hover:bg-rose-50">删除</button>
 					</div>

@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -24,8 +23,7 @@ var (
 		goldmark.WithExtensions(extension.GFM, extension.Linkify, extension.Table),
 		goldmark.WithRendererOptions(html.WithHardWraps(), html.WithXHTML()),
 	)
-	sanitizer  = bluemonday.UGCPolicy()
-	imageMatch = regexp.MustCompile(`!\[[^\]]*\]\(([^)]+)\)`)
+	sanitizer = bluemonday.UGCPolicy()
 )
 
 type tagStat struct {
@@ -138,14 +136,10 @@ func ShowPostDetail(c *gin.Context) {
 		return
 	}
 
-	cover := serviceFirstImage(post.Content)
-
 	c.HTML(http.StatusOK, "post_detail.html", gin.H{
 		"title":   post.Title,
 		"post":    post,
 		"content": htmlContent,
-		"cover":   cover,
-		"accent":  accentClass(post.Title),
 		"year":    time.Now().Year(),
 	})
 }
@@ -246,27 +240,4 @@ func parsePositiveInt(value string, fallback int) int {
 		return fallback
 	}
 	return num
-}
-
-func accentClass(title string) string {
-	palette := []string{
-		"from-sky-400 via-blue-500 to-indigo-500",
-		"from-emerald-400 via-teal-500 to-blue-500",
-		"from-rose-400 via-pink-500 to-fuchsia-500",
-		"from-amber-300 via-orange-400 to-rose-400",
-		"from-purple-400 via-indigo-500 to-blue-500",
-	}
-	sum := 0
-	for _, r := range title {
-		sum += int(r)
-	}
-	return palette[sum%len(palette)]
-}
-
-func serviceFirstImage(content string) string {
-	match := imageMatch.FindStringSubmatch(content)
-	if len(match) >= 2 {
-		return match[1]
-	}
-	return ""
 }

@@ -10,6 +10,9 @@ type Post struct {
 	Summary     string
 	Status      string `gorm:"default:draft"` // draft, published
 	ReadingTime int
+	CoverURL    string
+	CoverWidth  int
+	CoverHeight int
 	UserID      uint
 	User        User
 	Tags        []Tag `gorm:"many2many:post_tags;"`

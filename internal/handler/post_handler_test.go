@@ -59,11 +59,14 @@ func TestCreatePostWithTags(t *testing.T) {
 	}
 
 	payload := map[string]any{
-		"title":   "Test Post",
-		"content": "Content",
-		"summary": "Summary",
-		"status":  "draft",
-		"tag_ids": []uint{tag.ID},
+		"title":        "Test Post",
+		"content":      "Content",
+		"summary":      "Summary",
+		"status":       "draft",
+		"tag_ids":      []uint{tag.ID},
+		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+		"cover_width":  1200,
+		"cover_height": 800,
 	}
 
 	body, _ := json.Marshal(payload)
@@ -99,11 +102,14 @@ func TestCreatePostRejectsUnknownTags(t *testing.T) {
 	defer cleanup()
 
 	payload := map[string]any{
-		"title":   "Test Post",
-		"content": "Content",
-		"summary": "Summary",
-		"status":  "draft",
-		"tag_ids": []uint{99},
+		"title":        "Test Post",
+		"content":      "Content",
+		"summary":      "Summary",
+		"status":       "draft",
+		"tag_ids":      []uint{99},
+		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+		"cover_width":  1200,
+		"cover_height": 800,
 	}
 
 	body, _ := json.Marshal(payload)
@@ -136,10 +142,13 @@ func TestUpdatePostReplacesTags(t *testing.T) {
 	}
 
 	post := db.Post{
-		Title:   "Original",
-		Content: "Original content",
-		Status:  "draft",
-		UserID:  1,
+		Title:       "Original",
+		Content:     "Original content",
+		Status:      "draft",
+		UserID:      1,
+		CoverURL:    "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
+		CoverWidth:  1280,
+		CoverHeight: 720,
 	}
 
 	if err := db.DB.Create(&post).Error; err != nil {
@@ -151,11 +160,14 @@ func TestUpdatePostReplacesTags(t *testing.T) {
 	}
 
 	payload := map[string]any{
-		"title":   "Updated",
-		"content": "Updated content",
-		"summary": "Updated summary",
-		"status":  "published",
-		"tag_ids": []uint{replacementTag.ID},
+		"title":        "Updated",
+		"content":      "Updated content",
+		"summary":      "Updated summary",
+		"status":       "published",
+		"tag_ids":      []uint{replacementTag.ID},
+		"cover_url":    "https://images.unsplash.com/photo-1523475472560-d2df97ec485c",
+		"cover_width":  1440,
+		"cover_height": 960,
 	}
 
 	body, _ := json.Marshal(payload)
@@ -192,10 +204,13 @@ func TestUpdatePostRejectsUnknownTags(t *testing.T) {
 	defer cleanup()
 
 	post := db.Post{
-		Title:   "Original",
-		Content: "Original content",
-		Status:  "draft",
-		UserID:  1,
+		Title:       "Original",
+		Content:     "Original content",
+		Status:      "draft",
+		UserID:      1,
+		CoverURL:    "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
+		CoverWidth:  1280,
+		CoverHeight: 720,
 	}
 
 	if err := db.DB.Create(&post).Error; err != nil {
@@ -203,11 +218,14 @@ func TestUpdatePostRejectsUnknownTags(t *testing.T) {
 	}
 
 	payload := map[string]any{
-		"title":   "Updated",
-		"content": "Updated content",
-		"summary": "Updated summary",
-		"status":  "published",
-		"tag_ids": []uint{123},
+		"title":        "Updated",
+		"content":      "Updated content",
+		"summary":      "Updated summary",
+		"status":       "published",
+		"tag_ids":      []uint{123},
+		"cover_url":    "https://images.unsplash.com/photo-1523475472560-d2df97ec485c",
+		"cover_width":  1440,
+		"cover_height": 960,
 	}
 
 	body, _ := json.Marshal(payload)
@@ -236,10 +254,13 @@ func TestUpdatePostClearsTagsWhenEmpty(t *testing.T) {
 	}
 
 	post := db.Post{
-		Title:   "Original",
-		Content: "Original content",
-		Status:  "draft",
-		UserID:  1,
+		Title:       "Original",
+		Content:     "Original content",
+		Status:      "draft",
+		UserID:      1,
+		CoverURL:    "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
+		CoverWidth:  1280,
+		CoverHeight: 720,
 	}
 
 	if err := db.DB.Create(&post).Error; err != nil {
@@ -251,11 +272,14 @@ func TestUpdatePostClearsTagsWhenEmpty(t *testing.T) {
 	}
 
 	payload := map[string]any{
-		"title":   "Updated",
-		"content": "Updated content",
-		"summary": "Updated summary",
-		"status":  "published",
-		"tag_ids": []uint{},
+		"title":        "Updated",
+		"content":      "Updated content",
+		"summary":      "Updated summary",
+		"status":       "published",
+		"tag_ids":      []uint{},
+		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+		"cover_width":  1200,
+		"cover_height": 800,
 	}
 
 	body, _ := json.Marshal(payload)
@@ -288,10 +312,13 @@ func TestDeletePost(t *testing.T) {
 	defer cleanup()
 
 	post := db.Post{
-		Title:   "Delete Me",
-		Content: "Content",
-		Status:  "draft",
-		UserID:  1,
+		Title:       "Delete Me",
+		Content:     "Content",
+		Status:      "draft",
+		UserID:      1,
+		CoverURL:    "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
+		CoverWidth:  1280,
+		CoverHeight: 720,
 	}
 
 	if err := db.DB.Create(&post).Error; err != nil {

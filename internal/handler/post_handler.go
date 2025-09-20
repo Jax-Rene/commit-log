@@ -15,21 +15,27 @@ import (
 const defaultUserID = 1
 
 type postPayload struct {
-	Title   string `json:"title"`
-	Content string `json:"content"`
-	Summary string `json:"summary"`
-	Status  string `json:"status"`
-	TagIDs  []uint `json:"tag_ids"`
+	Title       string `json:"title"`
+	Content     string `json:"content"`
+	Summary     string `json:"summary"`
+	Status      string `json:"status"`
+	TagIDs      []uint `json:"tag_ids"`
+	CoverURL    string `json:"cover_url"`
+	CoverWidth  int    `json:"cover_width"`
+	CoverHeight int    `json:"cover_height"`
 }
 
 func (p postPayload) toInput() service.PostInput {
 	return service.PostInput{
-		Title:   p.Title,
-		Content: p.Content,
-		Summary: p.Summary,
-		Status:  p.Status,
-		TagIDs:  p.TagIDs,
-		UserID:  defaultUserID,
+		Title:       p.Title,
+		Content:     p.Content,
+		Summary:     p.Summary,
+		Status:      p.Status,
+		TagIDs:      p.TagIDs,
+		UserID:      defaultUserID,
+		CoverURL:    p.CoverURL,
+		CoverWidth:  p.CoverWidth,
+		CoverHeight: p.CoverHeight,
 	}
 }
 
@@ -78,6 +84,10 @@ func CreatePost(c *gin.Context) {
 		switch {
 		case errors.Is(err, service.ErrTagNotFound):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "部分标签不存在"})
+		case errors.Is(err, service.ErrCoverRequired):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "请上传文章封面"})
+		case errors.Is(err, service.ErrCoverInvalid):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "封面尺寸无效"})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "创建文章失败"})
 		}
@@ -108,6 +118,10 @@ func UpdatePost(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
 		case errors.Is(err, service.ErrTagNotFound):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "部分标签不存在"})
+		case errors.Is(err, service.ErrCoverRequired):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "请上传文章封面"})
+		case errors.Is(err, service.ErrCoverInvalid):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "封面尺寸无效"})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新文章失败"})
 		}

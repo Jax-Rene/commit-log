@@ -10,7 +10,9 @@ import (
 )
 
 var (
-	ErrPostNotFound = errors.New("post not found")
+	ErrPostNotFound  = errors.New("post not found")
+	ErrCoverRequired = errors.New("cover image is required")
+	ErrCoverInvalid  = errors.New("cover dimensions are invalid")
 )
 
 // PostService wraps post related database operations.
@@ -42,12 +44,15 @@ type PostListResult struct {
 
 // PostInput represents fields accepted when creating or updating a post.
 type PostInput struct {
-	Title   string
-	Content string
-	Summary string
-	Status  string
-	TagIDs  []uint
-	UserID  uint
+	Title       string
+	Content     string
+	Summary     string
+	Status      string
+	TagIDs      []uint
+	UserID      uint
+	CoverURL    string
+	CoverWidth  int
+	CoverHeight int
 }
 
 // NewPostService creates a PostService instance.
@@ -78,12 +83,20 @@ func (s *PostService) Get(id uint) (*db.Post, error) {
 
 // Create persists a post and associates tags in a transaction.
 func (s *PostService) Create(input PostInput) (*db.Post, error) {
+	coverURL, coverWidth, coverHeight, err := normalizeCover(input)
+	if err != nil {
+		return nil, err
+	}
+
 	post := db.Post{
-		Title:   strings.TrimSpace(input.Title),
-		Content: input.Content,
-		Summary: input.Summary,
-		Status:  input.Status,
-		UserID:  input.UserID,
+		Title:       strings.TrimSpace(input.Title),
+		Content:     input.Content,
+		Summary:     input.Summary,
+		Status:      input.Status,
+		UserID:      input.UserID,
+		CoverURL:    coverURL,
+		CoverWidth:  coverWidth,
+		CoverHeight: coverHeight,
 	}
 
 	return s.saveWithTags(&post, input.TagIDs)
@@ -99,10 +112,18 @@ func (s *PostService) Update(id uint, input PostInput) (*db.Post, error) {
 		return nil, err
 	}
 
+	coverURL, coverWidth, coverHeight, err := normalizeCover(input)
+	if err != nil {
+		return nil, err
+	}
+
 	existing.Title = strings.TrimSpace(input.Title)
 	existing.Content = input.Content
 	existing.Summary = input.Summary
 	existing.Status = input.Status
+	existing.CoverURL = coverURL
+	existing.CoverWidth = coverWidth
+	existing.CoverHeight = coverHeight
 
 	post, err := s.saveWithTags(&existing, input.TagIDs)
 	if err != nil {
@@ -231,4 +252,17 @@ func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeSta
 	}
 
 	return query
+}
+
+func normalizeCover(input PostInput) (string, int, int, error) {
+	coverURL := strings.TrimSpace(input.CoverURL)
+	if coverURL == "" {
+		return "", 0, 0, ErrCoverRequired
+	}
+
+	if input.CoverWidth <= 0 || input.CoverHeight <= 0 {
+		return "", 0, 0, ErrCoverInvalid
+	}
+
+	return coverURL, input.CoverWidth, input.CoverHeight, nil
 }

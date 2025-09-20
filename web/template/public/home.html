@@ -35,7 +35,7 @@
 		</div>
 	</header>
 
-	<div id="post-grid" class="columns-1 gap-6 sm:columns-2 xl:columns-3">
+	<div id="post-grid" class="columns-1 gap-6 space-y-6 sm:columns-2 xl:columns-3">
 		{{if gt (len .posts) 0}}
 			{{range .posts}}
 			{{template "post_card" (dict "Post" .)}}

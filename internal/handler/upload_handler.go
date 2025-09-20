@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"image"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,6 +11,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 )
 
 // UploadImage 处理图片上传请求
@@ -46,6 +50,13 @@ func UploadImage(c *gin.Context) {
 		return
 	}
 
+	// 读取图片尺寸
+	width, height, err := imageDimensions(filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "读取图片信息失败", "success": 0})
+		return
+	}
+
 	// 返回文件URL - 符合EasyMDE的预期格式
 	fileURL := fmt.Sprintf("/static/uploads/%s", newFilename)
 	c.JSON(http.StatusOK, gin.H{
@@ -54,6 +65,23 @@ func UploadImage(c *gin.Context) {
 		"data": gin.H{
 			"filePath": fileURL,
 			"url":      fileURL,
+			"width":    width,
+			"height":   height,
 		},
 	})
+}
+
+func imageDimensions(path string) (int, int, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer file.Close()
+
+	img, _, err := image.DecodeConfig(file)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return img.Width, img.Height, nil
 }
