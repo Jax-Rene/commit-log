@@ -1,24 +1,42 @@
 package handler
 
 import (
-	"log"
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
-// PostHandler 处理文章相关的请求
+const defaultUserID = 1
+
+type postPayload struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+	Summary string `json:"summary"`
+	Status  string `json:"status"`
+	TagIDs  []uint `json:"tag_ids"`
+}
+
+func (p postPayload) toInput() service.PostInput {
+	return service.PostInput{
+		Title:   p.Title,
+		Content: p.Content,
+		Summary: p.Summary,
+		Status:  p.Status,
+		TagIDs:  p.TagIDs,
+		UserID:  defaultUserID,
+	}
+}
 
 // GetPosts 获取文章列表
 func GetPosts(c *gin.Context) {
-	var posts []db.Post
-	if err := db.DB.Preload("Tags").Order("created_at desc").Find(&posts).Error; err != nil {
+	posts, err := service.NewPostService(db.DB).ListAll()
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取文章列表失败"})
 		return
 	}
@@ -34,9 +52,13 @@ func GetPost(c *gin.Context) {
 		return
 	}
 
-	var post db.Post
-	if err := db.DB.Preload("Tags").First(&post, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+	post, err := service.NewPostService(db.DB).Get(uint(id))
+	if err != nil {
+		if errors.Is(err, service.ErrPostNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取文章失败"})
 		return
 	}
 
@@ -45,74 +67,22 @@ func GetPost(c *gin.Context) {
 
 // CreatePost 创建新文章
 func CreatePost(c *gin.Context) {
-	// 解析请求体中的数据
-	var postData struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
-		Summary string `json:"summary"`
-		Status  string `json:"status"`
-		TagIDs  []uint `json:"tag_ids"`
-	}
-
-	if err := c.ShouldBindJSON(&postData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var payload postPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数不合法"})
 		return
 	}
 
-	// 创建新文章
-	post := db.Post{
-		Title:   postData.Title,
-		Content: postData.Content,
-		Summary: postData.Summary,
-		Status:  postData.Status,
-		UserID:  1, // 默认用户ID，实际应从会话中获取
-	}
-
-	// 开启事务
-	tx := db.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	// 创建文章
-	if err := tx.Create(&post).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建文章失败"})
-		return
-	}
-
-	// 处理标签
-	if len(postData.TagIDs) > 0 {
-		var tags []db.Tag
-		if err := tx.Where("id IN ?", postData.TagIDs).Find(&tags).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "获取标签信息失败"})
-			return
-		}
-
-		if len(tags) != len(postData.TagIDs) {
-			tx.Rollback()
+	post, err := service.NewPostService(db.DB).Create(payload.toInput())
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrTagNotFound):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "部分标签不存在"})
-			return
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "创建文章失败"})
 		}
-
-		if err := tx.Model(&post).Association("Tags").Replace(tags); err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "关联标签失败"})
-			return
-		}
-	}
-
-	// 提交事务
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败"})
 		return
 	}
-
-	// 重新加载文章及其关联的标签
-	db.DB.Preload("Tags").First(&post, post.ID)
 
 	c.JSON(http.StatusOK, gin.H{"message": "文章创建成功", "post": post})
 }
@@ -125,80 +95,26 @@ func UpdatePost(c *gin.Context) {
 		return
 	}
 
-	// 先获取现有文章
-	var existingPost db.Post
-	if err := db.DB.First(&existingPost, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+	var payload postPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数不合法"})
 		return
 	}
 
-	// 解析请求体中的更新数据
-	var updateData struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
-		Summary string `json:"summary"`
-		Status  string `json:"status"`
-		TagIDs  []uint `json:"tag_ids"`
-	}
-
-	if err := c.ShouldBindJSON(&updateData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// 更新文章字段
-	existingPost.Title = updateData.Title
-	existingPost.Content = updateData.Content
-	existingPost.Summary = updateData.Summary
-	existingPost.Status = updateData.Status
-
-	// 开启事务处理标签和文章更新
-	tx := db.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	// 更新文章
-	if err := tx.Save(&existingPost).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新文章失败"})
-		return
-	}
-
-	// 处理标签
-	var tags []db.Tag
-	if len(updateData.TagIDs) > 0 {
-		if err := tx.Where("id IN ?", updateData.TagIDs).Find(&tags).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "获取标签信息失败"})
-			return
-		}
-
-		if len(tags) != len(updateData.TagIDs) {
-			tx.Rollback()
+	post, err := service.NewPostService(db.DB).Update(uint(id), payload.toInput())
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrPostNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+		case errors.Is(err, service.ErrTagNotFound):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "部分标签不存在"})
-			return
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新文章失败"})
 		}
-	}
-
-	if err := tx.Model(&existingPost).Association("Tags").Replace(tags); err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新标签失败"})
 		return
 	}
 
-	// 提交事务
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "提交事务失败"})
-		return
-	}
-
-	// 重新加载文章及其关联的标签
-	db.DB.Preload("Tags").First(&existingPost, id)
-
-	c.JSON(http.StatusOK, gin.H{"message": "文章更新成功", "post": existingPost})
+	c.JSON(http.StatusOK, gin.H{"message": "文章更新成功", "post": post})
 }
 
 // DeletePost 删除文章
@@ -209,7 +125,11 @@ func DeletePost(c *gin.Context) {
 		return
 	}
 
-	if err := db.DB.Delete(&db.Post{}, id).Error; err != nil {
+	if err := service.NewPostService(db.DB).Delete(uint(id)); err != nil {
+		if errors.Is(err, service.ErrPostNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除文章失败"})
 		return
 	}
@@ -219,130 +139,44 @@ func DeletePost(c *gin.Context) {
 
 // ShowPostList 渲染文章管理列表页面
 func ShowPostList(c *gin.Context) {
-	// 获取查询参数
 	page := 1
+	if p, err := strconv.Atoi(c.DefaultQuery("page", "1")); err == nil && p > 0 {
+		page = p
+	}
+
 	perPage := 10
 	search := c.Query("search")
 	status := c.Query("status")
-	tags := c.QueryArray("tags")
+	tagNames := c.QueryArray("tags")
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
 
-	// 打印接收到的参数用于调试
-	log.Printf("[DEBUG] ShowPostList - 接收到的参数:")
-	log.Printf("  - page: %d", page)
-	log.Printf("  - search: %q", search)
-	log.Printf("  - status: %q", status)
-	log.Printf("  - tags: %v", tags)
-	log.Printf("  - start_date: %q", startDate)
-	log.Printf("  - end_date: %q", endDate)
-
-	if p, err := strconv.Atoi(c.Query("page")); err == nil && p > 0 {
-		page = p
-		log.Printf("  - 解析后的page: %d", page)
+	var startPtr, endPtr *time.Time
+	if startDate != "" {
+		if start, err := time.Parse("2006-01-02", startDate); err == nil {
+			startPtr = &start
+		}
+	}
+	if endDate != "" {
+		if end, err := time.Parse("2006-01-02", endDate); err == nil {
+			end = end.Add(24*time.Hour - time.Second)
+			endPtr = &end
+		}
 	}
 
-	// 开启GORM调试模式
-	db.DB = db.DB.Session(&gorm.Session{Logger: logger.Default.LogMode(logger.Info)})
-
-	// 基础查询
-	log.Printf("[DEBUG] 开始构建查询...")
-	baseQuery := db.DB.Model(&db.Post{}).Preload("Tags").Preload("User")
-
-	// 构建筛选查询（用于获取总数和统计数据）
-	filterQuery := baseQuery.Session(&gorm.Session{})
-
-	// 应用筛选条件到基础查询
-	applyFilters := func(query *gorm.DB) *gorm.DB {
-		// 搜索条件
-		if search != "" {
-			searchQuery := "%" + search + "%"
-			query = query.Where("posts.title LIKE ? OR posts.content LIKE ? OR posts.summary LIKE ?", searchQuery, searchQuery, searchQuery)
-			log.Printf("[DEBUG] 应用搜索条件: %q", search)
-		}
-
-		// 状态筛选
-		if status != "" {
-			query = query.Where("posts.status = ?", status)
-			log.Printf("[DEBUG] 应用状态筛选: %q", status)
-		}
-
-		// 标签筛选
-		if len(tags) > 0 {
-			log.Printf("[DEBUG] 应用标签筛选: %v", tags)
-			query = query.Joins("JOIN post_tags ON posts.id = post_tags.post_id").
-				Joins("JOIN tags ON tags.id = post_tags.tag_id").
-				Where("posts.id IN (?)", db.DB.Model(&db.Post{}).
-					Select("posts.id").
-					Joins("JOIN post_tags ON posts.id = post_tags.post_id").
-					Joins("JOIN tags ON tags.id = post_tags.tag_id").
-					Where("tags.name IN ?", tags))
-		}
-
-		// 时间范围筛选
-		if startDate != "" {
-			if start, err := time.Parse("2006-01-02", startDate); err == nil {
-				query = query.Where("posts.created_at >= ?", start)
-				log.Printf("[DEBUG] 应用开始日期: %v", start)
-			} else {
-				log.Printf("[ERROR] 解析开始日期失败: %v", err)
-			}
-		}
-		if endDate != "" {
-			if end, err := time.Parse("2006-01-02", endDate); err == nil {
-				// 将结束时间设为当天的23:59:59
-				end = end.Add(24*time.Hour - time.Second)
-				query = query.Where("posts.created_at <= ?", end)
-				log.Printf("[DEBUG] 应用结束日期: %v", end)
-			} else {
-				log.Printf("[ERROR] 解析结束日期失败: %v", err)
-			}
-		}
-		return query
+	filter := service.PostFilter{
+		Search:    search,
+		Status:    status,
+		TagNames:  tagNames,
+		StartDate: startPtr,
+		EndDate:   endPtr,
+		Page:      page,
+		PerPage:   perPage,
 	}
 
-	// 应用筛选到基础查询
-	filterQuery = applyFilters(filterQuery)
-
-	// 获取统计数据
-	var total, publishedCount, draftCount int64
-	log.Printf("[DEBUG] 开始计算统计数据...")
-
-	// 总记录数
-	filterQuery.Count(&total)
-	log.Printf("[DEBUG] 总记录数: %d", total)
-
-	// 已发布文章数量 - 应用相同的筛选条件
-	publishedQuery := baseQuery.Session(&gorm.Session{})
-	publishedQuery = applyFilters(publishedQuery)
-	publishedQuery.Where("status = ?", "published").Count(&publishedCount)
-	log.Printf("[DEBUG] 已发布文章数(筛选条件下): %d", publishedCount)
-
-	// 草稿文章数量 - 应用相同的筛选条件
-	draftQuery := baseQuery.Session(&gorm.Session{})
-	draftQuery = applyFilters(draftQuery)
-	draftQuery.Where("status = ?", "draft").Count(&draftCount)
-	log.Printf("[DEBUG] 草稿文章数(筛选条件下): %d", draftCount)
-
-	// 计算分页信息
-	totalPages := int((total + int64(perPage) - 1) / int64(perPage))
-	if totalPages < 1 {
-		totalPages = 1
-	}
-	log.Printf("[DEBUG] 总页数: %d (每页%d条)", totalPages, perPage)
-
-	// 计算分页
-	offset := (page - 1) * perPage
-	log.Printf("[DEBUG] 分页参数: offset=%d, limit=%d, page=%d", offset, perPage, page)
-
-	// 获取文章列表（应用相同的筛选条件）
-	var posts []db.Post
-	log.Printf("[DEBUG] 开始执行查询...")
-	listQuery := applyFilters(baseQuery)
-	err := listQuery.Order("posts.created_at desc").Limit(perPage).Offset(offset).Find(&posts).Error
-
+	postService := service.NewPostService(db.DB)
+	list, err := postService.List(filter)
 	if err != nil {
-		log.Printf("[ERROR] 查询文章失败: %v", err)
 		c.HTML(http.StatusInternalServerError, "post_list.html", gin.H{
 			"title": "文章管理",
 			"error": "获取文章列表失败",
@@ -350,55 +184,57 @@ func ShowPostList(c *gin.Context) {
 		return
 	}
 
-	log.Printf("[DEBUG] 查询完成，返回 %d 篇文章", len(posts))
+	tags, err := service.NewTagService(db.DB).List()
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "post_list.html", gin.H{
+			"title": "文章管理",
+			"error": "获取标签信息失败",
+		})
+		return
+	}
 
-	// 获取所有标签用于筛选
-	var allTags []db.Tag
-	db.DB.Find(&allTags)
-	log.Printf("[DEBUG] 获取标签列表: %d 个标签", len(allTags))
-
-	// 生成分页数字范围
-	var pages []int
-	for i := 1; i <= totalPages; i++ {
+	pages := make([]int, 0, list.TotalPages)
+	for i := 1; i <= list.TotalPages; i++ {
 		pages = append(pages, i)
 	}
 
-	// 构建查询参数字符串（使用URL编码确保特殊字符正确处理）
-	queryParams := ""
+	params := url.Values{}
 	if search != "" {
-		queryParams += "&search=" + url.QueryEscape(search)
+		params.Set("search", search)
 	}
 	if status != "" {
-		queryParams += "&status=" + url.QueryEscape(status)
+		params.Set("status", status)
 	}
 	if startDate != "" {
-		queryParams += "&start_date=" + url.QueryEscape(startDate)
+		params.Set("start_date", startDate)
 	}
 	if endDate != "" {
-		queryParams += "&end_date=" + url.QueryEscape(endDate)
+		params.Set("end_date", endDate)
 	}
-	for _, tag := range tags {
-		queryParams += "&tags=" + url.QueryEscape(tag)
+	for _, tag := range tagNames {
+		params.Add("tags", tag)
 	}
 
-	log.Printf("[DEBUG] 准备渲染模板 - 参数: page=%d, total=%d, totalPages=%d, published=%d, draft=%d",
-		page, total, totalPages, publishedCount, draftCount)
+	queryParams := params.Encode()
+	if queryParams != "" {
+		queryParams = "&" + queryParams
+	}
 
 	c.HTML(http.StatusOK, "post_list.html", gin.H{
 		"title":          "文章管理",
-		"posts":          posts,
-		"allTags":        allTags,
+		"posts":          list.Posts,
+		"allTags":        tags,
 		"search":         search,
 		"status":         status,
-		"tags":           tags,
+		"tags":           tagNames,
 		"startDate":      startDate,
 		"endDate":        endDate,
-		"page":           page,
-		"perPage":        perPage,
-		"total":          total,
-		"totalPages":     totalPages,
-		"publishedCount": publishedCount,
-		"draftCount":     draftCount,
+		"page":           list.Page,
+		"perPage":        list.PerPage,
+		"total":          list.Total,
+		"totalPages":     list.TotalPages,
+		"publishedCount": list.PublishedCount,
+		"draftCount":     list.DraftCount,
 		"pages":          pages,
 		"queryParams":    queryParams,
 	})
@@ -406,21 +242,22 @@ func ShowPostList(c *gin.Context) {
 
 // ShowPostEdit 渲染文章编辑页面
 func ShowPostEdit(c *gin.Context) {
-	id := c.Param("id")
-
 	data := gin.H{
-		"title": "编辑文章",
+		"title": "创建文章",
 	}
 
-	if id != "" {
-		// 编辑现有文章
-		var post db.Post
-		if err := db.DB.Preload("Tags").First(&post, id).Error; err == nil {
-			data["post"] = post
+	if idParam := c.Param("id"); idParam != "" {
+		if id, err := strconv.ParseUint(idParam, 10, 32); err == nil {
+			post, err := service.NewPostService(db.DB).Get(uint(id))
+			if err == nil {
+				data["title"] = "编辑文章"
+				data["post"] = post
+			} else if errors.Is(err, service.ErrPostNotFound) {
+				data["error"] = "文章不存在"
+			} else {
+				data["error"] = "加载文章失败"
+			}
 		}
-	} else {
-		// 创建新文章
-		data["title"] = "创建文章"
 	}
 
 	c.HTML(http.StatusOK, "post_edit.html", data)

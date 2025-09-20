@@ -1,388 +1,246 @@
 {{template "base" .}}
 
 {{define "content"}}
-<!-- Apple 风格文章编辑页面 -->
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-    <!-- 动态背景装饰 -->
-    <div class="fixed inset-0 -z-10 overflow-hidden">
-        <div
-            class="absolute top-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 rounded-full blur-3xl opacity-30 animate-pulse">
-        </div>
-        <div class="absolute bottom-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-green-100 via-blue-100 to-purple-100 rounded-full blur-3xl opacity-30 animate-pulse"
-            style="animation-delay: 2s;"></div>
-    </div>
+<div class="space-y-10" x-data="postForm()" x-init="init()">
+	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+		<div>
+			<h1 class="text-3xl font-semibold text-slate-900">{{if .post.ID}}编辑文章{{else}}创建新文章{{end}}</h1>
+			<p class="mt-2 text-sm text-slate-500">支持 Markdown 编辑与图片上传。</p>
+		</div>
+		<a href="/admin/posts" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100">返回列表</a>
+	</header>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- 页面头部 -->
-        <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl shadow-xl mb-8">
-            <div class="px-8 py-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-3xl font-display font-bold text-gray-900">
-                            {{if .post.ID}}编辑文章{{else}}创建新文章{{end}}
-                        </h1>
-                        <p class="mt-2 text-gray-600">使用 Markdown 格式编写您的技术文章</p>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <a href="/admin/posts"
-                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white/50 border border-gray-200 rounded-xl hover:bg-white/80 transition-all duration-200">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                            返回列表
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+	<form id="post-form" @submit.prevent="submitForm" class="grid gap-6 lg:grid-cols-[2fr,1fr]">
+		<section class="space-y-6">
+			<label class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+				<span class="text-sm font-medium text-slate-700">文章标题<span class="ml-1 text-rose-500">*</span></span>
+				<input type="text" x-model="post.title" placeholder="请输入文章标题" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" required>
+			</label>
 
-        <!-- 编辑表单 -->
-        <form id="post-form" x-data="postForm()" @submit.prevent="submitForm"
-            class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- 主要内容区域 -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- 标题 -->
-                <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg">
-                    <label for="title" class="block text-sm font-medium text-gray-700 mb-3">
-                        文章标题
-                        <span class="text-red-500 ml-1">*</span>
-                    </label>
-                    <input type="text" id="title" x-model="post.title"
-                        class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        placeholder="请输入文章标题..." required>
-                </div>
+			<label class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+				<span class="text-sm font-medium text-slate-700">文章摘要</span>
+				<textarea x-model="post.summary" rows="4" placeholder="简要描述文章的核心观点" class="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"></textarea>
+			</label>
 
-                <!-- 摘要 -->
-                <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg">
-                    <label for="summary" class="block text-sm font-medium text-gray-700 mb-3">
-                        文章摘要
-                        <span class="text-gray-400 text-xs ml-2">建议 50-200 字</span>
-                    </label>
-                    <textarea id="summary" x-model="post.summary" rows="3"
-                        class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
-                        placeholder="用简洁的语言描述这篇文章的核心内容..."></textarea>
-                </div>
+			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+				<label class="flex flex-col gap-2">
+					<span class="text-sm font-medium text-slate-700">文章内容<span class="ml-1 text-rose-500">*</span></span>
+					<textarea id="content" rows="18" x-model="post.content" class="hidden"></textarea>
+				</label>
+			</section>
+		</section>
 
-                <!-- 内容编辑器 -->
-                <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg">
-                    <label for="content" class="block text-sm font-medium text-gray-700 mb-3">
-                        文章内容
-                        <span class="text-red-500 ml-1">*</span>
-                        <span class="text-gray-400 text-xs ml-2">支持 Markdown 格式</span>
-                    </label>
-                    <textarea id="content" x-model="post.content" rows="20"
-                        class="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        placeholder="开始创作您的精彩内容..."></textarea>
-                </div>
-            </div>
+		<aside class="space-y-6">
+			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+				<h2 class="text-sm font-semibold text-slate-900">发布设置</h2>
+				<div class="mt-4 space-y-3">
+					<label class="flex items-center gap-2 text-sm text-slate-600">
+						<input type="radio" value="draft" x-model="post.status" class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500">
+						<span>草稿</span>
+					</label>
+					<label class="flex items-center gap-2 text-sm text-slate-600">
+						<input type="radio" value="published" x-model="post.status" class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500">
+						<span>已发布</span>
+					</label>
+				</div>
+			</section>
 
-            <!-- 侧边栏设置 -->
-            <div class="space-y-6">
-                <!-- 文章设置 -->
-                <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">文章设置</h3>
+			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+				<h2 class="text-sm font-semibold text-slate-900">标签</h2>
+				<p class="mt-2 text-xs text-slate-500">最多选择 5 个标签，帮助读者快速理解主题。</p>
+				<div class="mt-4 flex flex-wrap gap-2">
+					<template x-for="tag in allTags" :key="tag.id">
+						<label class="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 transition-colors" :class="post.tagIds.includes(tag.id.toString()) ? 'border-blue-500 bg-blue-50 text-blue-600' : 'hover:border-blue-300 hover:bg-blue-50'">
+							<input type="checkbox" class="sr-only" :value="tag.id" @change="toggleTag(tag.id)">
+							<span x-text="tag.name"></span>
+						</label>
+					</template>
+				</div>
+			</section>
 
-                    <!-- 状态 -->
-                    <div class="mb-4">
-                        <label for="status" class="block text-sm font-medium text-gray-700 mb-2">发布状态</label>
-                        <select id="status" x-model="post.status"
-                            class="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-                            <option value="draft">草稿</option>
-                            <option value="published">已发布</option>
-                        </select>
-                    </div>
-
-                    <!-- 标签 -->
-                    <div>
-                        <label for="tags" class="block text-sm font-medium text-gray-700 mb-2">文章标签</label>
-                        <div class="space-y-2">
-                            <select id="tags" x-model="post.tagIds" multiple size="6"
-                                class="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-                                <template x-for="tag in allTags" :key="tag.id">
-                                    <option :value="tag.id" x-text="tag.name"></option>
-                                </template>
-                            </select>
-                            <p class="text-xs text-gray-500">按住 Command/Control 多选；标签来源于后台标签管理。</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 操作按钮 -->
-                <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-lg space-y-3">
-                    <button type="button" @click="previewPost"
-                        class="w-full inline-flex justify-center items-center py-3 px-4 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white/50 hover:bg-white/80 transition-all duration-200">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
-                            </path>
-                        </svg>
-                        预览文章
-                    </button>
-
-                    <button type="submit" :disabled="loading"
-                        class="w-full inline-flex justify-center items-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path x-show="!loading" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M5 13l4 4L19 7"></path>
-                            <path x-show="loading" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                            </path>
-                        </svg>
-                        <span x-show="!loading">{{if .post.ID}}更新文章{{else}}发布文章{{end}}</span>
-                        <span x-show="loading">保存中...</span>
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
+			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+				<h2 class="text-sm font-semibold text-slate-900">操作</h2>
+				<div class="mt-4 space-y-3">
+					<button type="button" @click="previewPost" class="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100">预览文章</button>
+					<button type="submit" :disabled="loading" class="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300">
+						<span x-show="!loading">{{if .post.ID}}保存修改{{else}}发布文章{{end}}</span>
+						<span x-show="loading">保存中...</span>
+					</button>
+				</div>
+			</section>
+		</aside>
+	</form>
 </div>
 
 <script>
-    function postForm() {
-        return {
-            loading: false,
-            editor: null,
-            allTags: [],
-            initialTagIds: '{{- range $index, $tag := .post.Tags -}}{{if $index}},{{end}}{{ $tag.ID }}{{- end -}}',
-            post: {
-                title: '{{.post.Title}}' || '',
-                summary: '{{.post.Summary}}' || '',
-                content: '{{.post.Content}}' || '',
-                status: '{{.post.Status}}' || 'draft',
-                tagIds: []
-            },
+	function postForm() {
+		return {
+			loading: false,
+			editor: null,
+			allTags: [],
+			initialTagIds: '{{- range $index, $tag := .post.Tags -}}{{if $index}},{{end}}{{ $tag.ID }}{{- end -}}',
+			post: {
+				title: '{{.post.Title}}' || '',
+				summary: '{{.post.Summary}}' || '',
+				content: '{{.post.Content}}' || '',
+				status: '{{if .post.Status}}{{.post.Status}}{{else}}draft{{end}}',
+				tagIds: []
+			},
 
-            init() {
-                this.applyInitialTagSelection();
-                this.initializeEditor();
-                this.fetchTags();
-            },
+			init() {
+				this.applyInitialTagSelection();
+				this.initializeEditor();
+				this.fetchTags();
+			},
 
-            applyInitialTagSelection() {
-                if (!this.initialTagIds) {
-                    return;
-                }
+			applyInitialTagSelection() {
+				if (!this.initialTagIds) {
+					return;
+				}
+				this.post.tagIds = this.initialTagIds.split(',').map(id => id.trim()).filter(Boolean);
+			},
 
-                this.post.tagIds = this.initialTagIds.split(',')
-                    .map(id => id.trim())
-                    .filter(Boolean);
-            },
+			fetchTags() {
+				fetch('/admin/api/tags')
+					.then(response => response.json())
+					.then(data => {
+						this.allTags = data.tags || [];
+						if (this.post.tagIds.length === 0) {
+							return;
+						}
+						const available = new Set(this.allTags.map(tag => tag.id.toString()));
+						this.post.tagIds = this.post.tagIds.filter(id => available.has(id.toString()));
+					})
+					.catch(() => {
+						this.allTags = [];
+					});
+			},
 
-            fetchTags() {
-                fetch('/admin/api/tags')
-                    .then(response => response.json())
-                    .then(data => {
-                        this.allTags = data.tags || [];
+			toggleTag(id) {
+				const value = id.toString();
+				if (this.post.tagIds.includes(value)) {
+					this.post.tagIds = this.post.tagIds.filter(tagId => tagId !== value);
+				} else {
+					this.post.tagIds.push(value);
+				}
+			},
 
-                        if (this.post.tagIds.length === 0) {
-                            return;
-                        }
+			initializeEditor() {
+				const easyMDE = new EasyMDE({
+					element: document.getElementById('content'),
+					spellChecker: false,
+					status: ['lines', 'words', 'cursor'],
+					toolbar: ['bold', 'italic', 'heading', '|', 'quote', 'unordered-list', 'ordered-list', '|', 'link', {
+						name: 'image',
+						action: EasyMDE.drawImage,
+						className: 'fa fa-picture-o',
+						title: '插入图片'
+					}, 'table', 'code', '|', 'preview', 'side-by-side', 'fullscreen'],
+					autosave: { enabled: true, uniqueId: 'post-content', delay: 1000 },
+					uploadImage: true,
+					imageUploadEndpoint: '/admin/api/upload/image',
+					imagePathAbsolute: true,
+					imageAccept: 'image/png, image/jpeg, image/gif, image/webp',
+					imageMaxSize: 5 * 1024 * 1024,
+					imageUploadFunction(file, onSuccess, onError) {
+						const formData = new FormData();
+						formData.append('image', file);
+						fetch('/admin/api/upload/image', { method: 'POST', body: formData })
+							.then(response => response.json())
+							.then(data => {
+								if (data.success === 1) {
+									onSuccess(data.data.url);
+								} else {
+									onError(data.message || '上传失败');
+								}
+							})
+							.catch(error => {
+								onError('上传失败: ' + error.message);
+							});
+					},
+					renderingConfig: { codeSyntaxHighlighting: false },
+					initialValue: this.post.content
+				});
 
-                        const available = new Set(this.allTags.map(tag => tag.id.toString()));
-                        this.post.tagIds = this.post.tagIds.filter(id => available.has(id.toString()));
-                    })
-                    .catch(() => {
-                        this.allTags = [];
-                    });
-            },
+				easyMDE.codemirror.on('change', () => {
+					this.post.content = easyMDE.value();
+				});
 
-            initializeEditor() {
-                const easyMDE = new EasyMDE({
-                    element: document.getElementById('content'),
-                    spellChecker: false,
-                    status: ['lines', 'words', 'cursor'],
-                    toolbar: [
-                        "bold", "italic", "heading", "|",
-                        "quote", "unordered-list", "ordered-list", "|",
-                        "link",
-                        {
-                            name: "image",
-                            action: EasyMDE.drawImage,
-                            className: "fa fa-picture-o",
-                            title: "插入图片"
-                        },
-                        "table", "code", "|",
-                        "preview", "side-by-side", "fullscreen"
-                    ],
-                    autosave: {
-                        enabled: true,
-                        uniqueId: "post-content",
-                        delay: 1000,
-                    },
-                    uploadImage: true,
-                    imageUploadEndpoint: '/admin/api/upload/image',
-                    imagePathAbsolute: true,
-                    imageAccept: 'image/png, image/jpeg, image/gif, image/webp',
-                    imageMaxSize: 5 * 1024 * 1024,
-                    imageTexts: {
-                        sbInit: '拖放图片或点击上传',
-                        sbOnDragEnter: '释放以上传图片',
-                        sbOnDrop: '上传中...',
-                        sbProgress: function (progress) { return '上传中... ' + progress + '%'; },
-                        sbOnUploaded: '上传完成',
-                        sizeUnits: ' B, KB, MB'
-                    },
-                    imageUploadFunction: function (file, onSuccess, onError) {
-                        const formData = new FormData();
-                        formData.append('image', file);
+				this.editor = easyMDE;
+			},
 
-                        fetch('/admin/api/upload/image', {
-                            method: 'POST',
-                            body: formData
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success === 1) {
-                                    onSuccess(data.data.url);
-                                } else {
-                                    onError(data.message || '上传失败');
-                                }
-                            })
-                            .catch(error => {
-                                onError('上传失败: ' + error.message);
-                            });
-                    },
-                    renderingConfig: {
-                        codeSyntaxHighlighting: false
-                    },
-                    previewRender: function (plainText) {
-                        return this.customMarkdownParser(plainText);
-                    },
-                    initialValue: this.post.content
-                });
+			submitForm() {
+				this.loading = true;
+				if (this.editor) {
+					this.post.content = this.editor.value();
+				}
+				const payload = {
+					title: this.post.title,
+					summary: this.post.summary,
+					content: this.post.content,
+					status: this.post.status,
+					tag_ids: this.post.tagIds.map(id => Number(id)).filter(id => !Number.isNaN(id))
+				};
 
-                easyMDE.codemirror.on('change', () => {
-                    this.post.content = easyMDE.value();
-                });
+				let url = '/admin/api/posts';
+				let method = 'POST';
+				if (window.location.pathname.includes('/edit')) {
+					const parts = window.location.pathname.split('/');
+					const postId = parts[parts.length - 2];
+					url = `/admin/api/posts/${postId}`;
+					method = 'PUT';
+				}
 
-                this.editor = easyMDE;
-            },
+				fetch(url, {
+					method,
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(payload)
+				})
+					.then(response => response.json())
+					.then(data => {
+						if (data.message) {
+							alert(data.message);
+							if (!window.location.pathname.includes('/edit')) {
+								window.location.href = '/admin/posts';
+							}
+						}
+					})
+					.catch(() => {
+						alert('保存失败，请稍后重试');
+					})
+					.finally(() => {
+						this.loading = false;
+					});
+			},
 
-            submitForm() {
-                this.loading = true;
-
-                if (this.editor) {
-                    this.post.content = this.editor.value();
-                }
-
-                const payload = {
-                    title: this.post.title,
-                    summary: this.post.summary,
-                    content: this.post.content,
-                    status: this.post.status,
-                    tag_ids: this.post.tagIds
-                        .map(id => Number(id))
-                        .filter(id => !Number.isNaN(id))
-                };
-
-                let url, method;
-                if (window.location.pathname.includes('/edit')) {
-                    const pathParts = window.location.pathname.split('/');
-                    const postId = pathParts[pathParts.length - 2];
-                    url = `/admin/api/posts/${postId}`;
-                    method = 'PUT';
-                } else {
-                    url = '/admin/api/posts';
-                    method = 'POST';
-                }
-
-                fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload)
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.message) {
-                            alert(data.message);
-                            if (!window.location.pathname.includes('/edit/')) {
-                                window.location.href = '/admin/posts';
-                            }
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('保存失败');
-                    })
-                    .finally(() => {
-                        this.loading = false;
-                    });
-            },
-
-            // 自定义 Markdown 解析函数
-            customMarkdownParser(text) {
-                // 使用编辑器内置的 markdown 方法解析内容
-                const html = this.parent.markdown(text);
-
-                // 简单的代码高亮处理，不依赖 hljs
-                const styledHtml = html.replace(/<code class="([^"]+)">/g, function (match, language) {
-                    return '<code class="language-' + language + '" style="display: block; padding: 1em; background: #f5f5f5; border-radius: 5px; overflow-x: auto;">';
-                });
-
-                return styledHtml;
-            },
-
-            previewPost() {
-                // 增强的预览功能
-                const preview = window.open('', '_blank');
-                const parsedContent = this.editor ? this.editor.markdown(this.post.content) : this.post.content.replace(/\n/g, '<br>');
-
-                preview.document.write(`
-                    <html>
-                        <head>
-                            <title>预览: ${this.post.title}</title>
-                            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.min.css">
-                            <style>
-                                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #333; }
-                                h1, h2, h3, h4, h5, h6 { color: #1f2937; margin-top: 1.5em; margin-bottom: 0.5em; }
-                                h1 { font-size: 2.25rem; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-                                h2 { font-size: 1.75rem; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-                                h3 { font-size: 1.5rem; }
-                                h4 { font-size: 1.25rem; }
-                                h5 { font-size: 1rem; }
-                                h6 { font-size: 0.875rem; color: #6b7280; }
-                                p { margin: 1em 0; }
-                                a { color: #3b82f6; text-decoration: none; }
-                                a:hover { text-decoration: underline; }
-                                blockquote { border-left: 4px solid #e5e7eb; padding-left: 1rem; margin-left: 0; color: #6b7280; }
-                                hr { height: 1px; background-color: #e5e7eb; border: none; margin: 2rem 0; }
-                                .content { margin-top: 2rem; }
-                                pre { background: #f3f4f6; padding: 1rem; border-radius: 0.375rem; overflow-x: auto; margin: 1em 0; }
-                                code { background: #f3f4f6; padding: 0.125rem 0.25rem; border-radius: 0.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875em; }
-                                pre code { background: transparent; padding: 0; border-radius: 0; }
-                                table { border-collapse: collapse; width: 100%; margin: 1em 0; }
-                                table th, table td { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: left; }
-                                table th { background-color: #f9fafb; }
-                                img { max-width: 100%; height: auto; border-radius: 0.375rem; }
-                                ul, ol { padding-left: 2rem; margin: 1em 0; }
-                                li { margin: 0.5em 0; }
-                                .summary { background-color: #f9fafb; padding: 1rem; border-radius: 0.375rem; margin-bottom: 2rem; border-left: 4px solid #3b82f6; }
-                            </style>
-                            <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
-</head>
-
-<body>
-    <h1>${this.post.title}</h1>
-    <div class="summary"><strong>摘要:</strong> ${this.post.summary}</div>
-    <div class="content">${parsedContent}</div>
-    <script>
-                                // 代码高亮
-                                document.querySelectorAll('pre code').forEach((block) => {
-                                    hljs.highlightElement(block);
-                                });
-    </script>
-</body>
-
-</html>
-`);
-preview.document.close();
-}
-}
-};
+			previewPost() {
+				const preview = window.open('', '_blank');
+				const parsed = this.editor ? this.editor.markdown(this.post.content) : this.post.content;
+				preview.document.write(`
+					<html>
+					<head>
+						<title>预览: ${this.post.title}</title>
+						<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.min.css">
+						<style>
+							body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 780px; margin: 0 auto; padding: 2rem; color: #1f2937; }
+							h1, h2, h3, h4 { margin-top: 1.5rem; margin-bottom: 0.75rem; }
+							p { margin: 1rem 0; line-height: 1.7; }
+							code { background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 0.25rem; }
+							pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+							img { max-width: 100%; border-radius: 0.5rem; }
+						</style>
+						<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
+					</head>
+					<body>
+						<h1>${this.post.title}</h1>
+						<div>${parsed}</div>
+						<script>document.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));</script>
+					</body>
+					</html>
+				`);
+				preview.document.close();
+			}
+		};
+	}
 </script>
 {{end}}

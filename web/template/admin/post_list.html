@@ -1,628 +1,184 @@
 {{template "base" .}}
 
 {{define "content"}}
-<!-- Apple 风格文章列表页面 -->
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-    <!-- 动态背景装饰 -->
-    <div class="fixed inset-0 -z-10 overflow-hidden">
-        <div
-            class="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 rounded-full blur-3xl opacity-30 animate-pulse">
-        </div>
-        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-green-100 via-blue-100 to-purple-100 rounded-full blur-3xl opacity-30 animate-pulse"
-            style="animation-delay: 2s;"></div>
-    </div>
+<div class="space-y-10">
+	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+		<div>
+			<h1 class="text-3xl font-semibold text-slate-900">文章管理</h1>
+			<p class="mt-2 text-sm text-slate-500">筛选、检索并维护你的内容资产。</p>
+		</div>
+		<a href="/admin/posts/new" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500">新建文章</a>
+	</header>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- 页面头部 -->
-        <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl shadow-xl mb-8">
-            <div class="px-8 py-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-3xl font-display font-bold text-gray-900">文章管理</h1>
-                        <p class="mt-2 text-gray-600">管理和组织您的技术文章</p>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <a href="/admin/posts/new"
-                            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 4v16m8-8H4"></path>
-                            </svg>
-                            创建文章
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+	<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+		<form method="GET" action="/admin/posts" class="space-y-6">
+			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+				<label class="col-span-full flex flex-col gap-2">
+					<span class="text-sm font-medium text-slate-700">关键词</span>
+					<input type="text" name="search" value="{{.search}}" placeholder="搜索标题、内容或摘要" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+				</label>
 
-        <!-- 搜索和筛选区域 -->
-        <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl shadow-xl mb-8">
-            <div class="p-8">
-                <form method="GET" action="/admin/posts" class="space-y-6">
-                    <!-- 搜索区域 -->
-                    <div class="bg-white/50 backdrop-blur-sm rounded-2xl p-6">
-                        <label for="search" class="block text-sm font-medium text-gray-700 mb-3">关键词搜索</label>
-                        <div class="relative">
-                            <input type="text" id="search" name="search" value="{{.search}}"
-                                class="w-full pl-12 pr-4 py-3 bg-white/80 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                placeholder="搜索文章标题、内容或摘要...">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
+				<label class="flex flex-col gap-2">
+					<span class="text-sm font-medium text-slate-700">文章状态</span>
+					<select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+						<option value="" {{if eq .status ""}}selected{{end}}>全部</option>
+						<option value="draft" {{if eq .status "draft"}}selected{{end}}>草稿</option>
+						<option value="published" {{if eq .status "published"}}selected{{end}}>已发布</option>
+					</select>
+				</label>
 
-                    <!-- 高级筛选 -->
-                    <div class="bg-white/50 backdrop-blur-sm rounded-2xl p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <!-- 状态筛选 -->
-                            <div>
-                                <label for="status" class="block text-sm font-medium text-gray-700 mb-2">文章状态</label>
-                                <select id="status" name="status"
-                                    class="w-full px-3 py-2 bg-white/50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
-                                    <option value="">全部状态</option>
-                                    <option value="draft" {{if eq .status "draft" }}selected{{end}}>草稿</option>
-                                    <option value="published" {{if eq .status "published" }}selected{{end}}>已发布</option>
-                                </select>
-                            </div>
+				<label class="flex flex-col gap-2">
+					<span class="text-sm font-medium text-slate-700">开始日期</span>
+					<input id="start_date" type="text" name="start_date" value="{{.startDate}}" placeholder="选择开始日期" class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+				</label>
 
-                            <!-- 日期筛选 -->
-                            <div>
-                                <label for="start_date"
-                                    class="block text-sm font-medium text-gray-700 mb-2">开始日期</label>
-                                <div class="relative group cursor-pointer" id="start_date_picker">
-                                    <input type="text" id="start_date" name="start_date" value="{{.startDate}}"
-                                        class="w-full px-3 py-2 pl-10 pr-10 bg-white/50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
-                                        placeholder="选择开始日期" readonly>
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg class="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
-                                            </path>
-                                        </svg>
-                                    </div>
-                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                        <button type="button" class="text-gray-400 hover:text-gray-600"
-                                            id="clear_start_date">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M6 18L18 6M6 6l12 12"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+				<label class="flex flex-col gap-2">
+					<span class="text-sm font-medium text-slate-700">结束日期</span>
+					<input id="end_date" type="text" name="end_date" value="{{.endDate}}" placeholder="选择结束日期" class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+				</label>
+			</div>
 
-                            <div>
-                                <label for="end_date" class="block text-sm font-medium text-gray-700 mb-2">结束日期</label>
-                                <div class="relative group cursor-pointer" id="end_date_picker">
-                                    <input type="text" id="end_date" name="end_date" value="{{.endDate}}"
-                                        class="w-full px-3 py-2 pl-10 pr-10 bg-white/50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 cursor-pointer"
-                                        placeholder="选择结束日期" readonly>
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg class="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
-                                            </path>
-                                        </svg>
-                                    </div>
-                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                        <button type="button" class="text-gray-400 hover:text-gray-600"
-                                            id="clear_end_date">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M6 18L18 6M6 6l12 12"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+			<div class="space-y-2">
+				<span class="text-sm font-medium text-slate-700">标签筛选</span>
+				<div class="flex flex-wrap gap-3">
+					{{range $tag := .allTags}}
+					<label class="inline-flex items-center gap-2">
+						<input type="checkbox" name="tags" value="{{$tag.Name}}" class="peer sr-only" {{range $selected := $.tags}}{{if eq $selected $tag.Name}}checked{{end}}{{end}}>
+						<span class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 transition-colors peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600">{{$tag.Name}}</span>
+					</label>
+					{{end}}
+				</div>
+			</div>
 
-                            <!-- 操作按钮 -->
-                            <div class="flex items-end space-x-2">
-                                <button type="submit"
-                                    class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                    </svg>
-                                    搜索
-                                </button>
-                                <button type="button" id="reset_button"
-                                    class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors duration-200">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                                        </path>
-                                    </svg>
-                                    重置
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+			<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div class="text-xs text-slate-500">提交后将自动应用筛选条件并刷新列表。</div>
+				<div class="flex gap-3">
+					<button type="submit" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500">搜索</button>
+					<a href="/admin/posts" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100">重置</a>
+				</div>
+			</div>
+		</form>
+	</section>
 
-                    <!-- 标签筛选 -->
-                    <div class="bg-white/50 backdrop-blur-sm rounded-2xl p-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-3">标签筛选</label>
-                        <div class="flex flex-wrap gap-3">
-                            {{range .allTags}}
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="tags" value="{{.Name}}" {{range $.tags}}{{if eq .
-                                    $.Name}}checked{{end}}{{end}} class="sr-only peer">
-                                <span
-                                    class="px-3 py-1.5 bg-white/50 border border-gray-200 rounded-full text-sm text-gray-700 peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-all duration-200">
-                                    {{.Name}}
-                                </span>
-                            </label>
-                            {{end}}
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
+	<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+			<p class="text-sm text-slate-500">总文章</p>
+			<p class="mt-2 text-3xl font-semibold text-slate-900">{{.total}}</p>
+		</div>
+		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+			<p class="text-sm text-slate-500">已发布</p>
+			<p class="mt-2 text-3xl font-semibold text-emerald-600">{{.publishedCount}}</p>
+		</div>
+		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+			<p class="text-sm text-slate-500">草稿</p>
+			<p class="mt-2 text-3xl font-semibold text-amber-600">{{.draftCount}}</p>
+		</div>
+		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+			<p class="text-sm text-slate-500">标签数</p>
+			<p class="mt-2 text-3xl font-semibold text-purple-600">{{len .allTags}}</p>
+		</div>
+	</section>
 
-        <!-- 统计卡片 -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 text-center shadow-lg">
-                <div class="text-3xl font-bold text-blue-600 mb-2">{{.total}}</div>
-                <div class="text-sm text-gray-600">总文章数</div>
-            </div>
-            <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 text-center shadow-lg">
-                <div class="text-3xl font-bold text-green-600 mb-2">{{.publishedCount}}</div>
-                <div class="text-sm text-gray-600">已发布</div>
-            </div>
-            <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 text-center shadow-lg">
-                <div class="text-3xl font-bold text-yellow-600 mb-2">{{.draftCount}}</div>
-                <div class="text-sm text-gray-600">草稿</div>
-            </div>
-            <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 text-center shadow-lg">
-                <div class="text-3xl font-bold text-purple-600 mb-2">{{len .allTags}}</div>
-                <div class="text-sm text-gray-600">标签总数</div>
-            </div>
-        </div>
+	<section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+		<div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+			<h2 class="text-lg font-semibold text-slate-900">文章列表</h2>
+			<span class="text-xs font-medium text-slate-500">共 {{.total}} 篇</span>
+		</div>
+		<div class="divide-y divide-slate-200">
+			{{if .error}}
+			<div class="px-6 py-20 text-center text-sm text-rose-500">{{.error}}</div>
+			{{else if gt (len .posts) 0}}
+				{{range .posts}}
+				<article class="flex flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+					<div class="min-w-0 space-y-2">
+						<h3 class="truncate text-lg font-medium text-slate-900" title="{{.Title}}">{{.Title}}</h3>
+						<div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+							<span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+								{{if eq .Status "published"}}已发布{{else}}草稿{{end}}
+							</span>
+							<span>创建于 {{.CreatedAt.Format "2006-01-02 15:04"}}</span>
+							{{if .User}}
+							<span>· {{.User.Username}}</span>
+							{{end}}
+						</div>
+						{{if .Tags}}
+						<ul class="flex flex-wrap gap-2 text-xs">
+							{{range .Tags}}
+							<li class="rounded-full bg-blue-50 px-2.5 py-0.5 text-blue-600">{{.Name}}</li>
+							{{end}}
+						</ul>
+						{{end}}
+					</div>
+					<div class="flex items-center gap-2 text-xs">
+						<a href="/admin/posts/{{.ID}}/edit" class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100">编辑</a>
+						<button type="button" onclick="deletePost('{{.ID}}')" class="inline-flex items-center rounded-lg border border-rose-200 px-3 py-1.5 font-medium text-rose-600 transition-colors hover:bg-rose-50">删除</button>
+					</div>
+				</article>
+				{{end}}
+			{{else}}
+			<div class="px-6 py-20 text-center text-sm text-slate-500">暂无文章，请调整筛选条件或新建文章。</div>
+			{{end}}
+		</div>
+	</section>
 
-        <!-- 文章列表 -->
-        <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl shadow-xl">
-            <div class="px-8 py-6 border-b border-white/20">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-medium text-gray-900">文章列表</h2>
-                    <span class="text-sm text-gray-500">{{.total}} 篇文章</span>
-                </div>
-            </div>
-
-            <div class="divide-y divide-white/20">
-                {{if .error}}
-                <div class="px-8 py-12 text-center">
-                    <div class="bg-red-50/50 backdrop-blur-sm rounded-2xl p-6">
-                        <svg class="w-12 h-12 text-red-500 mx-auto mb-3" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-red-700 font-medium">{{.error}}</p>
-                    </div>
-                </div>
-                {{else if .posts}}
-                {{range .posts}}
-                <div class="px-8 py-6 hover:bg-white/50 backdrop-blur-sm transition-all duration-200">
-                    <div class="flex items-center justify-between">
-                        <div class="flex-1 min-w-0">
-                            <h3 class="text-lg font-medium text-gray-900 truncate" title="{{.Title}}">{{.Title}}</h3>
-                            <div class="flex items-center mt-2 space-x-4">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    {{if eq .Status " published"}}bg-green-100 text-green-800{{else}}bg-yellow-100
-                                    text-yellow-800{{end}}">
-                                    {{if eq .Status `published`}}已发布{{else}}草稿{{end}}
-                                </span>
-                                {{if .Tags}}
-                                <div class="flex items-center space-x-1">
-                                    {{range .Tags}}
-                                    <span
-                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        {{.Name}}
-                                    </span>
-                                    {{end}}
-                                </div>
-                                {{end}}
-                            </div>
-                            <div class="mt-2 text-sm text-gray-500">
-                                <span>创建于 {{.CreatedAt.Format "2006-01-02 15:04"}}</span>
-                                {{if .User}}
-                                <span class="ml-2">• {{.User.Username}}</span>
-                                {{end}}
-                            </div>
-                        </div>
-                        <div class="ml-4 flex-shrink-0 flex items-center space-x-2">
-                            <a href="/admin/posts/{{.ID}}/edit"
-                                class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full hover:bg-blue-200 transition-colors">
-                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                    </path>
-                                </svg>
-                                编辑
-                            </a>
-                            <button onclick="deletePost('{{.ID}}')"
-                                class="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 text-xs font-medium rounded-full hover:bg-red-200 transition-colors">
-                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                    </path>
-                                </svg>
-                                删除
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                {{end}}
-                {{else}}
-                <div class="px-8 py-12 text-center">
-                    <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                        </path>
-                    </svg>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">没有找到文章</h3>
-                    <p class="text-gray-600 mb-4">请尝试调整筛选条件或创建新文章</p>
-                    <a href="/admin/posts"
-                        class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
-                            </path>
-                        </svg>
-                        创建第一篇文章
-                    </a>
-                </div>
-                {{end}}
-            </div>
-
-            <!-- 分页 -->
-            {{if gt .totalPages 1}}
-            <div class="px-8 py-6 border-t border-white/20">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-gray-700">
-                            共 <span class="font-bold">{{.total}}</span> 篇文章，
-                            第 <span class="font-bold">{{.page}}</span> 页，
-                            共 <span class="font-bold">{{.totalPages}}</span> 页
-                        </p>
-                    </div>
-                    <div>
-                        <nav class="relative z-0 inline-flex rounded-xl shadow-sm -space-x-px" aria-label="分页">
-                            {{if gt .page 1}}
-                            <a href="/admin/posts?page={{sub .page 1}}{{.queryParams}}"
-                                class="relative inline-flex items-center px-3 py-2 rounded-l-xl border border-gray-200 bg-white/50 text-sm font-medium text-gray-500 hover:bg-white/80 transition-colors">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 19l-7-7 7-7"></path>
-                                </svg>
-                            </a>
-                            {{end}}
-
-                            {{range $i := .pages}}
-                            {{if eq $i $.page}}
-                            <span
-                                class="relative inline-flex items-center px-4 py-2 border border-blue-500 bg-blue-500 text-sm font-medium text-white">
-                                {{$i}}
-                            </span>
-                            {{else}}
-                            <a href="/admin/posts?page={{$i}}{{$.queryParams}}"
-                                class="relative inline-flex items-center px-4 py-2 border border-gray-200 bg-white/50 text-sm font-medium text-gray-700 hover:bg-white/80 transition-colors">
-                                {{$i}}
-                            </a>
-                            {{end}}
-                            {{end}}
-
-                            {{if lt .page .totalPages}}
-                            <a href="/admin/posts?page={{add .page 1}}{{.queryParams}}"
-                                class="relative inline-flex items-center px-3 py-2 rounded-r-xl border border-gray-200 bg-white/50 text-sm font-medium text-gray-500 hover:bg-white/80 transition-colors">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 5l7 7-7 7"></path>
-                                </svg>
-                            </a>
-                            {{end}}
-                        </nav>
-                    </div>
-                </div>
-            </div>
-            {{end}}
-        </div>
-    </div>
+	{{if gt .totalPages 1}}
+	<nav class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+		<a href="?page={{sub .page 1}}{{.queryParams}}" class="rounded-lg px-3 py-1.5 transition-colors {{if gt .page 1}}hover:bg-slate-100{{else}}pointer-events-none text-slate-300{{end}}">上一页</a>
+		<div class="flex items-center gap-2">
+			{{range .pages}}
+			<a href="?page={{.}}{{$.queryParams}}" class="rounded-lg px-3 py-1.5 {{if eq . $.page}}bg-blue-600 text-white{{else}}hover:bg-slate-100{{end}}">{{.}}</a>
+			{{end}}
+		</div>
+		<a href="?page={{add .page 1}}{{.queryParams}}" class="rounded-lg px-3 py-1.5 transition-colors {{if lt .page .totalPages}}hover:bg-slate-100{{else}}pointer-events-none text-slate-300{{end}}">下一页</a>
+	</nav>
+	{{end}}
 </div>
 
 <script>
-    // 删除文章函数
-    function deletePost(id) {
-        if (confirm('确定要删除这篇文章吗？')) {
-            fetch(`/admin/api/posts/${id}`, {
-                method: 'DELETE',
-            })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message || '删除成功');
-                    location.reload();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('删除失败');
-                });
-        }
-    }
+	flatpickr.localize(flatpickr.l10ns.zh);
+	const dateOptions = { dateFormat: 'Y-m-d', allowInput: true };
+	const startInput = document.getElementById('start_date');
+	const endInput = document.getElementById('end_date');
 
-    // 打开日期选择器
-    function openDatePicker(inputId) {
-        const input = document.getElementById(inputId);
-        if (input && input._flatpickr) {
-            input._flatpickr.open();
-        }
-    }
+	let startInstance;
+	let endInstance;
 
-    // 清除日期函数
-    function clearDate(inputId) {
-        const input = document.getElementById(inputId);
-        if (input && input._flatpickr) {
-            input._flatpickr.clear();
-        }
-    }
+	if (startInput) {
+		startInstance = flatpickr(startInput, {
+			...dateOptions,
+			onChange(selectedDates) {
+				if (selectedDates.length && endInstance) {
+					endInstance.set('minDate', selectedDates[0]);
+				}
+			}
+		});
+	}
 
-    // 搜索增强功能
-    document.addEventListener('DOMContentLoaded', function () {
-        // 绑定日期选择器点击事件
-        document.getElementById('start_date_picker')?.addEventListener('click', function () {
-            openDatePicker('start_date');
-        });
+	if (endInput) {
+		endInstance = flatpickr(endInput, {
+			...dateOptions,
+			onChange(selectedDates) {
+				if (selectedDates.length && startInstance) {
+					startInstance.set('maxDate', selectedDates[0]);
+				}
+			}
+		});
+	}
 
-        document.getElementById('end_date_picker')?.addEventListener('click', function () {
-            openDatePicker('end_date');
-        });
+	function deletePost(id) {
+		if (!confirm('确定要删除这篇文章吗？')) {
+			return;
+		}
 
-        // 绑定清除日期按钮点击事件
-        document.getElementById('clear_start_date')?.addEventListener('click', function (event) {
-            event.stopPropagation();
-            clearDate('start_date');
-        });
-
-        document.getElementById('clear_end_date')?.addEventListener('click', function (event) {
-            event.stopPropagation();
-            clearDate('end_date');
-        });
-
-        // 初始化 Flatpickr 日期选择器
-        const dateOptions = {
-            locale: 'zh',
-            dateFormat: 'Y-m-d',
-            allowInput: true,
-            clickOpens: true,
-            theme: 'airbnb',
-            disableMobile: false,
-            prevArrow: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>',
-            nextArrow: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>',
-            onChange: function (selectedDates, dateStr, instance) {
-                // 日期选择变化时的回调
-                console.log('日期选择:', dateStr);
-            }
-        };
-
-        // 初始化开始日期
-        if (document.getElementById('start_date')) {
-            const startDatePicker = flatpickr('#start_date', {
-                ...dateOptions,
-                placeholder: '选择开始日期',
-                maxDate: document.getElementById('end_date').value || null
-            });
-            // 确保_flatpickr属性被正确设置
-            document.getElementById('start_date')._flatpickr = startDatePicker;
-        }
-
-        // 初始化结束日期
-        if (document.getElementById('end_date')) {
-            const endDatePicker = flatpickr('#end_date', {
-                ...dateOptions,
-                placeholder: '选择结束日期',
-                minDate: document.getElementById('start_date').value || null
-            });
-            // 确保_flatpickr属性被正确设置
-            document.getElementById('end_date')._flatpickr = endDatePicker;
-        }
-
-        // 监听日期变化，动态更新日期范围限制
-        document.getElementById('start_date')?.addEventListener('change', function (e) {
-            const endDatePicker = document.getElementById('end_date')?._flatpickr;
-            if (endDatePicker) {
-                endDatePicker.set('minDate', e.target.value);
-            }
-        });
-
-        document.getElementById('end_date')?.addEventListener('change', function (e) {
-            const startDatePicker = document.getElementById('start_date')?._flatpickr;
-            if (startDatePicker) {
-                startDatePicker.set('maxDate', e.target.value);
-            }
-        });
-
-        const searchInput = document.getElementById('search');
-        const searchForm = document.querySelector('form');
-        const searchButton = document.querySelector('button[type="submit"]');
-
-        // 使用AJAX提交表单，避免页面刷新
-        function submitFormWithAjax(e) {
-            e.preventDefault();
-
-            // 手动构建FormData，确保所有字段都被正确获取
-            const formData = new FormData();
-
-            // 获取搜索关键词
-            const searchValue = document.getElementById('search').value;
-            if (searchValue) formData.append('search', searchValue);
-
-            // 获取状态筛选值
-            const statusSelect = document.getElementById('status');
-            // 无论是否为空，都添加状态参数
-            formData.append('status', statusSelect ? statusSelect.value : '');
-            console.log('状态筛选值:', statusSelect ? statusSelect.value : '空值'); // 调试日志
-
-            // 获取日期范围
-            const startDate = document.getElementById('start_date').value;
-            if (startDate) formData.append('start_date', startDate);
-
-            const endDate = document.getElementById('end_date').value;
-            if (endDate) formData.append('end_date', endDate);
-
-            // 获取选中的标签
-            const tagCheckboxes = document.querySelectorAll('input[name="tags"]:checked');
-            tagCheckboxes.forEach(checkbox => {
-                formData.append('tags', checkbox.value);
-            });
-
-            // 构建查询字符串
-            const queryString = new URLSearchParams(formData).toString();
-            console.log('查询字符串:', queryString); // 调试日志
-
-            const url = searchForm.action + '?' + queryString;
-
-            // 使用History API更新URL，不刷新页面
-            history.pushState(null, '', url);
-
-            // 使用fetch获取新页面内容
-            fetch(url)
-                .then(response => response.text())
-                .then(html => {
-                    // 解析HTML
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-
-                    // 更新文章列表部分
-                    const newPostList = doc.querySelector('.divide-y.divide-white\\/20');
-                    const currentPostList = document.querySelector('.divide-y.divide-white\\/20');
-                    if (newPostList && currentPostList) {
-                        currentPostList.innerHTML = newPostList.innerHTML;
-                    }
-
-                    // 更新统计卡片
-                    const newStats = doc.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-4.gap-6.mb-8 .bg-white\\/80');
-                    const currentStats = document.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-4.gap-6.mb-8 .bg-white\\/80');
-                    if (newStats.length === currentStats.length) {
-                        for (let i = 0; i < newStats.length; i++) {
-                            currentStats[i].innerHTML = newStats[i].innerHTML;
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('搜索请求失败:', error);
-                });
-        }
-
-        // 为搜索按钮添加事件监听器
-        searchButton?.addEventListener('click', submitFormWithAjax);
-
-        // 回车键触发搜索
-        searchInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                submitFormWithAjax(e);
-            }
-        });
-
-        // 为重置按钮添加事件监听器
-        const resetButton = document.getElementById('reset_button');
-        resetButton?.addEventListener('click', function (e) {
-            e.preventDefault();
-
-            // 清空所有输入字段
-            document.getElementById('search').value = '';
-
-            // 重置状态选择器
-            const statusSelect = document.getElementById('status');
-            if (statusSelect) {
-                statusSelect.value = '';
-                console.log('重置状态选择器:', statusSelect.value); // 调试日志
-            }
-
-            // 清空日期字段
-            document.getElementById('start_date').value = '';
-            document.getElementById('end_date').value = '';
-
-            // 取消选中所有标签
-            const tagCheckboxes = document.querySelectorAll('input[name="tags"]');
-            tagCheckboxes.forEach(checkbox => {
-                checkbox.checked = false;
-            });
-
-            console.log('表单已重置'); // 调试日志
-
-            // 构建空的查询参数，确保明确传递空状态
-            const emptyParams = new URLSearchParams();
-            emptyParams.append('status', '');
-
-            // 使用AJAX加载重置后的页面，明确传递空状态参数
-            fetch('/admin/posts?' + emptyParams.toString())
-                .then(response => response.text())
-                .then(html => {
-                    // 解析HTML
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-
-                    // 更新文章列表部分 - 使用更简单的选择器
-                    const newPostList = doc.querySelector('.divide-y');
-                    const currentPostList = document.querySelector('.divide-y');
-                    if (newPostList && currentPostList) {
-                        currentPostList.innerHTML = newPostList.innerHTML;
-                    }
-
-                    // 更新统计卡片 - 使用更简单的选择器
-                    const newStats = doc.querySelectorAll('.grid .bg-white');
-                    const currentStats = document.querySelectorAll('.grid .bg-white');
-                    if (newStats.length === currentStats.length) {
-                        for (let i = 0; i < newStats.length; i++) {
-                            currentStats[i].innerHTML = newStats[i].innerHTML;
-                        }
-                    }
-
-                    // 更新URL
-                    history.pushState(null, '', '/admin/posts');
-                })
-                .catch(error => {
-                    console.error('重置请求失败:', error);
-                });
-        });
-
-        // 搜索框获得焦点时显示提示
-        searchInput.addEventListener('focus', function () {
-            this.setAttribute('placeholder', '输入关键词后按回车搜索...');
-        });
-
-        searchInput.addEventListener('blur', function () {
-            this.setAttribute('placeholder', '搜索文章标题、内容或摘要...');
-        });
-
-        // 清除搜索按钮
-        const clearSearchBtn = document.createElement('button');
-        clearSearchBtn.type = 'button';
-        clearSearchBtn.innerHTML = '×';
-        clearSearchBtn.className = 'absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600';
-        clearSearchBtn.style.display = searchInput.value ? 'block' : 'none';
-
-        const searchContainer = searchInput.parentElement;
-        searchContainer.style.position = 'relative';
-        searchContainer.appendChild(clearSearchBtn);
-
-        clearSearchBtn.addEventListener('click', function () {
-            searchInput.value = '';
-            this.style.display = 'none';
-            searchInput.focus();
-        });
-
-        searchInput.addEventListener('input', function () {
-            clearSearchBtn.style.display = this.value ? 'block' : 'none';
-        });
-    });
+		fetch(`/admin/api/posts/${id}`, { method: 'DELETE' })
+			.then(response => response.json())
+			.then(data => {
+				alert(data.message || '删除成功');
+				window.location.reload();
+			})
+			.catch(() => {
+				alert('删除失败，请稍后重试');
+			});
+	}
 </script>
 {{end}}
