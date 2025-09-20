@@ -25,21 +25,27 @@
 	<header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
 		<nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
 			<a href="/" class="flex items-center gap-3">
-				<span
-					class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 text-lg font-semibold text-white shadow-lg">CL</span>
-				<span class="flex flex-col">
-					<span class="text-base font-semibold">CommitLog</span>
-					<span class="text-xs text-slate-500">AI 全栈工程师的创作橱窗</span>
-				</span>
+				<img src="/static/icon/avatar.png" alt="Logo" class="h-11 w-11" />
 			</a>
+
+			<form method="GET" action="/" class="space-y-4">
+				<div class="flex flex-col gap-4 md:flex-row">
+					<label class="relative flex-1">
+						<input type="search" name="search" value="{{.search}}" placeholder="搜索"
+							class="w-full rounded-xl border border-slate-300 bg-white/90 px-4 py-3 pr-12 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+						<span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+									d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z" />
+							</svg>
+						</span>
+					</label>
+				</div>
+			</form>
+
 			<ul class="hidden items-center gap-3 text-sm font-medium text-slate-600 md:flex">
-				<li><a href="/" class="transition-colors hover:text-slate-900">文章</a></li>
 				<li><a href="/about" class="transition-colors hover:text-slate-900">关于我</a></li>
 			</ul>
-			<div class="flex items-center gap-3 text-sm">
-				<a href="/admin/dashboard"
-					class="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-600 transition-colors hover:bg-slate-100">后台</a>
-			</div>
 		</nav>
 	</header>
 

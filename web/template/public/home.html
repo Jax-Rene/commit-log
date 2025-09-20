@@ -9,20 +9,6 @@
 				<p class="text-sm text-slate-600">精选文章、沉淀经验，展示 AI 全栈工程师的长期主义。</p>
 			</div>
 			<form method="GET" action="/" class="space-y-4">
-				<div class="flex flex-col gap-4 md:flex-row">
-					<label class="relative flex-1">
-						<input type="search" name="search" value="{{.search}}" placeholder="搜索文章标题、摘要或内容"
-							class="w-full rounded-xl border border-slate-300 bg-white/90 px-4 py-3 pr-12 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
-						<span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-									d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z" />
-							</svg>
-						</span>
-					</label>
-					<button type="submit"
-						class="rounded-xl bg-blue-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-500">搜索</button>
-				</div>
 				{{if .tagOptions}}
 				<div class="flex flex-wrap gap-2 text-xs">
 					{{range $tag := .tagOptions}}
