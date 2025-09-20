@@ -34,24 +34,6 @@ func GetTags(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": response})
 }
 
-// ShowTagList 渲染标签管理列表页面
-func ShowTagList(c *gin.Context) {
-	svc := service.NewTagService(db.DB)
-	tags, err := svc.ListWithPosts()
-	if err != nil {
-		c.HTML(http.StatusInternalServerError, "tag_list.html", gin.H{
-			"title": "标签管理",
-			"error": "获取标签列表失败",
-		})
-		return
-	}
-
-	c.HTML(http.StatusOK, "tag_list.html", gin.H{
-		"title": "标签管理",
-		"tags":  tags,
-	})
-}
-
 // CreateTag 创建新标签
 func CreateTag(c *gin.Context) {
 	var req tagRequest

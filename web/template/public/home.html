@@ -5,28 +5,32 @@
 	<header class="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm">
 		<div class="space-y-6">
 			<div class="space-y-2">
-				<p class="text-sm font-medium text-blue-600">Phase 3 · 公众的橱窗</p>
 				<h1 class="text-4xl font-semibold text-slate-900">记录技术实践与持续成长</h1>
 				<p class="text-sm text-slate-600">精选文章、沉淀经验，展示 AI 全栈工程师的长期主义。</p>
 			</div>
 			<form method="GET" action="/" class="space-y-4">
 				<div class="flex flex-col gap-4 md:flex-row">
 					<label class="relative flex-1">
-						<input type="search" name="search" value="{{.search}}" placeholder="搜索文章标题、摘要或内容" class="w-full rounded-xl border border-slate-300 bg-white/90 px-4 py-3 pr-12 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+						<input type="search" name="search" value="{{.search}}" placeholder="搜索文章标题、摘要或内容"
+							class="w-full rounded-xl border border-slate-300 bg-white/90 px-4 py-3 pr-12 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
 						<span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
 							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z" />
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+									d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z" />
 							</svg>
 						</span>
 					</label>
-					<button type="submit" class="rounded-xl bg-blue-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-500">搜索</button>
+					<button type="submit"
+						class="rounded-xl bg-blue-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-500">搜索</button>
 				</div>
 				{{if .tagOptions}}
 				<div class="flex flex-wrap gap-2 text-xs">
 					{{range $tag := .tagOptions}}
 					<label class="inline-flex items-center">
-						<input type="checkbox" name="tags" value="{{$tag.Name}}" class="peer sr-only" {{range $.tags}}{{if eq . $tag.Name}}checked{{end}}{{end}}>
-						<span class="rounded-full border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition-colors peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600">{{$tag.Name}}</span>
+						<input type="checkbox" name="tags" value="{{$tag.Name}}" class="peer sr-only" {{range
+							$.tags}}{{if eq . $tag.Name}}checked{{end}}{{end}}>
+						<span
+							class="rounded-full border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition-colors peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600">{{$tag.Name}}</span>
 					</label>
 					{{end}}
 				</div>
@@ -35,24 +39,30 @@
 		</div>
 	</header>
 
+	{{ $hasPosts := gt (len .posts) 0 }}
 	<div id="post-grid" class="columns-1 gap-6 space-y-6 sm:columns-2 xl:columns-3">
-		{{if gt (len .posts) 0}}
-			{{range .posts}}
-			{{template "post_card" (dict "Post" .)}}
-			{{end}}
-		{{else}}
-		<div class="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-12 text-center text-sm text-slate-500">
-			暂时没有符合条件的文章，换个关键词试试吧。
-		</div>
+		{{if $hasPosts}}
+		{{range .posts}}
+		{{template "post_card" (dict "Post" .)}}
+		{{end}}
 		{{end}}
 	</div>
 
+	{{if not $hasPosts}}
+	<div class="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-12 text-center text-sm text-slate-500">
+		暂时没有符合条件的文章，换个关键词试试吧。
+	</div>
+	{{end}}
+
+	{{if $hasPosts}}
 	{{if .hasMore}}
-	<div id="load-more" hx-get="/posts/more?page={{add .page 1}}{{.queryParams}}" hx-trigger="revealed" hx-target="#load-more" hx-swap="outerHTML">
+	<div id="load-more" hx-get="/posts/more?page={{add .page 1}}{{.queryParams}}" hx-trigger="revealed"
+		hx-target="#load-more" hx-swap="outerHTML">
 		<div class="flex justify-center py-8 text-sm text-slate-500">加载中…</div>
 	</div>
 	{{else}}
 	<div class="py-8 text-center text-sm text-slate-400">已经到底啦 ✨</div>
+	{{end}}
 	{{end}}
 </section>
 {{end}}

@@ -250,7 +250,7 @@ func SetupRouter() *gin.Engine {
 			auth.GET("/posts", handler.ShowPostList)
 			auth.GET("/posts/new", handler.ShowPostEdit)
 			auth.GET("/posts/:id/edit", handler.ShowPostEdit)
-			auth.GET("/tags", handler.ShowTagList)
+			auth.GET("/about", handler.ShowAboutEditor)
 
 			// API路由
 			api := auth.Group("/api")
@@ -265,6 +265,7 @@ func SetupRouter() *gin.Engine {
 				api.POST("/tags", handler.CreateTag)
 				api.PUT("/tags/:id", handler.UpdateTag)
 				api.DELETE("/tags/:id", handler.DeleteTag)
+				api.PUT("/pages/about", handler.UpdateAboutPage)
 
 				// 图片上传接口
 				api.POST("/upload/image", handler.UploadImage)

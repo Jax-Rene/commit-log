@@ -33,7 +33,7 @@
     transition: all 0.2s ease;
 }
 
-.editor-toolbar button:hover, 
+.editor-toolbar button:hover,
 .editor-toolbar button.active {
     background-color: rgba(59, 130, 246, 0.1);
     color: #3b82f6;

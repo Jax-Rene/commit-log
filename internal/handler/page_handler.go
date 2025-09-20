@@ -1,0 +1,74 @@
+package handler
+
+import (
+	"errors"
+	"net/http"
+	"time"
+
+	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/service"
+	"github.com/gin-gonic/gin"
+)
+
+type aboutPayload struct {
+	Content string `json:"content"`
+}
+
+// ShowAboutEditor renders the admin editor for the about page.
+func ShowAboutEditor(c *gin.Context) {
+	svc := service.NewPageService(db.DB)
+	page, err := svc.GetBySlug("about")
+	if err != nil {
+		if !errors.Is(err, service.ErrPageNotFound) {
+			c.HTML(http.StatusInternalServerError, "about_edit.html", gin.H{
+				"title": "关于我",
+				"error": "加载关于页面失败，请稍后再试",
+			})
+			return
+		}
+	}
+
+	var content string
+	var updatedAt string
+	if page != nil {
+		content = page.Content
+		if !page.UpdatedAt.IsZero() {
+			updatedAt = page.UpdatedAt.In(time.Local).Format("2006-01-02 15:04")
+		}
+	}
+
+	c.HTML(http.StatusOK, "about_edit.html", gin.H{
+		"title":     "关于我",
+		"content":   content,
+		"updatedAt": updatedAt,
+	})
+}
+
+// UpdateAboutPage saves the markdown content for the about page.
+func UpdateAboutPage(c *gin.Context) {
+	var payload aboutPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "内容格式不正确"})
+		return
+	}
+
+	svc := service.NewPageService(db.DB)
+	page, err := svc.SaveAboutPage(payload.Content)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrPageContentMissing):
+			c.JSON(http.StatusBadRequest, gin.H{"error": "请填写关于页面内容"})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "保存失败，请稍后重试"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "关于页面已更新",
+		"page": gin.H{
+			"content":   page.Content,
+			"updatedAt": page.UpdatedAt.In(time.Local).Format("2006-01-02 15:04"),
+		},
+	})
+}
