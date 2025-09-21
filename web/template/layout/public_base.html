@@ -16,23 +16,26 @@
 	<style>
 		body {
 			font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-			background: linear-gradient(180deg, #f8fafc 0%, #ffffff 40%);
+			background: #ffffff;
 		}
 	</style>
 </head>
 
 <body class="text-slate-900 antialiased">
-	<header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
-		<nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-			<a href="/" class="flex items-center gap-3">
-				<img src="/static/icon/avatar.png" alt="Logo" class="h-11 w-11" />
-			</a>
+	<header class="sticky top-0 z-40 bg-white">
+		<nav class="mx-auto flex max-w-6xl items-center gap-6 px-4 py-2">
+			<div class="flex flex-1 items-center gap-3">
+				<a href="/" class="flex items-center gap-3">
+					<img src="/static/icon/avatar.png" alt="Logo" class="h-11 w-11" />
+				</a>
+			</div>
 
-			<form method="GET" action="/" class="space-y-4">
-				<div class="flex flex-col gap-4 md:flex-row">
-					<label class="relative flex-1">
-						<input type="search" name="search" value="{{.search}}" placeholder="搜索"
-							class="w-full rounded-xl border border-slate-300 bg-white/90 px-4 py-3 pr-12 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+			<div class="flex flex-1 justify-center px-4">
+				<form method="GET" action="/" class="w-full max-w-xs sm:max-w-md">
+					<label class="relative block">
+						<input type="search" name="search" value="{{.search}}" placeholder="搜索文章"
+							class="w-full rounded-full px-4 py-2 pr-10 text-sm text-slate-900 placeholder-slate-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+							style="background-color: rgb(247, 247, 247);">
 						<span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
 							<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -40,12 +43,12 @@
 							</svg>
 						</span>
 					</label>
-				</div>
-			</form>
+				</form>
+			</div>
 
-			<ul class="hidden items-center gap-3 text-sm font-medium text-slate-600 md:flex">
-				<li><a href="/about" class="transition-colors hover:text-slate-900">关于我</a></li>
-			</ul>
+			<div class="flex flex-1 items-center justify-end text-sm font-medium text-slate-600">
+				<a href="/about" class="transition-colors hover:text-slate-900">关于我</a>
+			</div>
 		</nav>
 	</header>
 

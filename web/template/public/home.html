@@ -2,12 +2,8 @@
 
 {{define "content"}}
 <section class="space-y-10">
-	<header class="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm">
-		<div class="space-y-6">
-			<div class="space-y-2">
-				<h1 class="text-4xl font-semibold text-slate-900">记录技术实践与持续成长</h1>
-				<p class="text-sm text-slate-600">精选文章、沉淀经验，展示 AI 全栈工程师的长期主义。</p>
-			</div>
+	<header class>
+		<div class="space-y-2">
 			<form method="GET" action="/" class="space-y-4">
 				{{if .tagOptions}}
 				<div class="flex flex-wrap gap-2 text-xs">
