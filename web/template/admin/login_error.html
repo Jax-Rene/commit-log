@@ -1,60 +1,52 @@
 {{template "base" .}}
 
 {{define "content"}}
-<!-- Apple 风格登录错误页面 -->
-<div class="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-    <!-- 动态背景装饰 -->
+<div class="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 transition-colors dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
     <div class="fixed inset-0 -z-10 overflow-hidden">
-        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-red-100 via-pink-100 to-purple-100 rounded-full blur-3xl opacity-30 animate-pulse"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 rounded-full blur-3xl opacity-30 animate-pulse" style="animation-delay: 2s;"></div>
+        <div class="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-gradient-to-br from-red-100 via-pink-100 to-purple-100 blur-3xl opacity-30 animate-pulse dark:from-red-500/20 dark:via-pink-500/20 dark:to-purple-500/20"></div>
+        <div class="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 blur-3xl opacity-30 animate-pulse dark:from-blue-500/20 dark:via-indigo-500/20 dark:to-purple-500/20" style="animation-delay: 2s;"></div>
     </div>
 
     <div class="relative w-full max-w-md">
-        <!-- 毛玻璃卡片效果 -->
-        <div class="bg-white/80 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
-            <!-- 顶部装饰条 -->
+        <div class="overflow-hidden rounded-3xl border border-white/20 bg-white/80 shadow-2xl backdrop-blur-xl transition-colors dark:border-white/10 dark:bg-slate-900/70">
             <div class="h-2 bg-gradient-to-r from-red-500 via-pink-500 to-purple-500"></div>
             
-            <div class="p-8 space-y-6">
-                <!-- Logo 区域 -->
+            <div class="space-y-6 p-8">
                 <div class="text-center">
                     <div class="relative inline-block">
-                        <div class="w-16 h-16 bg-gradient-to-br from-red-500 via-pink-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 via-pink-500 to-purple-500 shadow-lg">
+                            <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                        <div class="absolute -inset-1 bg-gradient-to-br from-red-500 via-pink-500 to-purple-500 rounded-2xl blur opacity-20"></div>
+                        <div class="absolute -inset-1 rounded-2xl bg-gradient-to-br from-red-500 via-pink-500 to-purple-500 blur opacity-20"></div>
                     </div>
                 </div>
 
-                <!-- 标题 -->
                 <div class="text-center">
-                    <h2 class="text-3xl font-display font-bold text-gray-900">登录失败</h2>
-                    <p class="mt-2 text-sm text-gray-600">请检查您的登录信息</p>
+                    <h2 class="text-3xl font-display font-bold text-gray-900 dark:text-slate-100">登录失败</h2>
+                    <p class="mt-2 text-sm text-gray-600 dark:text-slate-400">请检查您的登录信息</p>
                 </div>
 
-                <!-- 错误提示 -->
-                <div class="bg-red-50/80 backdrop-blur-sm border border-red-200/50 rounded-2xl p-4">
+                <div class="rounded-2xl border border-red-200/50 bg-red-50/80 p-4 backdrop-blur-sm dark:border-red-500/40 dark:bg-red-500/10">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm font-medium text-red-800">{{.error}}</p>
+                            <p class="text-sm font-medium text-red-800 dark:text-red-200">{{.error}}</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- 操作按钮 -->
                 <div class="pt-2">
                     <a href="/admin/login"
-                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-2xl text-white bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                            <svg class="h-5 w-5 text-blue-100 group-hover:text-blue-50 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="group relative flex w-full justify-center rounded-2xl border border-transparent bg-gradient-to-r from-blue-500 to-purple-600 py-3 px-4 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-100 dark:focus:ring-offset-slate-900">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                            <svg class="h-5 w-5 text-blue-100 transition-colors group-hover:text-blue-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
                         </span>
@@ -62,9 +54,8 @@
                     </a>
                 </div>
 
-                <!-- 帮助提示 -->
                 <div class="text-center">
-                    <p class="text-xs text-gray-500">
+                    <p class="text-xs text-gray-500 dark:text-slate-500">
                         如需帮助，请联系系统管理员
                     </p>
                 </div>

@@ -2,25 +2,25 @@
 
 {{define "content"}}
 <div class="space-y-10">
-	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
 		<div>
-			<h1 class="text-3xl font-semibold text-slate-900">文章管理</h1>
-			<p class="mt-2 text-sm text-slate-500">筛选、检索并维护你的内容资产。</p>
+			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">文章管理</h1>
+			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">筛选、检索并维护你的内容资产。</p>
 		</div>
-		<a href="/admin/posts/new" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500">新建文章</a>
+		<a href="/admin/posts/new" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90">新建文章</a>
 	</header>
 
-	<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+	<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 		<form method="GET" action="/admin/posts" class="space-y-6">
 			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				<label class="col-span-full flex flex-col gap-2">
-					<span class="text-sm font-medium text-slate-700">关键词</span>
-					<input type="text" name="search" value="{{.search}}" placeholder="搜索标题、内容或摘要" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+					<span class="text-sm font-medium text-slate-700 dark:text-slate-200">关键词</span>
+					<input type="text" name="search" value="{{.search}}" placeholder="搜索标题、内容或摘要" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
 				</label>
 
 				<label class="flex flex-col gap-2">
-					<span class="text-sm font-medium text-slate-700">文章状态</span>
-					<select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+					<span class="text-sm font-medium text-slate-700 dark:text-slate-200">文章状态</span>
+					<select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30">
 						<option value="" {{if eq .status ""}}selected{{end}}>全部</option>
 						<option value="draft" {{if eq .status "draft"}}selected{{end}}>草稿</option>
 						<option value="published" {{if eq .status "published"}}selected{{end}}>已发布</option>
@@ -28,70 +28,70 @@
 				</label>
 
 				<label class="flex flex-col gap-2">
-					<span class="text-sm font-medium text-slate-700">开始日期</span>
-					<input id="start_date" type="text" name="start_date" value="{{.startDate}}" placeholder="选择开始日期" class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+					<span class="text-sm font-medium text-slate-700 dark:text-slate-200">开始日期</span>
+					<input id="start_date" type="text" name="start_date" value="{{.startDate}}" placeholder="选择开始日期" class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
 				</label>
 
 				<label class="flex flex-col gap-2">
-					<span class="text-sm font-medium text-slate-700">结束日期</span>
-					<input id="end_date" type="text" name="end_date" value="{{.endDate}}" placeholder="选择结束日期" class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+					<span class="text-sm font-medium text-slate-700 dark:text-slate-200">结束日期</span>
+					<input id="end_date" type="text" name="end_date" value="{{.endDate}}" placeholder="选择结束日期" class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
 				</label>
 			</div>
 
 			<div class="space-y-2">
-				<span class="text-sm font-medium text-slate-700">标签筛选</span>
+				<span class="text-sm font-medium text-slate-700 dark:text-slate-200">标签筛选</span>
 				<div class="flex flex-wrap gap-3">
 					{{range $tag := .allTags}}
 					<label class="inline-flex items-center gap-2">
 						<input type="checkbox" name="tags" value="{{$tag.Name}}" class="peer sr-only" {{range $selected := $.tags}}{{if eq $selected $tag.Name}}checked{{end}}{{end}}>
-						<span class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 transition-colors peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600">{{$tag.Name}}</span>
+						<span class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 transition-colors peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:peer-checked:border-blue-400/60 dark:peer-checked:bg-blue-500/20 dark:peer-checked:text-blue-200">{{$tag.Name}}</span>
 					</label>
 					{{end}}
 				</div>
 			</div>
 
 			<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<div class="text-xs text-slate-500">提交后将自动应用筛选条件并刷新列表。</div>
+				<div class="text-xs text-slate-500 dark:text-slate-400">提交后将自动应用筛选条件并刷新列表。</div>
 				<div class="flex gap-3">
-					<button type="submit" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500">搜索</button>
-					<a href="/admin/posts" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100">重置</a>
+					<button type="submit" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90">搜索</button>
+					<a href="/admin/posts" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">重置</a>
 				</div>
 			</div>
 		</form>
 	</section>
 
 	<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-			<p class="text-sm text-slate-500">总文章</p>
-			<p class="mt-2 text-3xl font-semibold text-slate-900">{{.total}}</p>
+		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+			<p class="text-sm text-slate-500 dark:text-slate-400">总文章</p>
+			<p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{.total}}</p>
 		</div>
-		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-			<p class="text-sm text-slate-500">已发布</p>
-			<p class="mt-2 text-3xl font-semibold text-emerald-600">{{.publishedCount}}</p>
+		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+			<p class="text-sm text-slate-500 dark:text-slate-400">已发布</p>
+			<p class="mt-2 text-3xl font-semibold text-emerald-600 dark:text-emerald-400">{{.publishedCount}}</p>
 		</div>
-		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-			<p class="text-sm text-slate-500">草稿</p>
-			<p class="mt-2 text-3xl font-semibold text-amber-600">{{.draftCount}}</p>
+		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+			<p class="text-sm text-slate-500 dark:text-slate-400">草稿</p>
+			<p class="mt-2 text-3xl font-semibold text-amber-600 dark:text-amber-400">{{.draftCount}}</p>
 		</div>
-		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-			<p class="text-sm text-slate-500">标签数</p>
-			<p class="mt-2 text-3xl font-semibold text-purple-600">{{len .allTags}}</p>
+		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+			<p class="text-sm text-slate-500 dark:text-slate-400">标签数</p>
+			<p class="mt-2 text-3xl font-semibold text-purple-600 dark:text-purple-400">{{len .allTags}}</p>
 		</div>
 	</section>
 
-	<section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-		<div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-			<h2 class="text-lg font-semibold text-slate-900">文章列表</h2>
-			<span class="text-xs font-medium text-slate-500">共 {{.total}} 篇</span>
+	<section class="rounded-2xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+		<div class="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+			<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">文章列表</h2>
+			<span class="text-xs font-medium text-slate-500 dark:text-slate-400">共 {{.total}} 篇</span>
 		</div>
-		<div class="divide-y divide-slate-200">
+		<div class="divide-y divide-slate-200 dark:divide-slate-800">
 			{{if .error}}
-			<div class="px-6 py-20 text-center text-sm text-rose-500">{{.error}}</div>
+			<div class="px-6 py-20 text-center text-sm text-rose-500 dark:text-rose-300">{{.error}}</div>
 			{{else if gt (len .posts) 0}}
 			{{range .posts}}
-			<article class="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+			<article class="flex flex-col gap-4 px-6 py-5 transition-colors sm:flex-row sm:items-center sm:justify-between">
 				<div class="flex w-full flex-1 items-start gap-4">
-					<div class="hidden h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:block">
+					<div class="hidden h-20 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800/80 sm:block">
 						{{if .CoverURL}}
 						<img src="{{.CoverURL}}" alt="{{.Title}}" class="h-full w-full object-cover">
 						{{else}}
@@ -99,9 +99,9 @@
 						{{end}}
 					</div>
 					<div class="min-w-0 space-y-2">
-						<h3 class="truncate text-lg font-medium text-slate-900" title="{{.Title}}">{{.Title}}</h3>
-						<div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-							<span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+						<h3 class="truncate text-lg font-medium text-slate-900 dark:text-slate-100" title="{{.Title}}">{{.Title}}</h3>
+						<div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+							<span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
 								{{if eq .Status "published"}}已发布{{else}}草稿{{end}}
 							</span>
 							<span>创建于 {{.CreatedAt.Format "2006-01-02 15:04"}}</span>
@@ -115,33 +115,33 @@
 						{{if .Tags}}
 						<ul class="flex flex-wrap gap-2 text-xs">
 							{{range .Tags}}
-							<li class="rounded-full bg-blue-50 px-2.5 py-0.5 text-blue-600">{{.Name}}</li>
+							<li class="rounded-full bg-blue-50 px-2.5 py-0.5 text-blue-600 dark:bg-blue-500/20 dark:text-blue-200">{{.Name}}</li>
 							{{end}}
 						</ul>
 						{{end}}
 					</div>
 				</div>
 				<div class="flex items-center gap-2 text-xs">
-						<a href="/admin/posts/{{.ID}}/edit" class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100">编辑</a>
-						<button type="button" onclick="deletePost('{{.ID}}')" class="inline-flex items-center rounded-lg border border-rose-200 px-3 py-1.5 font-medium text-rose-600 transition-colors hover:bg-rose-50">删除</button>
-					</div>
-				</article>
-				{{end}}
+					<a href="/admin/posts/{{.ID}}/edit" class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">编辑</a>
+					<button type="button" onclick="deletePost('{{.ID}}')" class="inline-flex items-center rounded-lg border border-rose-200 px-3 py-1.5 font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-500/50 dark:text-rose-300 dark:hover:bg-rose-500/10">删除</button>
+				</div>
+			</article>
+			{{end}}
 			{{else}}
-			<div class="px-6 py-20 text-center text-sm text-slate-500">暂无文章，请调整筛选条件或新建文章。</div>
+			<div class="px-6 py-20 text-center text-sm text-slate-500 dark:text-slate-400">暂无文章，请调整筛选条件或新建文章。</div>
 			{{end}}
 		</div>
 	</section>
 
 	{{if gt .totalPages 1}}
-	<nav class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
-		<a href="?page={{sub .page 1}}{{.queryParams}}" class="rounded-lg px-3 py-1.5 transition-colors {{if gt .page 1}}hover:bg-slate-100{{else}}pointer-events-none text-slate-300{{end}}">上一页</a>
+	<nav class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300">
+		<a href="?page={{sub .page 1}}{{.queryParams}}" class="rounded-lg px-3 py-1.5 transition-colors {{if gt .page 1}}hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100{{else}}pointer-events-none text-slate-300 dark:text-slate-600{{end}}">上一页</a>
 		<div class="flex items-center gap-2">
 			{{range .pages}}
-			<a href="?page={{.}}{{$.queryParams}}" class="rounded-lg px-3 py-1.5 {{if eq . $.page}}bg-blue-600 text-white{{else}}hover:bg-slate-100{{end}}">{{.}}</a>
+			<a href="?page={{.}}{{$.queryParams}}" class="rounded-lg px-3 py-1.5 {{if eq . $.page}}bg-blue-600 text-white dark:bg-blue-500/90{{else}}hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100{{end}}">{{.}}</a>
 			{{end}}
 		</div>
-		<a href="?page={{add .page 1}}{{.queryParams}}" class="rounded-lg px-3 py-1.5 transition-colors {{if lt .page .totalPages}}hover:bg-slate-100{{else}}pointer-events-none text-slate-300{{end}}">下一页</a>
+		<a href="?page={{add .page 1}}{{.queryParams}}" class="rounded-lg px-3 py-1.5 transition-colors {{if lt .page .totalPages}}hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100{{else}}pointer-events-none text-slate-300 dark:text-slate-600{{end}}">下一页</a>
 	</nav>
 	{{end}}
 </div>

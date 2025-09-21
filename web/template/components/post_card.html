@@ -1,13 +1,14 @@
 {{define "post_card"}}
 {{- $post := .Post -}}
 <article
-	class="mb-6 break-inside-avoid rounded-3xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
+	class="mb-6 break-inside-avoid rounded-3xl bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/80">
 	<a href="/posts/{{$post.ID}}" class="block">
 		{{- if $post.CoverURL -}}
-			<div class="relative w-full overflow-hidden rounded-3xl" style="padding-top: {{aspectPadding $post.CoverWidth $post.CoverHeight}};">
-				<img src="{{$post.CoverURL}}" alt="{{$post.Title}} 封面" loading="lazy"
-					class="absolute inset-0 h-full w-full object-cover">
-			</div>
+		<div class="relative w-full overflow-hidden rounded-3xl"
+			style="padding-top: {{aspectPadding $post.CoverWidth $post.CoverHeight}};">
+			<img src="{{$post.CoverURL}}" alt="{{$post.Title}} 封面" loading="lazy"
+				class="absolute inset-0 h-full w-full object-cover">
+		</div>
 		{{- else -}}
 		<div
 			class="flex h-56 w-full items-center justify-center rounded-3xl bg-gradient-to-br {{accent $post.Title}} text-3xl font-semibold text-white">
@@ -15,12 +16,13 @@
 		</div>
 		{{- end -}}
 	</a>
-	<div class="space-y-4 px-5 pb-6 pt-5 py-5">
+	<div class="space-y-4 px-5 pb-6 pt-5">
 		<a href="/posts/{{$post.ID}}"
-			class="text-lg font-semibold text-slate-900 transition-colors hover:text-blue-600">{{$post.Title}}</a>
-		<p class="text-sm leading-6 text-slate-600">{{if $post.Summary}}{{truncate $post.Summary 120}}{{else}}{{truncate
+			class="text-lg font-semibold text-slate-900 transition-colors hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400">{{$post.Title}}</a>
+		<p class="text-sm leading-6 text-slate-600 dark:text-slate-400">{{if $post.Summary}}{{truncate $post.Summary
+			120}}{{else}}{{truncate
 			$post.Content 120}}{{end}}</p>
-		<div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+		<div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
 			<span>{{formatDate $post.CreatedAt}}</span>
 			{{if gt $post.ReadingTime 0}}
 			<span>· {{$post.ReadingTime}} 分钟阅读</span>
@@ -29,7 +31,8 @@
 		{{if $post.Tags}}
 		<ul class="flex flex-wrap gap-2 text-xs">
 			{{range $post.Tags}}
-			<li class="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-600">{{.Name}}</li>
+			<li class="rounded-full bg-slate-100 px-2.5 py-0.5 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
+				{{.Name}}</li>
 			{{end}}
 		</ul>
 		{{end}}

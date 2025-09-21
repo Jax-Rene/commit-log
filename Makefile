@@ -4,6 +4,8 @@ run:
 dev:
 	@echo "启动开发模式..."
 	@echo "Gin 会自动重载模板文件"
+	rm -rf ./web/static/css/output.css
+	npm run build:css  
 	GIN_MODE=debug go run cmd/server/main.go
 
 test:

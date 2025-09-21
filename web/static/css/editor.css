@@ -120,3 +120,72 @@
     color: #111827;
     font-style: italic;
 }
+
+@media (prefers-color-scheme: dark) {
+    .EasyMDEContainer .CodeMirror {
+        border-color: rgba(71, 85, 105, 0.7);
+        background-color: rgba(15, 23, 42, 0.6);
+        color: #e2e8f0;
+    }
+
+    .EasyMDEContainer .CodeMirror-focused {
+        border-color: rgba(96, 165, 250, 0.6);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
+
+    .editor-toolbar {
+        border-color: rgba(71, 85, 105, 0.7);
+        background-color: rgba(15, 23, 42, 0.75);
+    }
+
+    .editor-toolbar button {
+        color: #cbd5f5;
+    }
+
+    .editor-toolbar button:hover,
+    .editor-toolbar button.active {
+        background-color: rgba(96, 165, 250, 0.15);
+        color: #93c5fd;
+    }
+
+    .editor-toolbar i.separator {
+        border-color: rgba(71, 85, 105, 0.7);
+    }
+
+    .editor-preview,
+    .editor-preview-side {
+        background-color: rgba(15, 23, 42, 0.85);
+        border-color: rgba(71, 85, 105, 0.6);
+        color: #e2e8f0;
+    }
+
+    .image-upload-wrapper {
+        border-color: rgba(96, 165, 250, 0.3);
+        background-color: rgba(37, 99, 235, 0.08);
+    }
+
+    .image-upload-wrapper:hover {
+        border-color: rgba(96, 165, 250, 0.6);
+        background-color: rgba(37, 99, 235, 0.15);
+    }
+
+    .image-upload-wrapper.drag-over {
+        border-color: rgba(37, 99, 235, 0.85);
+        background-color: rgba(37, 99, 235, 0.2);
+    }
+
+    .CodeMirror .cm-header,
+    .CodeMirror .cm-strong,
+    .CodeMirror .cm-em {
+        color: #e2e8f0;
+    }
+
+    .CodeMirror .cm-url,
+    .CodeMirror .cm-quote {
+        color: #94a3b8;
+    }
+
+    .CodeMirror .cm-quote {
+        border-left-color: rgba(96, 165, 250, 0.4);
+    }
+}

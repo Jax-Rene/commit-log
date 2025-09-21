@@ -2,84 +2,84 @@
 
 {{define "content"}}
 <div class="space-y-10" x-data="postForm()" x-init="init()">
-	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
 		<div>
-			<h1 class="text-3xl font-semibold text-slate-900">{{if .post.ID}}编辑文章{{else}}创建新文章{{end}}</h1>
-			<p class="mt-2 text-sm text-slate-500">支持 Markdown 编辑与图片上传。</p>
+			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">{{if .post.ID}}编辑文章{{else}}创建新文章{{end}}</h1>
+			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">支持 Markdown 编辑与图片上传。</p>
 		</div>
-		<a href="/admin/posts" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100">返回列表</a>
+		<a href="/admin/posts" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">返回列表</a>
 	</header>
 
 	<form id="post-form" @submit.prevent="submitForm" class="grid gap-6 lg:grid-cols-[2fr,1fr]">
 		<section class="space-y-6">
-			<label class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-				<span class="text-sm font-medium text-slate-700">文章标题<span class="ml-1 text-rose-500">*</span></span>
-				<input type="text" x-model="post.title" placeholder="请输入文章标题" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100" required>
+			<label class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+				<span class="text-sm font-medium text-slate-700 dark:text-slate-200">文章标题<span class="ml-1 text-rose-500">*</span></span>
+				<input type="text" x-model="post.title" placeholder="请输入文章标题" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" required>
 			</label>
 
-			<label class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-				<span class="text-sm font-medium text-slate-700">文章摘要</span>
-				<textarea x-model="post.summary" rows="4" placeholder="简要描述文章的核心观点" class="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"></textarea>
+			<label class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+				<span class="text-sm font-medium text-slate-700 dark:text-slate-200">文章摘要</span>
+				<textarea x-model="post.summary" rows="4" placeholder="简要描述文章的核心观点" class="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30"></textarea>
 			</label>
 
-			<section class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+			<section class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 				<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 					<div>
-						<h2 class="text-sm font-semibold text-slate-900">文章封面<span class="ml-1 text-rose-500">*</span></h2>
-						<p class="text-xs text-slate-500">支持横图或竖图，建议尺寸 ≥ 1200px，上传后可裁剪。</p>
+						<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">文章封面<span class="ml-1 text-rose-500">*</span></h2>
+						<p class="text-xs text-slate-500 dark:text-slate-400">支持横图或竖图，建议尺寸 ≥ 1200px，上传后可裁剪。</p>
 					</div>
-					<label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50">
+					<label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/60 dark:hover:bg-blue-500/10 dark:hover:text-slate-100">
 						<input type="file" accept="image/*" class="hidden" @change="handleCoverFile">
 						<span>选择图片</span>
 					</label>
 				</div>
-				<div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-4" x-show="cover.url" x-cloak>
+				<div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-4 transition-colors dark:border-slate-600 dark:bg-slate-900/60" x-show="cover.url" x-cloak>
 					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 						<div class="flex items-center gap-4">
 							<img :src="cover.url" alt="封面预览" class="h-28 w-28 rounded-lg object-cover" />
-							<div class="space-y-2 text-xs text-slate-600">
-								<p class="font-medium text-slate-800">当前封面</p>
+							<div class="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+								<p class="font-medium text-slate-800 dark:text-slate-200">当前封面</p>
 								<p>尺寸：<span x-text="cover.width"></span> × <span x-text="cover.height"></span> px</p>
-								<p class="text-[11px] text-slate-400">保存后首页将根据比例自动排版。</p>
+								<p class="text-[11px] text-slate-400 dark:text-slate-500">保存后首页将根据比例自动排版。</p>
 							</div>
 						</div>
 						<div class="flex gap-3 text-xs">
-							<button type="button" @click="reCropCover" class="rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100">重新裁剪</button>
-							<button type="button" @click="removeCover" class="rounded-lg border border-rose-200 px-3 py-1.5 font-medium text-rose-600 transition-colors hover:bg-rose-50">移除</button>
+							<button type="button" @click="reCropCover" class="rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">重新裁剪</button>
+							<button type="button" @click="removeCover" class="rounded-lg border border-rose-200 px-3 py-1.5 font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-500/50 dark:text-rose-300 dark:hover:bg-rose-500/10">移除</button>
 						</div>
 					</div>
 				</div>
 			</section>
 
-			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 				<label class="flex flex-col gap-2">
-					<span class="text-sm font-medium text-slate-700">文章内容<span class="ml-1 text-rose-500">*</span></span>
+					<span class="text-sm font-medium text-slate-700 dark:text-slate-200">文章内容<span class="ml-1 text-rose-500">*</span></span>
 					<textarea id="content" rows="18" x-model="post.content" class="hidden"></textarea>
 				</label>
 			</section>
 		</section>
 
 		<aside class="space-y-6">
-			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-				<h2 class="text-sm font-semibold text-slate-900">发布设置</h2>
+			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+				<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">发布设置</h2>
 				<div class="mt-4 space-y-3">
-					<label class="flex items-center gap-2 text-sm text-slate-600">
-						<input type="radio" value="draft" x-model="post.status" class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500">
+					<label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+						<input type="radio" value="draft" x-model="post.status" class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900/60">
 						<span>草稿</span>
 					</label>
-					<label class="flex items-center gap-2 text-sm text-slate-600">
-						<input type="radio" value="published" x-model="post.status" class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500">
+					<label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+						<input type="radio" value="published" x-model="post.status" class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900/60">
 						<span>已发布</span>
 					</label>
 				</div>
 			</section>
 
-			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-				<h2 class="text-sm font-semibold text-slate-900">标签</h2>
-				<p class="mt-2 text-xs text-slate-500">最多选择 5 个标签，帮助读者快速理解主题。</p>
+			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+				<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">标签</h2>
+				<p class="mt-2 text-xs text-slate-500 dark:text-slate-400">最多选择 5 个标签，帮助读者快速理解主题。</p>
 				<div class="mt-4 flex flex-wrap gap-2">
 					<template x-for="tag in allTags" :key="tag.id">
-						<label class="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 transition-colors" :class="post.tagIds.includes(tag.id.toString()) ? 'border-blue-500 bg-blue-50 text-blue-600' : 'hover:border-blue-300 hover:bg-blue-50'">
+						<label class="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 transition-colors dark:border-slate-700 dark:text-slate-300" :class="post.tagIds.includes(tag.id.toString()) ? 'border-blue-500 bg-blue-50 text-blue-600 dark:border-blue-400/60 dark:bg-blue-500/20 dark:text-blue-200' : 'hover:border-blue-300 hover:bg-blue-50 dark:hover:border-blue-400/40 dark:hover:bg-blue-500/10'">
 							<input type="checkbox" class="sr-only" :value="tag.id" @change="toggleTag(tag.id)">
 							<span x-text="tag.name"></span>
 						</label>
@@ -87,11 +87,11 @@
 				</div>
 			</section>
 
-			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-				<h2 class="text-sm font-semibold text-slate-900">操作</h2>
+			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+				<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">操作</h2>
 				<div class="mt-4 space-y-3">
-					<button type="button" @click="previewPost" class="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100">预览文章</button>
-					<button type="submit" :disabled="loading" class="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300">
+					<button type="button" @click="previewPost" class="w-full rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">预览文章</button>
+					<button type="submit" :disabled="loading" class="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/70">
 						<span x-show="!loading">{{if .post.ID}}保存修改{{else}}发布文章{{end}}</span>
 						<span x-show="loading">保存中...</span>
 					</button>
@@ -100,25 +100,25 @@
 		</aside>
 	</form>
 	<div x-show="coverModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
-		<div class="relative w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl">
-			<h3 class="text-lg font-semibold text-slate-900">裁剪封面</h3>
+		<div class="relative w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl transition-colors dark:bg-slate-950">
+			<h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">裁剪封面</h3>
 			<div class="mt-4 flex flex-col gap-4">
-				<div class="flex justify-end gap-2 text-xs text-slate-500">
+				<div class="flex justify-end gap-2 text-xs text-slate-500 dark:text-slate-400">
 					<span class="self-center">裁剪比例：</span>
 					<button type="button" @click="setAspect('16:9')"
-						:class="cropAspect === '16:9' ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 text-slate-600 hover:bg-slate-100'"
+						:class="cropAspect === '16:9' ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500/90' : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'"
 						class="rounded-lg border px-3 py-1.5 transition-colors">16 : 9</button>
 					<button type="button" @click="setAspect('3:4')"
-						:class="cropAspect === '3:4' ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 text-slate-600 hover:bg-slate-100'"
+						:class="cropAspect === '3:4' ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500/90' : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'"
 						class="rounded-lg border px-3 py-1.5 transition-colors">3 : 4</button>
 				</div>
-				<div class="max-h-[60vh] overflow-hidden rounded-xl border border-slate-200">
+				<div class="max-h-[60vh] overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
 					<img x-ref="cropperImage" :src="coverSource" alt="裁剪预览" class="max-h-[60vh] w-full object-contain" />
 				</div>
 			</div>
 			<div class="mt-6 flex justify-end gap-3 text-sm">
-				<button type="button" class="rounded-lg border border-slate-200 px-4 py-2 text-slate-600 hover:bg-slate-100" @click="closeCropper">取消</button>
-				<button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-500" @click="confirmCrop">确认裁剪</button>
+				<button type="button" class="rounded-lg border border-slate-200 px-4 py-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100" @click="closeCropper">取消</button>
+				<button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-500 dark:hover:bg-blue-500/90" @click="confirmCrop">确认裁剪</button>
 			</div>
 		</div>
 	</div>
@@ -152,8 +152,8 @@
 			init() {
 				this.applyInitialTagSelection();
 				this.initializeEditor();
-			this.fetchTags();
-		},
+				this.fetchTags();
+			},
 
 			applyInitialTagSelection() {
 				if (!this.initialTagIds) {
@@ -458,12 +458,17 @@
 						<title>预览: ${this.post.title}</title>
 						<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.min.css">
 						<style>
-							body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 780px; margin: 0 auto; padding: 2rem; color: #1f2937; }
+							:root { color-scheme: light dark; }
+							body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 780px; margin: 0 auto; padding: 2rem; color: #1f2937; background: #ffffff; transition: color 0.2s ease, background 0.2s ease; }
 							h1, h2, h3, h4 { margin-top: 1.5rem; margin-bottom: 0.75rem; }
 							p { margin: 1rem 0; line-height: 1.7; }
 							code { background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 0.25rem; }
-							pre { background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+							pre { background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
 							img { max-width: 100%; border-radius: 0.5rem; }
+							@media (prefers-color-scheme: dark) {
+								body { color: #e2e8f0; background: #020617; }
+								code { background: rgba(148, 163, 184, 0.12); color: #e2e8f0; }
+							}
 						</style>
 						<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/highlight.min.js"></script>
 					</head>

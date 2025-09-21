@@ -4,40 +4,51 @@
 
 @layer components {
   .post-content {
-    @apply space-y-6 text-slate-700 leading-relaxed text-base;
+    @apply space-y-6 text-base leading-relaxed text-slate-700 dark:text-slate-200;
   }
+
   .post-content h2 {
-    @apply text-2xl font-semibold text-slate-900 mt-8;
+    @apply mt-8 text-2xl font-semibold text-slate-900 dark:text-slate-100;
   }
+
   .post-content h3 {
-    @apply text-xl font-semibold text-slate-900 mt-6;
+    @apply mt-6 text-xl font-semibold text-slate-900 dark:text-slate-100;
   }
+
   .post-content p {
-    @apply text-slate-700;
+    @apply text-slate-700 dark:text-slate-200;
   }
+
   .post-content a {
-    @apply text-blue-600 underline-offset-4 hover:underline;
+    @apply text-blue-600 underline-offset-4 transition-colors hover:underline dark:text-blue-400;
   }
+
   .post-content ul {
-    @apply list-disc pl-6 space-y-2;
+    @apply list-disc space-y-2 pl-6;
   }
+
   .post-content ol {
-    @apply list-decimal pl-6 space-y-2;
+    @apply list-decimal space-y-2 pl-6;
   }
+
   .post-content blockquote {
-    @apply border-l-4 border-blue-200 bg-blue-50/60 px-4 py-3 text-slate-700 italic;
+    @apply border-l-4 border-blue-200 bg-blue-50/60 px-4 py-3 italic text-slate-700 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-slate-200;
   }
+
   .post-content code {
-    @apply rounded bg-slate-100 px-1.5 py-0.5 text-sm font-mono text-slate-700;
+    @apply rounded bg-slate-100 px-1.5 py-0.5 text-sm font-mono text-slate-700 dark:bg-slate-800 dark:text-slate-100;
   }
+
   .post-content pre {
-    @apply overflow-x-auto rounded-xl bg-slate-900 p-4 text-sm text-slate-100;
+    @apply overflow-x-auto rounded-xl bg-slate-900 p-4 text-sm text-slate-100 dark:bg-slate-900/90;
   }
+
   .post-content img {
     @apply rounded-xl shadow-md;
   }
+
   .post-content hr {
-    @apply my-10 border-slate-200;
+    @apply my-10 border-slate-200 dark:border-slate-700;
   }
 }
 
@@ -54,17 +65,52 @@
     color: #1f2937;
   }
 
-  .tag-filter-input:checked + .tag-filter-pill {
+  .tag-filter-input:checked+.tag-filter-pill {
     background-color: rgb(247, 247, 247);
     color: #0f172a;
     border-color: rgb(247, 247, 247);
   }
 
-  .tag-filter-input:checked + .tag-filter-pill:hover {
+  .tag-filter-input:checked+.tag-filter-pill:hover {
     background-color: rgb(247, 247, 247);
   }
 
-  .tag-filter-input:focus-visible + .tag-filter-pill {
+  .tag-filter-input:focus-visible+.tag-filter-pill {
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .tag-filter-pill {
+      border-color: transparent;
+      background-color: rgb(10, 10, 10);
+      color: #f8fafc;
+      font-weight: 400;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+      transition: background 200ms ease, color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+    }
+
+    .tag-filter-pill:hover {
+      border-color: transparent;
+      background-color: rgb(15, 15, 15);
+      background-image: linear-gradient(135deg, rgb(10, 10, 10), rgb(20, 20, 20));
+      color: #ffffff;
+    }
+
+    .tag-filter-input:checked+.tag-filter-pill {
+      border-color: transparent;
+      background-color: rgb(20, 20, 20);
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+    }
+
+    .tag-filter-input:checked+.tag-filter-pill:hover {
+      border-color: transparent;
+      background-color: rgb(24, 24, 24);
+    }
+
+    .tag-filter-input:focus-visible+.tag-filter-pill {
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+    }
   }
 }
