@@ -28,5 +28,10 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+
+node_modules
+web/static/.DS_Store
+web/static/css/output.css
+web/static/icon/.DS_Store
