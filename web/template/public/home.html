@@ -10,11 +10,10 @@
 			{{if .tagOptions}}
 			<div class="flex flex-wrap gap-2 text-xs">
 				{{range $tag := .tagOptions}}
-				<label class="inline-flex items-center">
-					<input type="checkbox" name="tags" value="{{$tag.Name}}" class="peer sr-only" {{range
+				<label class="tag-filter inline-flex items-center cursor-pointer">
+					<input type="checkbox" name="tags" value="{{$tag.Name}}" class="tag-filter-input sr-only" {{range
 						$.tags}}{{if eq . $tag.Name}}checked{{end}}{{end}}>
-					<span
-						class="rounded-full border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition-colors peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-600">{{$tag.Name}}</span>
+					<span class="tag-filter-pill">{{$tag.Name}}</span>
 				</label>
 				{{end}}
 			</div>
