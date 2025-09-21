@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/handler"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -213,6 +214,8 @@ func SetupRouter() *gin.Engine {
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("commitlog_session", store))
 
+	handlers := handler.NewAPI(db.DB)
+
 	// Load templates
 	templates := newTemplateRegistry()
 	templates.LoadTemplates("web/template")
@@ -222,11 +225,11 @@ func SetupRouter() *gin.Engine {
 	r.Static("/static", "./web/static")
 
 	// 公共站点路由
-	r.GET("/", handler.ShowHome)
-	r.GET("/posts/more", handler.LoadMorePosts)
-	r.GET("/posts/:id", handler.ShowPostDetail)
-	r.GET("/tags", handler.ShowTagArchive)
-	r.GET("/about", handler.ShowAbout)
+	r.GET("/", handlers.ShowHome)
+	r.GET("/posts/more", handlers.LoadMorePosts)
+	r.GET("/posts/:id", handlers.ShowPostDetail)
+	r.GET("/tags", handlers.ShowTagArchive)
+	r.GET("/about", handlers.ShowAbout)
 
 	// 在这里定义你的路由
 	r.GET("/ping", func(c *gin.Context) {
@@ -238,37 +241,37 @@ func SetupRouter() *gin.Engine {
 	// 后台管理路由
 	admin := r.Group("/admin")
 	{
-		admin.GET("/login", handler.ShowLoginPage)
-		admin.POST("/login", handler.Login)
-		admin.GET("/logout", handler.Logout)
+		admin.GET("/login", handlers.ShowLoginPage)
+		admin.POST("/login", handlers.Login)
+		admin.GET("/logout", handlers.Logout)
 
 		// 需要认证的后台路由
 		auth := admin.Group("")
-		auth.Use(handler.AuthRequired())
+		auth.Use(handlers.AuthRequired())
 		{
-			auth.GET("/dashboard", handler.ShowDashboard)
-			auth.GET("/posts", handler.ShowPostList)
-			auth.GET("/posts/new", handler.ShowPostEdit)
-			auth.GET("/posts/:id/edit", handler.ShowPostEdit)
-			auth.GET("/about", handler.ShowAboutEditor)
+			auth.GET("/dashboard", handlers.ShowDashboard)
+			auth.GET("/posts", handlers.ShowPostList)
+			auth.GET("/posts/new", handlers.ShowPostEdit)
+			auth.GET("/posts/:id/edit", handlers.ShowPostEdit)
+			auth.GET("/about", handlers.ShowAboutEditor)
 
 			// API路由
 			api := auth.Group("/api")
 			{
-				api.GET("/posts", handler.GetPosts)
-				api.GET("/posts/:id", handler.GetPost)
-				api.POST("/posts", handler.CreatePost)
-				api.PUT("/posts/:id", handler.UpdatePost)
-				api.DELETE("/posts/:id", handler.DeletePost)
+				api.GET("/posts", handlers.GetPosts)
+				api.GET("/posts/:id", handlers.GetPost)
+				api.POST("/posts", handlers.CreatePost)
+				api.PUT("/posts/:id", handlers.UpdatePost)
+				api.DELETE("/posts/:id", handlers.DeletePost)
 
-				api.GET("/tags", handler.GetTags)
-				api.POST("/tags", handler.CreateTag)
-				api.PUT("/tags/:id", handler.UpdateTag)
-				api.DELETE("/tags/:id", handler.DeleteTag)
-				api.PUT("/pages/about", handler.UpdateAboutPage)
+				api.GET("/tags", handlers.GetTags)
+				api.POST("/tags", handlers.CreateTag)
+				api.PUT("/tags/:id", handlers.UpdateTag)
+				api.DELETE("/tags/:id", handlers.DeleteTag)
+				api.PUT("/pages/about", handlers.UpdateAboutPage)
 
 				// 图片上传接口
-				api.POST("/upload/image", handler.UploadImage)
+				api.POST("/upload/image", handlers.UploadImage)
 			}
 		}
 	}

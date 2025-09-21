@@ -13,7 +13,7 @@ import (
 )
 
 func TestCreateTagDuplicateName(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	existing := db.Tag{Name: "Go"}
@@ -30,7 +30,7 @@ func TestCreateTagDuplicateName(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
 
-	CreateTag(c)
+	api.CreateTag(c)
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)
@@ -38,7 +38,7 @@ func TestCreateTagDuplicateName(t *testing.T) {
 }
 
 func TestUpdateTagDuplicateName(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	tagA := db.Tag{Name: "Go"}
@@ -61,7 +61,7 @@ func TestUpdateTagDuplicateName(t *testing.T) {
 	c.Request = req
 	c.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(int(tagB.ID))}}
 
-	UpdateTag(c)
+	api.UpdateTag(c)
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)
@@ -69,7 +69,7 @@ func TestUpdateTagDuplicateName(t *testing.T) {
 }
 
 func TestDeleteTagBlockedWhenInUse(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	tag := db.Tag{Name: "Go"}
@@ -93,7 +93,7 @@ func TestDeleteTagBlockedWhenInUse(t *testing.T) {
 	c.Request = req
 	c.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(int(tag.ID))}}
 
-	DeleteTag(c)
+	api.DeleteTag(c)
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)
@@ -101,7 +101,7 @@ func TestDeleteTagBlockedWhenInUse(t *testing.T) {
 }
 
 func TestDeleteTagSuccess(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	tag := db.Tag{Name: "Go"}
@@ -116,7 +116,7 @@ func TestDeleteTagSuccess(t *testing.T) {
 	c.Request = req
 	c.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(int(tag.ID))}}
 
-	DeleteTag(c)
+	api.DeleteTag(c)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", w.Code)
@@ -130,7 +130,7 @@ func TestDeleteTagSuccess(t *testing.T) {
 }
 
 func TestGetTagsReturnsSortedList(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	tags := []db.Tag{{Name: "Zed"}, {Name: "Alpha"}}
@@ -144,7 +144,7 @@ func TestGetTagsReturnsSortedList(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
 
-	GetTags(c)
+	api.GetTags(c)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", w.Code)

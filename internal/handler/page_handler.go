@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -15,9 +14,8 @@ type aboutPayload struct {
 }
 
 // ShowAboutEditor renders the admin editor for the about page.
-func ShowAboutEditor(c *gin.Context) {
-	svc := service.NewPageService(db.DB)
-	page, err := svc.GetBySlug("about")
+func (a *API) ShowAboutEditor(c *gin.Context) {
+	page, err := a.pages.GetBySlug("about")
 	if err != nil {
 		if !errors.Is(err, service.ErrPageNotFound) {
 			c.HTML(http.StatusInternalServerError, "about_edit.html", gin.H{
@@ -45,15 +43,13 @@ func ShowAboutEditor(c *gin.Context) {
 }
 
 // UpdateAboutPage saves the markdown content for the about page.
-func UpdateAboutPage(c *gin.Context) {
+func (a *API) UpdateAboutPage(c *gin.Context) {
 	var payload aboutPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "内容格式不正确"})
+	if !bindJSON(c, &payload, "内容格式不正确") {
 		return
 	}
 
-	svc := service.NewPageService(db.DB)
-	page, err := svc.SaveAboutPage(payload.Content)
+	page, err := a.pages.SaveAboutPage(payload.Content)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrPageContentMissing):

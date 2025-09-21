@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,14 +25,14 @@ type postPayload struct {
 	CoverHeight int    `json:"cover_height"`
 }
 
-func (p postPayload) toInput() service.PostInput {
+func (p postPayload) toInput(userID uint) service.PostInput {
 	return service.PostInput{
 		Title:       p.Title,
 		Content:     p.Content,
 		Summary:     p.Summary,
 		Status:      p.Status,
 		TagIDs:      p.TagIDs,
-		UserID:      defaultUserID,
+		UserID:      userID,
 		CoverURL:    p.CoverURL,
 		CoverWidth:  p.CoverWidth,
 		CoverHeight: p.CoverHeight,
@@ -40,10 +40,10 @@ func (p postPayload) toInput() service.PostInput {
 }
 
 // GetPosts 获取文章列表
-func GetPosts(c *gin.Context) {
-	posts, err := service.NewPostService(db.DB).ListAll()
+func (a *API) GetPosts(c *gin.Context) {
+	posts, err := a.posts.ListAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取文章列表失败"})
+		respondError(c, http.StatusInternalServerError, "获取文章列表失败")
 		return
 	}
 
@@ -51,20 +51,20 @@ func GetPosts(c *gin.Context) {
 }
 
 // GetPost 获取单篇文章
-func GetPost(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+func (a *API) GetPost(c *gin.Context) {
+	id, err := parseUintParam(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的文章ID"})
+		respondError(c, http.StatusBadRequest, "无效的文章ID")
 		return
 	}
 
-	post, err := service.NewPostService(db.DB).Get(uint(id))
+	post, err := a.posts.Get(id)
 	if err != nil {
 		if errors.Is(err, service.ErrPostNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+			respondError(c, http.StatusNotFound, "文章不存在")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取文章失败"})
+		respondError(c, http.StatusInternalServerError, "获取文章失败")
 		return
 	}
 
@@ -72,24 +72,23 @@ func GetPost(c *gin.Context) {
 }
 
 // CreatePost 创建新文章
-func CreatePost(c *gin.Context) {
+func (a *API) CreatePost(c *gin.Context) {
 	var payload postPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数不合法"})
+	if !bindJSON(c, &payload, "请求参数不合法") {
 		return
 	}
 
-	post, err := service.NewPostService(db.DB).Create(payload.toInput())
+	post, err := a.posts.Create(payload.toInput(a.currentUserID(c)))
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrTagNotFound):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "部分标签不存在"})
+			respondError(c, http.StatusBadRequest, "部分标签不存在")
 		case errors.Is(err, service.ErrCoverRequired):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "请上传文章封面"})
+			respondError(c, http.StatusBadRequest, "请上传文章封面")
 		case errors.Is(err, service.ErrCoverInvalid):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "封面尺寸无效"})
+			respondError(c, http.StatusBadRequest, "封面尺寸无效")
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "创建文章失败"})
+			respondError(c, http.StatusInternalServerError, "创建文章失败")
 		}
 		return
 	}
@@ -98,32 +97,31 @@ func CreatePost(c *gin.Context) {
 }
 
 // UpdatePost 更新文章
-func UpdatePost(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+func (a *API) UpdatePost(c *gin.Context) {
+	id, err := parseUintParam(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的文章ID"})
+		respondError(c, http.StatusBadRequest, "无效的文章ID")
 		return
 	}
 
 	var payload postPayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数不合法"})
+	if !bindJSON(c, &payload, "请求参数不合法") {
 		return
 	}
 
-	post, err := service.NewPostService(db.DB).Update(uint(id), payload.toInput())
+	post, err := a.posts.Update(id, payload.toInput(a.currentUserID(c)))
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrPostNotFound):
-			c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+			respondError(c, http.StatusNotFound, "文章不存在")
 		case errors.Is(err, service.ErrTagNotFound):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "部分标签不存在"})
+			respondError(c, http.StatusBadRequest, "部分标签不存在")
 		case errors.Is(err, service.ErrCoverRequired):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "请上传文章封面"})
+			respondError(c, http.StatusBadRequest, "请上传文章封面")
 		case errors.Is(err, service.ErrCoverInvalid):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "封面尺寸无效"})
+			respondError(c, http.StatusBadRequest, "封面尺寸无效")
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新文章失败"})
+			respondError(c, http.StatusInternalServerError, "更新文章失败")
 		}
 		return
 	}
@@ -132,19 +130,19 @@ func UpdatePost(c *gin.Context) {
 }
 
 // DeletePost 删除文章
-func DeletePost(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+func (a *API) DeletePost(c *gin.Context) {
+	id, err := parseUintParam(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的文章ID"})
+		respondError(c, http.StatusBadRequest, "无效的文章ID")
 		return
 	}
 
-	if err := service.NewPostService(db.DB).Delete(uint(id)); err != nil {
+	if err := a.posts.Delete(id); err != nil {
 		if errors.Is(err, service.ErrPostNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+			respondError(c, http.StatusNotFound, "文章不存在")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除文章失败"})
+		respondError(c, http.StatusInternalServerError, "删除文章失败")
 		return
 	}
 
@@ -152,7 +150,7 @@ func DeletePost(c *gin.Context) {
 }
 
 // ShowPostList 渲染文章管理列表页面
-func ShowPostList(c *gin.Context) {
+func (a *API) ShowPostList(c *gin.Context) {
 	page := 1
 	if p, err := strconv.Atoi(c.DefaultQuery("page", "1")); err == nil && p > 0 {
 		page = p
@@ -188,8 +186,7 @@ func ShowPostList(c *gin.Context) {
 		PerPage:   perPage,
 	}
 
-	postService := service.NewPostService(db.DB)
-	list, err := postService.List(filter)
+	list, err := a.posts.List(filter)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "post_list.html", gin.H{
 			"title": "文章管理",
@@ -198,7 +195,7 @@ func ShowPostList(c *gin.Context) {
 		return
 	}
 
-	tags, err := service.NewTagService(db.DB).List()
+	tags, err := a.tags.List()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "post_list.html", gin.H{
 			"title": "文章管理",
@@ -255,14 +252,14 @@ func ShowPostList(c *gin.Context) {
 }
 
 // ShowPostEdit 渲染文章编辑页面
-func ShowPostEdit(c *gin.Context) {
+func (a *API) ShowPostEdit(c *gin.Context) {
 	data := gin.H{
 		"title": "创建文章",
 	}
 
 	if idParam := c.Param("id"); idParam != "" {
 		if id, err := strconv.ParseUint(idParam, 10, 32); err == nil {
-			post, err := service.NewPostService(db.DB).Get(uint(id))
+			post, err := a.posts.Get(uint(id))
 			if err == nil {
 				data["title"] = "编辑文章"
 				data["post"] = post
@@ -275,4 +272,35 @@ func ShowPostEdit(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "post_edit.html", data)
+}
+
+func (a *API) currentUserID(c *gin.Context) uint {
+	if _, exists := c.Get(sessions.DefaultKey); !exists {
+		return defaultUserID
+	}
+
+	session := sessions.Default(c)
+	if session != nil {
+		if val := session.Get("user_id"); val != nil {
+			switch v := val.(type) {
+			case uint:
+				if v > 0 {
+					return v
+				}
+			case int:
+				if v > 0 {
+					return uint(v)
+				}
+			case int64:
+				if v > 0 {
+					return uint(v)
+				}
+			case string:
+				if parsed, err := strconv.ParseUint(v, 10, 32); err == nil && parsed > 0 {
+					return uint(parsed)
+				}
+			}
+		}
+	}
+	return defaultUserID
 }

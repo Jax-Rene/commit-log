@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/microcosm-cc/bluemonday"
@@ -32,12 +31,11 @@ type tagStat struct {
 }
 
 // ShowHome renders the public home page with filters and masonry layout.
-func ShowHome(c *gin.Context) {
+func (a *API) ShowHome(c *gin.Context) {
 	search := strings.TrimSpace(c.Query("search"))
 	tags := c.QueryArray("tags")
 	page := parsePositiveInt(c.DefaultQuery("page", "1"), 1)
 
-	postService := service.NewPostService(db.DB)
 	filter := service.PostFilter{
 		Search:   search,
 		Status:   "published",
@@ -46,7 +44,7 @@ func ShowHome(c *gin.Context) {
 		PerPage:  6,
 	}
 
-	posts, err := postService.List(filter)
+	posts, err := a.posts.List(filter)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "home.html", gin.H{
 			"title": "首页",
@@ -56,8 +54,7 @@ func ShowHome(c *gin.Context) {
 		return
 	}
 
-	tagService := service.NewTagService(db.DB)
-	tagOptions := buildTagStats(tagService)
+	tagOptions := a.buildTagStats()
 
 	queryParams := buildQueryParams(search, tags)
 
@@ -76,7 +73,7 @@ func ShowHome(c *gin.Context) {
 }
 
 // LoadMorePosts returns masonry post items for infinite scroll via HTMX.
-func LoadMorePosts(c *gin.Context) {
+func (a *API) LoadMorePosts(c *gin.Context) {
 	page := parsePositiveInt(c.DefaultQuery("page", "1"), 1)
 	if page < 2 {
 		c.String(http.StatusBadRequest, "")
@@ -86,7 +83,6 @@ func LoadMorePosts(c *gin.Context) {
 	search := strings.TrimSpace(c.Query("search"))
 	tags := c.QueryArray("tags")
 
-	postService := service.NewPostService(db.DB)
 	filter := service.PostFilter{
 		Search:   search,
 		Status:   "published",
@@ -95,7 +91,7 @@ func LoadMorePosts(c *gin.Context) {
 		PerPage:  6,
 	}
 
-	posts, err := postService.List(filter)
+	posts, err := a.posts.List(filter)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "")
 		return
@@ -112,15 +108,14 @@ func LoadMorePosts(c *gin.Context) {
 }
 
 // ShowPostDetail renders specific post with markdown content.
-func ShowPostDetail(c *gin.Context) {
+func (a *API) ShowPostDetail(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 
-	postService := service.NewPostService(db.DB)
-	post, err := postService.Get(uint(id))
+	post, err := a.posts.Get(uint(id))
 	if err != nil || post.Status != "published" {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
@@ -145,9 +140,8 @@ func ShowPostDetail(c *gin.Context) {
 }
 
 // ShowTagArchive lists tags and related published post counts.
-func ShowTagArchive(c *gin.Context) {
-	tagService := service.NewTagService(db.DB)
-	stats := buildTagStats(tagService)
+func (a *API) ShowTagArchive(c *gin.Context) {
+	stats := a.buildTagStats()
 
 	c.HTML(http.StatusOK, "tag_list.html", gin.H{
 		"title": "标签",
@@ -157,9 +151,8 @@ func ShowTagArchive(c *gin.Context) {
 }
 
 // ShowAbout renders the dynamic about page.
-func ShowAbout(c *gin.Context) {
-	pageService := service.NewPageService(db.DB)
-	page, err := pageService.GetBySlug("about")
+func (a *API) ShowAbout(c *gin.Context) {
+	page, err := a.pages.GetBySlug("about")
 	if err != nil {
 		c.HTML(http.StatusOK, "about.html", gin.H{
 			"title": "关于",
@@ -195,8 +188,8 @@ func renderMarkdown(content string) (template.HTML, error) {
 	return template.HTML(safe), nil
 }
 
-func buildTagStats(tagService *service.TagService) []tagStat {
-	tagsWithPosts, err := tagService.ListWithPosts()
+func (a *API) buildTagStats() []tagStat {
+	tagsWithPosts, err := a.tags.ListWithPosts()
 	if err != nil {
 		return nil
 	}

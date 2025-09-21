@@ -3,9 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
-	"strconv"
 
-	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -15,11 +13,10 @@ type tagRequest struct {
 }
 
 // GetTags 获取标签列表
-func GetTags(c *gin.Context) {
-	svc := service.NewTagService(db.DB)
-	tags, err := svc.List()
+func (a *API) GetTags(c *gin.Context) {
+	tags, err := a.tags.List()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取标签列表失败"})
+		respondError(c, http.StatusInternalServerError, "获取标签列表失败")
 		return
 	}
 
@@ -35,23 +32,21 @@ func GetTags(c *gin.Context) {
 }
 
 // CreateTag 创建新标签
-func CreateTag(c *gin.Context) {
+func (a *API) CreateTag(c *gin.Context) {
 	var req tagRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "标签名称不能为空"})
+	if !bindJSON(c, &req, "标签名称不能为空") {
 		return
 	}
 
-	svc := service.NewTagService(db.DB)
-	tag, err := svc.Create(req.Name)
+	tag, err := a.tags.Create(req.Name)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrTagExists):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "标签已存在"})
+			respondError(c, http.StatusBadRequest, "标签已存在")
 		case errors.Is(err, service.ErrTagNotFound):
-			c.JSON(http.StatusNotFound, gin.H{"error": "标签不存在"})
+			respondError(c, http.StatusNotFound, "标签不存在")
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "创建标签失败"})
+			respondError(c, http.StatusInternalServerError, "创建标签失败")
 		}
 		return
 	}
@@ -60,29 +55,27 @@ func CreateTag(c *gin.Context) {
 }
 
 // UpdateTag 更新标签
-func UpdateTag(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+func (a *API) UpdateTag(c *gin.Context) {
+	id, err := parseUintParam(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的标签ID"})
+		respondError(c, http.StatusBadRequest, "无效的标签ID")
 		return
 	}
 
 	var req tagRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "标签名称不能为空"})
+	if !bindJSON(c, &req, "标签名称不能为空") {
 		return
 	}
 
-	svc := service.NewTagService(db.DB)
-	tag, err := svc.Update(uint(id), req.Name)
+	tag, err := a.tags.Update(id, req.Name)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrTagExists):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "标签名已存在"})
+			respondError(c, http.StatusBadRequest, "标签名已存在")
 		case errors.Is(err, service.ErrTagNotFound):
-			c.JSON(http.StatusNotFound, gin.H{"error": "标签不存在"})
+			respondError(c, http.StatusNotFound, "标签不存在")
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新标签失败"})
+			respondError(c, http.StatusInternalServerError, "更新标签失败")
 		}
 		return
 	}
@@ -91,22 +84,21 @@ func UpdateTag(c *gin.Context) {
 }
 
 // DeleteTag 删除标签
-func DeleteTag(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+func (a *API) DeleteTag(c *gin.Context) {
+	id, err := parseUintParam(c, "id")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的标签ID"})
+		respondError(c, http.StatusBadRequest, "无效的标签ID")
 		return
 	}
 
-	svc := service.NewTagService(db.DB)
-	if err := svc.Delete(uint(id)); err != nil {
+	if err := a.tags.Delete(id); err != nil {
 		switch {
 		case errors.Is(err, service.ErrTagInUse):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "标签正在被文章使用，无法删除"})
+			respondError(c, http.StatusBadRequest, "标签正在被文章使用，无法删除")
 		case errors.Is(err, service.ErrTagNotFound):
-			c.JSON(http.StatusNotFound, gin.H{"error": "标签不存在"})
+			respondError(c, http.StatusNotFound, "标签不存在")
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "删除标签失败"})
+			respondError(c, http.StatusInternalServerError, "删除标签失败")
 		}
 		return
 	}

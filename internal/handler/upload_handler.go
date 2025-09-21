@@ -20,7 +20,7 @@ import (
 )
 
 // UploadImage 处理图片上传请求
-func UploadImage(c *gin.Context) {
+func (a *API) UploadImage(c *gin.Context) {
 	file, err := c.FormFile("image")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "未找到上传的图片", "success": 0})

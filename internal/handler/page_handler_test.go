@@ -12,7 +12,7 @@ import (
 )
 
 func TestUpdateAboutPageCreatesRecord(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	payload := map[string]string{"content": "# 关于我\n这是新的介绍"}
@@ -23,7 +23,7 @@ func TestUpdateAboutPageCreatesRecord(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPut, "/admin/api/pages/about", bytes.NewReader(body))
 	c.Request.Header.Set("Content-Type", "application/json")
 
-	UpdateAboutPage(c)
+	api.UpdateAboutPage(c)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", w.Code)

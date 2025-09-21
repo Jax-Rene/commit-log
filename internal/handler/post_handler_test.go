@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func setupTestDB(t *testing.T) func() {
+func setupTestDB(t *testing.T) (*API, func()) {
 	t.Helper()
 
 	gdb, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
@@ -41,7 +41,7 @@ func setupTestDB(t *testing.T) func() {
 
 	db.DB = gdb
 
-	return func() {
+	return NewAPI(db.DB), func() {
 		sqlDB, err := db.DB.DB()
 		if err == nil {
 			sqlDB.Close()
@@ -50,7 +50,7 @@ func setupTestDB(t *testing.T) func() {
 }
 
 func TestCreatePostWithTags(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	tag := db.Tag{Name: "Go"}
@@ -77,7 +77,7 @@ func TestCreatePostWithTags(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
 
-	CreatePost(c)
+	api.CreatePost(c)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", w.Code)
@@ -98,7 +98,7 @@ func TestCreatePostWithTags(t *testing.T) {
 }
 
 func TestCreatePostRejectsUnknownTags(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	payload := map[string]any{
@@ -120,7 +120,7 @@ func TestCreatePostRejectsUnknownTags(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 	c.Request = req
 
-	CreatePost(c)
+	api.CreatePost(c)
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)
@@ -128,7 +128,7 @@ func TestCreatePostRejectsUnknownTags(t *testing.T) {
 }
 
 func TestUpdatePostReplacesTags(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	originalTag := db.Tag{Name: "Go"}
@@ -179,7 +179,7 @@ func TestUpdatePostReplacesTags(t *testing.T) {
 	c.Request = req
 	c.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(int(post.ID))}}
 
-	UpdatePost(c)
+	api.UpdatePost(c)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", w.Code)
@@ -200,7 +200,7 @@ func TestUpdatePostReplacesTags(t *testing.T) {
 }
 
 func TestUpdatePostRejectsUnknownTags(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	post := db.Post{
@@ -237,7 +237,7 @@ func TestUpdatePostRejectsUnknownTags(t *testing.T) {
 	c.Request = req
 	c.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(int(post.ID))}}
 
-	UpdatePost(c)
+	api.UpdatePost(c)
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)
@@ -245,7 +245,7 @@ func TestUpdatePostRejectsUnknownTags(t *testing.T) {
 }
 
 func TestUpdatePostClearsTagsWhenEmpty(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	tag := db.Tag{Name: "Go"}
@@ -291,7 +291,7 @@ func TestUpdatePostClearsTagsWhenEmpty(t *testing.T) {
 	c.Request = req
 	c.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(int(post.ID))}}
 
-	UpdatePost(c)
+	api.UpdatePost(c)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", w.Code)
@@ -308,7 +308,7 @@ func TestUpdatePostClearsTagsWhenEmpty(t *testing.T) {
 }
 
 func TestDeletePost(t *testing.T) {
-	cleanup := setupTestDB(t)
+	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
 	post := db.Post{
@@ -332,7 +332,7 @@ func TestDeletePost(t *testing.T) {
 	c.Request = req
 	c.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(int(post.ID))}}
 
-	DeletePost(c)
+	api.DeletePost(c)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", w.Code)
