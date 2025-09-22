@@ -1,0 +1,440 @@
+{{template "base" .}}
+
+{{define "content"}}
+<div class="space-y-10" id="habit-admin" data-selected-id="{{.selectedHabitID}}">
+	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
+		<div>
+			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">习惯管理</h1>
+			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">维护好习惯，快速打卡并跟踪周 / 月维度的进度。</p>
+		</div>
+		<a href="/admin/habits/new" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90">新建习惯</a>
+	</header>
+
+	<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+		<form method="GET" action="/admin/habits" class="grid gap-6 lg:grid-cols-4">
+			<label class="col-span-full flex flex-col gap-2 lg:col-span-2">
+				<span class="text-sm font-medium text-slate-700 dark:text-slate-200">关键词</span>
+				<input type="text" name="search" value="{{.filter.Search}}" placeholder="搜索习惯名称或描述" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
+			</label>
+
+			<label class="flex flex-col gap-2">
+				<span class="text-sm font-medium text-slate-700 dark:text-slate-200">状态</span>
+				<select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30">
+					<option value="" {{if eq .filter.Status ""}}selected{{end}}>全部</option>
+					<option value="active" {{if eq .filter.Status "active"}}selected{{end}}>启用中</option>
+					<option value="inactive" {{if eq .filter.Status "inactive"}}selected{{end}}>已停用</option>
+				</select>
+			</label>
+
+			<label class="flex flex-col gap-2">
+				<span class="text-sm font-medium text-slate-700 dark:text-slate-200">类型标签</span>
+				<select name="type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30">
+					<option value="" {{if eq .filter.TypeTag ""}}selected{{end}}>全部类型</option>
+					{{range .typeTags}}
+					<option value="{{.}}" {{if eq $.filter.TypeTag .}}selected{{end}}>{{.}}</option>
+					{{end}}
+				</select>
+			</label>
+
+			<div class="flex items-end gap-3">
+				<button type="submit" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90">搜索</button>
+				<a href="/admin/habits" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">重置</a>
+			</div>
+		</form>
+	</section>
+
+	<div class="grid gap-6 xl:grid-cols-[340px,1fr]">
+		<section class="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80" id="habit-list">
+			<div class="flex items-center justify-between">
+				<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">习惯列表</h2>
+				<span class="text-xs text-slate-500 dark:text-slate-400">{{len .habits}} 项</span>
+			</div>
+			<div class="space-y-3">
+				{{if gt (len .habits) 0}}
+					{{range .habits}}
+					<button type="button" class="habit-item w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition-all hover:border-blue-200 hover:bg-blue-50/60 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10" data-habit-id="{{.ID}}" data-habit-name="{{.Name}}" data-habit-status="{{.Status}}">
+						<div class="flex items-center justify-between">
+							<div class="space-y-1">
+								<p class="text-base font-medium text-slate-900 dark:text-slate-100">{{.Name}}</p>
+								<p class="text-xs text-slate-500 dark:text-slate-400">{{.Description}}</p>
+							</div>
+							<span class="rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:border-slate-600 dark:text-slate-300">{{.TypeTag}}</span>
+						</div>
+						<div class="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+							<span>{{habitFrequencyText .FrequencyUnit .FrequencyCount}}</span>
+							<span class="flex items-center gap-2">
+								<span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium {{if eq .Status "active"}}bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300{{else}}bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400{{end}}">{{if eq .Status "active"}}启用中{{else}}已停用{{end}}</span>
+								<a href="/admin/habits/{{.ID}}/edit" class="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500/50 dark:hover:text-blue-200">编辑</a>
+							</span>
+						</div>
+					</button>
+					{{end}}
+				{{else}}
+					<div class="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">暂无习惯，点击右上角新建一个目标吧。</div>
+				{{end}}
+			</div>
+		</section>
+
+		<section class="flex h-full flex-col gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80" id="habit-calendar-panel">
+			<header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100" id="calendar-title">请选择习惯</h2>
+					<p class="text-xs text-slate-500 dark:text-slate-400" id="calendar-subtitle">选择左侧习惯以查看周 / 月视图。</p>
+				</div>
+				<div class="flex items-center gap-2">
+					<button type="button" class="view-toggle rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:text-blue-200" data-view="weekly">周视图</button>
+					<button type="button" class="view-toggle rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:text-blue-200" data-view="monthly">月视图</button>
+				</div>
+			</header>
+
+			<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200" id="calendar-stats">
+				<span>完成次数：<strong id="stats-completed">-</strong></span>
+				<span>目标次数：<strong id="stats-target">-</strong></span>
+				<span>完成率：<strong id="stats-rate">-</strong></span>
+				<span>当前连胜：<strong id="stats-current">-</strong></span>
+				<span>历史最佳：<strong id="stats-longest">-</strong></span>
+			</div>
+
+			<div class="space-y-3">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+						<button type="button" id="calendar-prev" class="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:text-blue-200">上一段</button>
+						<span id="calendar-range" class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">-</span>
+						<button type="button" id="calendar-next" class="rounded-lg border border-slate-200 px-3 py-1.5 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:text-blue-200">下一段</button>
+					</div>
+				</div>
+				<div class="grid gap-2">
+					<div class="grid grid-cols-7 gap-1 text-center text-[11px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500" id="calendar-weekdays"></div>
+					<div class="grid grid-cols-7 gap-2" id="calendar-grid"></div>
+				</div>
+			</div>
+
+			<section class="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+				<h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">快速打卡</h3>
+				<form id="quick-log-form" class="grid gap-3 sm:grid-cols-2" autocomplete="off">
+					<input type="hidden" name="habit_id" id="quick-log-habit">
+					<label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
+						<span>日期</span>
+						<input type="date" name="log_date" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/20" />
+					</label>
+					<label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
+						<span>时间</span>
+						<input type="time" name="log_time" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/20" />
+					</label>
+					<label class="sm:col-span-2 flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
+						<span>备注</span>
+						<input type="text" name="note" placeholder="可记录心情、完成方式等" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/20" />
+					</label>
+					<div class="sm:col-span-2 flex justify-end gap-3">
+						<button type="submit" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90">保存打卡</button>
+						<button type="reset" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">重置</button>
+					</div>
+				</form>
+			</section>
+
+			<section class="space-y-3">
+				<div class="flex items-center justify-between">
+					<h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">打卡记录</h3>
+					<button type="button" id="refresh-logs" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:text-blue-200">刷新</button>
+				</div>
+				<div id="log-list" class="grid gap-2 text-sm text-slate-600 dark:text-slate-300"></div>
+			</section>
+		</section>
+	</div>
+</div>
+
+<script>
+	document.addEventListener('DOMContentLoaded', () => {
+		const root = document.getElementById('habit-admin');
+		if (!root) {
+			return;
+		}
+
+		const state = {
+			habitId: parseInt(root.dataset.selectedId || '0', 10) || null,
+			view: 'monthly',
+			rangeStart: null,
+			rangeEnd: null,
+			weekdays: ['一', '二', '三', '四', '五', '六', '日'],
+			loading: false,
+		};
+
+		const elements = {
+			title: document.getElementById('calendar-title'),
+			subtitle: document.getElementById('calendar-subtitle'),
+			weekdays: document.getElementById('calendar-weekdays'),
+			grid: document.getElementById('calendar-grid'),
+			range: document.getElementById('calendar-range'),
+			statsCompleted: document.getElementById('stats-completed'),
+			statsTarget: document.getElementById('stats-target'),
+			statsRate: document.getElementById('stats-rate'),
+			statsCurrent: document.getElementById('stats-current'),
+			statsLongest: document.getElementById('stats-longest'),
+			quickForm: document.getElementById('quick-log-form'),
+			quickHabit: document.getElementById('quick-log-habit'),
+			logList: document.getElementById('log-list'),
+			prev: document.getElementById('calendar-prev'),
+			next: document.getElementById('calendar-next'),
+			refreshLogs: document.getElementById('refresh-logs'),
+			viewButtons: document.querySelectorAll('.view-toggle'),
+			habitButtons: document.querySelectorAll('.habit-item'),
+		};
+
+		elements.weekdays.innerHTML = state.weekdays.map(label => `<span>${label}</span>`).join('');
+
+		elements.habitButtons.forEach(button => {
+			button.addEventListener('click', () => {
+				const id = parseInt(button.dataset.habitId, 10);
+				selectHabit(id);
+			});
+		});
+
+		elements.viewButtons.forEach(button => {
+			button.addEventListener('click', () => {
+				const nextView = button.dataset.view;
+				if (state.view === nextView) {
+					return;
+				}
+				state.view = nextView;
+				loadCalendar();
+			});
+		});
+
+		elements.prev.addEventListener('click', () => shiftRange(-1));
+		elements.next.addEventListener('click', () => shiftRange(1));
+		elements.refreshLogs.addEventListener('click', () => loadCalendar());
+
+		elements.quickForm.addEventListener('submit', event => {
+			event.preventDefault();
+			if (!state.habitId) {
+				alert('请先选择一个习惯');
+				return;
+			}
+			const formData = new FormData(elements.quickForm);
+			const payload = {
+				log_date: formData.get('log_date'),
+				log_time: formData.get('log_time'),
+				note: formData.get('note'),
+			};
+			fetch(`/admin/api/habits/${state.habitId}/logs`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload),
+			})
+				.then(response => response.json())
+				.then(() => {
+					elements.quickForm.reset();
+					loadCalendar();
+				})
+				.catch(() => {
+					alert('打卡失败，请稍后再试');
+				});
+		});
+
+		function selectHabit(id) {
+			state.habitId = id;
+			state.rangeStart = null;
+			state.rangeEnd = null;
+			updateHabitSelection();
+			loadCalendar();
+		}
+
+		function updateHabitSelection() {
+			elements.habitButtons.forEach(button => {
+				const active = parseInt(button.dataset.habitId, 10) === state.habitId;
+				button.classList.toggle('ring-2', active);
+				button.classList.toggle('ring-blue-300', active);
+				button.classList.toggle('border-blue-300', active);
+			});
+			elements.quickHabit.value = state.habitId || '';
+		}
+
+		function shiftRange(delta) {
+			if (!state.habitId || !state.rangeStart) {
+				return;
+			}
+			const date = parseISO(state.rangeStart);
+			if (state.view === 'weekly') {
+				date.setDate(date.getDate() + delta * 7);
+			} else {
+				date.setMonth(date.getMonth() + delta);
+			}
+			state.rangeStart = formatDate(date);
+			loadCalendar();
+		}
+
+		function loadCalendar() {
+			if (!state.habitId) {
+				return;
+			}
+			const params = new URLSearchParams({ view: state.view });
+			if (state.rangeStart) {
+				params.set('start', state.rangeStart);
+			}
+			fetch(`/admin/api/habits/${state.habitId}/calendar?${params.toString()}`)
+				.then(response => response.json())
+				.then(data => {
+					state.rangeStart = data.range.start;
+					state.rangeEnd = data.range.end;
+					renderCalendar(data);
+				})
+				.catch(() => {
+					alert('加载日历数据失败');
+				});
+		}
+
+		function renderCalendar(data) {
+			elements.title.textContent = data.habit.name;
+			elements.subtitle.textContent = `${data.habit.type_tag || '未分类'} · ${frequencyText(data.habit.frequency_unit, data.habit.frequency_count)}`;
+			elements.range.textContent = `${data.range.start} ~ ${data.range.end}`;
+
+			elements.statsCompleted.textContent = data.stats.completed_count;
+			elements.statsTarget.textContent = data.stats.target_count;
+			elements.statsRate.textContent = `${Math.round(data.stats.completion_rate * 100)}%`;
+			elements.statsCurrent.textContent = data.stats.current_streak;
+			elements.statsLongest.textContent = data.stats.longest_streak;
+
+			const logMap = new Map();
+			(data.logs || []).forEach(log => {
+				logMap.set(log.log_date, log);
+			});
+
+			const cells = [];
+			const start = parseISO(data.range.start);
+			const end = parseISO(data.range.end);
+
+			if (state.view === 'monthly') {
+				const leading = (start.getDay() + 6) % 7;
+				for (let i = 0; i < leading; i++) {
+					cells.push(blankCell());
+				}
+			}
+
+			for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+				const key = formatDate(cursor);
+				const log = logMap.get(key);
+				cells.push(dayCell(new Date(cursor), log));
+			}
+
+			if (state.view === 'monthly') {
+				while (cells.length % 7 !== 0) {
+					cells.push(blankCell());
+				}
+			}
+
+			elements.grid.innerHTML = '';
+			cells.forEach(cell => elements.grid.appendChild(cell));
+
+			renderLogList(data.logs || []);
+		}
+
+		function blankCell() {
+			const div = document.createElement('div');
+			div.className = 'aspect-square rounded-lg border border-dashed border-slate-200 bg-slate-50/40 dark:border-slate-700 dark:bg-slate-900/40';
+			return div;
+		}
+
+		function dayCell(date, log) {
+			const button = document.createElement('button');
+			button.type = 'button';
+			const isToday = isSameDate(date, new Date());
+			button.className = 'flex aspect-square flex-col justify-between rounded-xl border border-slate-200 bg-white p-2 text-left text-xs transition-colors hover:border-blue-200 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10';
+			if (log) {
+				button.classList.add('border-emerald-300', 'shadow-sm');
+			}
+			if (isToday) {
+				button.classList.add('ring-2', 'ring-blue-300');
+			}
+
+			const top = document.createElement('div');
+			top.className = 'flex items-center justify-between text-xs text-slate-500 dark:text-slate-300';
+			top.innerHTML = `<span class="text-sm font-semibold text-slate-900 dark:text-slate-100">${date.getDate()}</span><span>${['日','一','二','三','四','五','六'][date.getDay()]}</span>`;
+
+			const body = document.createElement('div');
+			body.className = 'mt-2 flex-1 text-[11px] text-slate-500 dark:text-slate-400';
+			body.textContent = log ? (log.note || '已完成') : '待打卡';
+
+			button.appendChild(top);
+			button.appendChild(body);
+
+			if (log) {
+				button.addEventListener('click', () => {
+					if (!confirm('删除该打卡记录？')) {
+						return;
+					}
+					fetch(`/admin/api/habits/${state.habitId}/logs/${log.id}`, { method: 'DELETE' })
+						.then(response => response.json())
+						.then(() => loadCalendar())
+						.catch(() => alert('删除失败，请稍后重试'));
+				});
+			}
+
+			return button;
+		}
+
+		function renderLogList(logs) {
+			elements.logList.innerHTML = '';
+			if (logs.length === 0) {
+				elements.logList.innerHTML = '<div class="rounded-lg border border-dashed border-slate-200 bg-white/60 p-4 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">该时段暂无打卡记录</div>';
+				return;
+			}
+
+			logs.slice().reverse().forEach(log => {
+				const item = document.createElement('div');
+				item.className = 'flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300';
+				const left = document.createElement('div');
+				left.innerHTML = `<p class="font-medium text-slate-900 dark:text-slate-100">${log.log_date}</p><p class="text-[11px] text-slate-500 dark:text-slate-400">${log.note || '暂无备注'}</p>`;
+				const action = document.createElement('button');
+				action.type = 'button';
+				action.textContent = '删除';
+				action.className = 'rounded-lg border border-rose-200 px-3 py-1 text-[11px] font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10';
+				action.addEventListener('click', () => {
+					if (!confirm('确定删除这条打卡记录？')) {
+						return;
+					}
+					fetch(`/admin/api/habits/${state.habitId}/logs/${log.id}`, { method: 'DELETE' })
+						.then(response => response.json())
+						.then(() => loadCalendar())
+						.catch(() => alert('删除失败，请稍后重试'));
+				});
+				item.appendChild(left);
+				item.appendChild(action);
+				elements.logList.appendChild(item);
+			});
+		}
+
+		function frequencyText(unit, count) {
+			switch (unit) {
+				case 'daily':
+					return `每天 ${count} 次`;
+				case 'weekly':
+					return `每周 ${count} 次`;
+				case 'monthly':
+					return `每月 ${count} 次`;
+				default:
+					return `${unit} ${count}`;
+			}
+		}
+
+		function parseISO(value) {
+			const [year, month, day] = value.split('-').map(Number);
+			return new Date(year, month - 1, day);
+		}
+
+		function formatDate(date) {
+			const year = date.getFullYear();
+			const month = String(date.getMonth() + 1).padStart(2, '0');
+			const day = String(date.getDate()).padStart(2, '0');
+			return `${year}-${month}-${day}`;
+		}
+
+		function isSameDate(a, b) {
+			return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+		}
+
+		if (state.habitId) {
+			selectHabit(state.habitId);
+		}
+	});
+</script>
+{{end}}
