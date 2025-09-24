@@ -177,6 +177,14 @@ type HabitLogService struct {
 	db *gorm.DB
 }
 
+// HabitHeatmapEntry 表示热力图中的单日打卡数据
+type HabitHeatmapEntry struct {
+	LogDate   time.Time
+	HabitID   uint
+	HabitName string
+	HabitType string
+}
+
 // HabitLogInput 定义打卡时的输入对象
 type HabitLogInput struct {
 	HabitID uint
@@ -262,6 +270,28 @@ func (s *HabitLogService) ListBetween(filter HabitLogFilter) ([]db.HabitLog, err
 	}
 
 	return logs, nil
+}
+
+// HeatmapRange 返回指定区间内所有习惯的打卡数据
+func (s *HabitLogService) HeatmapRange(start, end time.Time) ([]HabitHeatmapEntry, error) {
+	if end.Before(start) {
+		return nil, fmt.Errorf("invalid range: end before start")
+	}
+
+	normalizedStart := normalizeToDate(start)
+	normalizedEnd := normalizeToDate(end)
+
+	var rows []HabitHeatmapEntry
+	if err := s.db.Model(&db.HabitLog{}).
+		Select("habit_logs.log_date AS log_date, habit_logs.habit_id AS habit_id, habits.name AS habit_name, habits.type_tag AS habit_type").
+		Joins("JOIN habits ON habits.id = habit_logs.habit_id").
+		Where("habit_logs.log_date BETWEEN ? AND ?", normalizedStart, normalizedEnd).
+		Order("habit_logs.log_date ASC, habits.name ASC").
+		Find(&rows).Error; err != nil {
+		return nil, fmt.Errorf("list heatmap logs: %w", err)
+	}
+
+	return rows, nil
 }
 
 // StatsBetween 计算区间内的完成数、目标完成数及连胜

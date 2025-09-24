@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"cmp"
 	"errors"
 	"net/http"
 	"strconv"
@@ -122,6 +123,108 @@ func (a *API) GetHabit(c *gin.Context) {
 	}
 
 	respondHabitSuccess(c, http.StatusOK, gin.H{"habit": habitToPayload(*habit)})
+}
+
+// GetHabitHeatmap 返回过去一年的习惯打卡热力图
+func (a *API) GetHabitHeatmap(c *gin.Context) {
+	today := time.Now().In(time.Local)
+	end := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
+	start := end.AddDate(0, 0, -364)
+
+	entries, err := a.habitLogs.HeatmapRange(start, end)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "获取热力图数据失败")
+		return
+	}
+
+	type heatmapHabit struct {
+		ID      uint
+		Name    string
+		TypeTag string
+	}
+
+	type heatmapDay struct {
+		Date   string
+		Habits []heatmapHabit
+	}
+
+	dayMap := make(map[string][]heatmapHabit)
+	legendMap := make(map[uint]heatmapHabit)
+
+	for _, entry := range entries {
+		habit := heatmapHabit{ID: entry.HabitID, Name: entry.HabitName, TypeTag: entry.HabitType}
+		key := entry.LogDate.Format(dateFormat)
+		dayMap[key] = append(dayMap[key], habit)
+		if _, exists := legendMap[habit.ID]; !exists {
+			legendMap[habit.ID] = habit
+		}
+	}
+
+	days := make([]heatmapDay, 0, len(dayMap))
+	for date, habits := range dayMap {
+		slices.SortFunc(habits, func(a, b heatmapHabit) int {
+			return cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+		})
+		days = append(days, heatmapDay{Date: date, Habits: habits})
+	}
+
+	slices.SortFunc(days, func(a, b heatmapDay) int {
+		return cmp.Compare(a.Date, b.Date)
+	})
+
+	legend := make([]heatmapHabit, 0, len(legendMap))
+	for _, item := range legendMap {
+		legend = append(legend, item)
+	}
+
+	slices.SortFunc(legend, func(a, b heatmapHabit) int {
+		if diff := cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name)); diff != 0 {
+			return diff
+		}
+		return cmp.Compare(a.ID, b.ID)
+	})
+
+	dayPayload := make([]gin.H, 0, len(days))
+	for _, day := range days {
+		habits := make([]gin.H, 0, len(day.Habits))
+		for _, habit := range day.Habits {
+			habits = append(habits, gin.H{
+				"id":       habit.ID,
+				"name":     habit.Name,
+				"type_tag": habit.TypeTag,
+			})
+		}
+		dayPayload = append(dayPayload, gin.H{
+			"date":   day.Date,
+			"habits": habits,
+		})
+	}
+
+	legendPayload := make([]gin.H, 0, len(legend))
+	for _, habit := range legend {
+		legendPayload = append(legendPayload, gin.H{
+			"id":       habit.ID,
+			"name":     habit.Name,
+			"type_tag": habit.TypeTag,
+		})
+	}
+
+	summary := gin.H{
+		"total_logs":  len(entries),
+		"active_days": len(dayMap),
+		"habit_count": len(legend),
+	}
+
+	respondHabitSuccess(c, http.StatusOK, gin.H{
+		"range": gin.H{
+			"start": start.Format(dateFormat),
+			"end":   end.Format(dateFormat),
+		},
+		"days":         dayPayload,
+		"habits":       legendPayload,
+		"summary":      summary,
+		"generated_at": time.Now().In(time.Local).Format(time.RFC3339),
+	})
 }
 
 // CreateHabit 创建习惯

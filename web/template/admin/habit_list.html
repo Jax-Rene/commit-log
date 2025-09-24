@@ -8,12 +8,51 @@
 			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">维护好习惯，快速打卡并跟踪周 / 月维度的进度。</p>
 		</div>
 		<a href="/admin/habits/new" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90">新建习惯</a>
-	</header>
+        </header>
 
-	<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-		<form method="GET" action="/admin/habits" class="grid gap-6 lg:grid-cols-4">
-			<label class="col-span-full flex flex-col gap-2 lg:col-span-2">
-				<span class="text-sm font-medium text-slate-700 dark:text-slate-200">关键词</span>
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80" id="habit-heatmap">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                        <div class="space-y-2">
+                                <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">习惯活动热力图</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400" id="heatmap-range">统计过去 12 个月的打卡情况</p>
+                                <p class="text-xs text-slate-400 dark:text-slate-500" id="heatmap-updated"></p>
+                        </div>
+                        <div class="text-right text-sm text-slate-600 dark:text-slate-300">
+                                <p class="font-medium"><span id="heatmap-total">-</span> 次打卡于过去一年</p>
+                                <p class="mt-1 text-xs"><span id="heatmap-days">-</span> 个活跃日 · <span id="heatmap-habit-count">-</span> 个习惯</p>
+                        </div>
+                </div>
+                <div class="mt-6 space-y-5">
+                        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <div id="heatmap-scale" class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                        <span>图例加载中...</span>
+                                </div>
+                                <div id="heatmap-habits" class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400"></div>
+                        </div>
+                        <div class="flex gap-4">
+                                <div class="flex w-10 flex-col justify-between py-1 text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                        <span>周一</span>
+                                        <span>周三</span>
+                                        <span>周五</span>
+                                </div>
+                                <div class="relative flex-1">
+                                        <div id="heatmap-loading" class="flex h-28 items-center justify-center text-xs text-slate-500 dark:text-slate-400">正在生成热力图...</div>
+                                        <div id="heatmap-empty" class="hidden h-28 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">暂无打卡数据，开始坚持一个习惯吧。</div>
+                                        <div id="heatmap-scroll" class="invisible overflow-x-auto pb-2">
+                                                <div class="inline-block">
+                                                        <div id="heatmap-months" class="mb-2 flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500"></div>
+                                                        <div id="heatmap-grid" class="flex gap-1"></div>
+                                                </div>
+                                        </div>
+                                </div>
+                        </div>
+                </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+                <form method="GET" action="/admin/habits" class="grid gap-6 lg:grid-cols-4">
+                        <label class="col-span-full flex flex-col gap-2 lg:col-span-2">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">关键词</span>
 				<input type="text" name="search" value="{{.filter.Search}}" placeholder="搜索习惯名称或描述" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
 			</label>
 
@@ -150,18 +189,28 @@
 			return;
 		}
 
-		const state = {
-			habitId: parseInt(root.dataset.selectedId || '0', 10) || null,
-			view: 'monthly',
-			rangeStart: null,
-			rangeEnd: null,
-			weekdays: ['一', '二', '三', '四', '五', '六', '日'],
-			loading: false,
-		};
+                const state = {
+                        habitId: parseInt(root.dataset.selectedId || '0', 10) || null,
+                        view: 'monthly',
+                        rangeStart: null,
+                        rangeEnd: null,
+                        weekdays: ['一', '二', '三', '四', '五', '六', '日'],
+                        loading: false,
+                        heatmap: {
+                                palette: ['#38bdf8', '#6366f1', '#22c55e', '#f97316', '#ec4899', '#a855f7', '#facc15', '#14b8a6'],
+                                colors: new Map(),
+                                scaleLight: ['#ebedf0', '#c6e48b', '#7bc96f', '#239a3b', '#196127'],
+                                scaleDark: ['#1f2937', '#065f46', '#047857', '#10b981', '#6ee7b7'],
+                                bucketSize: 1,
+                                maxCount: 0,
+                        },
+                };
 
-		const elements = {
-			title: document.getElementById('calendar-title'),
-			subtitle: document.getElementById('calendar-subtitle'),
+                const HEATMAP_WEEK_WIDTH = 14;
+
+                const elements = {
+                        title: document.getElementById('calendar-title'),
+                        subtitle: document.getElementById('calendar-subtitle'),
 			weekdays: document.getElementById('calendar-weekdays'),
 			grid: document.getElementById('calendar-grid'),
 			range: document.getElementById('calendar-range'),
@@ -175,18 +224,35 @@
 			logList: document.getElementById('log-list'),
 			prev: document.getElementById('calendar-prev'),
 			next: document.getElementById('calendar-next'),
-			refreshLogs: document.getElementById('refresh-logs'),
-			viewButtons: document.querySelectorAll('.view-toggle'),
-			habitButtons: document.querySelectorAll('.habit-item'),
-		};
+                        refreshLogs: document.getElementById('refresh-logs'),
+                        viewButtons: document.querySelectorAll('.view-toggle'),
+                        habitButtons: document.querySelectorAll('.habit-item'),
+                        heatmapPanel: document.getElementById('habit-heatmap'),
+                        heatmapLoading: document.getElementById('heatmap-loading'),
+                        heatmapEmpty: document.getElementById('heatmap-empty'),
+                        heatmapScroll: document.getElementById('heatmap-scroll'),
+                        heatmapMonths: document.getElementById('heatmap-months'),
+                        heatmapGrid: document.getElementById('heatmap-grid'),
+                        heatmapScale: document.getElementById('heatmap-scale'),
+                        heatmapHabits: document.getElementById('heatmap-habits'),
+                        heatmapTotal: document.getElementById('heatmap-total'),
+                        heatmapDays: document.getElementById('heatmap-days'),
+                        heatmapRange: document.getElementById('heatmap-range'),
+                        heatmapHabitCount: document.getElementById('heatmap-habit-count'),
+                        heatmapUpdated: document.getElementById('heatmap-updated'),
+                };
 
-		elements.weekdays.innerHTML = state.weekdays.map(label => `<span>${label}</span>`).join('');
+                elements.weekdays.innerHTML = state.weekdays.map(label => `<span>${label}</span>`).join('');
 
-		elements.habitButtons.forEach(button => {
-			button.addEventListener('click', () => {
-				const id = parseInt(button.dataset.habitId, 10);
-				selectHabit(id);
-			});
+                if (elements.heatmapPanel) {
+                        loadHeatmap();
+                }
+
+                elements.habitButtons.forEach(button => {
+                        button.addEventListener('click', () => {
+                                const id = parseInt(button.dataset.habitId, 10);
+                                selectHabit(id);
+                        });
 		});
 
 		elements.viewButtons.forEach(button => {
@@ -216,26 +282,421 @@
 				log_time: formData.get('log_time'),
 				note: formData.get('note'),
 			};
-			fetch(`/admin/api/habits/${state.habitId}/logs`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload),
-			})
-				.then(response => response.json())
-				.then(() => {
-					elements.quickForm.reset();
-					loadCalendar();
-				})
+                        fetch(`/admin/api/habits/${state.habitId}/logs`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload),
+                        })
+                                .then(response => response.json())
+                                .then(() => {
+                                        elements.quickForm.reset();
+                                        loadCalendar();
+                                        if (elements.heatmapPanel) {
+                                                loadHeatmap();
+                                        }
+                                })
                                 .catch(() => {
                                         window.AdminUI.toast({ message: '打卡失败，请稍后再试', type: 'error' });
                                 });
                 });
 
-		function selectHabit(id) {
-			state.habitId = id;
-			state.rangeStart = null;
-			state.rangeEnd = null;
-			updateHabitSelection();
+                function loadHeatmap() {
+                        if (!elements.heatmapPanel) {
+                                return;
+                        }
+                        if (elements.heatmapLoading) {
+                                elements.heatmapLoading.classList.remove('hidden');
+                                elements.heatmapLoading.textContent = '正在生成 GitHub 风格热力图...';
+                        }
+                        if (elements.heatmapScale) {
+                                elements.heatmapScale.innerHTML = '<span>图例加载中...</span>';
+                                elements.heatmapScale.removeAttribute('title');
+                        }
+                        if (elements.heatmapHabits) {
+                                elements.heatmapHabits.innerHTML = '';
+                        }
+                        if (elements.heatmapUpdated) {
+                                elements.heatmapUpdated.textContent = '';
+                        }
+                        if (elements.heatmapEmpty) {
+                                elements.heatmapEmpty.classList.add('hidden');
+                        }
+                        if (elements.heatmapScroll) {
+                                elements.heatmapScroll.classList.add('invisible');
+                        }
+                        fetch('/admin/api/habits/heatmap')
+                                .then(response => response.json())
+                                .then(data => {
+                                        renderHeatmap(data);
+                                })
+                                .catch(() => {
+                                        if (elements.heatmapLoading) {
+                                                elements.heatmapLoading.classList.remove('hidden');
+                                                elements.heatmapLoading.textContent = '热力图加载失败，请稍后重试';
+                                        }
+                                });
+                }
+
+                function renderHeatmap(data) {
+                        if (!elements.heatmapPanel) {
+                                return;
+                        }
+
+                        if (elements.heatmapLoading) {
+                                elements.heatmapLoading.classList.add('hidden');
+                        }
+
+                        const habits = Array.isArray(data?.habits) ? data.habits : [];
+                        const days = Array.isArray(data?.days) ? data.days : [];
+                        const summary = data?.summary || {};
+                        const range = data?.range || {};
+                        const generatedAt = data?.generated_at;
+
+                        updateHeatmapSummary(summary, range, generatedAt);
+
+                        state.heatmap.colors = new Map();
+                        habits.forEach((habit, index) => {
+                                const color = state.heatmap.palette[index % state.heatmap.palette.length];
+                                state.heatmap.colors.set(habit.id, color);
+                        });
+
+                        const maxCount = days.reduce((max, day) => {
+                                const total = Array.isArray(day?.habits) ? day.habits.length : 0;
+                                return total > max ? total : max;
+                        }, 0);
+                        state.heatmap.maxCount = maxCount;
+                        const colors = getHeatmapScaleColors();
+                        state.heatmap.bucketSize = colors.length > 1 ? Math.max(1, Math.ceil(maxCount / (colors.length - 1))) : 1;
+
+                        renderHeatmapScale(maxCount);
+                        renderHeatmapHabits(habits);
+
+                        if (days.length === 0) {
+                                if (elements.heatmapEmpty) {
+                                        elements.heatmapEmpty.classList.remove('hidden');
+                                }
+                                if (elements.heatmapScroll) {
+                                        elements.heatmapScroll.classList.add('invisible');
+                                }
+                                if (elements.heatmapMonths) {
+                                        elements.heatmapMonths.innerHTML = '';
+                                }
+                                if (elements.heatmapGrid) {
+                                        elements.heatmapGrid.innerHTML = '';
+                                }
+                                return;
+                        }
+
+                        if (elements.heatmapEmpty) {
+                                elements.heatmapEmpty.classList.add('hidden');
+                        }
+                        if (elements.heatmapScroll) {
+                                elements.heatmapScroll.classList.remove('invisible');
+                        }
+
+                        renderHeatmapGrid(days, range);
+                }
+
+                function updateHeatmapSummary(summary, range, generatedAt) {
+                        if (elements.heatmapTotal) {
+                                const total = Number(summary.total_logs || 0);
+                                elements.heatmapTotal.textContent = total.toLocaleString('zh-CN');
+                        }
+                        if (elements.heatmapDays) {
+                                const active = Number(summary.active_days || 0);
+                                elements.heatmapDays.textContent = active.toLocaleString('zh-CN');
+                        }
+                        if (elements.heatmapHabitCount) {
+                                const habitCount = Number(summary.habit_count || 0);
+                                elements.heatmapHabitCount.textContent = habitCount.toLocaleString('zh-CN');
+                        }
+                        if (elements.heatmapRange) {
+                                if (range?.start && range?.end) {
+                                        elements.heatmapRange.textContent = `${range.start} ~ ${range.end}`;
+                                } else {
+                                        elements.heatmapRange.textContent = '统计过去 12 个月的打卡情况';
+                                }
+                        }
+                        if (elements.heatmapUpdated) {
+                                if (generatedAt) {
+                                        const generatedDate = new Date(generatedAt);
+                                        if (!Number.isNaN(generatedDate.getTime())) {
+                                                const formatted = generatedDate.toLocaleString('zh-CN', { hour12: false });
+                                                elements.heatmapUpdated.textContent = `数据更新于 ${formatted}`;
+                                        } else {
+                                                elements.heatmapUpdated.textContent = '';
+                                        }
+                                } else {
+                                        elements.heatmapUpdated.textContent = '';
+                                }
+                        }
+                }
+
+                function renderHeatmapScale(maxCount) {
+                        if (!elements.heatmapScale) {
+                                return;
+                        }
+
+                        const container = elements.heatmapScale;
+                        container.innerHTML = '';
+
+                        const colors = getHeatmapScaleColors();
+
+                        const less = document.createElement('span');
+                        less.className = 'font-medium text-slate-500 dark:text-slate-300';
+                        less.textContent = '较少';
+                        container.appendChild(less);
+
+                        colors.forEach((color, index) => {
+                                const swatch = document.createElement('span');
+                                swatch.className = 'h-3 w-3 rounded border border-slate-200 shadow-sm dark:border-slate-700';
+                                swatch.style.backgroundColor = color;
+                                swatch.setAttribute('aria-hidden', 'true');
+                                swatch.title = index === 0 ? '无打卡记录' : `热度等级 ${index}`;
+                                container.appendChild(swatch);
+                        });
+
+                        const more = document.createElement('span');
+                        more.className = 'font-medium text-slate-500 dark:text-slate-300';
+                        more.textContent = '更多';
+                        container.appendChild(more);
+
+                        const hint = document.createElement('span');
+                        hint.className = 'ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400';
+                        hint.textContent = '颜色代表不同习惯';
+                        container.appendChild(hint);
+
+                        if (maxCount > 0) {
+                                container.title = `最近一年最高 ${maxCount} 次/天`;
+                        } else {
+                                container.removeAttribute('title');
+                        }
+                }
+
+                function renderHeatmapHabits(habits) {
+                        if (!elements.heatmapHabits) {
+                                return;
+                        }
+
+                        const container = elements.heatmapHabits;
+                        container.innerHTML = '';
+
+                        if (!habits || habits.length === 0) {
+                                const placeholder = document.createElement('span');
+                                placeholder.className = 'text-xs text-slate-400 dark:text-slate-500';
+                                placeholder.textContent = '暂无习惯数据';
+                                container.appendChild(placeholder);
+                                return;
+                        }
+
+                        const label = document.createElement('span');
+                        label.className = 'text-xs font-medium text-slate-500 dark:text-slate-300';
+                        label.textContent = '习惯图例';
+                        container.appendChild(label);
+
+                        habits.forEach(habit => {
+                                const badge = document.createElement('span');
+                                badge.className = 'inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300';
+                                const dot = document.createElement('span');
+                                dot.className = 'h-2 w-2 rounded-full';
+                                dot.style.backgroundColor = state.heatmap.colors.get(habit.id) || state.heatmap.palette[0];
+                                badge.appendChild(dot);
+                                const name = document.createElement('span');
+                                name.textContent = habit.name;
+                                badge.appendChild(name);
+                                if (habit.type_tag) {
+                                        const tag = document.createElement('span');
+                                        tag.className = 'rounded-full bg-slate-100 px-1 py-0.5 font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400';
+                                        tag.style.fontSize = '10px';
+                                        tag.textContent = habit.type_tag;
+                                        badge.appendChild(tag);
+                                }
+                                container.appendChild(badge);
+                        });
+                }
+
+                function renderHeatmapGrid(days, range) {
+                        if (!elements.heatmapGrid) {
+                                return;
+                        }
+
+                        const startStr = range?.start;
+                        const endStr = range?.end;
+                        if (!startStr || !endStr) {
+                                elements.heatmapGrid.innerHTML = '';
+                                if (elements.heatmapMonths) {
+                                        elements.heatmapMonths.innerHTML = '';
+                                }
+                                return;
+                        }
+
+                        const rangeStart = parseISO(startStr);
+                        const rangeEnd = parseISO(endStr);
+                        if (Number.isNaN(rangeStart.getTime()) || Number.isNaN(rangeEnd.getTime())) {
+                                return;
+                        }
+
+                        const dayMap = new Map();
+                        days.forEach(day => {
+                                if (day && day.date) {
+                                        dayMap.set(day.date, Array.isArray(day.habits) ? day.habits : []);
+                                }
+                        });
+
+                        const displayStart = new Date(rangeStart);
+                        const leadingOffset = (displayStart.getDay() + 6) % 7;
+                        displayStart.setDate(displayStart.getDate() - leadingOffset);
+
+                        const displayEnd = new Date(rangeEnd);
+                        const trailingOffset = 6 - ((displayEnd.getDay() + 6) % 7);
+                        displayEnd.setDate(displayEnd.getDate() + trailingOffset);
+
+                        const weeks = [];
+                        let cursor = new Date(displayStart);
+                        let currentWeek = [];
+
+                        while (cursor <= displayEnd) {
+                                const iso = formatDate(cursor);
+                                const cellDate = new Date(cursor);
+                                const inRange = cellDate >= rangeStart && cellDate <= rangeEnd;
+                                const habitsForDay = inRange ? (dayMap.get(iso) || []) : [];
+                                currentWeek.push({ date: new Date(cellDate), iso, inRange, habits: habitsForDay });
+                                if (currentWeek.length === 7) {
+                                        weeks.push(currentWeek);
+                                        currentWeek = [];
+                                }
+                                cursor.setDate(cursor.getDate() + 1);
+                        }
+
+                        renderHeatmapMonths(weeks);
+
+                        elements.heatmapGrid.innerHTML = '';
+
+                        weeks.forEach(week => {
+                                const column = document.createElement('div');
+                                column.className = 'flex flex-col gap-1';
+                                column.style.flex = `0 0 ${HEATMAP_WEEK_WIDTH}px`;
+                                week.forEach(day => {
+                                        const cell = document.createElement('div');
+                                        cell.className = 'relative h-3 w-3 overflow-hidden rounded border border-transparent transition-transform duration-150 ease-out';
+                                        cell.dataset.date = day.iso;
+
+                                        if (!day.inRange) {
+                                                cell.classList.add('opacity-0');
+                                                cell.setAttribute('aria-hidden', 'true');
+                                                column.appendChild(cell);
+                                                return;
+                                        }
+
+                                        const count = day.habits.length;
+                                        cell.dataset.count = String(count);
+                                        const color = colorForCount(count);
+                                        cell.style.backgroundColor = color;
+
+                                        if (count === 0) {
+                                                cell.classList.add('border-slate-200', 'dark:border-slate-700');
+                                                const tooltip = `${day.iso}：暂无打卡`;
+                                                cell.setAttribute('title', tooltip);
+                                                cell.setAttribute('aria-label', tooltip);
+                                                column.appendChild(cell);
+                                                return;
+                                        }
+
+                                        cell.classList.add('cursor-pointer', 'hover:scale-110', 'shadow-sm');
+
+                                        const segmentWidth = 100 / count;
+                                        day.habits.forEach((habit, index) => {
+                                                const segment = document.createElement('span');
+                                                segment.className = 'absolute inset-y-0';
+                                                const left = index * segmentWidth;
+                                                segment.style.left = `${left}%`;
+                                                if (index === count - 1) {
+                                                        segment.style.right = '0';
+                                                } else {
+                                                        segment.style.width = `${segmentWidth}%`;
+                                                }
+                                                segment.style.backgroundColor = habitColor(habit.id, index);
+                                                segment.style.opacity = count === 1 ? '1' : '0.85';
+                                                segment.dataset.habitId = habit.id;
+                                                cell.appendChild(segment);
+                                        });
+
+                                        const habitNames = day.habits.map(item => item.name).join('、');
+                                        const tooltip = habitNames ? `${day.iso}：${count} 次打卡\n习惯：${habitNames}` : `${day.iso}：${count} 次打卡`;
+                                        cell.setAttribute('title', tooltip);
+                                        cell.setAttribute('aria-label', tooltip.replace(/\n/g, ' '));
+                                        column.appendChild(cell);
+                                });
+                                elements.heatmapGrid.appendChild(column);
+                        });
+                }
+
+                function renderHeatmapMonths(weeks) {
+                        if (!elements.heatmapMonths) {
+                                return;
+                        }
+
+                        elements.heatmapMonths.innerHTML = '';
+
+                        let previousLabel = '';
+                        weeks.forEach(week => {
+                                const monthCell = document.createElement('span');
+                                monthCell.className = 'flex h-3 items-center text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500';
+                                monthCell.style.flex = `0 0 ${HEATMAP_WEEK_WIDTH}px`;
+                                const reference = week.find(day => day.inRange)?.date || week[0]?.date;
+                                if (reference) {
+                                        const monthLabel = reference.toLocaleDateString('zh-CN', { month: 'short' }).replace('.', '');
+                                        if (monthLabel !== previousLabel) {
+                                                monthCell.textContent = monthLabel;
+                                                previousLabel = monthLabel;
+                                        }
+                                }
+                                elements.heatmapMonths.appendChild(monthCell);
+                        });
+                }
+
+                function getHeatmapScaleColors() {
+                        const root = document.documentElement;
+                        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                        const isDark = root.classList.contains('dark') || (!root.classList.contains('light') && prefersDark);
+                        return isDark ? state.heatmap.scaleDark : state.heatmap.scaleLight;
+                }
+
+                function colorForCount(count) {
+                        const colors = getHeatmapScaleColors();
+                        if (!colors || colors.length === 0) {
+                                return '#e5e7eb';
+                        }
+                        const bucketSize = Math.max(1, state.heatmap.bucketSize || 1);
+                        if (count <= 0) {
+                                return colors[0];
+                        }
+                        const bucket = Math.min(colors.length - 1, Math.ceil(count / bucketSize));
+                        return colors[bucket];
+                }
+
+                function habitColor(id, index) {
+                        if (state.heatmap.colors && state.heatmap.colors.has(id)) {
+                                return state.heatmap.colors.get(id);
+                        }
+
+                        const palette = Array.isArray(state.heatmap.palette) ? state.heatmap.palette : [];
+                        if (palette.length === 0) {
+                                return '#38bdf8';
+                        }
+
+                        const fallback = palette[index % palette.length];
+                        if (state.heatmap.colors) {
+                                state.heatmap.colors.set(id, fallback);
+                        }
+                        return fallback;
+                }
+
+                function selectHabit(id) {
+                        state.habitId = id;
+                        state.rangeStart = null;
+                        state.rangeEnd = null;
+                        updateHabitSelection();
 			loadCalendar();
 		}
 
@@ -374,6 +835,9 @@
                                                 .then(() => {
                                                         window.AdminUI.toast({ message: '已删除该打卡记录', type: 'success' });
                                                         loadCalendar();
+                                                        if (elements.heatmapPanel) {
+                                                                loadHeatmap();
+                                                        }
                                                 })
                                                 .catch(() => {
                                                         window.AdminUI.toast({ message: '删除失败，请稍后重试', type: 'error' });
@@ -416,6 +880,9 @@
                                                 .then(() => {
                                                         window.AdminUI.toast({ message: '已删除该打卡记录', type: 'success' });
                                                         loadCalendar();
+                                                        if (elements.heatmapPanel) {
+                                                                loadHeatmap();
+                                                        }
                                                 })
                                                 .catch(() => {
                                                         window.AdminUI.toast({ message: '删除失败，请稍后重试', type: 'error' });
