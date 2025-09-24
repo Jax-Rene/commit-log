@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"cmp"
 	"errors"
 	"net/http"
 	"strconv"
@@ -17,6 +18,36 @@ const (
 	defaultHabitView = "monthly"
 	dateFormat       = "2006-01-02"
 )
+
+type heatmapHabit struct {
+	ID      uint   `json:"id"`
+	Name    string `json:"name"`
+	TypeTag string `json:"type_tag"`
+}
+
+type heatmapDay struct {
+	Date   string         `json:"date"`
+	Habits []heatmapHabit `json:"habits"`
+}
+
+type heatmapRange struct {
+	Start string `json:"start"`
+	End   string `json:"end"`
+}
+
+type heatmapSummary struct {
+	TotalLogs  int `json:"total_logs"`
+	ActiveDays int `json:"active_days"`
+	HabitCount int `json:"habit_count"`
+}
+
+type habitHeatmapPayload struct {
+	Range       heatmapRange   `json:"range"`
+	Days        []heatmapDay   `json:"days"`
+	Habits      []heatmapHabit `json:"habits"`
+	Summary     heatmapSummary `json:"summary"`
+	GeneratedAt string         `json:"generated_at"`
+}
 
 type habitPayload struct {
 	Name           string `json:"name"`
@@ -122,6 +153,76 @@ func (a *API) GetHabit(c *gin.Context) {
 	}
 
 	respondHabitSuccess(c, http.StatusOK, gin.H{"habit": habitToPayload(*habit)})
+}
+
+// GetHabitHeatmap 返回过去一年的习惯打卡热力图
+func (a *API) GetHabitHeatmap(c *gin.Context) {
+	now := time.Now().In(time.Local)
+	end := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	start := end.AddDate(0, 0, -364)
+
+	entries, err := a.habitLogs.HeatmapRange(start, end)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "获取热力图数据失败")
+		return
+	}
+
+	payload := buildHabitHeatmapPayload(entries, start, end, now)
+	respondHabitSuccess(c, http.StatusOK, payload)
+}
+
+func buildHabitHeatmapPayload(entries []service.HabitHeatmapEntry, start, end, generatedAt time.Time) habitHeatmapPayload {
+	dayMap := make(map[string][]heatmapHabit)
+	legendMap := make(map[uint]heatmapHabit)
+
+	for _, entry := range entries {
+		habit := heatmapHabit{ID: entry.HabitID, Name: entry.HabitName, TypeTag: entry.HabitType}
+		key := entry.LogDate.Format(dateFormat)
+		dayMap[key] = append(dayMap[key], habit)
+		if _, exists := legendMap[habit.ID]; !exists {
+			legendMap[habit.ID] = habit
+		}
+	}
+
+	days := make([]heatmapDay, 0, len(dayMap))
+	for date, habits := range dayMap {
+		slices.SortFunc(habits, func(a, b heatmapHabit) int {
+			return cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+		})
+		days = append(days, heatmapDay{Date: date, Habits: habits})
+	}
+
+	slices.SortFunc(days, func(a, b heatmapDay) int {
+		return cmp.Compare(a.Date, b.Date)
+	})
+
+	legend := make([]heatmapHabit, 0, len(legendMap))
+	for _, item := range legendMap {
+		legend = append(legend, item)
+	}
+
+	slices.SortFunc(legend, func(a, b heatmapHabit) int {
+		if diff := cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name)); diff != 0 {
+			return diff
+		}
+		return cmp.Compare(a.ID, b.ID)
+	})
+
+	payload := habitHeatmapPayload{
+		Range: heatmapRange{
+			Start: start.Format(dateFormat),
+			End:   end.Format(dateFormat),
+		},
+		Days:    days,
+		Habits:  legend,
+		Summary: heatmapSummary{TotalLogs: len(entries), ActiveDays: len(dayMap), HabitCount: len(legend)},
+	}
+
+	if !generatedAt.IsZero() {
+		payload.GeneratedAt = generatedAt.Format(time.RFC3339)
+	}
+
+	return payload
 }
 
 // CreateHabit 创建习惯
@@ -459,7 +560,7 @@ func serializeHabitStats(stats *service.HabitStats) gin.H {
 	}
 }
 
-func respondHabitSuccess(c *gin.Context, status int, payload gin.H) {
+func respondHabitSuccess(c *gin.Context, status int, payload any) {
 	c.JSON(status, payload)
 }
 

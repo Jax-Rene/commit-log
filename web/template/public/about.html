@@ -1,17 +1,449 @@
 {{template "base" .}}
 
 {{define "content"}}
-<section class="mx-auto max-w-3xl space-y-8">
-	<header class="space-y-3 text-center">
-		<p class="text-sm font-medium text-blue-600 dark:text-blue-400">About Me</p>
-		<h1 class="text-4xl font-semibold text-slate-900 dark:text-slate-100">{{.page.Title}}</h1>
-		{{if .page.Summary}}
-		<p class="text-sm text-slate-600 dark:text-slate-400">{{.page.Summary}}</p>
-		{{end}}
-	</header>
+<section class="mx-auto max-w-3xl space-y-10">
+        <header class="space-y-3 text-center">
+                <p class="text-sm font-medium text-blue-600 dark:text-blue-400">About Me</p>
+                <h1 class="text-4xl font-semibold text-slate-900 dark:text-slate-100">{{.page.Title}}</h1>
+                {{if .page.Summary}}
+                <p class="text-sm text-slate-600 dark:text-slate-400">{{.page.Summary}}</p>
+                {{end}}
+        </header>
 
-	<section class="post-content">
-		{{.content}}
-	</section>
+        <section class="post-content">
+                {{.content}}
+        </section>
+
+        {{if .heatmap}}
+        <section class="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/60">
+                <div class="flex flex-col gap-6">
+                        <div class="flex flex-wrap items-start justify-between gap-6">
+                                <div class="max-w-xs space-y-1 text-left md:text-left">
+                                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">习惯活动热力图</h2>
+                                        <p class="text-sm text-slate-500 dark:text-slate-400">最近 12 个月的打卡记录，让你了解我正在坚持的方向。</p>
+                                </div>
+                                <dl class="grid min-w-[220px] flex-1 grid-cols-3 gap-3 text-center text-sm">
+                                        <div class="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+                                                <dt class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">累计打卡</dt>
+                                                <dd id="about-heatmap-total" class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{{.heatmap.Summary.TotalLogs}}</dd>
+                                        </div>
+                                        <div class="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+                                                <dt class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">活跃天数</dt>
+                                                <dd id="about-heatmap-days" class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{{.heatmap.Summary.ActiveDays}}</dd>
+                                        </div>
+                                        <div class="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
+                                                <dt class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">参与习惯</dt>
+                                                <dd id="about-heatmap-habit-count" class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{{.heatmap.Summary.HabitCount}}</dd>
+                                        </div>
+                                </dl>
+                        </div>
+
+                        <div class="space-y-5">
+                                <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+                                        <div id="about-heatmap-scale" class="flex flex-wrap items-center gap-2"></div>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                                <span id="about-heatmap-range">{{if and .heatmap.Range.Start .heatmap.Range.End}}{{.heatmap.Range.Start}} ~ {{.heatmap.Range.End}}{{else}}统计过去 12 个月的打卡情况{{end}}</span>
+                                                <span class="hidden sm:inline" aria-hidden="true">•</span>
+                                                <span id="about-heatmap-updated"></span>
+                                        </div>
+                                </div>
+
+                                <div class="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
+                                        <div class="flex-1 overflow-x-auto">
+                                                <div class="flex min-w-[680px] flex-col gap-2">
+                                                        <div id="about-heatmap-months" class="flex gap-1 pl-6 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500"></div>
+                                                        <div class="flex gap-2">
+                                                                <div class="flex flex-col items-end gap-4 py-1 pr-1 text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                                                        <span>周一</span>
+                                                                        <span>周三</span>
+                                                                        <span>周五</span>
+                                                                </div>
+                                                                <div>
+                                                                        <div id="about-heatmap-grid" class="flex gap-1" role="list" aria-label="习惯打卡热力图"></div>
+                                                                        <p id="about-heatmap-empty" class="hidden pt-3 text-xs text-slate-400 dark:text-slate-500">暂时还没有打卡记录，欢迎继续关注我的打卡动态。</p>
+                                                                </div>
+                                                        </div>
+                                                </div>
+                                        </div>
+                                        <div class="flex w-full min-w-[220px] flex-col gap-3 md:w-56">
+                                                <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">习惯图例</h3>
+                                                <div id="about-heatmap-habits" class="flex flex-wrap gap-2 text-xs"></div>
+                                        </div>
+                                </div>
+                        </div>
+                </div>
+        </section>
+        {{else if .heatmapError}}
+        <section class="rounded-3xl border border-slate-200 bg-white/80 p-6 text-center shadow-sm backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/60">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">习惯活动热力图</h2>
+                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{.heatmapError}}</p>
+        </section>
+        {{end}}
 </section>
+
+{{if .heatmapJSON}}
+<script>
+window.__ABOUT_HEATMAP_DATA__ = {{.heatmapJSON}};
+</script>
+{{end}}
+
+{{if .heatmap}}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+        const data = window.__ABOUT_HEATMAP_DATA__;
+        if (!data || !data.range) {
+                return;
+        }
+
+        const state = {
+                palette: ['#38bdf8', '#6366f1', '#22c55e', '#f97316', '#ec4899', '#a855f7', '#facc15', '#14b8a6'],
+                scaleLight: ['#ebedf0', '#c6e48b', '#7bc96f', '#239a3b', '#196127'],
+                scaleDark: ['#1f2937', '#065f46', '#047857', '#10b981', '#6ee7b7'],
+                colors: new Map(),
+                maxCount: 0,
+                bucketSize: 1,
+        };
+
+        const elements = {
+                scale: document.getElementById('about-heatmap-scale'),
+                range: document.getElementById('about-heatmap-range'),
+                updated: document.getElementById('about-heatmap-updated'),
+                total: document.getElementById('about-heatmap-total'),
+                days: document.getElementById('about-heatmap-days'),
+                habitCount: document.getElementById('about-heatmap-habit-count'),
+                grid: document.getElementById('about-heatmap-grid'),
+                months: document.getElementById('about-heatmap-months'),
+                habits: document.getElementById('about-heatmap-habits'),
+                empty: document.getElementById('about-heatmap-empty'),
+        };
+
+        const habits = Array.isArray(data.habits) ? data.habits : [];
+        const days = Array.isArray(data.days) ? data.days : [];
+        const summary = data.summary || {};
+
+        if (elements.total && typeof summary.total_logs === 'number') {
+                elements.total.textContent = Number(summary.total_logs).toLocaleString('zh-CN');
+        }
+        if (elements.days && typeof summary.active_days === 'number') {
+                elements.days.textContent = Number(summary.active_days).toLocaleString('zh-CN');
+        }
+        if (elements.habitCount && typeof summary.habit_count === 'number') {
+                elements.habitCount.textContent = Number(summary.habit_count).toLocaleString('zh-CN');
+        }
+        if (elements.range) {
+                if (data.range?.start && data.range?.end) {
+                        elements.range.textContent = `${data.range.start} ~ ${data.range.end}`;
+                } else {
+                        elements.range.textContent = '统计过去 12 个月的打卡情况';
+                }
+        }
+
+        if (elements.updated && data.generated_at) {
+                const generated = new Date(data.generated_at);
+                if (!Number.isNaN(generated.getTime())) {
+                        elements.updated.textContent = `数据更新于 ${generated.toLocaleString('zh-CN', { hour12: false })}`;
+                }
+        }
+
+        const hasActivity = Number(summary.total_logs || 0) > 0;
+        if (elements.empty) {
+                elements.empty.classList.toggle('hidden', hasActivity);
+        }
+
+        habits.forEach((habit, index) => {
+                const color = state.palette[index % state.palette.length];
+                state.colors.set(habit.id, color);
+        });
+
+        state.maxCount = days.reduce((max, day) => {
+                const total = Array.isArray(day?.habits) ? day.habits.length : 0;
+                return total > max ? total : max;
+        }, 0);
+
+        const dayMap = new Map();
+        days.forEach(day => {
+                if (day && day.date) {
+                        dayMap.set(day.date, Array.isArray(day.habits) ? day.habits : []);
+                }
+        });
+
+        renderLegend();
+        renderScale();
+        renderGrid();
+
+        const prefersDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+        const rerender = () => {
+                renderScale();
+                renderGrid();
+        };
+        if (prefersDark) {
+                if (typeof prefersDark.addEventListener === 'function') {
+                        prefersDark.addEventListener('change', rerender);
+                } else if (typeof prefersDark.addListener === 'function') {
+                        prefersDark.addListener(rerender);
+                }
+        }
+
+        const observer = new MutationObserver(rerender);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+        function renderLegend() {
+                if (!elements.habits) {
+                        return;
+                }
+                const container = elements.habits;
+                container.innerHTML = '';
+
+                if (!habits.length) {
+                        const placeholder = document.createElement('span');
+                        placeholder.className = 'rounded-full bg-slate-100 px-2 py-1 text-slate-500 dark:bg-slate-800 dark:text-slate-400';
+                        placeholder.textContent = '暂无习惯数据';
+                        container.appendChild(placeholder);
+                        return;
+                }
+
+                habits.forEach((habit, index) => {
+                        const badge = document.createElement('span');
+                        badge.className = 'inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 font-medium text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300';
+                        const dot = document.createElement('span');
+                        dot.className = 'h-2 w-2 rounded-full';
+                        dot.style.backgroundColor = habitColor(habit.id, index);
+                        badge.appendChild(dot);
+                        const name = document.createElement('span');
+                        name.textContent = habit.name;
+                        badge.appendChild(name);
+                        if (habit.type_tag) {
+                                const tag = document.createElement('span');
+                                tag.className = 'rounded-full bg-slate-100 px-1 py-0.5 text-[10px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400';
+                                tag.textContent = habit.type_tag;
+                                badge.appendChild(tag);
+                        }
+                        container.appendChild(badge);
+                });
+        }
+
+        function renderScale() {
+                if (!elements.scale) {
+                        return;
+                }
+                const container = elements.scale;
+                container.innerHTML = '';
+
+                const colors = getHeatmapScaleColors();
+                if (!colors.length) {
+                        return;
+                }
+
+                const less = document.createElement('span');
+                less.className = 'font-medium text-slate-500 dark:text-slate-300';
+                less.textContent = '较少';
+                container.appendChild(less);
+
+                colors.forEach((color, index) => {
+                        const swatch = document.createElement('span');
+                        swatch.className = 'h-3 w-3 rounded border border-slate-200 shadow-sm dark:border-slate-700';
+                        swatch.style.backgroundColor = color;
+                        swatch.title = index === 0 ? '无打卡记录' : `热度等级 ${index}`;
+                        swatch.setAttribute('aria-hidden', 'true');
+                        container.appendChild(swatch);
+                });
+
+                const more = document.createElement('span');
+                more.className = 'font-medium text-slate-500 dark:text-slate-300';
+                more.textContent = '更多';
+                container.appendChild(more);
+
+                const hint = document.createElement('span');
+                hint.className = 'ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-normal text-slate-500 dark:bg-slate-800 dark:text-slate-400';
+                hint.textContent = '颜色代表不同习惯';
+                container.appendChild(hint);
+
+                if (state.maxCount > 0) {
+                        container.title = `最近一年最高 ${state.maxCount} 次/天`;
+                } else {
+                        container.removeAttribute('title');
+                }
+        }
+
+        function renderGrid() {
+                if (!elements.grid) {
+                        return;
+                }
+
+                elements.grid.innerHTML = '';
+                if (elements.months) {
+                        elements.months.innerHTML = '';
+                }
+
+                const startStr = data.range.start;
+                const endStr = data.range.end;
+                if (!startStr || !endStr) {
+                        return;
+                }
+
+                const rangeStart = parseISO(startStr);
+                const rangeEnd = parseISO(endStr);
+                if (Number.isNaN(rangeStart.getTime()) || Number.isNaN(rangeEnd.getTime())) {
+                        return;
+                }
+
+                const weeks = buildWeeks(rangeStart, rangeEnd, dayMap);
+                renderMonths(weeks);
+
+                const colors = getHeatmapScaleColors();
+                state.bucketSize = colors.length > 1 ? Math.max(1, Math.ceil(state.maxCount / (colors.length - 1))) : 1;
+
+                weeks.forEach(week => {
+                        const column = document.createElement('div');
+                        column.className = 'flex flex-col gap-1';
+                        column.style.flex = '0 0 12px';
+
+                        week.forEach(day => {
+                                const cell = document.createElement('div');
+                                cell.className = 'relative h-3 w-3 overflow-hidden rounded border border-transparent transition-transform duration-150 ease-out';
+                                cell.dataset.date = day.iso;
+
+                                if (!day.inRange) {
+                                        cell.classList.add('opacity-0');
+                                        cell.setAttribute('aria-hidden', 'true');
+                                        column.appendChild(cell);
+                                        return;
+                                }
+
+                                const count = day.habits.length;
+                                cell.dataset.count = String(count);
+                                cell.style.backgroundColor = colorForCount(count);
+
+                                if (count === 0) {
+                                        cell.classList.add('border-slate-200', 'dark:border-slate-700');
+                                        const tooltip = `${day.iso}：暂无打卡`;
+                                        cell.title = tooltip;
+                                        cell.setAttribute('aria-label', tooltip);
+                                        column.appendChild(cell);
+                                        return;
+                                }
+
+                                cell.classList.add('cursor-pointer', 'hover:scale-110', 'shadow-sm');
+
+                                const segmentWidth = 100 / count;
+                                day.habits.forEach((habit, index) => {
+                                        const segment = document.createElement('span');
+                                        segment.className = 'absolute inset-y-0';
+                                        segment.style.left = `${index * segmentWidth}%`;
+                                        if (index === count - 1) {
+                                                segment.style.right = '0';
+                                        } else {
+                                                segment.style.width = `${segmentWidth}%`;
+                                        }
+                                        segment.style.backgroundColor = habitColor(habit.id, index);
+                                        segment.style.opacity = count === 1 ? '1' : '0.85';
+                                        segment.dataset.habitId = habit.id;
+                                        cell.appendChild(segment);
+                                });
+
+                                const habitNames = day.habits.map(item => item.name).join('、');
+                                const tooltip = habitNames ? `${day.iso}：${count} 次打卡\n习惯：${habitNames}` : `${day.iso}：${count} 次打卡`;
+                                cell.title = tooltip;
+                                cell.setAttribute('aria-label', tooltip.replace(/\n/g, ' '));
+
+                                column.appendChild(cell);
+                        });
+
+                        elements.grid.appendChild(column);
+                });
+        }
+
+        function renderMonths(weeks) {
+                if (!elements.months) {
+                        return;
+                }
+
+                let previousLabel = '';
+                weeks.forEach(week => {
+                        const monthCell = document.createElement('span');
+                        monthCell.className = 'flex h-3 items-center text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500';
+                        monthCell.style.flex = '0 0 12px';
+                        const reference = week.find(day => day.inRange)?.date || week[0]?.date;
+                        if (reference) {
+                                const monthLabel = reference.toLocaleDateString('zh-CN', { month: 'short' }).replace('.', '');
+                                if (monthLabel !== previousLabel) {
+                                        monthCell.textContent = monthLabel;
+                                        previousLabel = monthLabel;
+                                }
+                        }
+                        elements.months.appendChild(monthCell);
+                });
+        }
+
+        function getHeatmapScaleColors() {
+                const root = document.documentElement;
+                const prefersDarkScheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const isDark = root.classList.contains('dark') || (!root.classList.contains('light') && prefersDarkScheme);
+                return isDark ? state.scaleDark : state.scaleLight;
+        }
+
+        function colorForCount(count) {
+                const colors = getHeatmapScaleColors();
+                if (!colors.length) {
+                        return '#e5e7eb';
+                }
+                if (count <= 0) {
+                        return colors[0];
+                }
+                const bucket = Math.min(colors.length - 1, Math.ceil(count / state.bucketSize));
+                return colors[bucket];
+        }
+
+        function habitColor(id, index) {
+                if (state.colors.has(id)) {
+                        return state.colors.get(id);
+                }
+                const fallback = state.palette[index % state.palette.length] || '#38bdf8';
+                state.colors.set(id, fallback);
+                return fallback;
+        }
+
+        function buildWeeks(rangeStart, rangeEnd, map) {
+                const displayStart = new Date(rangeStart);
+                const leadingOffset = (displayStart.getDay() + 6) % 7;
+                displayStart.setDate(displayStart.getDate() - leadingOffset);
+
+                const displayEnd = new Date(rangeEnd);
+                const trailingOffset = 6 - ((displayEnd.getDay() + 6) % 7);
+                displayEnd.setDate(displayEnd.getDate() + trailingOffset);
+
+                const weeks = [];
+                let cursor = new Date(displayStart);
+                let currentWeek = [];
+
+                while (cursor <= displayEnd) {
+                        const iso = formatDate(cursor);
+                        const cellDate = new Date(cursor);
+                        const inRange = cellDate >= rangeStart && cellDate <= rangeEnd;
+                        const habitsForDay = inRange ? (map.get(iso) || []) : [];
+                        currentWeek.push({ date: new Date(cellDate), iso, inRange, habits: habitsForDay });
+                        if (currentWeek.length === 7) {
+                                weeks.push(currentWeek);
+                                currentWeek = [];
+                        }
+                        cursor.setDate(cursor.getDate() + 1);
+                }
+
+                return weeks;
+        }
+
+        function parseISO(value) {
+                const [year, month, day] = value.split('-').map(Number);
+                return new Date(year, month - 1, day);
+        }
+
+        function formatDate(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+        }
+});
+</script>
+{{end}}
 {{end}}

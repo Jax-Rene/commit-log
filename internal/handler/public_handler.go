@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -152,31 +153,46 @@ func (a *API) ShowTagArchive(c *gin.Context) {
 
 // ShowAbout renders the dynamic about page.
 func (a *API) ShowAbout(c *gin.Context) {
+	year := time.Now().Year()
+	data := gin.H{"year": year}
+
 	page, err := a.pages.GetBySlug("about")
 	if err != nil {
-		c.HTML(http.StatusOK, "about.html", gin.H{
-			"title": "关于",
-			"page": gin.H{
-				"Title":   "关于我",
-				"Summary": "保持好奇心，持续输出价值。",
-			},
-			"content": template.HTML("<p class=\"text-sm text-slate-600\">暂无简介，稍后再来看看。</p>"),
-			"year":    time.Now().Year(),
-		})
-		return
+		data["title"] = "关于"
+		data["page"] = gin.H{
+			"Title":   "关于我",
+			"Summary": "保持好奇心，持续输出价值。",
+		}
+		data["content"] = template.HTML("<p class=\"text-sm text-slate-600\">暂无简介，稍后再来看看。</p>")
+	} else {
+		htmlContent, renderErr := renderMarkdown(page.Content)
+		if renderErr != nil {
+			htmlContent = template.HTML("<p class=\"text-sm text-slate-600\">内容暂时无法展示。</p>")
+		}
+		data["title"] = page.Title
+		data["page"] = page
+		data["content"] = htmlContent
 	}
 
-	htmlContent, err := renderMarkdown(page.Content)
-	if err != nil {
-		htmlContent = template.HTML("<p class=\"text-sm text-slate-600\">内容暂时无法展示。</p>")
+	now := time.Now().In(time.Local)
+	end := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	start := end.AddDate(0, 0, -364)
+
+	if entries, heatmapErr := a.habitLogs.HeatmapRange(start, end); heatmapErr == nil {
+		payload := buildHabitHeatmapPayload(entries, start, end, now)
+		data["heatmap"] = payload
+		if encoded, marshalErr := json.Marshal(payload); marshalErr == nil {
+			data["heatmapJSON"] = template.JS(string(encoded))
+		}
+	} else {
+		data["heatmapError"] = "热力图数据暂时不可用"
 	}
 
-	c.HTML(http.StatusOK, "about.html", gin.H{
-		"title":   page.Title,
-		"page":    page,
-		"content": htmlContent,
-		"year":    time.Now().Year(),
-	})
+	if _, ok := data["title"]; !ok {
+		data["title"] = "关于"
+	}
+
+	c.HTML(http.StatusOK, "about.html", data)
 }
 
 func renderMarkdown(content string) (template.HTML, error) {
