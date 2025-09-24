@@ -280,6 +280,7 @@ func SetupRouter() *gin.Engine {
 				api.DELETE("/posts/:id", handlers.DeletePost)
 
 				api.GET("/habits", handlers.ListHabits)
+				api.GET("/habits/heatmap", handlers.GetHabitHeatmap)
 				api.GET("/habits/:id", handlers.GetHabit)
 				api.POST("/habits", handlers.CreateHabit)
 				api.PUT("/habits/:id", handlers.UpdateHabit)
