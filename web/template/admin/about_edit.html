@@ -111,10 +111,10 @@
 
 			submit() {
 				const content = this.editor ? this.editor.value() : this.form.content;
-				if (!content || !content.trim()) {
-					alert('请填写关于我内容');
-					return;
-				}
+                                if (!content || !content.trim()) {
+                                        window.AdminUI.toast({ message: '请填写关于我内容', type: 'warning' });
+                                        return;
+                                }
 
 				this.loading = true;
 				fetch('/admin/api/pages/about', {
@@ -124,22 +124,22 @@
 				})
 					.then(response => response.json())
 					.then(data => {
-						if (data.error) {
-							alert(data.error);
-							return;
-						}
-						if (data.message) {
-							this.form.content = content;
-							alert(data.message);
-							this.updatedAt = data.page && data.page.updatedAt ? data.page.updatedAt : this.updatedAt;
-							if (this.editor && this.editor.clearAutosavedValue) {
-								this.editor.clearAutosavedValue();
-							}
-						}
-					})
-					.catch(() => {
-						alert('保存失败，请稍后重试');
-					})
+                                                if (data.error) {
+                                                        window.AdminUI.toast({ message: data.error, type: 'error' });
+                                                        return;
+                                                }
+                                                if (data.message) {
+                                                        this.form.content = content;
+                                                        window.AdminUI.toast({ message: data.message, type: 'success' });
+                                                        this.updatedAt = data.page && data.page.updatedAt ? data.page.updatedAt : this.updatedAt;
+                                                        if (this.editor && this.editor.clearAutosavedValue) {
+                                                                this.editor.clearAutosavedValue();
+                                                        }
+                                                }
+                                        })
+                                        .catch(() => {
+                                                window.AdminUI.toast({ message: '保存失败，请稍后重试', type: 'error' });
+                                        })
 					.finally(() => {
 						this.loading = false;
 					});

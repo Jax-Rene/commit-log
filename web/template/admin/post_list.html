@@ -20,7 +20,7 @@
 
 				<label class="flex flex-col gap-2">
 					<span class="text-sm font-medium text-slate-700 dark:text-slate-200">文章状态</span>
-					<select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30">
+                                    <select name="status" class="form-select">
 						<option value="" {{if eq .status ""}}selected{{end}}>全部</option>
 						<option value="draft" {{if eq .status "draft"}}selected{{end}}>草稿</option>
 						<option value="published" {{if eq .status "published"}}selected{{end}}>已发布</option>
@@ -177,20 +177,27 @@
 		});
 	}
 
-	function deletePost(id) {
-		if (!confirm('确定要删除这篇文章吗？')) {
-			return;
-		}
+        async function deletePost(id) {
+                const confirmed = await window.AdminUI.confirm({
+                        title: '删除文章',
+                        message: '确定要删除这篇文章吗？',
+                        confirmText: '删除',
+                        cancelText: '取消',
+                        tone: 'danger',
+                });
+                if (!confirmed) {
+                        return;
+                }
 
-		fetch(`/admin/api/posts/${id}`, { method: 'DELETE' })
-			.then(response => response.json())
-			.then(data => {
-				alert(data.message || '删除成功');
-				window.location.reload();
-			})
-			.catch(() => {
-				alert('删除失败，请稍后重试');
-			});
-	}
+                fetch(`/admin/api/posts/${id}`, { method: 'DELETE' })
+                        .then(response => response.json())
+                        .then(data => {
+                                window.AdminUI.toast({ message: data.message || '删除成功', type: 'success' });
+                                setTimeout(() => window.location.reload(), 350);
+                        })
+                        .catch(() => {
+                                window.AdminUI.toast({ message: '删除失败，请稍后重试', type: 'error' });
+                        });
+        }
 </script>
 {{end}}
