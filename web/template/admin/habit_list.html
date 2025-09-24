@@ -19,7 +19,7 @@
 
 			<label class="flex flex-col gap-2">
 				<span class="text-sm font-medium text-slate-700 dark:text-slate-200">状态</span>
-				<select name="status" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30">
+                                <select name="status" class="form-select">
 					<option value="" {{if eq .filter.Status ""}}selected{{end}}>全部</option>
 					<option value="active" {{if eq .filter.Status "active"}}selected{{end}}>启用中</option>
 					<option value="inactive" {{if eq .filter.Status "inactive"}}selected{{end}}>已停用</option>
@@ -28,7 +28,7 @@
 
 			<label class="flex flex-col gap-2">
 				<span class="text-sm font-medium text-slate-700 dark:text-slate-200">类型标签</span>
-				<select name="type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30">
+                                <select name="type" class="form-select">
 					<option value="" {{if eq .filter.TypeTag ""}}selected{{end}}>全部类型</option>
 					{{range .typeTags}}
 					<option value="{{.}}" {{if eq $.filter.TypeTag .}}selected{{end}}>{{.}}</option>
@@ -204,12 +204,12 @@
 		elements.next.addEventListener('click', () => shiftRange(1));
 		elements.refreshLogs.addEventListener('click', () => loadCalendar());
 
-		elements.quickForm.addEventListener('submit', event => {
-			event.preventDefault();
-			if (!state.habitId) {
-				alert('请先选择一个习惯');
-				return;
-			}
+                elements.quickForm.addEventListener('submit', event => {
+                        event.preventDefault();
+                        if (!state.habitId) {
+                                window.AdminUI.toast({ message: '请先选择一个习惯', type: 'warning' });
+                                return;
+                        }
 			const formData = new FormData(elements.quickForm);
 			const payload = {
 				log_date: formData.get('log_date'),
@@ -226,10 +226,10 @@
 					elements.quickForm.reset();
 					loadCalendar();
 				})
-				.catch(() => {
-					alert('打卡失败，请稍后再试');
-				});
-		});
+                                .catch(() => {
+                                        window.AdminUI.toast({ message: '打卡失败，请稍后再试', type: 'error' });
+                                });
+                });
 
 		function selectHabit(id) {
 			state.habitId = id;
@@ -278,10 +278,10 @@
 					state.rangeEnd = data.range.end;
 					renderCalendar(data);
 				})
-				.catch(() => {
-					alert('加载日历数据失败');
-				});
-		}
+                                .catch(() => {
+                                        window.AdminUI.toast({ message: '加载日历数据失败', type: 'error' });
+                                });
+                }
 
 		function renderCalendar(data) {
 			elements.title.textContent = data.habit.name;
@@ -357,17 +357,29 @@
 			button.appendChild(top);
 			button.appendChild(body);
 
-			if (log) {
-				button.addEventListener('click', () => {
-					if (!confirm('删除该打卡记录？')) {
-						return;
-					}
-					fetch(`/admin/api/habits/${state.habitId}/logs/${log.id}`, { method: 'DELETE' })
-						.then(response => response.json())
-						.then(() => loadCalendar())
-						.catch(() => alert('删除失败，请稍后重试'));
-				});
-			}
+                        if (log) {
+                                button.addEventListener('click', async () => {
+                                        const confirmed = await window.AdminUI.confirm({
+                                                title: '删除打卡记录',
+                                                message: '删除该打卡记录？',
+                                                confirmText: '删除',
+                                                cancelText: '取消',
+                                                tone: 'danger',
+                                        });
+                                        if (!confirmed) {
+                                                return;
+                                        }
+                                        fetch(`/admin/api/habits/${state.habitId}/logs/${log.id}`, { method: 'DELETE' })
+                                                .then(response => response.json())
+                                                .then(() => {
+                                                        window.AdminUI.toast({ message: '已删除该打卡记录', type: 'success' });
+                                                        loadCalendar();
+                                                })
+                                                .catch(() => {
+                                                        window.AdminUI.toast({ message: '删除失败，请稍后重试', type: 'error' });
+                                                });
+                                });
+                        }
 
 			return button;
 		}
@@ -388,15 +400,27 @@
 				action.type = 'button';
 				action.textContent = '删除';
 				action.className = 'rounded-lg border border-rose-200 px-3 py-1 text-[11px] font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10';
-				action.addEventListener('click', () => {
-					if (!confirm('确定删除这条打卡记录？')) {
-						return;
-					}
-					fetch(`/admin/api/habits/${state.habitId}/logs/${log.id}`, { method: 'DELETE' })
-						.then(response => response.json())
-						.then(() => loadCalendar())
-						.catch(() => alert('删除失败，请稍后重试'));
-				});
+                                action.addEventListener('click', async () => {
+                                        const confirmed = await window.AdminUI.confirm({
+                                                title: '删除打卡记录',
+                                                message: '确定删除这条打卡记录？',
+                                                confirmText: '删除',
+                                                cancelText: '保留',
+                                                tone: 'danger',
+                                        });
+                                        if (!confirmed) {
+                                                return;
+                                        }
+                                        fetch(`/admin/api/habits/${state.habitId}/logs/${log.id}`, { method: 'DELETE' })
+                                                .then(response => response.json())
+                                                .then(() => {
+                                                        window.AdminUI.toast({ message: '已删除该打卡记录', type: 'success' });
+                                                        loadCalendar();
+                                                })
+                                                .catch(() => {
+                                                        window.AdminUI.toast({ message: '删除失败，请稍后重试', type: 'error' });
+                                                });
+                                });
 				item.appendChild(left);
 				item.appendChild(action);
 				elements.logList.appendChild(item);
