@@ -53,14 +53,14 @@
 			<section class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 				<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">起止日期（可选）</h2>
 				<div class="grid gap-4 sm:grid-cols-2">
-					<label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
-						<span>开始日期</span>
-						<input type="date" name="start_date" value="{{with .habit.StartDate}}{{.Format "2006-01-02"}}{{end}}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
-					</label>
-					<label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
-						<span>结束日期</span>
-						<input type="date" name="end_date" value="{{with .habit.EndDate}}{{.Format "2006-01-02"}}{{end}}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
-					</label>
+                                        <label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
+                                                <span>开始日期</span>
+                                                <input type="text" name="start_date" value="{{with .habit.StartDate}}{{.Format "2006-01-02"}}{{end}}" placeholder="选择开始日期" class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" data-behavior="date-picker" />
+                                        </label>
+                                        <label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
+                                                <span>结束日期</span>
+                                                <input type="text" name="end_date" value="{{with .habit.EndDate}}{{.Format "2006-01-02"}}{{end}}" placeholder="选择结束日期" class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" data-behavior="date-picker" />
+                                        </label>
 				</div>
 			</section>
 		</section>
@@ -102,13 +102,15 @@
 		}
 
 		const habitId = parseInt(root.dataset.habitId || '0', 10) || null;
-		const form = document.getElementById('habit-form');
-		const alertBox = document.getElementById('form-alert');
-		const deleteButton = document.getElementById('delete-habit');
+                const form = document.getElementById('habit-form');
+                const alertBox = document.getElementById('form-alert');
+                const deleteButton = document.getElementById('delete-habit');
 
-		form.addEventListener('submit', event => {
-			event.preventDefault();
-			const formData = new FormData(form);
+                initializeDatePickers();
+
+                form.addEventListener('submit', event => {
+                        event.preventDefault();
+                        const formData = new FormData(form);
 			const payload = {
 				name: formData.get('name'),
 				description: formData.get('description'),
@@ -173,10 +175,33 @@
 				});
 		}
 
-		function displayError(message) {
-			alertBox.textContent = message;
-			alertBox.classList.remove('hidden');
-		}
-	});
+                function displayError(message) {
+                        alertBox.textContent = message;
+                        alertBox.classList.remove('hidden');
+                }
+
+                function initializeDatePickers() {
+                        if (!window.flatpickr) {
+                                return;
+                        }
+
+                        if (window.flatpickr.l10ns && window.flatpickr.l10ns.zh) {
+                                window.flatpickr.localize(window.flatpickr.l10ns.zh);
+                        }
+
+                        const dateInputs = form.querySelectorAll('input[data-behavior="date-picker"]');
+                        dateInputs.forEach(input => {
+                                const defaultValue = input.value || null;
+                                const instance = window.flatpickr(input, {
+                                        allowInput: false,
+                                        clickOpens: true,
+                                        dateFormat: 'Y-m-d',
+                                        defaultDate: defaultValue || undefined,
+                                });
+                                input.addEventListener('focus', () => instance.open());
+                                input.addEventListener('click', () => instance.open());
+                        });
+                }
+        });
 </script>
 {{end}}

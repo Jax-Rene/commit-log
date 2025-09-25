@@ -155,27 +155,31 @@
 	let startInstance;
 	let endInstance;
 
-	if (startInput) {
-		startInstance = flatpickr(startInput, {
-			...dateOptions,
-			onChange(selectedDates) {
-				if (selectedDates.length && endInstance) {
-					endInstance.set('minDate', selectedDates[0]);
-				}
-			}
-		});
-	}
+        if (startInput) {
+                startInstance = flatpickr(startInput, {
+                        ...dateOptions,
+                        onChange(selectedDates) {
+                                if (selectedDates.length && endInstance) {
+                                        endInstance.set('minDate', selectedDates[0]);
+                                }
+                        }
+                });
+                startInput.addEventListener('focus', () => startInstance.open());
+                startInput.addEventListener('click', () => startInstance.open());
+        }
 
-	if (endInput) {
-		endInstance = flatpickr(endInput, {
-			...dateOptions,
-			onChange(selectedDates) {
-				if (selectedDates.length && startInstance) {
-					startInstance.set('maxDate', selectedDates[0]);
-				}
-			}
-		});
-	}
+        if (endInput) {
+                endInstance = flatpickr(endInput, {
+                        ...dateOptions,
+                        onChange(selectedDates) {
+                                if (selectedDates.length && startInstance) {
+                                        startInstance.set('maxDate', selectedDates[0]);
+                                }
+                        }
+                });
+                endInput.addEventListener('focus', () => endInstance.open());
+                endInput.addEventListener('click', () => endInstance.open());
+        }
 
         async function deletePost(id) {
                 const confirmed = await window.AdminUI.confirm({
