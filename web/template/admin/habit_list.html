@@ -152,14 +152,14 @@
 				<h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">快速打卡</h3>
 				<form id="quick-log-form" class="grid gap-3 sm:grid-cols-2" autocomplete="off">
 					<input type="hidden" name="habit_id" id="quick-log-habit">
-					<label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
-						<span>日期</span>
-						<input type="date" name="log_date" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/20" />
-					</label>
-					<label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
-						<span>时间</span>
-						<input type="time" name="log_time" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/20" />
-					</label>
+                                        <label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
+                                                <span>日期</span>
+                                                <input type="text" name="log_date" placeholder="选择日期" required class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/20" />
+                                        </label>
+                                        <label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
+                                                <span>时间</span>
+                                                <input type="text" name="log_time" placeholder="选择时间" class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/20" />
+                                        </label>
 					<label class="sm:col-span-2 flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
 						<span>备注</span>
 						<input type="text" name="note" placeholder="可记录心情、完成方式等" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/20" />
@@ -220,7 +220,9 @@
 			statsCurrent: document.getElementById('stats-current'),
 			statsLongest: document.getElementById('stats-longest'),
 			quickForm: document.getElementById('quick-log-form'),
-			quickHabit: document.getElementById('quick-log-habit'),
+                        quickHabit: document.getElementById('quick-log-habit'),
+                        quickDate: document.querySelector('#quick-log-form input[name="log_date"]'),
+                        quickTime: document.querySelector('#quick-log-form input[name="log_time"]'),
 			logList: document.getElementById('log-list'),
 			prev: document.getElementById('calendar-prev'),
 			next: document.getElementById('calendar-next'),
@@ -242,7 +244,13 @@
                         heatmapUpdated: document.getElementById('heatmap-updated'),
                 };
 
+                let quickDatePicker = null;
+                let quickTimePicker = null;
+
                 elements.weekdays.innerHTML = state.weekdays.map(label => `<span>${label}</span>`).join('');
+
+                setupQuickLogPickers();
+                setQuickLogDefaults();
 
                 if (elements.heatmapPanel) {
                         loadHeatmap();
@@ -290,6 +298,7 @@
                                 .then(response => response.json())
                                 .then(() => {
                                         elements.quickForm.reset();
+                                        setQuickLogDefaults();
                                         loadCalendar();
                                         if (elements.heatmapPanel) {
                                                 loadHeatmap();
@@ -298,6 +307,12 @@
                                 .catch(() => {
                                         window.AdminUI.toast({ message: '打卡失败，请稍后再试', type: 'error' });
                                 });
+                });
+
+                elements.quickForm.addEventListener('reset', () => {
+                        setTimeout(() => {
+                                setQuickLogDefaults();
+                        }, 0);
                 });
 
                 function loadHeatmap() {
@@ -335,6 +350,57 @@
                                                 elements.heatmapLoading.textContent = '热力图加载失败，请稍后重试';
                                         }
                                 });
+                }
+
+                function setupQuickLogPickers() {
+                        if (!elements.quickForm || !window.flatpickr) {
+                                return;
+                        }
+
+                        const { quickDate, quickTime } = elements;
+                        if (!quickDate || !quickTime) {
+                                return;
+                        }
+
+                        if (window.flatpickr.l10ns && window.flatpickr.l10ns.zh) {
+                                window.flatpickr.localize(window.flatpickr.l10ns.zh);
+                        }
+
+                        quickDatePicker = quickDate._flatpickr
+                                || window.flatpickr(quickDate, {
+                                        allowInput: false,
+                                        clickOpens: true,
+                                        dateFormat: 'Y-m-d',
+                                });
+                        quickTimePicker = quickTime._flatpickr
+                                || window.flatpickr(quickTime, {
+                                        allowInput: false,
+                                        clickOpens: true,
+                                        enableTime: true,
+                                        noCalendar: true,
+                                        dateFormat: 'H:i',
+                                        time_24hr: true,
+                                });
+
+                        quickDate.addEventListener('focus', () => quickDatePicker.open());
+                        quickDate.addEventListener('click', () => quickDatePicker.open());
+                        quickTime.addEventListener('focus', () => quickTimePicker.open());
+                        quickTime.addEventListener('click', () => quickTimePicker.open());
+                }
+
+                function setQuickLogDefaults() {
+                        const now = new Date();
+                        if (quickDatePicker) {
+                                quickDatePicker.setDate(now, false);
+                        } else if (elements.quickDate) {
+                                elements.quickDate.value = formatDate(now);
+                        }
+
+                        if (quickTimePicker) {
+                                quickTimePicker.setDate(now, false);
+                        } else if (elements.quickTime) {
+                                elements.quickTime.value = formatTime(now);
+                        }
                 }
 
                 function renderHeatmap(data) {
@@ -912,12 +978,18 @@
 			return new Date(year, month - 1, day);
 		}
 
-		function formatDate(date) {
-			const year = date.getFullYear();
-			const month = String(date.getMonth() + 1).padStart(2, '0');
-			const day = String(date.getDate()).padStart(2, '0');
-			return `${year}-${month}-${day}`;
-		}
+                function formatDate(date) {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                }
+
+                function formatTime(date) {
+                        const hours = String(date.getHours()).padStart(2, '0');
+                        const minutes = String(date.getMinutes()).padStart(2, '0');
+                        return `${hours}:${minutes}`;
+                }
 
 		function isSameDate(a, b) {
 			return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
