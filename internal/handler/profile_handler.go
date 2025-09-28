@@ -6,13 +6,16 @@ import (
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
+	"github.com/commitlog/internal/view"
 	"github.com/gin-gonic/gin"
 )
 
 // ShowProfileContacts renders the admin page for managing profile contacts.
 func (a *API) ShowProfileContacts(c *gin.Context) {
 	c.HTML(http.StatusOK, "profile_contacts.html", gin.H{
-		"title": "社交联系方式",
+		"title":              "社交联系方式",
+		"profileIconOptions": view.ProfileIconOptions(),
+		"profileIconSVGs":    view.ProfileIconSVGMap(),
 	})
 }
 

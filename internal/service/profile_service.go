@@ -54,16 +54,6 @@ func (s *ProfileService) ListContacts(includeHidden bool) ([]db.ProfileContact, 
 		return nil, fmt.Errorf("list profile contacts: %w", err)
 	}
 
-	if !includeHidden {
-		filtered := make([]db.ProfileContact, 0, len(items))
-		for _, item := range items {
-			if item.Visible {
-				filtered = append(filtered, item)
-			}
-		}
-		items = filtered
-	}
-
 	return items, nil
 }
 
