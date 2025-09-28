@@ -1,6 +1,7 @@
 package router
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/handler"
+	"github.com/commitlog/internal/view"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -87,6 +89,27 @@ func newTemplateRegistry() *templateRegistry {
 				}
 				return strings.ToUpper(string(runes[0:2]))
 			},
+			"profileIcon": func(key string) template.HTML {
+				return template.HTML(view.ProfileIconSVG(key))
+			},
+			"profileContactTitle": func(label, value string) string {
+				trimmedLabel := strings.TrimSpace(label)
+				trimmedValue := strings.TrimSpace(value)
+				if trimmedLabel == "" {
+					return trimmedValue
+				}
+				if trimmedValue == "" {
+					return trimmedLabel
+				}
+				return fmt.Sprintf("%s：%s", trimmedLabel, trimmedValue)
+			},
+			"toJSON": func(v interface{}) template.JS {
+				data, err := json.Marshal(v)
+				if err != nil {
+					return template.JS("null")
+				}
+				return template.JS(data)
+			},
 			"accent": func(text string) string {
 				palette := []string{
 					"from-sky-400 via-blue-500 to-indigo-500",
@@ -115,6 +138,18 @@ func newTemplateRegistry() *templateRegistry {
 					return strings.TrimSpace(text)
 				}
 				return strings.TrimSpace(string(runes[:length])) + "…"
+			},
+			"habitFrequencyText": func(unit string, count int) string {
+				switch strings.ToLower(strings.TrimSpace(unit)) {
+				case "daily":
+					return fmt.Sprintf("每天 %d 次", count)
+				case "weekly":
+					return fmt.Sprintf("每周 %d 次", count)
+				case "monthly":
+					return fmt.Sprintf("每月 %d 次", count)
+				default:
+					return fmt.Sprintf("%s %d 次", unit, count)
+				}
 			},
 		},
 	}
@@ -157,6 +192,7 @@ func (r *templateRegistry) LoadTemplates(path string) {
 			}
 			files := append([]string{baseFile}, componentTemplates...)
 			files = append(files, page)
+			files = append(files, partialTemplates...)
 			tmpl := template.New(templateName).Funcs(r.funcMap)
 			r.templates[templateName] = template.Must(tmpl.ParseFiles(files...))
 		}
@@ -250,10 +286,14 @@ func SetupRouter() *gin.Engine {
 		auth.Use(handlers.AuthRequired())
 		{
 			auth.GET("/dashboard", handlers.ShowDashboard)
+			auth.GET("/habits", handlers.ShowHabitList)
+			auth.GET("/habits/new", handlers.ShowHabitEdit)
+			auth.GET("/habits/:id/edit", handlers.ShowHabitEdit)
 			auth.GET("/posts", handlers.ShowPostList)
 			auth.GET("/posts/new", handlers.ShowPostEdit)
 			auth.GET("/posts/:id/edit", handlers.ShowPostEdit)
 			auth.GET("/about", handlers.ShowAboutEditor)
+			auth.GET("/profile/contacts", handlers.ShowProfileContacts)
 
 			// API路由
 			api := auth.Group("/api")
@@ -264,11 +304,26 @@ func SetupRouter() *gin.Engine {
 				api.PUT("/posts/:id", handlers.UpdatePost)
 				api.DELETE("/posts/:id", handlers.DeletePost)
 
+				api.GET("/habits", handlers.ListHabits)
+				api.GET("/habits/heatmap", handlers.GetHabitHeatmap)
+				api.GET("/habits/:id", handlers.GetHabit)
+				api.POST("/habits", handlers.CreateHabit)
+				api.PUT("/habits/:id", handlers.UpdateHabit)
+				api.DELETE("/habits/:id", handlers.DeleteHabit)
+				api.GET("/habits/:id/calendar", handlers.GetHabitCalendar)
+				api.POST("/habits/:id/logs", handlers.QuickLogHabit)
+				api.DELETE("/habits/:id/logs/:logId", handlers.DeleteHabitLog)
+
 				api.GET("/tags", handlers.GetTags)
 				api.POST("/tags", handlers.CreateTag)
 				api.PUT("/tags/:id", handlers.UpdateTag)
 				api.DELETE("/tags/:id", handlers.DeleteTag)
 				api.PUT("/pages/about", handlers.UpdateAboutPage)
+				api.GET("/profile/contacts", handlers.ListProfileContacts)
+				api.POST("/profile/contacts", handlers.CreateProfileContact)
+				api.PUT("/profile/contacts/:id", handlers.UpdateProfileContact)
+				api.DELETE("/profile/contacts/:id", handlers.DeleteProfileContact)
+				api.PUT("/profile/contacts/order", handlers.ReorderProfileContacts)
 
 				// 图片上传接口
 				api.POST("/upload/image", handlers.UploadImage)

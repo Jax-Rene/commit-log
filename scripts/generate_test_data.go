@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/commitlog/internal/db"
 	"golang.org/x/crypto/bcrypt"
@@ -23,6 +24,10 @@ func main() {
 	// 创建测试标签
 	createTestTags()
 
+	// 创建测试习惯与打卡数据
+	habits := createTestHabits()
+	logCount := createHabitLogs(habits)
+
 	// 创建关于我页面
 	createAboutPage()
 
@@ -32,7 +37,163 @@ func main() {
 	fmt.Println("测试数据生成完成！")
 	fmt.Println("用户: admin (密码: admin123)")
 	fmt.Println("文章: 5篇测试文章")
+	fmt.Printf("习惯: %d 个测试习惯，%d 条打卡记录\n", len(habits), logCount)
 	fmt.Println("标签: 技术、生活、思考、教程、项目")
+}
+
+// 创建测试习惯
+func createTestHabits() map[string]db.Habit {
+	fmt.Println("开始生成测试习惯...")
+
+	if err := db.DB.Exec("DELETE FROM habit_logs").Error; err != nil {
+		log.Printf("清理旧打卡记录失败: %v", err)
+	}
+	if err := db.DB.Exec("DELETE FROM habits").Error; err != nil {
+		log.Printf("清理旧习惯失败: %v", err)
+	}
+
+	reference := time.Now()
+	type habitSeed struct {
+		name         string
+		description  string
+		unit         string
+		count        int
+		tag          string
+		startDaysAgo int
+	}
+
+	seeds := []habitSeed{
+		{
+			name:         "晨间写作",
+			description:  "早起专注写作，记录灵感与思考",
+			unit:         "daily",
+			count:        1,
+			tag:          "创作",
+			startDaysAgo: 120,
+		},
+		{
+			name:         "力量训练",
+			description:  "每周三次力量训练，保持体能状态",
+			unit:         "weekly",
+			count:        3,
+			tag:          "健康",
+			startDaysAgo: 150,
+		},
+		{
+			name:         "深度阅读",
+			description:  "保持长期阅读节奏，输出高质量笔记",
+			unit:         "monthly",
+			count:        8,
+			tag:          "成长",
+			startDaysAgo: 180,
+		},
+	}
+
+	created := make(map[string]db.Habit)
+	for _, seed := range seeds {
+		start := startOfDay(reference.AddDate(0, 0, -seed.startDaysAgo))
+		habit := db.Habit{
+			Name:           seed.name,
+			Description:    seed.description,
+			FrequencyUnit:  seed.unit,
+			FrequencyCount: seed.count,
+			TypeTag:        seed.tag,
+			Status:         "active",
+			StartDate:      &start,
+		}
+
+		if err := db.DB.Create(&habit).Error; err != nil {
+			log.Printf("创建习惯 %s 失败: %v", seed.name, err)
+			continue
+		}
+
+		created[seed.name] = habit
+	}
+
+	fmt.Printf("✅ 生成 %d 个测试习惯\n", len(created))
+	return created
+}
+
+// 创建测试打卡数据
+func createHabitLogs(habits map[string]db.Habit) int {
+	if len(habits) == 0 {
+		fmt.Println("未找到测试习惯，跳过打卡数据生成")
+		return 0
+	}
+
+	reference := time.Now()
+	location := reference.Location()
+	total := 0
+
+	if habit, ok := habits["晨间写作"]; ok {
+		notes := []string{"晨间写作 500 字", "输出复盘", "梳理创意清单"}
+		for i := 0; i < 30; i++ {
+			if i%8 == 5 {
+				continue
+			}
+			date := startOfDay(reference.AddDate(0, 0, -i))
+			logTime := time.Date(date.Year(), date.Month(), date.Day(), 6, 30, 0, 0, location)
+			note := notes[i%len(notes)]
+			if createHabitLog(habit, date, logTime, note) {
+				total++
+			}
+		}
+		fmt.Println("✅ 晨间写作打卡数据生成完成")
+	}
+
+	if habit, ok := habits["力量训练"]; ok {
+		notes := []string{"推拉训练完成", "下肢力量训练完成", "核心稳定性训练完成"}
+		offsets := []int{2, 4, 6, 9, 11, 13, 16, 18, 20, 23, 25, 27}
+		total += createLogsFromOffsets(reference, habit, offsets, 19, 30, notes)
+		fmt.Println("✅ 力量训练打卡数据生成完成")
+	}
+
+	if habit, ok := habits["深度阅读"]; ok {
+		notes := []string{"完成 30 分钟阅读", "输出阅读摘录", "完成章节总结"}
+		offsets := []int{3, 11, 19, 27, 35, 44, 52, 61}
+		total += createLogsFromOffsets(reference, habit, offsets, 21, 0, notes)
+		fmt.Println("✅ 深度阅读打卡数据生成完成")
+	}
+
+	fmt.Printf("✅ 共生成 %d 条打卡记录\n", total)
+	return total
+}
+
+func createLogsFromOffsets(reference time.Time, habit db.Habit, offsets []int, hour, minute int, notes []string) int {
+	location := reference.Location()
+	count := 0
+	for i, offset := range offsets {
+		date := startOfDay(reference.AddDate(0, 0, -offset))
+		logTime := time.Date(date.Year(), date.Month(), date.Day(), hour, minute, 0, 0, location)
+		note := notes[i%len(notes)]
+		if createHabitLog(habit, date, logTime, note) {
+			count++
+		}
+	}
+	return count
+}
+
+func createHabitLog(habit db.Habit, date time.Time, logTime time.Time, note string) bool {
+	lt := logTime
+	entry := db.HabitLog{
+		HabitID: habit.ID,
+		LogDate: date,
+		LogTime: &lt,
+		Source:  "seed-script",
+		Note:    note,
+	}
+
+	if err := db.DB.Create(&entry).Error; err != nil {
+		log.Printf("创建打卡数据失败 (%s %s): %v", habit.Name, date.Format("2006-01-02"), err)
+		return false
+	}
+
+	return true
+}
+
+func startOfDay(t time.Time) time.Time {
+	year, month, day := t.Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, t.Location())
 }
 
 // 创建测试用户

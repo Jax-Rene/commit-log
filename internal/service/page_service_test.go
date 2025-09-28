@@ -18,7 +18,7 @@ func setupPageServiceTestDB(t *testing.T) func() {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.Page{}); err != nil {
+	if err := gdb.AutoMigrate(&db.Page{}, &db.ProfileContact{}); err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 

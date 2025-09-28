@@ -193,8 +193,8 @@
 				if (!file) {
 					return;
 				}
-				if (typeof window.Cropper === 'undefined') {
-					alert('封面裁剪模块尚未加载，请刷新页面后重试');
+                                if (typeof window.Cropper === 'undefined') {
+                                        window.AdminUI.toast({ message: '封面裁剪模块尚未加载，请刷新页面后重试', type: 'error' });
 					return;
 				}
 				this.resetCropper();
@@ -210,15 +210,15 @@
 				}
 				try {
 					const url = new URL(this.cover.url, window.location.origin);
-					if (url.origin !== window.location.origin) {
-						alert('该封面来自外部链接，请重新上传新的封面图片');
+                                        if (url.origin !== window.location.origin) {
+                                                window.AdminUI.toast({ message: '该封面来自外部链接，请重新上传新的封面图片', type: 'warning' });
 						return;
 					}
 				} catch (error) {
 					return;
 				}
-				if (typeof window.Cropper === 'undefined') {
-					alert('封面裁剪模块尚未加载，请刷新页面后重试');
+                                if (typeof window.Cropper === 'undefined') {
+                                        window.AdminUI.toast({ message: '封面裁剪模块尚未加载，请刷新页面后重试', type: 'error' });
 					return;
 				}
 				if (this.cover.width > 0 && this.cover.height > 0) {
@@ -250,12 +250,12 @@
 								this.cover.url = data.data.url;
 								this.cover.width = data.data.width || 0;
 								this.cover.height = data.data.height || 0;
-							} else {
-								alert(data.error || data.message || '封面上传失败');
+                                                        } else {
+                                                                window.AdminUI.toast({ message: data.error || data.message || '封面上传失败', type: 'error' });
 							}
 						})
-						.catch(() => {
-							alert('封面上传失败，请稍后重试');
+                                                .catch(() => {
+                                                        window.AdminUI.toast({ message: '封面上传失败，请稍后重试', type: 'error' });
 						})
 						.finally(() => {
 							this.closeCropper();
@@ -399,8 +399,8 @@
 				if (this.editor) {
 					this.post.content = this.editor.value();
 				}
-				if (!this.cover.url || this.cover.width <= 0 || this.cover.height <= 0) {
-					alert('请上传并裁剪文章封面');
+                                if (!this.cover.url || this.cover.width <= 0 || this.cover.height <= 0) {
+                                        window.AdminUI.toast({ message: '请上传并裁剪文章封面', type: 'warning' });
 					this.loading = false;
 					return;
 				}
@@ -431,18 +431,18 @@
 				})
 					.then(response => response.json())
 					.then(data => {
-						if (data.message) {
-							if (this.editor && this.editor.clearAutosavedValue) {
-								this.editor.clearAutosavedValue();
-							}
-							alert(data.message);
-							if (!window.location.pathname.includes('/edit')) {
-								window.location.href = '/admin/posts';
-							}
-						}
-					})
-					.catch(() => {
-						alert('保存失败，请稍后重试');
+                                                if (data.message) {
+                                                        if (this.editor && this.editor.clearAutosavedValue) {
+                                                                this.editor.clearAutosavedValue();
+                                                        }
+                                                        window.AdminUI.toast({ message: data.message, type: 'success' });
+                                                        if (!window.location.pathname.includes('/edit')) {
+                                                                window.location.href = '/admin/posts';
+                                                        }
+                                                }
+                                        })
+                                        .catch(() => {
+                                                window.AdminUI.toast({ message: '保存失败，请稍后重试', type: 'error' });
 					})
 					.finally(() => {
 						this.loading = false;

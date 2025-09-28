@@ -13,5 +13,8 @@
 	<section class="post-content">
 		{{.content}}
 	</section>
+
+	{{template "contact_links.html" (dict "Contacts" .contacts "Heading" "联系我" "Subtitle" "喜欢的话记得打个招呼，互相交流。")}}
+
 </section>
 {{end}}
