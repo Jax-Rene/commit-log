@@ -13,6 +13,7 @@ type API struct {
 	pages     *service.PageService
 	habits    *service.HabitService
 	habitLogs *service.HabitLogService
+	profiles  *service.ProfileService
 }
 
 // NewAPI constructs a handler set with shared services.
@@ -24,6 +25,7 @@ func NewAPI(db *gorm.DB) *API {
 		pages:     service.NewPageService(db),
 		habits:    service.NewHabitService(db),
 		habitLogs: service.NewHabitLogService(db),
+		profiles:  service.NewProfileService(db),
 	}
 }
 

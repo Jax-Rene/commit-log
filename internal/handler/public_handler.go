@@ -2,15 +2,16 @@ package handler
 
 import (
 	"bytes"
-	"cmp"
 	"fmt"
 	"html/template"
 	"net/http"
 	"net/url"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"cmp"
+	"slices"
 
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
@@ -58,8 +59,8 @@ type aboutHeatmapDay struct {
 
 // aboutHeatmapWeek 以周为单位组织热力图列
 type aboutHeatmapWeek struct {
-	Days       []aboutHeatmapDay
 	MonthLabel string
+	Days       []aboutHeatmapDay
 }
 
 // aboutHeatmapData 封装关于页需要的整体热力图数据
@@ -163,21 +164,28 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		return
 	}
 
+	contacts, contactErr := a.profiles.ListContacts(false)
+	if contactErr != nil {
+		contacts = nil
+	}
+
 	htmlContent, err := renderMarkdown(post.Content)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "post_detail.html", gin.H{
-			"title": "文章详情",
-			"error": "渲染内容失败",
-			"year":  time.Now().Year(),
+			"title":    "文章详情",
+			"error":    "渲染内容失败",
+			"year":     time.Now().Year(),
+			"contacts": contacts,
 		})
 		return
 	}
 
 	c.HTML(http.StatusOK, "post_detail.html", gin.H{
-		"title":   post.Title,
-		"post":    post,
-		"content": htmlContent,
-		"year":    time.Now().Year(),
+		"title":    post.Title,
+		"post":     post,
+		"content":  htmlContent,
+		"contacts": contacts,
+		"year":     time.Now().Year(),
 	})
 }
 
@@ -195,13 +203,10 @@ func (a *API) ShowTagArchive(c *gin.Context) {
 // ShowAbout renders the dynamic about page.
 func (a *API) ShowAbout(c *gin.Context) {
 	now := time.Now().In(time.Local)
-	end := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	start := end.AddDate(0, 0, -364)
 
-	var heatmap *aboutHeatmapData
-	if entries, err := a.habitLogs.HeatmapRange(start, end); err == nil {
-		data := buildAboutHabitHeatmap(entries, start, end, now)
-		heatmap = &data
+	contacts, contactErr := a.profiles.ListContacts(false)
+	if contactErr != nil {
+		contacts = nil
 	}
 
 	page, err := a.pages.GetBySlug("about")
@@ -212,9 +217,9 @@ func (a *API) ShowAbout(c *gin.Context) {
 				"Title":   "关于我",
 				"Summary": "保持好奇心，持续输出价值。",
 			},
-			"content": template.HTML("<p class=\"text-sm text-slate-600\">暂无简介，稍后再来看看。</p>"),
-			"heatmap": heatmap,
-			"year":    now.Year(),
+			"content":  template.HTML("<p class=\"text-sm text-slate-600\">暂无简介，稍后再来看看。</p>"),
+			"year":     now.Year(),
+			"contacts": contacts,
 		})
 		return
 	}
@@ -225,11 +230,11 @@ func (a *API) ShowAbout(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "about.html", gin.H{
-		"title":   page.Title,
-		"page":    page,
-		"content": htmlContent,
-		"heatmap": heatmap,
-		"year":    now.Year(),
+		"title":    page.Title,
+		"page":     page,
+		"content":  htmlContent,
+		"year":     now.Year(),
+		"contacts": contacts,
 	})
 }
 

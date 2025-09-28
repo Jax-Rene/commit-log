@@ -28,5 +28,7 @@
 	<section class="post-content">
 		{{.content}}
 	</section>
+
+	{{template "contact_links.html" (dict "Contacts" .contacts "Heading" "联系作者" "Subtitle" "在这些平台找到我。")}}
 </article>
 {{end}}

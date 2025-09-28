@@ -707,7 +707,7 @@
                         let previousLabel = '';
                         weeks.forEach(week => {
                                 const monthCell = document.createElement('span');
-                                monthCell.className = 'flex h-3 items-center text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500';
+                                monthCell.className = 'flex h-3 items-center whitespace-nowrap text-xs font-medium uppercase leading-none tracking-wide text-slate-400 dark:text-slate-500';
                                 monthCell.style.flex = `0 0 ${HEATMAP_WEEK_WIDTH}px`;
                                 const reference = week.find(day => day.inRange)?.date || week[0]?.date;
                                 if (reference) {

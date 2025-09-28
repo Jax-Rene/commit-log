@@ -31,7 +31,7 @@ func setupPublicTestDB(t *testing.T) func() {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.Page{}, &db.Habit{}, &db.HabitLog{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.Page{}, &db.Habit{}, &db.HabitLog{}, &db.ProfileContact{}); err != nil {
 		t.Fatalf("failed to migrate database: %v", err)
 	}
 
@@ -156,7 +156,80 @@ func TestShowAboutFallback(t *testing.T) {
 	}
 }
 
-func TestShowAboutWithHabitHeatmap(t *testing.T) {
+func TestShowAboutDisplaysContacts(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	aboutPage := db.Page{Slug: "about", Title: "关于我", Content: "# 你好"}
+	if err := db.DB.Create(&aboutPage).Error; err != nil {
+		t.Fatalf("failed to seed about page: %v", err)
+	}
+
+	contacts := []db.ProfileContact{
+		{Platform: "微信", Label: "个人微信", Value: "coder-123", Icon: "wechat", Sort: 0, Visible: true},
+		{Platform: "GitHub", Label: "GitHub", Value: "https://github.com/commitlog", Link: "https://github.com/commitlog", Icon: "github", Sort: 1, Visible: true},
+	}
+	if err := db.DB.Create(&contacts).Error; err != nil {
+		t.Fatalf("failed to seed contacts: %v", err)
+	}
+
+	r := router.SetupRouter()
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/about", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "个人微信") {
+		t.Fatalf("expected contact label to render")
+	}
+	if !strings.Contains(body, "https://github.com/commitlog") {
+		t.Fatalf("expected contact link to render")
+	}
+	if !strings.Contains(body, "联系我") {
+		t.Fatalf("expected contact section heading")
+	}
+}
+
+func TestShowPostDetailDisplaysContacts(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	post := db.Post{Title: "公开文章", Content: "## 内容", Status: "published", UserID: 1}
+	post.CoverURL = "https://images.unsplash.com/photo-1498050108023-c5249f4df085"
+	post.CoverWidth = 1280
+	post.CoverHeight = 720
+	if err := db.DB.Create(&post).Error; err != nil {
+		t.Fatalf("failed to seed post: %v", err)
+	}
+
+	contact := db.ProfileContact{Platform: "邮箱", Label: "联系邮箱", Value: "hi@example.com", Link: "mailto:hi@example.com", Icon: "email", Sort: 0, Visible: true}
+	if err := db.DB.Create(&contact).Error; err != nil {
+		t.Fatalf("failed to seed contact: %v", err)
+	}
+
+	r := router.SetupRouter()
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(post.ID)), nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "联系作者") {
+		t.Fatalf("expected contact banner heading")
+	}
+	if !strings.Contains(body, "mailto:hi@example.com") {
+		t.Fatalf("expected contact link to render")
+	}
+}
+
+func TestShowAboutDoesNotRenderHeatmap(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
@@ -186,13 +259,10 @@ func TestShowAboutWithHabitHeatmap(t *testing.T) {
 	}
 
 	body := w.Body.String()
-	if !strings.Contains(body, "习惯活动热力图") {
-		t.Fatalf("expected heatmap section to be rendered")
+	if strings.Contains(body, "习惯活动热力图") {
+		t.Fatalf("about page should not render heatmap section")
 	}
-	if !strings.Contains(body, habit.Name) {
-		t.Fatalf("expected habit name to appear in heatmap legend")
-	}
-	if !strings.Contains(body, "1 次打卡") {
-		t.Fatalf("expected summary count to include 1 次打卡")
+	if strings.Contains(body, habit.Name) {
+		t.Fatalf("habit data should not appear on about page")
 	}
 }
