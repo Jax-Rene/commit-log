@@ -1,6 +1,11 @@
 package db
 
 import (
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -8,20 +13,49 @@ import (
 // DB 是一个全局的数据库连接实例
 var DB *gorm.DB
 
-// Init 初始化数据库连接并执行自动迁移
-func Init() error {
+// Init 初始化数据库连接并执行自动迁移。
+// databasePath 为空时将回退到默认值 commitlog.db。
+func Init(databasePath string) error {
+	path := strings.TrimSpace(databasePath)
+	if path == "" {
+		path = "commitlog.db"
+	}
+
+	if err := ensureParentDir(path); err != nil {
+		return err
+	}
+
 	var err error
-	// 连接到 SQLite 数据库。如果文件不存在，GORM 会自动创建它。
-	DB, err = gorm.Open(sqlite.Open("commitlog.db"), &gorm.Config{})
+	DB, err = gorm.Open(sqlite.Open(path), &gorm.Config{})
 	if err != nil {
 		return err
 	}
 
 	// 自动迁移模式，为核心模型创建表
-	err = DB.AutoMigrate(&User{}, &Post{}, &Tag{}, &Page{}, &Habit{}, &HabitLog{}, &ProfileContact{})
-	if err != nil {
+	if err = DB.AutoMigrate(&User{}, &Post{}, &Tag{}, &Page{}, &Habit{}, &HabitLog{}, &ProfileContact{}); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func ensureParentDir(path string) error {
+	dir := filepath.Dir(path)
+	if dir == "." || dir == "" {
+		return nil
+	}
+
+	info, err := os.Stat(dir)
+	if err == nil {
+		if !info.IsDir() {
+			return errors.New("database path parent is not a directory")
+		}
+		return nil
+	}
+
+	if os.IsNotExist(err) {
+		return os.MkdirAll(dir, 0o755)
+	}
+
+	return err
 }

@@ -243,13 +243,17 @@ func (r *templateRegistry) Instance(name string, data interface{}) render.Render
 }
 
 // SetupRouter 配置 Gin 引擎和路由
-func SetupRouter() *gin.Engine {
+func SetupRouter(sessionSecret string) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(recoveryWithHandler())
 
 	// 配置会话中间件
-	store := cookie.NewStore([]byte("secret"))
+	trimmedSecret := strings.TrimSpace(sessionSecret)
+	if trimmedSecret == "" {
+		trimmedSecret = "commitlog-dev-secret"
+	}
+	store := cookie.NewStore([]byte(trimmedSecret))
 	r.Use(sessions.Sessions("commitlog_session", store))
 
 	handlers := handler.NewAPI(db.DB)
@@ -274,6 +278,7 @@ func SetupRouter() *gin.Engine {
 			"message": "pong",
 		})
 	})
+	r.GET("/healthz", handlers.HealthCheck)
 
 	// 后台管理路由
 	admin := r.Group("/admin")
