@@ -7,13 +7,15 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/commitlog/internal/config"
 	"github.com/commitlog/internal/db"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
 	// 初始化数据库
-	if err := db.Init(); err != nil {
+	cfg := config.Load()
+	if err := db.Init(cfg.DatabasePath); err != nil {
 		log.Fatal("数据库初始化失败:", err)
 	}
 

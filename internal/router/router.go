@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -24,6 +25,11 @@ import (
 type templateRegistry struct {
 	templates map[string]*template.Template
 	funcMap   template.FuncMap
+}
+
+type errorAction struct {
+	Label string
+	Href  string
 }
 
 var imagePattern = regexp.MustCompile(`!\[[^\]]*\]\(([^)]+)\)`)
@@ -243,11 +249,17 @@ func (r *templateRegistry) Instance(name string, data interface{}) render.Render
 }
 
 // SetupRouter 配置 Gin 引擎和路由
-func SetupRouter() *gin.Engine {
-	r := gin.Default()
+func SetupRouter(sessionSecret string) *gin.Engine {
+	r := gin.New()
+	r.Use(gin.Logger())
+	r.Use(recoveryWithHandler())
 
 	// 配置会话中间件
-	store := cookie.NewStore([]byte("secret"))
+	trimmedSecret := strings.TrimSpace(sessionSecret)
+	if trimmedSecret == "" {
+		trimmedSecret = "commitlog-dev-secret"
+	}
+	store := cookie.NewStore([]byte(trimmedSecret))
 	r.Use(sessions.Sessions("commitlog_session", store))
 
 	handlers := handler.NewAPI(db.DB)
@@ -267,12 +279,12 @@ func SetupRouter() *gin.Engine {
 	r.GET("/tags", handlers.ShowTagArchive)
 	r.GET("/about", handlers.ShowAbout)
 
-	// 在这里定义你的路由
 	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
 	})
+	r.GET("/healthz", handlers.HealthCheck)
 
 	// 后台管理路由
 	admin := r.Group("/admin")
@@ -331,5 +343,79 @@ func SetupRouter() *gin.Engine {
 		}
 	}
 
+	r.NoRoute(func(c *gin.Context) {
+		if prefersJSON(c) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "资源不存在"})
+			return
+		}
+
+		path := c.Request.URL.Path
+		if strings.HasPrefix(path, "/admin") {
+			renderErrorPage(c, http.StatusNotFound, "后台页面走丢了", "该链接可能被移动或权限已变更，返回仪表盘继续管理站点。", &errorAction{Label: "返回仪表盘", Href: "/admin/dashboard"}, &errorAction{Label: "回到首页", Href: "/"})
+			return
+		}
+
+		renderErrorPage(c, http.StatusNotFound, "页面走丢了", "我们没有找到你想访问的内容，试试回到首页或浏览其他栏目。", &errorAction{Label: "返回首页", Href: "/"}, &errorAction{Label: "查看全部标签", Href: "/tags"})
+	})
+
 	return r
+}
+
+func recoveryWithHandler() gin.HandlerFunc {
+	return gin.CustomRecoveryWithWriter(gin.DefaultErrorWriter, func(c *gin.Context, recovered interface{}) {
+		if recovered != nil {
+			fmt.Fprintf(gin.DefaultErrorWriter, "panic recovered: %v\n", recovered)
+		}
+
+		if prefersJSON(c) {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "服务器开小差了，请稍后再试"})
+			return
+		}
+
+		path := c.Request.URL.Path
+		var primary *errorAction
+		var secondary *errorAction
+		if strings.HasPrefix(path, "/admin") {
+			primary = &errorAction{Label: "返回仪表盘", Href: "/admin/dashboard"}
+			secondary = &errorAction{Label: "回到首页", Href: "/"}
+		} else {
+			primary = &errorAction{Label: "返回首页", Href: "/"}
+			secondary = &errorAction{Label: "联系站长", Href: "/about"}
+		}
+
+		renderErrorPage(c, http.StatusInternalServerError, "服务器开小差了", "我们已经记录了这个问题，请稍后再试。", primary, secondary)
+		c.Abort()
+	})
+}
+
+func renderErrorPage(c *gin.Context, status int, headline, description string, primary, secondary *errorAction) {
+	c.HTML(status, "error.html", gin.H{
+		"title":           fmt.Sprintf("%d %s", status, http.StatusText(status)),
+		"status":          status,
+		"statusText":      http.StatusText(status),
+		"headline":        headline,
+		"description":     description,
+		"primaryAction":   primary,
+		"secondaryAction": secondary,
+		"year":            time.Now().Year(),
+	})
+}
+
+func prefersJSON(c *gin.Context) bool {
+	accept := strings.ToLower(c.GetHeader("Accept"))
+	if strings.Contains(accept, "application/json") || strings.Contains(accept, "application/problem+json") {
+		return true
+	}
+
+	path := c.Request.URL.Path
+	if strings.HasPrefix(path, "/admin/api") {
+		return true
+	}
+
+	contentType := strings.ToLower(c.ContentType())
+	if strings.Contains(contentType, "application/json") {
+		return true
+	}
+
+	return false
 }

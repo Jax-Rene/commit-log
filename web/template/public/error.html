@@ -1,0 +1,29 @@
+{{define "content"}}
+<section class="flex min-h-[70vh] flex-col items-center justify-center px-4 py-20 text-center">
+        <div class="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-10 shadow-xl backdrop-blur transition-colors duration-200 dark:border-slate-800/80 dark:bg-slate-900/70">
+                <div class="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 blur-3xl"></div>
+                <div class="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-2xl font-semibold text-white shadow-lg">
+                        {{.status}}
+                </div>
+                <h1 class="relative mt-8 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{.headline}}</h1>
+                <p class="relative mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">{{.description}}</p>
+                <div class="relative mt-10 flex flex-wrap justify-center gap-3">
+                        {{if .primaryAction}}
+                        <a href="{{.primaryAction.Href}}" class="inline-flex items-center rounded-full bg-slate-900 px-6 py-2 text-sm font-medium text-white shadow transition hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200">
+                                {{.primaryAction.Label}}
+                        </a>
+                        {{end}}
+                        {{if .secondaryAction}}
+                        <a href="{{.secondaryAction.Href}}" class="inline-flex items-center rounded-full border border-slate-300 px-6 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-100">
+                                {{.secondaryAction.Label}}
+                        </a>
+                        {{end}}
+                </div>
+        </div>
+        <div class="mt-10 text-xs text-slate-400 dark:text-slate-500">
+                <span>{{.status}} {{.statusText}}</span>
+                <span class="mx-2">·</span>
+                <span>CommitLog</span>
+        </div>
+</section>
+{{end}}
