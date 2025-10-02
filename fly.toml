@@ -18,6 +18,8 @@ primary_region = "nrt"
   internal_port = 8080
   force_https = true
   min_machines_running = 1
+  auto_stop_machines = "stop"
+  auto_start_machines = true
 
 [checks]
   [checks.healthz]
@@ -28,4 +30,3 @@ primary_region = "nrt"
     grace_period = "20s"
     method = "GET"
     path = "/healthz"
-
