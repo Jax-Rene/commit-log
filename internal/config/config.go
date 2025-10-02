@@ -8,13 +8,15 @@ import (
 
 // AppConfig 汇总运行服务所需的基础配置。
 type AppConfig struct {
-	ListenAddr    string
-	Port          string
-	DatabasePath  string
-	SessionSecret string
-	GinMode       string
-	UploadDir     string
-	UploadURLPath string
+	ListenAddr        string
+	Port              string
+	DatabasePath      string
+	SessionSecret     string
+	GinMode           string
+	UploadDir         string
+	UploadURLPath     string
+	SuperRootUserName string
+	SuperRootPassword string
 }
 
 // Load 从环境变量读取应用配置，并为缺失项提供安全的默认值。
@@ -54,13 +56,18 @@ func Load() AppConfig {
 		uploadURLPath = "/static/uploads"
 	}
 
+	superRootUserName := strings.TrimSpace(os.Getenv("SUPER_ROOT_USER_NAME"))
+	superRootPassword := strings.TrimSpace(os.Getenv("SUPER_ROOT_PASSWORD"))
+
 	return AppConfig{
-		ListenAddr:    listenAddr,
-		Port:          port,
-		DatabasePath:  databasePath,
-		SessionSecret: sessionSecret,
-		GinMode:       ginMode,
-		UploadDir:     uploadDir,
-		UploadURLPath: uploadURLPath,
+		ListenAddr:        listenAddr,
+		Port:              port,
+		DatabasePath:      databasePath,
+		SessionSecret:     sessionSecret,
+		GinMode:           ginMode,
+		UploadDir:         uploadDir,
+		UploadURLPath:     uploadURLPath,
+		SuperRootUserName: superRootUserName,
+		SuperRootPassword: superRootPassword,
 	}
 }

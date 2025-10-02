@@ -18,6 +18,10 @@ func main() {
 		log.Fatalf("failed to initialize database: %v", err)
 	}
 
+	if err := db.EnsureUser(cfg.SuperRootUserName, cfg.SuperRootPassword); err != nil {
+		log.Fatalf("failed to ensure super user: %v", err)
+	}
+
 	// 设置并运行 Gin 服务器
 	r := router.SetupRouter(cfg.SessionSecret, cfg.UploadDir, cfg.UploadURLPath)
 	if err := r.Run(cfg.ListenAddr); err != nil {
