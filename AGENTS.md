@@ -30,7 +30,7 @@
 - 视觉设计遵循四项原则：对比强调信息层级，重复统一风格，对齐保证秩序，亲密性用于分组相关内容。
 
 ## 构建与运行
-- `make run`：以生产配置在 `:8082` 启动服务，用于构建验收。
+- `make run`：以生产配置在 `:8080` 启动服务，用于构建验收。
 - `make dev`：调试模式启动，启用 Gin Debug、模板热加载与丰富日志。
 - `npm run build:css`：单次编译 Tailwind；`npm run watch:css`：监听源文件，适合样式联调。
 - `go run scripts/generate_test_data.go`：刷新演示数据，确保后台筛选、搜索等功能可验证。

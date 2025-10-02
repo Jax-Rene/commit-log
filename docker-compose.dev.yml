@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  commitlog:
+    build:
+      context: .
+    image: commitlog/dev
+    container_name: commitlog-dev
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      DATABASE_PATH: /data/commitlog.db
+      GIN_MODE: release
+      UPLOAD_DIR: /data/uploads
+      UPLOAD_URL_PATH: /uploads
+      SUPER_ROOT_USER_NAME: ${SUPER_ROOT_USER_NAME:-}
+      SUPER_ROOT_PASSWORD: ${SUPER_ROOT_PASSWORD:-}
+    volumes:
+      - ./tmp-data:/data
+    command: ["/usr/local/bin/commitlog"]
+    restart: unless-stopped
