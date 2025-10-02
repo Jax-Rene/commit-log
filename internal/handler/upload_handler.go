@@ -33,7 +33,10 @@ func (a *API) UploadImage(c *gin.Context) {
 		return
 	}
 
-	uploadDir := "./web/static/uploads"
+	uploadDir := a.uploadDir
+	if strings.TrimSpace(uploadDir) == "" {
+		uploadDir = "web/static/uploads"
+	}
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建上传目录失败", "success": 0})
 		return
@@ -55,7 +58,7 @@ func (a *API) UploadImage(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "读取图片信息失败", "success": 0})
 			return
 		}
-		respondSuccess(c, filePath, width, height)
+		respondSuccess(c, filePath, width, height, uploadDir, a.uploadURL)
 		return
 	}
 
@@ -64,7 +67,7 @@ func (a *API) UploadImage(c *gin.Context) {
 		return
 	}
 
-	respondSuccess(c, filePath, cfg.Width, cfg.Height)
+	respondSuccess(c, filePath, cfg.Width, cfg.Height, uploadDir, a.uploadURL)
 }
 
 func readImageData(file *multipart.FileHeader) ([]byte, image.Config, string, error) {
@@ -127,13 +130,22 @@ func imageDimensions(path string) (int, int, error) {
 	return img.Width, img.Height, nil
 }
 
-func respondSuccess(c *gin.Context, path string, width, height int) {
-	rel, err := filepath.Rel("./web", path)
-	if err != nil {
-		rel = path
+func respondSuccess(c *gin.Context, filePath string, width, height int, uploadDir, uploadURL string) {
+	var rel string
+	if strings.TrimSpace(uploadDir) != "" {
+		if r, err := filepath.Rel(uploadDir, filePath); err == nil {
+			rel = r
+		}
+	}
+	if strings.TrimSpace(rel) == "" {
+		rel = filepath.Base(filePath)
 	}
 	rel = filepath.ToSlash(rel)
-	fileURL := "/" + strings.TrimLeft(rel, "/")
+	urlPrefix := strings.TrimRight(uploadURL, "/")
+	if urlPrefix == "" {
+		urlPrefix = "/uploads"
+	}
+	fileURL := urlPrefix + "/" + strings.TrimLeft(rel, "/")
 	c.JSON(http.StatusOK, gin.H{
 		"success": 1,
 		"message": "上传成功",

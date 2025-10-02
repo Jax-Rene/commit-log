@@ -249,7 +249,7 @@ func (r *templateRegistry) Instance(name string, data interface{}) render.Render
 }
 
 // SetupRouter 配置 Gin 引擎和路由
-func SetupRouter(sessionSecret string) *gin.Engine {
+func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(recoveryWithHandler())
@@ -262,7 +262,7 @@ func SetupRouter(sessionSecret string) *gin.Engine {
 	store := cookie.NewStore([]byte(trimmedSecret))
 	r.Use(sessions.Sessions("commitlog_session", store))
 
-	handlers := handler.NewAPI(db.DB)
+	handlers := handler.NewAPI(db.DB, uploadDir, uploadURLPath)
 
 	// Load templates
 	templates := newTemplateRegistry()
@@ -271,6 +271,17 @@ func SetupRouter(sessionSecret string) *gin.Engine {
 
 	// 静态文件服务
 	r.Static("/static", "./web/static")
+
+	trimmedUploadPath := strings.TrimSpace(uploadURLPath)
+	if trimmedUploadPath == "" {
+		trimmedUploadPath = "/uploads"
+	}
+	if !strings.HasPrefix(trimmedUploadPath, "/") {
+		trimmedUploadPath = "/" + trimmedUploadPath
+	}
+	if strings.TrimSpace(uploadDir) != "" && !strings.HasPrefix(trimmedUploadPath, "/static") {
+		r.Static(trimmedUploadPath, uploadDir)
+	}
 
 	// 公共站点路由
 	r.GET("/", handlers.ShowHome)

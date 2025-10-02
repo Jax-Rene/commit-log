@@ -1,32 +1,44 @@
-app = "commitlog"
-primary_region = "nrt"
+# fly.toml app configuration file generated for commitlog on 2025-10-02T10:39:57+08:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'commitlog'
+primary_region = 'nrt'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  PORT = "8080"
-  DATABASE_PATH = "/data/commitlog.db"
-  GIN_MODE = "release"
+  DATABASE_PATH = '/data/commitlog.db'
+  GIN_MODE = 'release'
+  PORT = '8080'
+  UPLOAD_DIR = '/data/uploads'
+  UPLOAD_URL_PATH = '/uploads'
 
 [[mounts]]
-  source = "commitlog_data"
-  destination = "/data"
-  initial_size = "1GB"
+  source = 'commitlog_data'
+  destination = '/data'
+  initial_size = '1GB'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  min_machines_running = 1
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
+  min_machines_running = 1
 
 [checks]
   [checks.healthz]
-    type = "http"
     port = 8080
-    interval = "10s"
-    timeout = "2s"
-    grace_period = "20s"
-    method = "GET"
-    path = "/healthz"
+    type = 'http'
+    interval = '10s'
+    timeout = '2s'
+    grace_period = '20s'
+    method = 'GET'
+    path = '/healthz'
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1

@@ -13,6 +13,8 @@ type AppConfig struct {
 	DatabasePath  string
 	SessionSecret string
 	GinMode       string
+	UploadDir     string
+	UploadURLPath string
 }
 
 // Load 从环境变量读取应用配置，并为缺失项提供安全的默认值。
@@ -42,11 +44,23 @@ func Load() AppConfig {
 		ginMode = "release"
 	}
 
+	uploadDir := strings.TrimSpace(os.Getenv("UPLOAD_DIR"))
+	if uploadDir == "" {
+		uploadDir = "web/static/uploads"
+	}
+
+	uploadURLPath := strings.TrimSpace(os.Getenv("UPLOAD_URL_PATH"))
+	if uploadURLPath == "" {
+		uploadURLPath = "/static/uploads"
+	}
+
 	return AppConfig{
 		ListenAddr:    listenAddr,
 		Port:          port,
 		DatabasePath:  databasePath,
 		SessionSecret: sessionSecret,
 		GinMode:       ginMode,
+		UploadDir:     uploadDir,
+		UploadURLPath: uploadURLPath,
 	}
 }

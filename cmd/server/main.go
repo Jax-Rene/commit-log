@@ -19,7 +19,7 @@ func main() {
 	}
 
 	// 设置并运行 Gin 服务器
-	r := router.SetupRouter(cfg.SessionSecret)
+	r := router.SetupRouter(cfg.SessionSecret, cfg.UploadDir, cfg.UploadURLPath)
 	if err := r.Run(cfg.ListenAddr); err != nil {
 		log.Fatalf("failed to run server: %v", err)
 	}

@@ -69,7 +69,7 @@ func TestShowHomeExcludesDrafts(t *testing.T) {
 		t.Fatalf("failed to create draft post: %v", err)
 	}
 
-	r := router.SetupRouter("test-secret")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.ServeHTTP(w, req)
@@ -101,7 +101,7 @@ func TestLoadMorePostsHandlesPagination(t *testing.T) {
 		}
 	}
 
-	r := router.SetupRouter("test-secret")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/posts/more?page=2", nil)
 	req.Header.Set("HX-Request", "true")
@@ -128,7 +128,7 @@ func TestShowPostDetailRejectsDraft(t *testing.T) {
 		t.Fatalf("failed to create draft: %v", err)
 	}
 
-	r := router.SetupRouter("test-secret")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(draft.ID)), nil)
 	r.ServeHTTP(w, req)
@@ -142,7 +142,7 @@ func TestShowAboutFallback(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-	r := router.SetupRouter("test-secret")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/about", nil)
 	r.ServeHTTP(w, req)
@@ -173,7 +173,7 @@ func TestShowAboutDisplaysContacts(t *testing.T) {
 		t.Fatalf("failed to seed contacts: %v", err)
 	}
 
-	r := router.SetupRouter("test-secret")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/about", nil)
 	r.ServeHTTP(w, req)
@@ -211,7 +211,7 @@ func TestShowPostDetailDisplaysContacts(t *testing.T) {
 		t.Fatalf("failed to seed contact: %v", err)
 	}
 
-	r := router.SetupRouter("test-secret")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(post.ID)), nil)
 	r.ServeHTTP(w, req)
@@ -249,7 +249,7 @@ func TestShowAboutDoesNotRenderHeatmap(t *testing.T) {
 		t.Fatalf("failed to seed habit log: %v", err)
 	}
 
-	r := router.SetupRouter("test-secret")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/about", nil)
 	r.ServeHTTP(w, req)

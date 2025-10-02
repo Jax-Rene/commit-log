@@ -14,10 +14,12 @@ type API struct {
 	habits    *service.HabitService
 	habitLogs *service.HabitLogService
 	profiles  *service.ProfileService
+	uploadDir string
+	uploadURL string
 }
 
 // NewAPI constructs a handler set with shared services.
-func NewAPI(db *gorm.DB) *API {
+func NewAPI(db *gorm.DB, uploadDir, uploadURL string) *API {
 	return &API{
 		db:        db,
 		posts:     service.NewPostService(db),
@@ -26,6 +28,8 @@ func NewAPI(db *gorm.DB) *API {
 		habits:    service.NewHabitService(db),
 		habitLogs: service.NewHabitLogService(db),
 		profiles:  service.NewProfileService(db),
+		uploadDir: uploadDir,
+		uploadURL: uploadURL,
 	}
 }
 
