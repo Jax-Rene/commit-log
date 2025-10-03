@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -195,6 +196,31 @@ func (a *API) ShowPostList(c *gin.Context) {
 		return
 	}
 
+	statsMap := make(map[uint]*db.PostStatistic)
+	var overview service.SiteOverview
+	if len(list.Posts) > 0 && a.analytics != nil {
+		postIDs := make([]uint, 0, len(list.Posts))
+		for _, post := range list.Posts {
+			postIDs = append(postIDs, post.ID)
+		}
+
+		if statData, statErr := a.analytics.PostStatsMap(postIDs); statErr == nil {
+			for id, stat := range statData {
+				statsMap[id] = stat
+			}
+		} else {
+			c.Error(statErr)
+		}
+	}
+
+	if a.analytics != nil {
+		if ov, ovErr := a.analytics.Overview(5); ovErr == nil {
+			overview = ov
+		} else {
+			c.Error(ovErr)
+		}
+	}
+
 	tags, err := a.tags.List()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "post_list.html", gin.H{
@@ -248,6 +274,8 @@ func (a *API) ShowPostList(c *gin.Context) {
 		"draftCount":     list.DraftCount,
 		"pages":          pages,
 		"queryParams":    queryParams,
+		"postStats":      statsMap,
+		"overview":       overview,
 	})
 }
 

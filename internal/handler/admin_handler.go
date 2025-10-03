@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/service"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -82,11 +83,21 @@ func (a *API) ShowDashboard(c *gin.Context) {
 	var tagCount int64
 	a.db.Model(&db.Tag{}).Count(&tagCount)
 
+	var overview service.SiteOverview
+	if a.analytics != nil {
+		if ov, err := a.analytics.Overview(5); err == nil {
+			overview = ov
+		} else {
+			c.Error(err)
+		}
+	}
+
 	c.HTML(http.StatusOK, "dashboard.html", gin.H{
 		"title":     "管理面板",
 		"username":  username,
 		"postCount": postCount,
 		"tagCount":  tagCount,
+		"overview":  overview,
 	})
 }
 

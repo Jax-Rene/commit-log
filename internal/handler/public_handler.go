@@ -15,6 +15,7 @@ import (
 
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -27,6 +28,11 @@ var (
 		goldmark.WithRendererOptions(html.WithHardWraps(), html.WithXHTML()),
 	)
 	sanitizer = bluemonday.UGCPolicy()
+)
+
+const (
+	visitorCookieName   = "cl_visitor_id"
+	visitorCookieMaxAge = 365 * 24 * 60 * 60
 )
 
 type tagStat struct {
@@ -164,6 +170,22 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		return
 	}
 
+	visitorID := a.ensureVisitorID(c)
+
+	var (
+		pageViews      uint64
+		uniqueVisitors uint64
+	)
+
+	if a.analytics != nil {
+		if stats, recordErr := a.analytics.RecordPostView(post.ID, visitorID, time.Now().UTC()); recordErr == nil {
+			pageViews = stats.PageViews
+			uniqueVisitors = stats.UniqueVisitors
+		} else {
+			c.Error(recordErr) // 不中断渲染，但记录错误
+		}
+	}
+
 	contacts, contactErr := a.profiles.ListContacts(false)
 	if contactErr != nil {
 		contacts = nil
@@ -181,11 +203,13 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "post_detail.html", gin.H{
-		"title":    post.Title,
-		"post":     post,
-		"content":  htmlContent,
-		"contacts": contacts,
-		"year":     time.Now().Year(),
+		"title":          post.Title,
+		"post":           post,
+		"content":        htmlContent,
+		"contacts":       contacts,
+		"pageViews":      pageViews,
+		"uniqueVisitors": uniqueVisitors,
+		"year":           time.Now().Year(),
 	})
 }
 
@@ -198,6 +222,28 @@ func (a *API) ShowTagArchive(c *gin.Context) {
 		"tags":  stats,
 		"year":  time.Now().Year(),
 	})
+}
+
+func (a *API) ensureVisitorID(c *gin.Context) string {
+	if id, err := c.Cookie(visitorCookieName); err == nil && strings.TrimSpace(id) != "" {
+		return id
+	}
+
+	visitorID := uuid.NewString()
+	secure := c.Request.TLS != nil
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     visitorCookieName,
+		Value:    visitorID,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		MaxAge:   visitorCookieMaxAge,
+		Expires:  time.Now().Add(365 * 24 * time.Hour),
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	return visitorID
 }
 
 // ShowAbout renders the dynamic about page.
