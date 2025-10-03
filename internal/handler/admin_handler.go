@@ -20,6 +20,7 @@ func (a *API) ShowLoginPage(c *gin.Context) {
 func (a *API) Login(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
+	remember := c.PostForm("remember") == "1"
 
 	// 查找用户
 	var user db.User
@@ -36,6 +37,19 @@ func (a *API) Login(c *gin.Context) {
 
 	// 设置会话
 	session := sessions.Default(c)
+	options := sessions.Options{
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   c.Request.TLS != nil,
+	}
+
+	if remember {
+		options.MaxAge = 30 * 24 * 60 * 60
+	} else {
+		options.MaxAge = 0
+	}
+
+	session.Options(options)
 	session.Set("user_id", user.ID)
 	session.Set("username", user.Username)
 	if err := session.Save(); err != nil {
