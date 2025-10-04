@@ -35,10 +35,10 @@ func TestProfileServiceCreateAndList(t *testing.T) {
 	defer cleanup()
 
 	svc := NewProfileService(db.DB)
-	if _, err := svc.CreateContact(ProfileContactInput{Platform: "微信", Label: "个人微信", Value: "coder"}); err != nil {
+	if _, err := svc.CreateContact(ProfileContactInput{Platform: "wechat", Label: "个人微信", Value: "coder", Link: "https://example.com/qr.png"}); err != nil {
 		t.Fatalf("create contact failed: %v", err)
 	}
-	second, err := svc.CreateContact(ProfileContactInput{Platform: "GitHub", Label: "GitHub", Value: "commitlog", Visible: boolPtr(false)})
+	second, err := svc.CreateContact(ProfileContactInput{Platform: "github", Label: "GitHub", Value: "commitlog", Visible: boolPtr(false)})
 	if err != nil {
 		t.Fatalf("create contact failed: %v", err)
 	}
@@ -71,12 +71,12 @@ func TestProfileServiceUpdate(t *testing.T) {
 	defer cleanup()
 
 	svc := NewProfileService(db.DB)
-	created, err := svc.CreateContact(ProfileContactInput{Platform: "邮箱", Label: "工作邮箱", Value: "me@example.com"})
+	created, err := svc.CreateContact(ProfileContactInput{Platform: "email", Label: "工作邮箱", Value: "me@example.com"})
 	if err != nil {
 		t.Fatalf("create contact failed: %v", err)
 	}
 
-	updated, err := svc.UpdateContact(created.ID, ProfileContactInput{Platform: "邮箱", Label: "联系邮箱", Value: "hi@example.com", Icon: "email", Visible: boolPtr(false), Sort: intPtr(5)})
+	updated, err := svc.UpdateContact(created.ID, ProfileContactInput{Platform: "email", Label: "联系邮箱", Value: "hi@example.com", Icon: "email", Visible: boolPtr(false), Sort: intPtr(5)})
 	if err != nil {
 		t.Fatalf("update contact failed: %v", err)
 	}
@@ -90,6 +90,12 @@ func TestProfileServiceUpdate(t *testing.T) {
 	if updated.Sort != 5 {
 		t.Fatalf("expected sort to be updated to 5, got %d", updated.Sort)
 	}
+	if updated.Link != "mailto:hi@example.com" {
+		t.Fatalf("expected link to default to mailto:, got %s", updated.Link)
+	}
+	if updated.Icon != "email" {
+		t.Fatalf("expected icon to default to email, got %s", updated.Icon)
+	}
 }
 
 func TestProfileServiceReorder(t *testing.T) {
@@ -97,9 +103,9 @@ func TestProfileServiceReorder(t *testing.T) {
 	defer cleanup()
 
 	svc := NewProfileService(db.DB)
-	c1, _ := svc.CreateContact(ProfileContactInput{Platform: "A", Label: "A", Value: "a"})
-	c2, _ := svc.CreateContact(ProfileContactInput{Platform: "B", Label: "B", Value: "b"})
-	c3, _ := svc.CreateContact(ProfileContactInput{Platform: "C", Label: "C", Value: "c"})
+	c1, _ := svc.CreateContact(ProfileContactInput{Platform: "custom", Label: "A", Value: "a"})
+	c2, _ := svc.CreateContact(ProfileContactInput{Platform: "custom", Label: "B", Value: "b"})
+	c3, _ := svc.CreateContact(ProfileContactInput{Platform: "custom", Label: "C", Value: "c"})
 
 	if err := svc.ReorderContacts([]uint{c3.ID, c1.ID, c2.ID}); err != nil {
 		t.Fatalf("reorder contacts failed: %v", err)
@@ -128,6 +134,9 @@ func TestProfileServiceValidation(t *testing.T) {
 	svc := NewProfileService(db.DB)
 	if _, err := svc.CreateContact(ProfileContactInput{}); err == nil {
 		t.Fatal("expected validation error for empty input")
+	}
+	if _, err := svc.CreateContact(ProfileContactInput{Platform: "wechat", Label: "个人微信", Value: "coder"}); err == nil {
+		t.Fatal("expected validation error when qr image missing")
 	}
 }
 

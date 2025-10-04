@@ -15,6 +15,7 @@ type API struct {
 	habitLogs *service.HabitLogService
 	profiles  *service.ProfileService
 	analytics *service.AnalyticsService
+	system    *service.SystemSettingService
 	uploadDir string
 	uploadURL string
 }
@@ -30,6 +31,7 @@ func NewAPI(db *gorm.DB, uploadDir, uploadURL string) *API {
 		habitLogs: service.NewHabitLogService(db),
 		profiles:  service.NewProfileService(db),
 		analytics: service.NewAnalyticsService(db),
+		system:    service.NewSystemSettingService(db),
 		uploadDir: uploadDir,
 		uploadURL: uploadURL,
 	}

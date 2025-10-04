@@ -317,6 +317,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 			auth.GET("/posts/:id/edit", handlers.ShowPostEdit)
 			auth.GET("/about", handlers.ShowAboutEditor)
 			auth.GET("/profile/contacts", handlers.ShowProfileContacts)
+			auth.GET("/system/settings", handlers.ShowSystemSettings)
 
 			// API路由
 			api := auth.Group("/api")
@@ -347,6 +348,9 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 				api.PUT("/profile/contacts/:id", handlers.UpdateProfileContact)
 				api.DELETE("/profile/contacts/:id", handlers.DeleteProfileContact)
 				api.PUT("/profile/contacts/order", handlers.ReorderProfileContacts)
+				api.GET("/system/settings", handlers.GetSystemSettings)
+				api.PUT("/system/settings", handlers.UpdateSystemSettings)
+				api.POST("/system/settings/openai/test", handlers.TestOpenAIConnection)
 
 				// 图片上传接口
 				api.POST("/upload/image", handlers.UploadImage)
