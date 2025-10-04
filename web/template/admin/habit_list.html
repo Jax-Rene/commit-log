@@ -5,12 +5,13 @@
 	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
 		<div>
 			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">习惯管理</h1>
-			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">维护好习惯，快速打卡并跟踪周 / 月维度的进度。</p>
+			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">🌞 通过极小的行动切入口，逐步建立长期稳定的习惯。</p>
 		</div>
 		<a href="/admin/habits/new" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90">新建习惯</a>
         </header>
 
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80" id="habit-heatmap">
+                <span class="hidden border-rose-300 bg-rose-50 text-rose-700 shadow outline outline-1 outline-offset-1 outline-rose-400 ring-1 ring-2 ring-rose-300 ring-offset-1 ring-offset-white dark:border-rose-400/60 dark:bg-rose-500/15 dark:text-rose-100 dark:outline-rose-300 dark:ring-rose-400 dark:ring-offset-slate-900"></span>
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                         <div class="space-y-2">
                                 <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">习惯活动热力图</h2>
@@ -207,6 +208,8 @@
                 };
 
                 const HEATMAP_WEEK_WIDTH = 14;
+                const HEATMAP_BADGE_ACTIVE_CLASSES = ['border-rose-300', 'bg-rose-50', 'text-rose-700', 'shadow', 'dark:border-rose-400/60', 'dark:bg-rose-500/15', 'dark:text-rose-100'];
+                const HEATMAP_CELL_ACTIVE_CLASSES = ['outline', 'outline-1', 'outline-offset-1', 'outline-rose-400', 'dark:outline-rose-300'];
 
                 const elements = {
                         title: document.getElementById('calendar-title'),
@@ -461,6 +464,7 @@
                         }
 
                         renderHeatmapGrid(days, range);
+                        updateHeatmapHabitHighlight();
                 }
 
                 function updateHeatmapSummary(summary, range, generatedAt) {
@@ -562,9 +566,13 @@
 
                         habits.forEach(habit => {
                                 const badge = document.createElement('span');
-                                badge.className = 'inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300';
+                                badge.className = 'heatmap-habit-badge inline-flex cursor-pointer items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-rose-400 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300';
+                                badge.dataset.habitId = String(habit.id);
+                                badge.setAttribute('role', 'button');
+                                badge.setAttribute('aria-pressed', 'false');
+                                badge.tabIndex = 0;
                                 const dot = document.createElement('span');
-                                dot.className = 'h-2 w-2 rounded-full';
+                                dot.className = 'heatmap-habit-dot h-2 w-2 rounded-full';
                                 dot.style.backgroundColor = state.heatmap.colors.get(habit.id) || state.heatmap.palette[0];
                                 badge.appendChild(dot);
                                 const name = document.createElement('span');
@@ -577,8 +585,19 @@
                                         tag.textContent = habit.type_tag;
                                         badge.appendChild(tag);
                                 }
+                                badge.addEventListener('click', () => {
+                                        selectHabit(habit.id);
+                                });
+                                badge.addEventListener('keydown', event => {
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                                event.preventDefault();
+                                                selectHabit(habit.id);
+                                        }
+                                });
                                 container.appendChild(badge);
                         });
+
+                        updateHeatmapHabitHighlight();
                 }
 
                 function renderHeatmapGrid(days, range) {
@@ -644,7 +663,7 @@
                                 column.style.flex = `0 0 ${HEATMAP_WEEK_WIDTH}px`;
                                 week.forEach(day => {
                                         const cell = document.createElement('div');
-                                        cell.className = 'relative h-3 w-3 overflow-hidden rounded border border-transparent transition-transform duration-150 ease-out';
+                                        cell.className = 'relative h-3 w-3 overflow-hidden rounded border border-transparent transition-transform duration-150 ease-out transition-colors';
                                         cell.dataset.date = day.iso;
 
                                         if (!day.inRange) {
@@ -655,7 +674,9 @@
                                         }
 
                                         const count = day.habits.length;
+                                        const habitIds = day.habits.map(item => item.id);
                                         cell.dataset.count = String(count);
+                                        cell.dataset.habitIds = habitIds.join(',');
                                         const color = colorForCount(count);
                                         cell.style.backgroundColor = color;
 
@@ -682,7 +703,9 @@
                                                         segment.style.width = `${segmentWidth}%`;
                                                 }
                                                 segment.style.backgroundColor = habitColor(habit.id, index);
-                                                segment.style.opacity = count === 1 ? '1' : '0.85';
+                                                const baseOpacity = count === 1 ? '1' : '0.85';
+                                                segment.style.opacity = baseOpacity;
+                                                segment.dataset.baseOpacity = baseOpacity;
                                                 segment.dataset.habitId = habit.id;
                                                 cell.appendChild(segment);
                                         });
@@ -695,6 +718,56 @@
                                 });
                                 elements.heatmapGrid.appendChild(column);
                         });
+
+                        updateHeatmapHabitHighlight();
+                }
+
+                function updateHeatmapHabitHighlight() {
+                        const activeId = typeof state.habitId === 'number' && !Number.isNaN(state.habitId) ? state.habitId : null;
+
+                        if (elements.heatmapHabits) {
+                                const badges = elements.heatmapHabits.querySelectorAll('.heatmap-habit-badge');
+                                badges.forEach(badge => {
+                                        const badgeId = parseInt(badge.dataset.habitId || '', 10);
+                                        const isActive = activeId !== null && badgeId === activeId;
+                                        badge.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                                        HEATMAP_BADGE_ACTIVE_CLASSES.forEach(cls => {
+                                                badge.classList.toggle(cls, isActive);
+                                        });
+
+                                        const dot = badge.querySelector('.heatmap-habit-dot');
+                                        if (dot) {
+                                                dot.classList.toggle('ring-2', isActive);
+                                                dot.classList.toggle('ring-rose-300', isActive);
+                                                dot.classList.toggle('dark:ring-rose-400', isActive);
+                                        }
+                                });
+                        }
+
+                        if (elements.heatmapGrid) {
+                                const cells = elements.heatmapGrid.querySelectorAll('[data-habit-ids]');
+                                cells.forEach(cell => {
+                                        const ids = (cell.dataset.habitIds || '')
+                                                .split(',')
+                                                .map(value => parseInt(value, 10))
+                                                .filter(id => !Number.isNaN(id));
+                                        const containsActive = activeId !== null && ids.includes(activeId);
+                                        HEATMAP_CELL_ACTIVE_CLASSES.forEach(cls => {
+                                                cell.classList.toggle(cls, containsActive);
+                                        });
+
+                                        const segments = cell.querySelectorAll('[data-habit-id]');
+                                        segments.forEach(segment => {
+                                                const segmentId = parseInt(segment.dataset.habitId || '', 10);
+                                                const base = segment.dataset.baseOpacity || '';
+                                                if (!Number.isNaN(segmentId) && activeId !== null && segmentId === activeId) {
+                                                        segment.style.opacity = '1';
+                                                } else if (base) {
+                                                        segment.style.opacity = base;
+                                                }
+                                        });
+                                });
+                        }
                 }
 
                 function renderHeatmapMonths(weeks) {
@@ -759,11 +832,20 @@
                 }
 
                 function selectHabit(id) {
+                        const previousId = state.habitId;
+                        const sameHabit = typeof previousId === 'number' && previousId === id;
+
                         state.habitId = id;
-                        state.rangeStart = null;
-                        state.rangeEnd = null;
+                        if (!sameHabit) {
+                                state.rangeStart = null;
+                                state.rangeEnd = null;
+                        }
                         updateHabitSelection();
-			loadCalendar();
+                        updateHeatmapHabitHighlight();
+
+			if (!sameHabit || !state.rangeStart) {
+				loadCalendar();
+			}
 		}
 
 		function updateHabitSelection() {
@@ -866,12 +948,6 @@
 			button.type = 'button';
 			const isToday = isSameDate(date, new Date());
 			button.className = 'flex aspect-square flex-col justify-between rounded-xl border border-slate-200 bg-white p-2 text-left text-xs transition-colors hover:border-blue-200 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10';
-			if (log) {
-				button.classList.add('border-emerald-300', 'shadow-sm');
-			}
-			if (isToday) {
-				button.classList.add('ring-2', 'ring-blue-300');
-			}
 
 			const top = document.createElement('div');
 			top.className = 'flex items-center justify-between text-xs text-slate-500 dark:text-slate-300';
@@ -884,8 +960,39 @@
 			button.appendChild(top);
 			button.appendChild(body);
 
-                        if (log) {
-                                button.addEventListener('click', async () => {
+			if (log) {
+				button.classList.remove('border-slate-200', 'bg-white', 'hover:border-blue-200', 'hover:bg-blue-50/60', 'dark:border-slate-700', 'dark:bg-slate-900/80', 'dark:hover:border-blue-500/40', 'dark:hover:bg-blue-500/10');
+				button.classList.add(
+					'border-emerald-300',
+					'bg-emerald-50',
+					'hover:border-emerald-300',
+					'hover:bg-emerald-100',
+					'shadow-sm',
+					'dark:border-emerald-400',
+					'dark:bg-emerald-500/10',
+					'dark:hover:border-emerald-300/80',
+					'dark:hover:bg-emerald-500/20'
+				);
+
+				top.classList.remove('text-slate-500', 'dark:text-slate-300');
+				top.classList.add('text-emerald-600', 'dark:text-emerald-200');
+
+				const dayNumber = top.querySelector('span:first-child');
+				if (dayNumber) {
+					dayNumber.classList.remove('text-slate-900', 'dark:text-slate-100');
+					dayNumber.classList.add('text-emerald-700', 'dark:text-emerald-100');
+				}
+
+				body.classList.remove('text-slate-500', 'dark:text-slate-400');
+				body.classList.add('text-emerald-600', 'dark:text-emerald-200');
+			}
+
+			if (isToday) {
+				button.classList.add('ring-2', 'ring-blue-300');
+			}
+
+			if (log) {
+				button.addEventListener('click', async () => {
                                         const confirmed = await window.AdminUI.confirm({
                                                 title: '删除打卡记录',
                                                 message: '删除该打卡记录？',
