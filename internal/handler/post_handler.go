@@ -171,6 +171,57 @@ func (a *API) DeletePost(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "文章删除成功"})
 }
 
+// GeneratePostSummary 使用已配置的 AI 服务生成文章摘要，返回预览内容供人工确认。
+func (a *API) GeneratePostSummary(c *gin.Context) {
+	if a.summaries == nil {
+		respondError(c, http.StatusServiceUnavailable, "未配置 AI 摘要服务，请先在系统设置中完成配置")
+		return
+	}
+
+	var payload struct {
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
+	if !bindJSON(c, &payload, "请求参数不合法") {
+		return
+	}
+
+	title := strings.TrimSpace(payload.Title)
+	content := strings.TrimSpace(payload.Content)
+	if title == "" && content == "" {
+		respondError(c, http.StatusBadRequest, "请至少提供文章标题或正文内容")
+		return
+	}
+
+	result, err := a.summaries.GenerateSummary(c.Request.Context(), service.SummaryInput{
+		Title:   title,
+		Content: content,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrAIAPIKeyMissing):
+			respondError(c, http.StatusBadRequest, "请在系统设置中配置有效的 AI API Key 后再试")
+		default:
+			respondError(c, http.StatusBadGateway, fmt.Sprintf("生成摘要失败：%v", err))
+		}
+		return
+	}
+
+	summary := strings.TrimSpace(result.Summary)
+	if summary == "" {
+		respondError(c, http.StatusBadGateway, "AI 摘要服务未返回内容，请稍后重试")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"summary": summary,
+		"usage": gin.H{
+			"prompt_tokens":     result.PromptTokens,
+			"completion_tokens": result.CompletionTokens,
+		},
+	})
+}
+
 func (a *API) maybeGenerateSummary(c *gin.Context, post *db.Post) (notices, warnings []string) {
 	if post == nil {
 		return nil, nil

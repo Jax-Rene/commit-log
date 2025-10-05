@@ -20,9 +20,11 @@ import (
 )
 
 type fakeSummaryGenerator struct {
-	summary string
-	err     error
-	calls   int
+	summary          string
+	err              error
+	calls            int
+	promptTokens     int
+	completionTokens int
 }
 
 func (f *fakeSummaryGenerator) GenerateSummary(ctx context.Context, input service.SummaryInput) (service.SummaryResult, error) {
@@ -30,7 +32,11 @@ func (f *fakeSummaryGenerator) GenerateSummary(ctx context.Context, input servic
 	if f.err != nil {
 		return service.SummaryResult{}, f.err
 	}
-	return service.SummaryResult{Summary: f.summary}, nil
+	return service.SummaryResult{
+		Summary:          f.summary,
+		PromptTokens:     f.promptTokens,
+		CompletionTokens: f.completionTokens,
+	}, nil
 }
 
 func TestMain(m *testing.M) {
@@ -472,5 +478,123 @@ func TestDeletePost(t *testing.T) {
 	db.DB.Model(&db.Post{}).Where("id = ?", post.ID).Count(&count)
 	if count != 0 {
 		t.Fatalf("expected post to be deleted, still found %d records", count)
+	}
+}
+
+func TestGeneratePostSummarySuccess(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	stub := &fakeSummaryGenerator{
+		summary:          "这是一个精炼摘要",
+		promptTokens:     120,
+		completionTokens: 36,
+	}
+	api.summaries = stub
+
+	payload := map[string]any{
+		"title":   "Go 并发模式",
+		"content": "Goroutine 和 channel 的组合...",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/summary", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.GeneratePostSummary(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var resp struct {
+		Summary string `json:"summary"`
+		Usage   struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+		} `json:"usage"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	if resp.Summary != stub.summary {
+		t.Fatalf("unexpected summary: %s", resp.Summary)
+	}
+
+	if resp.Usage.PromptTokens != stub.promptTokens {
+		t.Fatalf("unexpected prompt tokens: %d", resp.Usage.PromptTokens)
+	}
+	if resp.Usage.CompletionTokens != stub.completionTokens {
+		t.Fatalf("unexpected completion tokens: %d", resp.Usage.CompletionTokens)
+	}
+}
+
+func TestGeneratePostSummaryRequiresContent(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	api.summaries = &fakeSummaryGenerator{summary: "不会触发"}
+
+	payload := map[string]any{
+		"title":   " ",
+		"content": "",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/summary", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.GeneratePostSummary(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp["error"] != "请至少提供文章标题或正文内容" {
+		t.Fatalf("unexpected error message: %v", resp["error"])
+	}
+}
+
+func TestGeneratePostSummaryMissingAPIKey(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	api.summaries = &fakeSummaryGenerator{err: service.ErrAIAPIKeyMissing}
+
+	payload := map[string]any{
+		"title":   "测试",
+		"content": "内容",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/summary", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.GeneratePostSummary(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp["error"] != "请在系统设置中配置有效的 AI API Key 后再试" {
+		t.Fatalf("unexpected error message: %v", resp["error"])
 	}
 }
