@@ -43,13 +43,16 @@ func (a *API) ShowSystemSettings(c *gin.Context) {
 }
 
 type systemSettingsRequest struct {
-	SiteName     string `json:"siteName"`
-	SiteLogoURL  string `json:"siteLogoUrl"`
-	OpenAIAPIKey string `json:"openaiApiKey"`
+	SiteName       string `json:"siteName"`
+	SiteLogoURL    string `json:"siteLogoUrl"`
+	AIProvider     string `json:"aiProvider"`
+	OpenAIAPIKey   string `json:"openaiApiKey"`
+	DeepSeekAPIKey string `json:"deepseekApiKey"`
 }
 
-type openAITestRequest struct {
-	APIKey string `json:"apiKey"`
+type aiTestRequest struct {
+	Provider string `json:"provider"`
+	APIKey   string `json:"apiKey"`
 }
 
 // GetSystemSettings 返回当前系统设置。
@@ -84,36 +87,40 @@ func (a *API) UpdateSystemSettings(c *gin.Context) {
 
 func (r systemSettingsRequest) toInput() service.SystemSettingsInput {
 	return service.SystemSettingsInput{
-		SiteName:     r.SiteName,
-		SiteLogoURL:  r.SiteLogoURL,
-		OpenAIAPIKey: r.OpenAIAPIKey,
+		SiteName:       r.SiteName,
+		SiteLogoURL:    r.SiteLogoURL,
+		AIProvider:     r.AIProvider,
+		OpenAIAPIKey:   r.OpenAIAPIKey,
+		DeepSeekAPIKey: r.DeepSeekAPIKey,
 	}
 }
 
 func systemSettingsPayload(settings service.SystemSettings) gin.H {
 	return gin.H{
-		"siteName":     settings.SiteName,
-		"siteLogoUrl":  settings.SiteLogoURL,
-		"openaiApiKey": settings.OpenAIAPIKey,
+		"siteName":       settings.SiteName,
+		"siteLogoUrl":    settings.SiteLogoURL,
+		"aiProvider":     settings.AIProvider,
+		"openaiApiKey":   settings.OpenAIAPIKey,
+		"deepseekApiKey": settings.DeepSeekAPIKey,
 	}
 }
 
-// TestOpenAIConnection 测试 OpenAI API Key 的连通性。
-func (a *API) TestOpenAIConnection(c *gin.Context) {
-	var payload openAITestRequest
-	if !bindJSON(c, &payload, "请填写有效的 OpenAI API Key") {
+// TestAIConnection 测试不同 AI 平台 API Key 的连通性。
+func (a *API) TestAIConnection(c *gin.Context) {
+	var payload aiTestRequest
+	if !bindJSON(c, &payload, "请填写有效的 AI 配置信息") {
 		return
 	}
 
-	if err := a.system.TestOpenAIConnection(c.Request.Context(), payload.APIKey); err != nil {
+	if err := a.system.TestAIConnection(c.Request.Context(), payload.Provider, payload.APIKey); err != nil {
 		switch {
-		case errors.Is(err, service.ErrOpenAIAPIKeyMissing):
-			respondError(c, http.StatusBadRequest, "请填写有效的 OpenAI API Key")
+		case errors.Is(err, service.ErrAIAPIKeyMissing):
+			respondError(c, http.StatusBadRequest, "请填写有效的 AI API Key")
 		default:
 			respondError(c, http.StatusBadGateway, err.Error())
 		}
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "OpenAI 接口连接正常"})
+	c.JSON(http.StatusOK, gin.H{"message": "AI 接口连接正常"})
 }

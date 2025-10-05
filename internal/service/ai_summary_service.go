@@ -32,27 +32,32 @@ type SummaryGenerator interface {
 }
 
 const (
-	defaultSummaryModel        = "gpt-4o-mini"
-	defaultSummaryMaxTokens    = 160
-	defaultSummaryTemperature  = 0.2
-	maxSummaryContentRuneCount = 4000
+	defaultOpenAISummaryModel   = "gpt-4o-mini"
+	defaultDeepSeekSummaryModel = "deepseek-chat"
+	defaultSummaryMaxTokens     = 160
+	defaultSummaryTemperature   = 0.2
+	maxSummaryContentRuneCount  = 4000
 )
 
-// AISummaryService 基于 OpenAI Chat Completions 生成文章摘要。
+// AISummaryService 基于大模型接口生成文章摘要。
 type AISummaryService struct {
-	settings *SystemSettingService
-	http     httpDoer
-	baseURL  string
-	model    string
+	settings        *SystemSettingService
+	http            httpDoer
+	openAIBaseURL   string
+	openAIModel     string
+	deepSeekBaseURL string
+	deepSeekModel   string
 }
 
 // NewAISummaryService 构造默认的 AISummaryService。
 func NewAISummaryService(settings *SystemSettingService) *AISummaryService {
 	return &AISummaryService{
-		settings: settings,
-		http:     &http.Client{Timeout: 20 * time.Second},
-		baseURL:  "https://api.openai.com/v1",
-		model:    defaultSummaryModel,
+		settings:        settings,
+		http:            &http.Client{Timeout: 20 * time.Second},
+		openAIBaseURL:   "https://api.openai.com/v1",
+		openAIModel:     defaultOpenAISummaryModel,
+		deepSeekBaseURL: "https://api.deepseek.com/v1",
+		deepSeekModel:   defaultDeepSeekSummaryModel,
 	}
 }
 
@@ -65,16 +70,39 @@ func (s *AISummaryService) SetHTTPClient(client httpDoer) {
 	s.http = client
 }
 
-// SetBaseURL 覆盖默认的 OpenAI API 地址，支持自定义代理或测试桩。
+// SetBaseURL 兼容旧方法，等价于 SetOpenAIBaseURL。
 func (s *AISummaryService) SetBaseURL(base string) {
-	s.baseURL = strings.TrimRight(strings.TrimSpace(base), "/")
+	s.SetOpenAIBaseURL(base)
 }
 
-// SetModel 指定摘要使用的模型名称。
+// SetOpenAIBaseURL 覆盖默认的 OpenAI API 地址。
+func (s *AISummaryService) SetOpenAIBaseURL(base string) {
+	s.openAIBaseURL = strings.TrimRight(strings.TrimSpace(base), "/")
+}
+
+// SetDeepSeekBaseURL 覆盖默认的 DeepSeek API 地址。
+func (s *AISummaryService) SetDeepSeekBaseURL(base string) {
+	s.deepSeekBaseURL = strings.TrimRight(strings.TrimSpace(base), "/")
+}
+
+// SetModel 兼容旧方法，等价于 SetOpenAIModel。
 func (s *AISummaryService) SetModel(model string) {
+	s.SetOpenAIModel(model)
+}
+
+// SetOpenAIModel 指定 OpenAI 摘要所使用的模型名称。
+func (s *AISummaryService) SetOpenAIModel(model string) {
 	model = strings.TrimSpace(model)
 	if model != "" {
-		s.model = model
+		s.openAIModel = model
+	}
+}
+
+// SetDeepSeekModel 指定 DeepSeek 摘要所使用的模型名称。
+func (s *AISummaryService) SetDeepSeekModel(model string) {
+	model = strings.TrimSpace(model)
+	if model != "" {
+		s.deepSeekModel = model
 	}
 }
 
@@ -103,30 +131,57 @@ type chatCompletionResponse struct {
 	} `json:"error"`
 }
 
-// GenerateSummary 调用 OpenAI 接口生成文章摘要，当未配置 API Key 时返回 ErrOpenAIAPIKeyMissing。
+// GenerateSummary 调用当前配置的 AI 平台生成文章摘要，当未配置 API Key 时返回 ErrAIAPIKeyMissing。
 func (s *AISummaryService) GenerateSummary(ctx context.Context, input SummaryInput) (SummaryResult, error) {
 	settings, err := s.settings.GetSettings()
 	if err != nil {
 		return SummaryResult{}, fmt.Errorf("读取系统设置失败: %w", err)
 	}
-	apiKey := strings.TrimSpace(settings.OpenAIAPIKey)
+
+	provider := normalizeAIProvider(settings.AIProvider)
+	if provider == "" {
+		provider = AIProviderOpenAI
+	}
+
+	var (
+		apiKey string
+		base   string
+		model  string
+		label  string
+	)
+
+	switch provider {
+	case AIProviderDeepSeek:
+		apiKey = strings.TrimSpace(settings.DeepSeekAPIKey)
+		base = s.deepSeekBaseURL
+		if strings.TrimSpace(base) == "" {
+			base = "https://api.deepseek.com/v1"
+		}
+		model = s.deepSeekModel
+		if strings.TrimSpace(model) == "" {
+			model = defaultDeepSeekSummaryModel
+		}
+		label = "DeepSeek"
+	default:
+		apiKey = strings.TrimSpace(settings.OpenAIAPIKey)
+		base = s.openAIBaseURL
+		if strings.TrimSpace(base) == "" {
+			base = "https://api.openai.com/v1"
+		}
+		model = s.openAIModel
+		if strings.TrimSpace(model) == "" {
+			model = defaultOpenAISummaryModel
+		}
+		label = "OpenAI"
+	}
+
 	if apiKey == "" {
-		return SummaryResult{}, ErrOpenAIAPIKeyMissing
+		return SummaryResult{}, ErrAIAPIKeyMissing
 	}
 
 	client := s.http
 	if client == nil {
 		client = http.DefaultClient
-	}
-
-	base := s.baseURL
-	if base == "" {
-		base = "https://api.openai.com/v1"
-	}
-
-	model := s.model
-	if strings.TrimSpace(model) == "" {
-		model = defaultSummaryModel
 	}
 
 	maxTokens := input.MaxTokens
@@ -155,7 +210,7 @@ func (s *AISummaryService) GenerateSummary(ctx context.Context, input SummaryInp
 	endpoint := base + "/chat/completions"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
-		return SummaryResult{}, fmt.Errorf("创建 OpenAI 请求失败: %w", err)
+		return SummaryResult{}, fmt.Errorf("创建 %s 请求失败: %w", label, err)
 	}
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Content-Type", "application/json")
@@ -164,18 +219,18 @@ func (s *AISummaryService) GenerateSummary(ctx context.Context, input SummaryInp
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return SummaryResult{}, fmt.Errorf("请求 OpenAI 接口失败: %w", err)
+		return SummaryResult{}, fmt.Errorf("请求 %s 接口失败: %w", label, err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return SummaryResult{}, fmt.Errorf("读取 OpenAI 响应失败: %w", err)
+		return SummaryResult{}, fmt.Errorf("读取 %s 响应失败: %w", label, err)
 	}
 
 	var completion chatCompletionResponse
 	if err := json.Unmarshal(respBody, &completion); err != nil {
-		return SummaryResult{}, fmt.Errorf("解析 OpenAI 响应失败: %w", err)
+		return SummaryResult{}, fmt.Errorf("解析 %s 响应失败: %w", label, err)
 	}
 
 	if resp.StatusCode >= http.StatusBadRequest {
@@ -186,11 +241,11 @@ func (s *AISummaryService) GenerateSummary(ctx context.Context, input SummaryInp
 		if errMsg == "" {
 			errMsg = resp.Status
 		}
-		return SummaryResult{}, fmt.Errorf("OpenAI 摘要接口返回错误：%s", errMsg)
+		return SummaryResult{}, fmt.Errorf("%s 摘要接口返回错误：%s", label, errMsg)
 	}
 
 	if len(completion.Choices) == 0 {
-		return SummaryResult{}, fmt.Errorf("OpenAI 摘要接口未返回结果")
+		return SummaryResult{}, fmt.Errorf("%s 摘要接口未返回结果", label)
 	}
 
 	summary := strings.TrimSpace(completion.Choices[0].Message.Content)

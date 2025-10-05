@@ -49,28 +49,50 @@
                 {{template "admin_contact_manager" .}}
         </section>
 
-        <section id="openai" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+        <section id="ai" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
                 <header class="space-y-1">
-                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">OpenAI 集成</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">保存有效的 OpenAI API Key，以便后续功能调用。可先测试连通性。</p>
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">AI 服务集成</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">选择用于自动摘要等能力的模型平台，并维护对应的 API Key，可在此处快速测试连通性。</p>
                 </header>
-                <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
-                        <div class="flex-1">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
+                        <div class="flex-1 space-y-4">
                                 <label class="flex flex-col gap-2">
-                                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">OpenAI API Key</span>
-                                        <div class="flex items-center gap-2">
-                                                <input :type="showApiKey ? 'text' : 'password'" x-model="form.openaiApiKey" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="sk-..." autocomplete="off" />
-                                                <button type="button" @click="showApiKey = !showApiKey" class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"><span x-text="showApiKey ? '隐藏' : '显示'"></span></button>
-                                        </div>
-                                        <span class="text-xs text-slate-500 dark:text-slate-400">系统将以密文方式保存，可随时替换或清空。</span>
+                                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">当前 AI 平台<span class="ml-1 text-rose-500">*</span></span>
+                                        <select x-model="form.aiProvider" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20">
+                                                <option value="openai">OpenAI</option>
+                                                <option value="deepseek">DeepSeek</option>
+                                        </select>
+                                        <span class="text-xs text-slate-500 dark:text-slate-400">系统会按照所选平台调用对应接口，请确保 API Key 有效且额度充足。</span>
                                 </label>
+                                <div class="space-y-3">
+                                        <div x-show="form.aiProvider === 'openai'" x-cloak class="space-y-2">
+                                                <label class="flex flex-col gap-2">
+                                                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">OpenAI API Key</span>
+                                                        <div class="flex items-center gap-2">
+                                                                <input :type="showApiKey ? 'text' : 'password'" x-model="form.openaiApiKey" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="sk-..." autocomplete="off" />
+                                                                <button type="button" @click="showApiKey = !showApiKey" class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"><span x-text="showApiKey ? '隐藏' : '显示'"></span></button>
+                                                        </div>
+                                                        <span class="text-xs text-slate-500 dark:text-slate-400">从 OpenAI 控制台复制 Key，系统将以密文方式保存。</span>
+                                                </label>
+                                        </div>
+                                        <div x-show="form.aiProvider === 'deepseek'" x-cloak class="space-y-2">
+                                                <label class="flex flex-col gap-2">
+                                                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">DeepSeek API Key</span>
+                                                        <div class="flex items-center gap-2">
+                                                                <input :type="showDeepSeekKey ? 'text' : 'password'" x-model="form.deepseekApiKey" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="ds-..." autocomplete="off" />
+                                                                <button type="button" @click="showDeepSeekKey = !showDeepSeekKey" class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"><span x-text="showDeepSeekKey ? '隐藏' : '显示'"></span></button>
+                                                        </div>
+                                                        <span class="text-xs text-slate-500 dark:text-slate-400">请填写从 DeepSeek 开放平台获取的 Key，确保具备调用权限。</span>
+                                                </label>
+                                        </div>
+                                </div>
                         </div>
-                        <div class="flex gap-2">
-                                <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="testOpenAI()" :disabled="openaiTesting">
-                                        <span x-show="!openaiTesting">测试连通性</span>
-                                        <span x-show="openaiTesting">测试中...</span>
+                        <div class="flex gap-2 pt-1 lg:pt-6">
+                                <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="testAI()" :disabled="aiTesting">
+                                        <span x-show="!aiTesting" x-text="`测试${providerMeta().label}连通性`"></span>
+                                        <span x-show="aiTesting">测试中...</span>
                                 </button>
-                                <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300" @click="form.openaiApiKey = ''" x-show="form.openaiApiKey" x-cloak>清空</button>
+                                <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300" @click="clearCurrentAPIKey()" x-show="currentApiKey()" x-cloak>清空</button>
                         </div>
                 </div>
         </section>
@@ -92,12 +114,15 @@
                 return {
                         loading: false,
                         showApiKey: false,
+                        showDeepSeekKey: false,
                         logoUploading: false,
-                        openaiTesting: false,
+                        aiTesting: false,
                         form: {
                                 siteName: '',
                                 siteLogoUrl: '',
+                                aiProvider: 'openai',
                                 openaiApiKey: '',
+                                deepseekApiKey: '',
                         },
                         init() {
                                 this.fetchSettings();
@@ -125,11 +150,20 @@
                                                 }
                                                 if (data.settings) {
                                                         this.form = Object.assign(this.form, data.settings);
+                                                        this.normalizeProvider();
                                                 }
                                         })
                                         .catch(() => {
                                                 window.AdminUI.toast({ message: '加载系统设置失败', type: 'error' });
                                         });
+                        },
+                        normalizeProvider() {
+                                const provider = (this.form.aiProvider || '').toLowerCase();
+                                if (provider === 'deepseek') {
+                                        this.form.aiProvider = 'deepseek';
+                                } else {
+                                        this.form.aiProvider = 'openai';
+                                }
                         },
                         triggerLogoUpload() {
                                 if (this.logoUploading) {
@@ -179,18 +213,38 @@
                         clearLogo() {
                                 this.form.siteLogoUrl = '';
                         },
-                        async testOpenAI() {
-                                const apiKey = (this.form.openaiApiKey || '').trim();
+                        providerMeta() {
+                                const mapping = {
+                                        openai: { label: 'OpenAI', keyField: 'openaiApiKey' },
+                                        deepseek: { label: 'DeepSeek', keyField: 'deepseekApiKey' },
+                                };
+                                const provider = (this.form.aiProvider || '').toLowerCase();
+                                return mapping[provider] || mapping.openai;
+                        },
+                        currentApiKey() {
+                                const meta = this.providerMeta();
+                                const key = this.form[meta.keyField] || '';
+                                return key.trim();
+                        },
+                        clearCurrentAPIKey() {
+                                const meta = this.providerMeta();
+                                this.form[meta.keyField] = '';
+                        },
+                        async testAI() {
+                                this.normalizeProvider();
+                                const meta = this.providerMeta();
+                                const provider = (this.form.aiProvider || 'openai').toLowerCase();
+                                const apiKey = this.currentApiKey();
                                 if (!apiKey) {
-                                        window.AdminUI.toast({ message: '请先填写 OpenAI API Key', type: 'warning' });
+                                        window.AdminUI.toast({ message: `请先填写 ${meta.label} API Key`, type: 'warning' });
                                         return;
                                 }
-                                this.openaiTesting = true;
+                                this.aiTesting = true;
                                 try {
-                                        const response = await fetch('/admin/api/system/settings/openai/test', {
+                                        const response = await fetch('/admin/api/system/settings/ai/test', {
                                                 method: 'POST',
                                                 headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ apiKey }),
+                                                body: JSON.stringify({ provider, apiKey }),
                                         });
                                         const data = await response.json().catch(() => ({}));
                                         if (!response.ok || data.error) {
@@ -198,12 +252,12 @@
                                                 window.AdminUI.toast({ message, type: 'error' });
                                                 return;
                                         }
-                                        window.AdminUI.toast({ message: data.message || 'OpenAI 接口连接正常', type: 'success' });
+                                        window.AdminUI.toast({ message: data.message || `${meta.label} 接口连接正常`, type: 'success' });
                                 } catch (error) {
                                         const message = error && error.message ? error.message : '测试失败，请稍后重试';
                                         window.AdminUI.toast({ message, type: 'error' });
                                 } finally {
-                                        this.openaiTesting = false;
+                                        this.aiTesting = false;
                                 }
                         },
                         submit() {
@@ -211,6 +265,7 @@
                                         window.AdminUI.toast({ message: '请填写站点名称', type: 'warning' });
                                         return;
                                 }
+                                this.normalizeProvider();
                                 this.loading = true;
                                 fetch('/admin/api/system/settings', {
                                         method: 'PUT',
@@ -218,7 +273,9 @@
                                         body: JSON.stringify({
                                                 siteName: this.form.siteName,
                                                 siteLogoUrl: this.form.siteLogoUrl,
+                                                aiProvider: this.form.aiProvider,
                                                 openaiApiKey: this.form.openaiApiKey,
+                                                deepseekApiKey: this.form.deepseekApiKey,
                                         }),
                                 })
                                         .then(response => response.json())
@@ -229,6 +286,7 @@
                                                 }
                                                 if (data.settings) {
                                                         this.form = Object.assign(this.form, data.settings);
+                                                        this.normalizeProvider();
                                                 }
                                                 window.AdminUI.toast({ message: data.message || '系统设置已保存', type: 'success' });
                                         })

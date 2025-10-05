@@ -15,10 +15,14 @@ func (SystemSetting) TableName() string {
 }
 
 const (
-	// SettingKeySiteName 表示站点名称。
-	SettingKeySiteName = "site_name"
-	// SettingKeySiteLogoURL 表示站点 Logo 链接。
-	SettingKeySiteLogoURL = "site_logo_url"
-	// SettingKeyOpenAIAPIKey 表示 OpenAI API Key。
-	SettingKeyOpenAIAPIKey = "openai_api_key"
+        // SettingKeySiteName 表示站点名称。
+        SettingKeySiteName = "site_name"
+        // SettingKeySiteLogoURL 表示站点 Logo 链接。
+        SettingKeySiteLogoURL = "site_logo_url"
+        // SettingKeyOpenAIAPIKey 表示 OpenAI API Key。
+        SettingKeyOpenAIAPIKey = "openai_api_key"
+        // SettingKeyAIProvider 表示当前使用的 AI 平台。
+        SettingKeyAIProvider = "ai_provider"
+        // SettingKeyDeepSeekAPIKey 表示 DeepSeek API Key。
+        SettingKeyDeepSeekAPIKey = "deepseek_api_key"
 )

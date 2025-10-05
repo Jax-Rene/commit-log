@@ -350,7 +350,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 				api.PUT("/profile/contacts/order", handlers.ReorderProfileContacts)
 				api.GET("/system/settings", handlers.GetSystemSettings)
 				api.PUT("/system/settings", handlers.UpdateSystemSettings)
-				api.POST("/system/settings/openai/test", handlers.TestOpenAIConnection)
+				api.POST("/system/settings/ai/test", handlers.TestAIConnection)
 
 				// 图片上传接口
 				api.POST("/upload/image", handlers.UploadImage)
