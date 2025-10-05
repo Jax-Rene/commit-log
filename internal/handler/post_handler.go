@@ -2,9 +2,11 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/commitlog/internal/db"
@@ -94,7 +96,17 @@ func (a *API) CreatePost(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "文章创建成功", "post": post})
+	notices, warnings := a.maybeGenerateSummary(c, post)
+
+	response := gin.H{"message": "文章创建成功", "post": post}
+	if len(notices) > 0 {
+		response["notices"] = notices
+	}
+	if len(warnings) > 0 {
+		response["warnings"] = warnings
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // UpdatePost 更新文章
@@ -127,7 +139,16 @@ func (a *API) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "文章更新成功", "post": post})
+	notices, warnings := a.maybeGenerateSummary(c, post)
+	response := gin.H{"message": "文章更新成功", "post": post}
+	if len(notices) > 0 {
+		response["notices"] = notices
+	}
+	if len(warnings) > 0 {
+		response["warnings"] = warnings
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // DeletePost 删除文章
@@ -148,6 +169,41 @@ func (a *API) DeletePost(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "文章删除成功"})
+}
+
+func (a *API) maybeGenerateSummary(c *gin.Context, post *db.Post) (notices, warnings []string) {
+	if post == nil {
+		return nil, nil
+	}
+	if strings.TrimSpace(post.Summary) != "" {
+		return nil, nil
+	}
+	if !strings.EqualFold(strings.TrimSpace(post.Status), "published") {
+		return nil, nil
+	}
+	if a.summaries == nil {
+		return nil, []string{"未配置 AI 摘要服务，无法自动生成摘要"}
+	}
+	result, err := a.summaries.GenerateSummary(c.Request.Context(), service.SummaryInput{
+		Title:   post.Title,
+		Content: post.Content,
+	})
+	if err != nil {
+		warnings = append(warnings, fmt.Sprintf("自动摘要生成失败：%v", err))
+		return nil, warnings
+	}
+	summary := strings.TrimSpace(result.Summary)
+	if summary == "" {
+		warnings = append(warnings, "自动摘要生成失败：模型未返回内容")
+		return nil, warnings
+	}
+	if err := a.posts.UpdateSummary(post.ID, summary); err != nil {
+		warnings = append(warnings, "自动摘要保存失败，请稍后重试")
+		return nil, warnings
+	}
+	post.Summary = summary
+	notices = append(notices, "已自动生成文章摘要，可根据需要调整内容")
+	return notices, nil
 }
 
 // ShowPostList 渲染文章管理列表页面

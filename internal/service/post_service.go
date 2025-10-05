@@ -133,6 +133,12 @@ func (s *PostService) Update(id uint, input PostInput) (*db.Post, error) {
 	return post, nil
 }
 
+// UpdateSummary 仅更新文章摘要字段。
+func (s *PostService) UpdateSummary(id uint, summary string) error {
+	trimmed := strings.TrimSpace(summary)
+	return s.db.Model(&db.Post{}).Where("id = ?", id).Update("summary", trimmed).Error
+}
+
 // Delete removes a post by id.
 func (s *PostService) Delete(id uint) error {
 	if err := s.db.Delete(&db.Post{}, id).Error; err != nil {

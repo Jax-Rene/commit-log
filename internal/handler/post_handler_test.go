@@ -2,7 +2,9 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,11 +12,26 @@ import (
 	"testing"
 
 	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+type fakeSummaryGenerator struct {
+	summary string
+	err     error
+	calls   int
+}
+
+func (f *fakeSummaryGenerator) GenerateSummary(ctx context.Context, input service.SummaryInput) (service.SummaryResult, error) {
+	f.calls++
+	if f.err != nil {
+		return service.SummaryResult{}, f.err
+	}
+	return service.SummaryResult{Summary: f.summary}, nil
+}
 
 func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
@@ -124,6 +141,119 @@ func TestCreatePostRejectsUnknownTags(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestCreatePostAutoSummary(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	stub := &fakeSummaryGenerator{summary: "AI 生成的摘要"}
+	api.summaries = stub
+
+	payload := map[string]any{
+		"title":        "AI Test",
+		"content":      "这是正文内容。",
+		"summary":      "",
+		"status":       "published",
+		"tag_ids":      []uint{},
+		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+		"cover_width":  1200,
+		"cover_height": 800,
+	}
+
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.CreatePost(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var response map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if stub.calls != 1 {
+		t.Fatalf("expected summary generator to be called once, got %d", stub.calls)
+	}
+
+	var created db.Post
+	if err := db.DB.First(&created).Error; err != nil {
+		t.Fatalf("failed to load created post: %v", err)
+	}
+	if created.Summary != "AI 生成的摘要" {
+		t.Fatalf("expected summary to be updated, got %q", created.Summary)
+	}
+
+	postData, ok := response["post"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected response to include post object")
+	}
+	if summary, _ := postData["Summary"].(string); summary != "AI 生成的摘要" {
+		t.Fatalf("expected response summary to be updated, got %q", summary)
+	}
+
+	notices, _ := response["notices"].([]any)
+	if len(notices) == 0 {
+		t.Fatalf("expected notices to include AI summary hint")
+	}
+}
+
+func TestCreatePostAutoSummaryFailure(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	stub := &fakeSummaryGenerator{err: errors.New("network error")}
+	api.summaries = stub
+
+	payload := map[string]any{
+		"title":        "AI Failure",
+		"content":      "正文内容",
+		"summary":      "",
+		"status":       "published",
+		"tag_ids":      []uint{},
+		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+		"cover_width":  1200,
+		"cover_height": 800,
+	}
+
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.CreatePost(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var created db.Post
+	if err := db.DB.First(&created).Error; err != nil {
+		t.Fatalf("failed to load created post: %v", err)
+	}
+	if created.Summary != "" {
+		t.Fatalf("expected summary to remain empty on failure")
+	}
+
+	var response map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	warnings, _ := response["warnings"].([]any)
+	if len(warnings) == 0 {
+		t.Fatalf("expected warnings when summary generation fails")
 	}
 }
 

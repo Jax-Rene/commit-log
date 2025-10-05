@@ -424,18 +424,31 @@
 					method = 'PUT';
 				}
 
-				fetch(url, {
-					method,
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(payload)
-				})
-					.then(response => response.json())
-					.then(data => {
-                                                if (data.message) {
-                                                        if (this.editor && this.editor.clearAutosavedValue) {
-                                                                this.editor.clearAutosavedValue();
-                                                        }
-                                                        window.AdminUI.toast({ message: data.message, type: 'success' });
+                fetch(url, {
+                        method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                })
+                        .then(response => response.json())
+                        .then(data => {
+                                if (data.post && typeof data.post.summary === 'string') {
+                                        this.post.summary = data.post.summary;
+                                }
+                                if (Array.isArray(data.notices)) {
+                                        data.notices.forEach(message => {
+                                                window.AdminUI.toast({ message, type: 'info' });
+                                        });
+                                }
+                                if (Array.isArray(data.warnings)) {
+                                        data.warnings.forEach(message => {
+                                                window.AdminUI.toast({ message, type: 'warning' });
+                                        });
+                                }
+                                if (data.message) {
+                                        if (this.editor && this.editor.clearAutosavedValue) {
+                                                this.editor.clearAutosavedValue();
+                                        }
+                                        window.AdminUI.toast({ message: data.message, type: 'success' });
                                                         if (!window.location.pathname.includes('/edit')) {
                                                                 window.location.href = '/admin/posts';
                                                         }
