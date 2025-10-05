@@ -36,18 +36,22 @@ func (a *API) HealthCheck(c *gin.Context) {
 
 // ShowSystemSettings 渲染系统设置页面。
 func (a *API) ShowSystemSettings(c *gin.Context) {
-	c.HTML(http.StatusOK, "system_settings.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "system_settings.html", gin.H{
 		"title":           "系统设置",
 		"profileIconSVGs": view.ProfileIconSVGMap(),
 	})
 }
 
 type systemSettingsRequest struct {
-	SiteName       string `json:"siteName"`
-	SiteLogoURL    string `json:"siteLogoUrl"`
-	AIProvider     string `json:"aiProvider"`
-	OpenAIAPIKey   string `json:"openaiApiKey"`
-	DeepSeekAPIKey string `json:"deepseekApiKey"`
+	SiteName         string `json:"siteName"`
+	SiteLogoURL      string `json:"siteLogoUrl"`
+	SiteLogoURLLight string `json:"siteLogoUrlLight"`
+	SiteLogoURLDark  string `json:"siteLogoUrlDark"`
+	AIProvider       string `json:"aiProvider"`
+	OpenAIAPIKey     string `json:"openaiApiKey"`
+	DeepSeekAPIKey   string `json:"deepseekApiKey"`
+	AdminFooterText  string `json:"adminFooterText"`
+	PublicFooterText string `json:"publicFooterText"`
 }
 
 type aiTestRequest struct {
@@ -87,21 +91,29 @@ func (a *API) UpdateSystemSettings(c *gin.Context) {
 
 func (r systemSettingsRequest) toInput() service.SystemSettingsInput {
 	return service.SystemSettingsInput{
-		SiteName:       r.SiteName,
-		SiteLogoURL:    r.SiteLogoURL,
-		AIProvider:     r.AIProvider,
-		OpenAIAPIKey:   r.OpenAIAPIKey,
-		DeepSeekAPIKey: r.DeepSeekAPIKey,
+		SiteName:         r.SiteName,
+		SiteLogoURL:      r.SiteLogoURL,
+		SiteLogoURLLight: r.SiteLogoURLLight,
+		SiteLogoURLDark:  r.SiteLogoURLDark,
+		AIProvider:       r.AIProvider,
+		OpenAIAPIKey:     r.OpenAIAPIKey,
+		DeepSeekAPIKey:   r.DeepSeekAPIKey,
+		AdminFooterText:  r.AdminFooterText,
+		PublicFooterText: r.PublicFooterText,
 	}
 }
 
 func systemSettingsPayload(settings service.SystemSettings) gin.H {
 	return gin.H{
-		"siteName":       settings.SiteName,
-		"siteLogoUrl":    settings.SiteLogoURL,
-		"aiProvider":     settings.AIProvider,
-		"openaiApiKey":   settings.OpenAIAPIKey,
-		"deepseekApiKey": settings.DeepSeekAPIKey,
+		"siteName":         settings.SiteName,
+		"siteLogoUrl":      settings.SiteLogoURL,
+		"siteLogoUrlLight": settings.SiteLogoURLLight,
+		"siteLogoUrlDark":  settings.SiteLogoURLDark,
+		"aiProvider":       settings.AIProvider,
+		"openaiApiKey":     settings.OpenAIAPIKey,
+		"deepseekApiKey":   settings.DeepSeekAPIKey,
+		"adminFooterText":  settings.AdminFooterText,
+		"publicFooterText": settings.PublicFooterText,
 	}
 }
 

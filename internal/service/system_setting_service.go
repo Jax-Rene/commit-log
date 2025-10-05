@@ -25,11 +25,15 @@ var supportedAIProviders = []string{AIProviderOpenAI, AIProviderDeepSeek}
 
 // SystemSettings 描述后台可配置的系统信息。
 type SystemSettings struct {
-	SiteName       string
-	SiteLogoURL    string
-	AIProvider     string
-	OpenAIAPIKey   string
-	DeepSeekAPIKey string
+	SiteName         string
+	SiteLogoURL      string
+	SiteLogoURLLight string
+	SiteLogoURLDark  string
+	AIProvider       string
+	OpenAIAPIKey     string
+	DeepSeekAPIKey   string
+	AdminFooterText  string
+	PublicFooterText string
 }
 
 // ErrAIAPIKeyMissing 表示未提供必需的 AI 平台 API Key。
@@ -40,11 +44,15 @@ var ErrOpenAIAPIKeyMissing = ErrAIAPIKeyMissing
 
 // SystemSettingsInput 用于更新系统设置。
 type SystemSettingsInput struct {
-	SiteName       string
-	SiteLogoURL    string
-	AIProvider     string
-	OpenAIAPIKey   string
-	DeepSeekAPIKey string
+	SiteName         string
+	SiteLogoURL      string
+	SiteLogoURLLight string
+	SiteLogoURLDark  string
+	AIProvider       string
+	OpenAIAPIKey     string
+	DeepSeekAPIKey   string
+	AdminFooterText  string
+	PublicFooterText string
 }
 
 // SystemSettingService 提供系统设置的读取与更新能力。
@@ -72,6 +80,10 @@ type httpDoer interface {
 var settingKeys = []string{
 	db.SettingKeySiteName,
 	db.SettingKeySiteLogoURL,
+	db.SettingKeySiteLogoURLLight,
+	db.SettingKeySiteLogoURLDark,
+	db.SettingKeySiteAdminFooter,
+	db.SettingKeySitePublicFooter,
 	db.SettingKeyAIProvider,
 	db.SettingKeyOpenAIAPIKey,
 	db.SettingKeyDeepSeekAPIKey,
@@ -79,7 +91,12 @@ var settingKeys = []string{
 
 // GetSettings 读取系统设置，如未设置将返回默认值。
 func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
-	result := SystemSettings{SiteName: "CommitLog", AIProvider: AIProviderOpenAI}
+	result := SystemSettings{
+		SiteName:         "CommitLog",
+		AIProvider:       AIProviderOpenAI,
+		AdminFooterText:  "日拱一卒，功不唐捐",
+		PublicFooterText: "激发创造，延迟满足",
+	}
 
 	var records []db.SystemSetting
 	if err := s.db.Where("key IN ?", settingKeys).Find(&records).Error; err != nil {
@@ -94,6 +111,18 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 			}
 		case db.SettingKeySiteLogoURL:
 			result.SiteLogoURL = record.Value
+		case db.SettingKeySiteLogoURLLight:
+			result.SiteLogoURLLight = record.Value
+		case db.SettingKeySiteLogoURLDark:
+			result.SiteLogoURLDark = record.Value
+		case db.SettingKeySiteAdminFooter:
+			if strings.TrimSpace(record.Value) != "" {
+				result.AdminFooterText = record.Value
+			}
+		case db.SettingKeySitePublicFooter:
+			if strings.TrimSpace(record.Value) != "" {
+				result.PublicFooterText = record.Value
+			}
 		case db.SettingKeyAIProvider:
 			if provider := normalizeAIProvider(record.Value); provider != "" {
 				result.AIProvider = provider
@@ -103,6 +132,22 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 		case db.SettingKeyDeepSeekAPIKey:
 			result.DeepSeekAPIKey = record.Value
 		}
+	}
+
+	if strings.TrimSpace(result.SiteLogoURLLight) == "" {
+		result.SiteLogoURLLight = strings.TrimSpace(result.SiteLogoURL)
+	}
+	if strings.TrimSpace(result.SiteLogoURLDark) == "" {
+		result.SiteLogoURLDark = strings.TrimSpace(result.SiteLogoURL)
+	}
+	if strings.TrimSpace(result.SiteLogoURL) == "" {
+		result.SiteLogoURL = result.SiteLogoURLLight
+	}
+	if strings.TrimSpace(result.SiteLogoURLLight) == "" {
+		result.SiteLogoURLLight = result.SiteLogoURLDark
+	}
+	if strings.TrimSpace(result.SiteLogoURLDark) == "" {
+		result.SiteLogoURLDark = result.SiteLogoURLLight
 	}
 
 	return result, nil
@@ -116,22 +161,59 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 	}
 
 	sanitized := SystemSettings{
-		SiteName:       strings.TrimSpace(input.SiteName),
-		SiteLogoURL:    strings.TrimSpace(input.SiteLogoURL),
-		AIProvider:     provider,
-		OpenAIAPIKey:   strings.TrimSpace(input.OpenAIAPIKey),
-		DeepSeekAPIKey: strings.TrimSpace(input.DeepSeekAPIKey),
+		SiteName:         strings.TrimSpace(input.SiteName),
+		SiteLogoURL:      strings.TrimSpace(input.SiteLogoURL),
+		SiteLogoURLLight: strings.TrimSpace(input.SiteLogoURLLight),
+		SiteLogoURLDark:  strings.TrimSpace(input.SiteLogoURLDark),
+		AIProvider:       provider,
+		OpenAIAPIKey:     strings.TrimSpace(input.OpenAIAPIKey),
+		DeepSeekAPIKey:   strings.TrimSpace(input.DeepSeekAPIKey),
+		AdminFooterText:  strings.TrimSpace(input.AdminFooterText),
+		PublicFooterText: strings.TrimSpace(input.PublicFooterText),
 	}
 
 	if sanitized.SiteName == "" {
 		sanitized.SiteName = "CommitLog"
+	}
+	if sanitized.SiteLogoURLLight == "" {
+		sanitized.SiteLogoURLLight = sanitized.SiteLogoURL
+	}
+	if sanitized.SiteLogoURLDark == "" {
+		sanitized.SiteLogoURLDark = sanitized.SiteLogoURLLight
+	}
+	if sanitized.SiteLogoURL == "" {
+		sanitized.SiteLogoURL = sanitized.SiteLogoURLLight
+	}
+	if sanitized.SiteLogoURLLight == "" {
+		sanitized.SiteLogoURLLight = sanitized.SiteLogoURLDark
+	}
+	if sanitized.SiteLogoURLDark == "" {
+		sanitized.SiteLogoURLDark = sanitized.SiteLogoURLLight
+	}
+	if sanitized.AdminFooterText == "" {
+		sanitized.AdminFooterText = "日拱一卒，功不唐捐"
+	}
+	if sanitized.PublicFooterText == "" {
+		sanitized.PublicFooterText = "激发创造，延迟满足"
 	}
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		if err := upsertSetting(tx, db.SettingKeySiteName, sanitized.SiteName); err != nil {
 			return err
 		}
-		if err := upsertSetting(tx, db.SettingKeySiteLogoURL, sanitized.SiteLogoURL); err != nil {
+		if err := upsertSetting(tx, db.SettingKeySiteLogoURL, sanitized.SiteLogoURLLight); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySiteLogoURLLight, sanitized.SiteLogoURLLight); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySiteLogoURLDark, sanitized.SiteLogoURLDark); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySiteAdminFooter, sanitized.AdminFooterText); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySitePublicFooter, sanitized.PublicFooterText); err != nil {
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeyAIProvider, sanitized.AIProvider); err != nil {

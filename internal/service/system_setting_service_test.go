@@ -48,8 +48,14 @@ func TestSystemSettingServiceDefaults(t *testing.T) {
 	if settings.SiteName != "CommitLog" {
 		t.Fatalf("expected default site name CommitLog, got %s", settings.SiteName)
 	}
-	if settings.SiteLogoURL != "" || settings.OpenAIAPIKey != "" || settings.DeepSeekAPIKey != "" {
-		t.Fatalf("expected other fields to be empty, got %#v", settings)
+	if settings.SiteLogoURL != "" || settings.SiteLogoURLLight != "" || settings.SiteLogoURLDark != "" || settings.OpenAIAPIKey != "" || settings.DeepSeekAPIKey != "" {
+		t.Fatalf("expected keys to be empty, got %#v", settings)
+	}
+	if settings.AdminFooterText != "日拱一卒，功不唐捐" {
+		t.Fatalf("unexpected admin footer default: %q", settings.AdminFooterText)
+	}
+	if settings.PublicFooterText != "激发创造，延迟满足" {
+		t.Fatalf("unexpected public footer default: %q", settings.PublicFooterText)
 	}
 	if settings.AIProvider != AIProviderOpenAI {
 		t.Fatalf("expected default provider openai, got %s", settings.AIProvider)
@@ -62,11 +68,15 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 
 	svc := NewSystemSettingService(db.DB)
 	input := SystemSettingsInput{
-		SiteName:       " CommitLog 社区 ",
-		SiteLogoURL:    "https://example.com/logo.png",
-		AIProvider:     "deepseek",
-		OpenAIAPIKey:   "sk-xxxx",
-		DeepSeekAPIKey: "ds-12345",
+		SiteName:         " CommitLog 社区 ",
+		SiteLogoURL:      "https://example.com/logo.png",
+		SiteLogoURLLight: "https://example.com/logo-light.png",
+		SiteLogoURLDark:  "https://example.com/logo-dark.png",
+		AdminFooterText:  "后台页脚",
+		PublicFooterText: "前台页脚",
+		AIProvider:       "deepseek",
+		OpenAIAPIKey:     "sk-xxxx",
+		DeepSeekAPIKey:   "ds-12345",
 	}
 
 	saved, err := svc.UpdateSettings(input)
@@ -89,8 +99,20 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 		t.Fatalf("get settings failed: %v", err)
 	}
 
-	if fetched.SiteLogoURL != input.SiteLogoURL {
-		t.Fatalf("expected site logo url %q, got %q", input.SiteLogoURL, fetched.SiteLogoURL)
+	if fetched.SiteLogoURLLight != strings.TrimSpace(input.SiteLogoURLLight) {
+		t.Fatalf("expected light logo %q, got %q", input.SiteLogoURLLight, fetched.SiteLogoURLLight)
+	}
+	if fetched.SiteLogoURLDark != strings.TrimSpace(input.SiteLogoURLDark) {
+		t.Fatalf("expected dark logo %q, got %q", input.SiteLogoURLDark, fetched.SiteLogoURLDark)
+	}
+	if fetched.SiteLogoURL != fetched.SiteLogoURLLight {
+		t.Fatalf("expected legacy logo consistent with light variant, got %q vs %q", fetched.SiteLogoURL, fetched.SiteLogoURLLight)
+	}
+	if fetched.AdminFooterText != input.AdminFooterText {
+		t.Fatalf("expected admin footer %q, got %q", input.AdminFooterText, fetched.AdminFooterText)
+	}
+	if fetched.PublicFooterText != input.PublicFooterText {
+		t.Fatalf("expected public footer %q, got %q", input.PublicFooterText, fetched.PublicFooterText)
 	}
 	if fetched.AIProvider != AIProviderDeepSeek {
 		t.Fatalf("expected provider %q, got %q", AIProviderDeepSeek, fetched.AIProvider)

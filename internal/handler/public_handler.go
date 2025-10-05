@@ -95,7 +95,7 @@ func (a *API) ShowHome(c *gin.Context) {
 
 	posts, err := a.posts.List(filter)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "home.html", gin.H{
+		a.renderHTML(c, http.StatusInternalServerError, "home.html", gin.H{
 			"title": "首页",
 			"error": "获取文章失败",
 			"year":  time.Now().Year(),
@@ -107,7 +107,7 @@ func (a *API) ShowHome(c *gin.Context) {
 
 	queryParams := buildQueryParams(search, tags)
 
-	c.HTML(http.StatusOK, "home.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "home.html", gin.H{
 		"title":       "首页",
 		"search":      search,
 		"tags":        tags,
@@ -148,7 +148,7 @@ func (a *API) LoadMorePosts(c *gin.Context) {
 
 	hasMore := page < posts.TotalPages
 
-	c.HTML(http.StatusOK, "post_cards.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "post_cards.html", gin.H{
 		"posts":       posts.Posts,
 		"hasMore":     hasMore,
 		"nextPage":    page + 1,
@@ -193,7 +193,7 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 
 	htmlContent, err := renderMarkdown(post.Content)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "post_detail.html", gin.H{
+		a.renderHTML(c, http.StatusInternalServerError, "post_detail.html", gin.H{
 			"title":    "文章详情",
 			"error":    "渲染内容失败",
 			"year":     time.Now().Year(),
@@ -202,7 +202,7 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		return
 	}
 
-	c.HTML(http.StatusOK, "post_detail.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "post_detail.html", gin.H{
 		"title":          post.Title,
 		"post":           post,
 		"content":        htmlContent,
@@ -217,7 +217,7 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 func (a *API) ShowTagArchive(c *gin.Context) {
 	stats := a.buildTagStats()
 
-	c.HTML(http.StatusOK, "tag_list.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "tag_list.html", gin.H{
 		"title": "标签",
 		"tags":  stats,
 		"year":  time.Now().Year(),
@@ -257,7 +257,7 @@ func (a *API) ShowAbout(c *gin.Context) {
 
 	page, err := a.pages.GetBySlug("about")
 	if err != nil {
-		c.HTML(http.StatusOK, "about.html", gin.H{
+		a.renderHTML(c, http.StatusOK, "about.html", gin.H{
 			"title": "关于",
 			"page": gin.H{
 				"Title":   "关于我",
@@ -275,7 +275,7 @@ func (a *API) ShowAbout(c *gin.Context) {
 		htmlContent = template.HTML("<p class=\"text-sm text-slate-600\">内容暂时无法展示。</p>")
 	}
 
-	c.HTML(http.StatusOK, "about.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "about.html", gin.H{
 		"title":    page.Title,
 		"page":     page,
 		"content":  htmlContent,

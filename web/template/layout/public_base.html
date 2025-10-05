@@ -6,8 +6,8 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="color-scheme" content="light dark">
-	<title>{{if .title}}{{.title}} · {{end}}CommitLog</title>
-	<meta name="description" content="CommitLog - AI 全栈工程师的技术与成长记录">
+	<title>{{if .title}}{{.title}} · {{end}}{{.site.name}}</title>
+	<meta name="description" content="{{.site.name}} - AI 全栈工程师的技术与成长记录">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -27,7 +27,19 @@
 		<nav class="mx-auto flex max-w-6xl items-center gap-6 px-4 py-2">
 			<div class="flex flex-1 items-center gap-3">
 				<a href="/" class="flex items-center gap-3">
-					<img src="/static/icon/avatar.png" alt="Logo" class="h-11 w-11" />
+					<div class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
+						{{if or .site.logoUrlLight .site.logoUrlDark}}
+							{{if .site.logoUrlLight}}
+							<img src="{{.site.logoUrlLight}}" alt="{{.site.name}} Logo" class="h-11 w-11 rounded-2xl object-cover dark:hidden" />
+							{{end}}
+							{{if .site.logoUrlDark}}
+							<img src="{{.site.logoUrlDark}}" alt="{{.site.name}} Logo" class="hidden h-11 w-11 rounded-2xl object-cover dark:block" />
+							{{end}}
+						{{else}}
+							<span class="text-lg font-semibold">{{initials .site.name}}</span>
+						{{end}}
+					</div>
+					<span class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{.site.name}}</span>
 				</a>
 			</div>
 
@@ -61,7 +73,10 @@
 		class="border-t border-slate-200 bg-white/90 backdrop-blur supports-backdrop-blur:bg-white/70 dark:border-slate-800 dark:bg-slate-950/80">
 		<div
 			class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-			<span>© {{if .year}}{{.year}}{{else}}CommitLog{{end}} · 激发创造，延迟满足</span>
+			<span>© {{if .year}}{{.year}} · {{.site.name}}{{else}}{{.site.name}}{{end}}</span>
+			{{if .site.publicFooter}}
+			<span>{{.site.publicFooter}}</span>
+			{{end}}
 		</div>
 	</footer>
 </body>

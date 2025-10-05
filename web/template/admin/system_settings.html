@@ -13,35 +13,80 @@
                                 <input type="text" x-model="form.siteName" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="例如：CommitLog" />
                                 <span class="text-xs text-slate-500 dark:text-slate-400">用于浏览器标题、后台导航等位置。</span>
                         </label>
-                        <div class="flex flex-col gap-3">
-                                <span class="inline-flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">站点 Logo<span class="text-rose-500">*</span></span>
-                                <div class="rounded-2xl border border-dashed border-slate-200 p-4 transition-colors dark:border-slate-700/80">
-                                        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                                <div class="flex items-center gap-4">
-                                                        <div class="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-                                                                <template x-if="form.siteLogoUrl">
-                                                                        <img :src="form.siteLogoUrl" alt="站点 Logo 预览" class="h-full w-full object-cover" @error="form.siteLogoUrl = ''" />
-                                                                </template>
-                                                                <template x-if="!form.siteLogoUrl">
-                                                                        <span class="text-xs font-medium text-slate-400 dark:text-slate-500">暂无 Logo</span>
-                                                                </template>
-                                                        </div>
-                                                        <div class="max-w-xs space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                                                                <p>上传图片后会同步到后台导航和前台品牌位，推荐使用 1:1 的透明 PNG / SVG。</p>
-                                                                <p x-show="form.siteLogoUrl" x-text="form.siteLogoUrl" class="truncate text-[11px] text-slate-400 dark:text-slate-500" x-cloak></p>
-                                                        </div>
-                                                </div>
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                        <input type="file" accept="image/*" class="hidden" x-ref="logoInput" @change="handleLogoSelected($event)" />
-                                                        <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="triggerLogoUpload()" :disabled="logoUploading">
-                                                                <span x-show="!logoUploading">上传图片</span>
-                                                                <span x-show="logoUploading">上传中...</span>
-                                                        </button>
-                                                        <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300" @click="clearLogo()" x-show="form.siteLogoUrl" x-cloak>移除 Logo</button>
-                                                </div>
-                                        </div>
-                                </div>
-                        </div>
+			<div class="space-y-6">
+				<div class="flex flex-col gap-2">
+					<span class="inline-flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">站点 Logo<span class="text-rose-500">*</span></span>
+					<p class="text-xs text-slate-500 dark:text-slate-400">请分别上传适用于浅色与深色模式的 Logo，建议使用透明背景 PNG 或 SVG。</p>
+				</div>
+				<div class="grid gap-6 md:grid-cols-2">
+					<div class="flex flex-col gap-3">
+						<span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">浅色模式</span>
+						<div class="rounded-2xl border border-dashed border-slate-200 p-4 transition-colors dark:border-slate-700/80">
+							<div class="flex items-center gap-4">
+								<div class="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+									<template x-if="form.siteLogoUrlLight">
+										<img :src="form.siteLogoUrlLight" alt="浅色 Logo 预览" class="h-full w-full object-cover" @error="form.siteLogoUrlLight = ''" />
+									</template>
+									<template x-if="!form.siteLogoUrlLight">
+										<span class="text-xs font-medium text-slate-400 dark:text-slate-500">暂无 Logo</span>
+									</template>
+								</div>
+								<div class="max-w-xs space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+									<p>浅色模式下用于前台与后台导航的品牌展示。</p>
+									<p x-show="form.siteLogoUrlLight" x-text="form.siteLogoUrlLight" class="truncate text-[11px] text-slate-400 dark:text-slate-500" x-cloak></p>
+								</div>
+							</div>
+							<div class="mt-4 flex flex-wrap items-center gap-2">
+								<input type="file" accept="image/*" class="hidden" x-ref="logoInputLight" @change="handleLogoSelected($event, 'light')" />
+								<button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="triggerLogoUpload('light')" :disabled="logoUploadingLight">
+									<span x-show="!logoUploadingLight">上传图片</span>
+									<span x-show="logoUploadingLight">上传中...</span>
+								</button>
+								<button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300" @click="clearLogo('light')" x-show="form.siteLogoUrlLight" x-cloak>移除 Logo</button>
+							</div>
+						</div>
+					</div>
+					<div class="flex flex-col gap-3">
+						<span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">深色模式</span>
+						<div class="rounded-2xl border border-dashed border-slate-200 p-4 transition-colors dark:border-slate-700/80">
+							<div class="flex items-center gap-4">
+								<div class="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+									<template x-if="form.siteLogoUrlDark">
+										<img :src="form.siteLogoUrlDark" alt="深色 Logo 预览" class="h-full w-full object-cover" @error="form.siteLogoUrlDark = ''" />
+									</template>
+									<template x-if="!form.siteLogoUrlDark">
+										<span class="text-xs font-medium text-slate-400 dark:text-slate-500">暂无 Logo</span>
+									</template>
+								</div>
+								<div class="max-w-xs space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+									<p>深色模式下用于品牌展示的图标，可适当提升亮度对比。</p>
+									<p x-show="form.siteLogoUrlDark" x-text="form.siteLogoUrlDark" class="truncate text-[11px] text-slate-400 dark:text-slate-500" x-cloak></p>
+								</div>
+							</div>
+							<div class="mt-4 flex flex-wrap items-center gap-2">
+								<input type="file" accept="image/*" class="hidden" x-ref="logoInputDark" @change="handleLogoSelected($event, 'dark')" />
+								<button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="triggerLogoUpload('dark')" :disabled="logoUploadingDark">
+									<span x-show="!logoUploadingDark">上传图片</span>
+									<span x-show="logoUploadingDark">上传中...</span>
+								</button>
+								<button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300" @click="clearLogo('dark')" x-show="form.siteLogoUrlDark" x-cloak>移除 Logo</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="mt-4">
+					<label class="flex flex-col gap-2">
+						<span class="text-sm font-medium text-slate-700 dark:text-slate-200">后台页脚文案</span>
+						<input type="text" x-model="form.adminFooterText" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="例如：日拱一卒，功不唐捐" />
+						<span class="text-xs text-slate-500 dark:text-slate-400">展示于后台页面底部，可填写团队座右铭或提示语。</span>
+					</label>
+					<label class="flex flex-col gap-2">
+						<span class="text-sm font-medium text-slate-700 dark:text-slate-200">前台页脚文案</span>
+						<input type="text" x-model="form.publicFooterText" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="例如：激发创造，延迟满足" />
+						<span class="text-xs text-slate-500 dark:text-slate-400">展示于前台页脚，可用于呈现品牌口号或版权信息。</span>
+					</label>
+				</div>
+			</div>
                 </div>
         </section>
 
@@ -115,15 +160,20 @@
                         loading: false,
                         showApiKey: false,
                         showDeepSeekKey: false,
-                        logoUploading: false,
                         aiTesting: false,
-                        form: {
-                                siteName: '',
-                                siteLogoUrl: '',
-                                aiProvider: 'openai',
-                                openaiApiKey: '',
-                                deepseekApiKey: '',
-                        },
+				form: {
+					siteName: '',
+					siteLogoUrl: '',
+					siteLogoUrlLight: '',
+					siteLogoUrlDark: '',
+					adminFooterText: '',
+					publicFooterText: '',
+					aiProvider: 'openai',
+					openaiApiKey: '',
+					deepseekApiKey: '',
+				},
+				logoUploadingLight: false,
+				logoUploadingDark: false,
                         init() {
                                 this.fetchSettings();
                                 this.scrollToHash();
@@ -140,79 +190,111 @@
                                         }
                                 });
                         },
-                        fetchSettings() {
-                                fetch('/admin/api/system/settings')
-                                        .then(response => response.json())
-                                        .then(data => {
-                                                if (data.error) {
-                                                        window.AdminUI.toast({ message: data.error, type: 'error' });
-                                                        return;
-                                                }
-                                                if (data.settings) {
-                                                        this.form = Object.assign(this.form, data.settings);
-                                                        this.normalizeProvider();
-                                                }
-                                        })
+				fetchSettings() {
+					fetch('/admin/api/system/settings')
+						.then(response => response.json())
+						.then(data => {
+							if (data.error) {
+								window.AdminUI.toast({ message: data.error, type: 'error' });
+								return;
+							}
+							if (data.settings) {
+								this.form = Object.assign(this.form, data.settings);
+								this.applyLogoFallbacks();
+								this.normalizeProvider();
+							}
+						})
                                         .catch(() => {
                                                 window.AdminUI.toast({ message: '加载系统设置失败', type: 'error' });
                                         });
                         },
-                        normalizeProvider() {
-                                const provider = (this.form.aiProvider || '').toLowerCase();
-                                if (provider === 'deepseek') {
-                                        this.form.aiProvider = 'deepseek';
-                                } else {
-                                        this.form.aiProvider = 'openai';
-                                }
-                        },
-                        triggerLogoUpload() {
-                                if (this.logoUploading) {
-                                        return;
-                                }
-                                if (this.$refs.logoInput) {
-                                        this.$refs.logoInput.click();
-                                }
-                        },
-                        handleLogoSelected(event) {
-                                const files = event.target?.files;
-                                if (!files || files.length === 0) {
-                                        return;
-                                }
-                                const [file] = files;
-                                event.target.value = '';
-                                if (!file || !file.type.startsWith('image/')) {
-                                        window.AdminUI.toast({ message: '请选择图片文件', type: 'warning' });
-                                        return;
-                                }
-                                this.uploadLogo(file);
-                        },
-                        async uploadLogo(file) {
-                                this.logoUploading = true;
-                                const formData = new FormData();
-                                formData.append('image', file);
-                                try {
-                                        const response = await fetch('/admin/api/upload/image', {
-                                                method: 'POST',
-                                                body: formData,
-                                        });
-                                        const data = await response.json().catch(() => ({}));
-                                        if (!response.ok || data.error || !data.data || !data.data.url) {
-                                                const message = data && (data.error || data.message) ? (data.error || data.message) : 'Logo 上传失败，请稍后重试';
-                                                window.AdminUI.toast({ message, type: 'error' });
-                                                return;
-                                        }
-                                        this.form.siteLogoUrl = data.data.url;
-                                        window.AdminUI.toast({ message: 'Logo 上传成功', type: 'success' });
-                                } catch (error) {
-                                        const message = error && error.message ? error.message : 'Logo 上传失败，请稍后重试';
-                                        window.AdminUI.toast({ message, type: 'error' });
-                                } finally {
-                                        this.logoUploading = false;
-                                }
-                        },
-                        clearLogo() {
-                                this.form.siteLogoUrl = '';
-                        },
+				normalizeProvider() {
+					const provider = (this.form.aiProvider || '').toLowerCase();
+					if (provider === 'deepseek') {
+						this.form.aiProvider = 'deepseek';
+					} else {
+						this.form.aiProvider = 'openai';
+					}
+				},
+				applyLogoFallbacks() {
+					const light = this.form.siteLogoUrlLight?.trim() || '';
+					const dark = this.form.siteLogoUrlDark?.trim() || '';
+					const legacy = this.form.siteLogoUrl?.trim() || '';
+					if (!light && legacy) {
+						this.form.siteLogoUrlLight = legacy;
+					}
+					if (!this.form.siteLogoUrlDark?.trim()) {
+						this.form.siteLogoUrlDark = this.form.siteLogoUrlLight || legacy || this.form.siteLogoUrlDark;
+					}
+					if (!this.form.siteLogoUrlLight?.trim()) {
+						this.form.siteLogoUrlLight = this.form.siteLogoUrlDark || legacy;
+					}
+					this.form.siteLogoUrl = this.form.siteLogoUrlLight || this.form.siteLogoUrlDark || '';
+				},
+				triggerLogoUpload(mode) {
+					const flag = mode === 'dark' ? 'logoUploadingDark' : 'logoUploadingLight';
+					const refName = mode === 'dark' ? 'logoInputDark' : 'logoInputLight';
+					if (this[flag]) {
+						return;
+					}
+					const input = this.$refs[refName];
+					if (input) {
+						input.click();
+					}
+				},
+				handleLogoSelected(event, mode) {
+					const files = event?.target?.files;
+					if (!files || files.length === 0) {
+						return;
+					}
+					const [file] = files;
+					event.target.value = '';
+					if (!file || !file.type.startsWith('image/')) {
+						window.AdminUI.toast({ message: '请选择图片文件', type: 'warning' });
+						return;
+					}
+					this.uploadLogo(file, mode);
+				},
+				async uploadLogo(file, mode) {
+					const flag = mode === 'dark' ? 'logoUploadingDark' : 'logoUploadingLight';
+					this[flag] = true;
+					const formData = new FormData();
+					formData.append('image', file);
+					try {
+						const response = await fetch('/admin/api/upload/image', {
+							method: 'POST',
+							body: formData,
+						});
+						const data = await response.json().catch(() => ({}));
+						if (!response.ok || data.error || !data.data || !data.data.url) {
+							const message = data && (data.error || data.message) ? (data.error || data.message) : 'Logo 上传失败，请稍后重试';
+							window.AdminUI.toast({ message, type: 'error' });
+							return;
+						}
+						if (mode === 'dark') {
+							this.form.siteLogoUrlDark = data.data.url;
+						} else {
+							this.form.siteLogoUrlLight = data.data.url;
+							this.form.siteLogoUrl = data.data.url;
+						}
+						this.applyLogoFallbacks();
+						window.AdminUI.toast({ message: 'Logo 上传成功', type: 'success' });
+					} catch (error) {
+						const message = error && error.message ? error.message : 'Logo 上传失败，请稍后重试';
+						window.AdminUI.toast({ message, type: 'error' });
+					} finally {
+						this[flag] = false;
+					}
+				},
+				clearLogo(mode) {
+					if (mode === 'dark') {
+						this.form.siteLogoUrlDark = '';
+					} else {
+						this.form.siteLogoUrlLight = '';
+						this.form.siteLogoUrl = '';
+					}
+					this.applyLogoFallbacks();
+				},
                         providerMeta() {
                                 const mapping = {
                                         openai: { label: 'OpenAI', keyField: 'openaiApiKey' },
@@ -260,34 +342,48 @@
                                         this.aiTesting = false;
                                 }
                         },
-                        submit() {
-                                if (!this.form.siteName.trim()) {
-                                        window.AdminUI.toast({ message: '请填写站点名称', type: 'warning' });
-                                        return;
-                                }
-                                this.normalizeProvider();
-                                this.loading = true;
-                                fetch('/admin/api/system/settings', {
-                                        method: 'PUT',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                                siteName: this.form.siteName,
-                                                siteLogoUrl: this.form.siteLogoUrl,
-                                                aiProvider: this.form.aiProvider,
-                                                openaiApiKey: this.form.openaiApiKey,
-                                                deepseekApiKey: this.form.deepseekApiKey,
-                                        }),
-                                })
-                                        .then(response => response.json())
-                                        .then(data => {
-                                                if (data.error) {
-                                                        window.AdminUI.toast({ message: data.error, type: 'error' });
-                                                        return;
-                                                }
-                                                if (data.settings) {
-                                                        this.form = Object.assign(this.form, data.settings);
-                                                        this.normalizeProvider();
-                                                }
+				submit() {
+					if (!this.form.siteName.trim()) {
+						window.AdminUI.toast({ message: '请填写站点名称', type: 'warning' });
+						return;
+					}
+					this.applyLogoFallbacks();
+					if (!this.form.siteLogoUrlLight?.trim()) {
+						window.AdminUI.toast({ message: '请上传浅色模式 Logo', type: 'warning' });
+						return;
+					}
+					if (!this.form.siteLogoUrlDark?.trim()) {
+						window.AdminUI.toast({ message: '请上传深色模式 Logo', type: 'warning' });
+						return;
+					}
+					this.normalizeProvider();
+					this.loading = true;
+					fetch('/admin/api/system/settings', {
+						method: 'PUT',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							siteName: this.form.siteName,
+							siteLogoUrl: this.form.siteLogoUrlLight,
+							siteLogoUrlLight: this.form.siteLogoUrlLight,
+							siteLogoUrlDark: this.form.siteLogoUrlDark,
+							adminFooterText: this.form.adminFooterText,
+							publicFooterText: this.form.publicFooterText,
+							aiProvider: this.form.aiProvider,
+							openaiApiKey: this.form.openaiApiKey,
+							deepseekApiKey: this.form.deepseekApiKey,
+						}),
+					})
+						.then(response => response.json())
+						.then(data => {
+							if (data.error) {
+								window.AdminUI.toast({ message: data.error, type: 'error' });
+								return;
+							}
+							if (data.settings) {
+								this.form = Object.assign(this.form, data.settings);
+								this.applyLogoFallbacks();
+								this.normalizeProvider();
+							}
                                                 window.AdminUI.toast({ message: data.message || '系统设置已保存', type: 'success' });
                                         })
                                         .catch(() => {

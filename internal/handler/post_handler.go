@@ -296,7 +296,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 
 	list, err := a.posts.List(filter)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "post_list.html", gin.H{
+		a.renderHTML(c, http.StatusInternalServerError, "post_list.html", gin.H{
 			"title": "文章管理",
 			"error": "获取文章列表失败",
 		})
@@ -330,7 +330,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 
 	tags, err := a.tags.List()
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "post_list.html", gin.H{
+		a.renderHTML(c, http.StatusInternalServerError, "post_list.html", gin.H{
 			"title": "文章管理",
 			"error": "获取标签信息失败",
 		})
@@ -364,7 +364,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 		queryParams = "&" + queryParams
 	}
 
-	c.HTML(http.StatusOK, "post_list.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "post_list.html", gin.H{
 		"title":          "文章管理",
 		"posts":          list.Posts,
 		"allTags":        tags,
@@ -406,7 +406,7 @@ func (a *API) ShowPostEdit(c *gin.Context) {
 		}
 	}
 
-	c.HTML(http.StatusOK, "post_edit.html", data)
+	a.renderHTML(c, http.StatusOK, "post_edit.html", data)
 }
 
 func (a *API) currentUserID(c *gin.Context) uint {

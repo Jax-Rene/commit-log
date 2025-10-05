@@ -12,7 +12,7 @@ import (
 
 // ShowLoginPage 渲染登录页面
 func (a *API) ShowLoginPage(c *gin.Context) {
-	c.HTML(http.StatusOK, "login.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "login.html", gin.H{
 		"title": "管理员登录",
 	})
 }
@@ -26,13 +26,13 @@ func (a *API) Login(c *gin.Context) {
 	// 查找用户
 	var user db.User
 	if err := a.db.Where("username = ?", username).First(&user).Error; err != nil {
-		c.HTML(http.StatusUnauthorized, "login_error.html", gin.H{"error": "用户名或密码错误"})
+		a.renderHTML(c, http.StatusUnauthorized, "login_error.html", gin.H{"error": "用户名或密码错误"})
 		return
 	}
 
 	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		c.HTML(http.StatusUnauthorized, "login_error.html", gin.H{"error": "用户名或密码错误"})
+		a.renderHTML(c, http.StatusUnauthorized, "login_error.html", gin.H{"error": "用户名或密码错误"})
 		return
 	}
 
@@ -54,7 +54,7 @@ func (a *API) Login(c *gin.Context) {
 	session.Set("user_id", user.ID)
 	session.Set("username", user.Username)
 	if err := session.Save(); err != nil {
-		c.HTML(http.StatusInternalServerError, "login_error.html", gin.H{"error": "会话保存失败"})
+		a.renderHTML(c, http.StatusInternalServerError, "login_error.html", gin.H{"error": "会话保存失败"})
 		return
 	}
 
@@ -92,7 +92,7 @@ func (a *API) ShowDashboard(c *gin.Context) {
 		}
 	}
 
-	c.HTML(http.StatusOK, "dashboard.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "dashboard.html", gin.H{
 		"title":     "管理面板",
 		"username":  username,
 		"postCount": postCount,

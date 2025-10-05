@@ -251,8 +251,11 @@ func (r *templateRegistry) Instance(name string, data interface{}) render.Render
 // SetupRouter 配置 Gin 引擎和路由
 func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 	r := gin.New()
+
+	handlers := handler.NewAPI(db.DB, uploadDir, uploadURLPath)
+
 	r.Use(gin.Logger())
-	r.Use(recoveryWithHandler())
+	r.Use(recoveryWithHandler(handlers))
 
 	// 配置会话中间件
 	trimmedSecret := strings.TrimSpace(sessionSecret)
@@ -261,8 +264,6 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 	}
 	store := cookie.NewStore([]byte(trimmedSecret))
 	r.Use(sessions.Sessions("commitlog_session", store))
-
-	handlers := handler.NewAPI(db.DB, uploadDir, uploadURLPath)
 
 	// Load templates
 	templates := newTemplateRegistry()
@@ -367,17 +368,17 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 
 		path := c.Request.URL.Path
 		if strings.HasPrefix(path, "/admin") {
-			renderErrorPage(c, http.StatusNotFound, "后台页面走丢了", "该链接可能被移动或权限已变更，返回仪表盘继续管理站点。", &errorAction{Label: "返回仪表盘", Href: "/admin/dashboard"}, &errorAction{Label: "回到首页", Href: "/"})
+			renderErrorPage(c, handlers, http.StatusNotFound, "后台页面走丢了", "该链接可能被移动或权限已变更，返回仪表盘继续管理站点。", &errorAction{Label: "返回仪表盘", Href: "/admin/dashboard"}, &errorAction{Label: "回到首页", Href: "/"})
 			return
 		}
 
-		renderErrorPage(c, http.StatusNotFound, "页面走丢了", "我们没有找到你想访问的内容，试试回到首页或浏览其他栏目。", &errorAction{Label: "返回首页", Href: "/"}, &errorAction{Label: "查看全部标签", Href: "/tags"})
+		renderErrorPage(c, handlers, http.StatusNotFound, "页面走丢了", "我们没有找到你想访问的内容，试试回到首页或浏览其他栏目。", &errorAction{Label: "返回首页", Href: "/"}, &errorAction{Label: "查看全部标签", Href: "/tags"})
 	})
 
 	return r
 }
 
-func recoveryWithHandler() gin.HandlerFunc {
+func recoveryWithHandler(handlers *handler.API) gin.HandlerFunc {
 	return gin.CustomRecoveryWithWriter(gin.DefaultErrorWriter, func(c *gin.Context, recovered interface{}) {
 		if recovered != nil {
 			fmt.Fprintf(gin.DefaultErrorWriter, "panic recovered: %v\n", recovered)
@@ -399,13 +400,13 @@ func recoveryWithHandler() gin.HandlerFunc {
 			secondary = &errorAction{Label: "联系站长", Href: "/about"}
 		}
 
-		renderErrorPage(c, http.StatusInternalServerError, "服务器开小差了", "我们已经记录了这个问题，请稍后再试。", primary, secondary)
+		renderErrorPage(c, handlers, http.StatusInternalServerError, "服务器开小差了", "我们已经记录了这个问题，请稍后再试。", primary, secondary)
 		c.Abort()
 	})
 }
 
-func renderErrorPage(c *gin.Context, status int, headline, description string, primary, secondary *errorAction) {
-	c.HTML(status, "error.html", gin.H{
+func renderErrorPage(c *gin.Context, handlers *handler.API, status int, headline, description string, primary, secondary *errorAction) {
+	handlers.RenderHTML(c, status, "error.html", gin.H{
 		"title":           fmt.Sprintf("%d %s", status, http.StatusText(status)),
 		"status":          status,
 		"statusText":      http.StatusText(status),

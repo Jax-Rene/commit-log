@@ -31,7 +31,7 @@ func setupPublicTestDB(t *testing.T) func() {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.Page{}, &db.Habit{}, &db.HabitLog{}, &db.ProfileContact{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.Page{}, &db.Habit{}, &db.HabitLog{}, &db.ProfileContact{}, &db.SystemSetting{}); err != nil {
 		t.Fatalf("failed to migrate database: %v", err)
 	}
 

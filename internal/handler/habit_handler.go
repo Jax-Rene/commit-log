@@ -40,7 +40,7 @@ func (a *API) ShowHabitList(c *gin.Context) {
 
 	habits, err := a.habits.List(filter)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "habit_list.html", gin.H{
+		a.renderHTML(c, http.StatusInternalServerError, "habit_list.html", gin.H{
 			"title": "习惯管理",
 			"error": "获取习惯列表失败",
 		})
@@ -53,7 +53,7 @@ func (a *API) ShowHabitList(c *gin.Context) {
 		selectedHabitID = habits[0].ID
 	}
 
-	c.HTML(http.StatusOK, "habit_list.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "habit_list.html", gin.H{
 		"title":           "习惯管理",
 		"habits":          habits,
 		"filter":          filter,
@@ -105,7 +105,7 @@ func (a *API) ShowHabitEdit(c *gin.Context) {
 		}
 	}
 
-	c.HTML(http.StatusOK, "habit_edit.html", data)
+	a.renderHTML(c, http.StatusOK, "habit_edit.html", data)
 }
 
 // GetHabit 返回单个习惯详情
