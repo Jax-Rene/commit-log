@@ -48,8 +48,17 @@ func TestSystemSettingServiceDefaults(t *testing.T) {
 	if settings.SiteName != "CommitLog" {
 		t.Fatalf("expected default site name CommitLog, got %s", settings.SiteName)
 	}
+	if settings.SiteDescription != defaultSiteDescription {
+		t.Fatalf("expected default site description %q, got %q", defaultSiteDescription, settings.SiteDescription)
+	}
+	if settings.SiteKeywords != NormalizeKeywords(defaultSiteKeywords) {
+		t.Fatalf("expected default keywords %q, got %q", NormalizeKeywords(defaultSiteKeywords), settings.SiteKeywords)
+	}
 	if settings.SiteLogoURL != "" || settings.SiteLogoURLLight != "" || settings.SiteLogoURLDark != "" || settings.OpenAIAPIKey != "" || settings.DeepSeekAPIKey != "" {
 		t.Fatalf("expected keys to be empty, got %#v", settings)
+	}
+	if settings.SiteSocialImage != "" {
+		t.Fatalf("expected default social image to be empty")
 	}
 	if settings.AdminFooterText != "日拱一卒，功不唐捐" {
 		t.Fatalf("unexpected admin footer default: %q", settings.AdminFooterText)
@@ -72,6 +81,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 		SiteLogoURL:      "https://example.com/logo.png",
 		SiteLogoURLLight: "https://example.com/logo-light.png",
 		SiteLogoURLDark:  "https://example.com/logo-dark.png",
+		SiteDescription:  " 致力于分享 AI 工程实战 ",
+		SiteKeywords:     "AI, 工程, 博客, AI",
+		SiteSocialImage:  "https://example.com/og.png",
 		AdminFooterText:  "后台页脚",
 		PublicFooterText: "前台页脚",
 		AIProvider:       "deepseek",
@@ -87,6 +99,15 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if saved.SiteName != "CommitLog 社区" {
 		t.Fatalf("expected sanitized site name, got %q", saved.SiteName)
 	}
+	if saved.SiteDescription != "致力于分享 AI 工程实战" {
+		t.Fatalf("expected sanitized description, got %q", saved.SiteDescription)
+	}
+	if saved.SiteKeywords != "AI, 工程, 博客" {
+		t.Fatalf("expected normalized keywords, got %q", saved.SiteKeywords)
+	}
+	if saved.SiteSocialImage != "https://example.com/og.png" {
+		t.Fatalf("expected social image %q, got %q", input.SiteSocialImage, saved.SiteSocialImage)
+	}
 	if saved.AIProvider != AIProviderDeepSeek {
 		t.Fatalf("expected provider to be deepseek, got %q", saved.AIProvider)
 	}
@@ -99,14 +120,23 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 		t.Fatalf("get settings failed: %v", err)
 	}
 
+	if fetched.SiteLogoURL != strings.TrimSpace(input.SiteLogoURL) {
+		t.Fatalf("expected legacy logo %q, got %q", strings.TrimSpace(input.SiteLogoURL), fetched.SiteLogoURL)
+	}
 	if fetched.SiteLogoURLLight != strings.TrimSpace(input.SiteLogoURLLight) {
 		t.Fatalf("expected light logo %q, got %q", input.SiteLogoURLLight, fetched.SiteLogoURLLight)
 	}
 	if fetched.SiteLogoURLDark != strings.TrimSpace(input.SiteLogoURLDark) {
 		t.Fatalf("expected dark logo %q, got %q", input.SiteLogoURLDark, fetched.SiteLogoURLDark)
 	}
-	if fetched.SiteLogoURL != fetched.SiteLogoURLLight {
-		t.Fatalf("expected legacy logo consistent with light variant, got %q vs %q", fetched.SiteLogoURL, fetched.SiteLogoURLLight)
+	if fetched.SiteDescription != "致力于分享 AI 工程实战" {
+		t.Fatalf("expected description %q, got %q", "致力于分享 AI 工程实战", fetched.SiteDescription)
+	}
+	if fetched.SiteKeywords != "AI, 工程, 博客" {
+		t.Fatalf("expected keywords %q, got %q", "AI, 工程, 博客", fetched.SiteKeywords)
+	}
+	if fetched.SiteSocialImage != "https://example.com/og.png" {
+		t.Fatalf("expected social image %q, got %q", "https://example.com/og.png", fetched.SiteSocialImage)
 	}
 	if fetched.AdminFooterText != input.AdminFooterText {
 		t.Fatalf("expected admin footer %q, got %q", input.AdminFooterText, fetched.AdminFooterText)
@@ -137,6 +167,15 @@ func TestSystemSettingServiceFallbackSiteName(t *testing.T) {
 
 	if saved.SiteName != "CommitLog" {
 		t.Fatalf("expected site name fallback to CommitLog, got %q", saved.SiteName)
+	}
+	if saved.SiteDescription != defaultSiteDescription {
+		t.Fatalf("expected description fallback to %q, got %q", defaultSiteDescription, saved.SiteDescription)
+	}
+	if saved.SiteKeywords != NormalizeKeywords(defaultSiteKeywords) {
+		t.Fatalf("expected keywords fallback to %q, got %q", NormalizeKeywords(defaultSiteKeywords), saved.SiteKeywords)
+	}
+	if saved.SiteSocialImage != "" {
+		t.Fatalf("expected social image fallback to empty string, got %q", saved.SiteSocialImage)
 	}
 	if saved.AIProvider != AIProviderOpenAI {
 		t.Fatalf("expected provider fallback to openai, got %q", saved.AIProvider)

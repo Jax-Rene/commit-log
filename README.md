@@ -9,7 +9,7 @@
 - **后端:** Go + Gin
 - **前端:** HTMX + Alpine.js + Tailwind CSS
 - **数据库:** SQLite + GORM
-- **Markdown 编辑器:** EasyMDE
+- **Markdown 编辑器:** Milkdown
 - **AI 集成:** Gemini API
 - **部署:** Docker + Fly.io
 

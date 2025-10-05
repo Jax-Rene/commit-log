@@ -72,7 +72,7 @@ func (s *PostService) ListAll() ([]db.Post, error) {
 // Get fetches a post by id with tags preloaded.
 func (s *PostService) Get(id uint) (*db.Post, error) {
 	var post db.Post
-	if err := s.db.Preload("Tags").First(&post, id).Error; err != nil {
+	if err := s.db.Preload("Tags").Preload("User").First(&post, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrPostNotFound
 		}

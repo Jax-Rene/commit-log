@@ -111,10 +111,10 @@
 
 #### SEO 信息 Review
 
-* [ ] 配置 meta title、meta description、keywords
-* [ ] 配置 sitemap.xml 并自动更新
-* [ ] 配置 robots.txt 并确认搜索引擎可正确抓取
-* [ ] 每个页面支持自定义 meta 信息（文章/关于/习惯页）
+* [x] 配置 meta title、meta description、keywords
+* [x] 配置 sitemap.xml 并自动更新
+* [x] 配置 robots.txt 并确认搜索引擎可正确抓取
+* [x] 每个页面支持自定义 meta 信息（文章/关于/习惯页）
 
 #### AI 内容能力
 

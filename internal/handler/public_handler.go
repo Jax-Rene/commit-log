@@ -2,10 +2,13 @@ package handler
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	htmlstd "html"
 	"html/template"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +16,7 @@ import (
 	"cmp"
 	"slices"
 
+	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -27,7 +31,8 @@ var (
 		goldmark.WithExtensions(extension.GFM, extension.Linkify, extension.Table),
 		goldmark.WithRendererOptions(html.WithHardWraps(), html.WithXHTML()),
 	)
-	sanitizer = bluemonday.UGCPolicy()
+	sanitizer      = bluemonday.UGCPolicy()
+	htmlTagPattern = regexp.MustCompile(`<[^>]+>`)
 )
 
 const (
@@ -106,8 +111,34 @@ func (a *API) ShowHome(c *gin.Context) {
 	tagOptions := a.buildTagStats()
 
 	queryParams := buildQueryParams(search, tags)
+	metaDescription := ""
+	metaKeywords := make([]string, 0, len(tags)+1)
+	noindex := false
 
-	a.renderHTML(c, http.StatusOK, "home.html", gin.H{
+	if search != "" {
+		metaDescription = fmt.Sprintf("搜索“%s”的结果，共 %d 篇文章。", search, posts.Total)
+		metaKeywords = append(metaKeywords, search)
+		noindex = true
+	}
+	if len(tags) > 0 {
+		tagDesc := fmt.Sprintf("当前筛选标签：%s。", strings.Join(tags, "、"))
+		if metaDescription == "" {
+			metaDescription = tagDesc
+		} else {
+			metaDescription = strings.TrimSpace(metaDescription + " " + tagDesc)
+		}
+		metaKeywords = append(metaKeywords, tags...)
+	}
+	if posts.Page > 1 && metaDescription == "" {
+		metaDescription = fmt.Sprintf("第 %d 页文章列表。", posts.Page)
+	}
+
+	canonical := ""
+	if search == "" && len(tags) == 0 && page == 1 {
+		canonical = "/"
+	}
+
+	payload := gin.H{
 		"title":       "首页",
 		"search":      search,
 		"tags":        tags,
@@ -118,7 +149,21 @@ func (a *API) ShowHome(c *gin.Context) {
 		"hasMore":     posts.Page < posts.TotalPages,
 		"queryParams": queryParams,
 		"year":        time.Now().Year(),
-	})
+	}
+	if metaDescription != "" {
+		payload["metaDescription"] = metaDescription
+	}
+	if len(metaKeywords) > 0 {
+		payload["metaKeywords"] = metaKeywords
+	}
+	if noindex {
+		payload["noindex"] = true
+	}
+	if canonical != "" {
+		payload["canonical"] = canonical
+	}
+
+	a.renderHTML(c, http.StatusOK, "home.html", payload)
 }
 
 // LoadMorePosts returns masonry post items for infinite scroll via HTMX.
@@ -201,27 +246,85 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		})
 		return
 	}
+	site := a.siteSettings(c)
+	description := buildPostDescription(post)
+	tagNames := collectTagNames(post.Tags)
+	canonicalPath := fmt.Sprintf("/posts/%d", post.ID)
+	canonicalURL := a.absoluteURL(c, canonicalPath)
 
-	a.renderHTML(c, http.StatusOK, "post_detail.html", gin.H{
-		"title":          post.Title,
-		"post":           post,
-		"content":        htmlContent,
-		"contacts":       contacts,
-		"pageViews":      pageViews,
-		"uniqueVisitors": uniqueVisitors,
-		"year":           time.Now().Year(),
-	})
+	metaImage := ""
+	if cover := strings.TrimSpace(post.CoverURL); cover != "" {
+		metaImage = a.absoluteURL(c, cover)
+	}
+
+	logoURL := ""
+	if site.LogoLight != "" {
+		logoURL = a.absoluteURL(c, site.LogoLight)
+	} else if site.LogoDark != "" {
+		logoURL = a.absoluteURL(c, site.LogoDark)
+	}
+
+	jsonLD := buildArticleJSONLD(post, canonicalURL, site.Name, description, metaImage, logoURL, tagNames)
+
+	payload := gin.H{
+		"title":           post.Title,
+		"post":            post,
+		"content":         htmlContent,
+		"contacts":        contacts,
+		"pageViews":       pageViews,
+		"uniqueVisitors":  uniqueVisitors,
+		"year":            time.Now().Year(),
+		"metaType":        "article",
+		"metaPublishedAt": post.CreatedAt,
+		"metaModifiedAt":  post.UpdatedAt,
+		"canonical":       canonicalPath,
+	}
+	if description != "" {
+		payload["metaDescription"] = description
+	}
+	if len(tagNames) > 0 {
+		payload["metaKeywords"] = tagNames
+	}
+	if metaImage != "" {
+		payload["metaImage"] = metaImage
+	}
+	if jsonLD != "" {
+		payload["seoJSONLD"] = jsonLD
+	}
+
+	a.renderHTML(c, http.StatusOK, "post_detail.html", payload)
 }
 
 // ShowTagArchive lists tags and related published post counts.
 func (a *API) ShowTagArchive(c *gin.Context) {
 	stats := a.buildTagStats()
+	tagNames := make([]string, 0, len(stats))
+	for _, stat := range stats {
+		if trimmed := strings.TrimSpace(stat.Name); trimmed != "" {
+			tagNames = append(tagNames, trimmed)
+		}
+	}
 
-	a.renderHTML(c, http.StatusOK, "tag_list.html", gin.H{
-		"title": "标签",
-		"tags":  stats,
-		"year":  time.Now().Year(),
-	})
+	description := "当前暂无标签，快去创建一篇新文章吧。"
+	if len(stats) > 0 {
+		description = fmt.Sprintf("站点当前共 %d 个标签，帮助你探索不同主题。", len(stats))
+	}
+
+	payload := gin.H{
+		"title":     "标签",
+		"tags":      stats,
+		"year":      time.Now().Year(),
+		"canonical": "/tags",
+		"metaType":  "website",
+	}
+	if description != "" {
+		payload["metaDescription"] = description
+	}
+	if len(tagNames) > 0 {
+		payload["metaKeywords"] = tagNames
+	}
+
+	a.renderHTML(c, http.StatusOK, "tag_list.html", payload)
 }
 
 func (a *API) ensureVisitorID(c *gin.Context) string {
@@ -249,6 +352,7 @@ func (a *API) ensureVisitorID(c *gin.Context) string {
 // ShowAbout renders the dynamic about page.
 func (a *API) ShowAbout(c *gin.Context) {
 	now := time.Now().In(time.Local)
+	canonical := "/about"
 
 	contacts, contactErr := a.profiles.ListContacts(false)
 	if contactErr != nil {
@@ -257,15 +361,20 @@ func (a *API) ShowAbout(c *gin.Context) {
 
 	page, err := a.pages.GetBySlug("about")
 	if err != nil {
+		summary := "保持好奇心，持续输出价值。"
 		a.renderHTML(c, http.StatusOK, "about.html", gin.H{
 			"title": "关于",
 			"page": gin.H{
 				"Title":   "关于我",
-				"Summary": "保持好奇心，持续输出价值。",
+				"Summary": summary,
 			},
-			"content":  template.HTML("<p class=\"text-sm text-slate-600\">暂无简介，稍后再来看看。</p>"),
-			"year":     now.Year(),
-			"contacts": contacts,
+			"content":         template.HTML("<p class=\"text-sm text-slate-600\">暂无简介，稍后再来看看。</p>"),
+			"year":            now.Year(),
+			"contacts":        contacts,
+			"metaDescription": summary,
+			"metaKeywords":    []string{"关于", "个人简介"},
+			"metaType":        "profile",
+			"canonical":       canonical,
 		})
 		return
 	}
@@ -275,13 +384,101 @@ func (a *API) ShowAbout(c *gin.Context) {
 		htmlContent = template.HTML("<p class=\"text-sm text-slate-600\">内容暂时无法展示。</p>")
 	}
 
-	a.renderHTML(c, http.StatusOK, "about.html", gin.H{
-		"title":    page.Title,
-		"page":     page,
-		"content":  htmlContent,
-		"year":     now.Year(),
-		"contacts": contacts,
-	})
+	description := buildPageDescription(page)
+	keywords := []string{"关于", strings.TrimSpace(page.Title)}
+
+	payload := gin.H{
+		"title":     page.Title,
+		"page":      page,
+		"content":   htmlContent,
+		"year":      now.Year(),
+		"contacts":  contacts,
+		"metaType":  "profile",
+		"canonical": canonical,
+	}
+	if description != "" {
+		payload["metaDescription"] = description
+	}
+	payload["metaKeywords"] = keywords
+
+	a.renderHTML(c, http.StatusOK, "about.html", payload)
+}
+
+// ShowRobots returns a dynamic robots.txt reflecting current host information.
+func (a *API) ShowRobots(c *gin.Context) {
+	base := strings.TrimRight(a.siteBaseURL(c), "/")
+	lines := []string{
+		"User-agent: *",
+		"Allow: /",
+		"Disallow: /admin/",
+		"Disallow: /uploads/",
+	}
+	if base != "" {
+		lines = append(lines, "", fmt.Sprintf("Sitemap: %s/sitemap.xml", base))
+	}
+
+	c.Header("Content-Type", "text/plain; charset=utf-8")
+	c.String(http.StatusOK, strings.Join(lines, "\n")+"\n")
+}
+
+// ShowSitemap exposes a simple XML sitemap for published resources.
+func (a *API) ShowSitemap(c *gin.Context) {
+	posts, err := a.posts.ListAll()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "")
+		return
+	}
+
+	type sitemapEntry struct {
+		Loc        string
+		LastMod    string
+		ChangeFreq string
+		Priority   string
+	}
+
+	entries := []sitemapEntry{
+		{Loc: a.absoluteURL(c, "/"), ChangeFreq: "daily", Priority: "1.0"},
+		{Loc: a.absoluteURL(c, "/tags"), ChangeFreq: "weekly", Priority: "0.5"},
+		{Loc: a.absoluteURL(c, "/about"), ChangeFreq: "yearly", Priority: "0.4"},
+	}
+
+	for _, post := range posts {
+		if strings.ToLower(strings.TrimSpace(post.Status)) != "published" {
+			continue
+		}
+		lastMod := post.UpdatedAt
+		if lastMod.IsZero() {
+			lastMod = post.CreatedAt
+		}
+		entries = append(entries, sitemapEntry{
+			Loc:        a.absoluteURL(c, fmt.Sprintf("/posts/%d", post.ID)),
+			LastMod:    lastMod.UTC().Format(time.RFC3339),
+			ChangeFreq: "weekly",
+			Priority:   "0.7",
+		})
+	}
+
+	var builder strings.Builder
+	builder.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+	builder.WriteString("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n")
+	for _, entry := range entries {
+		builder.WriteString("  <url>\n")
+		builder.WriteString("    <loc>" + htmlstd.EscapeString(entry.Loc) + "</loc>\n")
+		if entry.LastMod != "" {
+			builder.WriteString("    <lastmod>" + htmlstd.EscapeString(entry.LastMod) + "</lastmod>\n")
+		}
+		if entry.ChangeFreq != "" {
+			builder.WriteString("    <changefreq>" + htmlstd.EscapeString(entry.ChangeFreq) + "</changefreq>\n")
+		}
+		if entry.Priority != "" {
+			builder.WriteString("    <priority>" + htmlstd.EscapeString(entry.Priority) + "</priority>\n")
+		}
+		builder.WriteString("  </url>\n")
+	}
+	builder.WriteString("</urlset>")
+
+	c.Header("Content-Type", "application/xml; charset=utf-8")
+	c.String(http.StatusOK, builder.String())
 }
 
 func renderMarkdown(content string) (template.HTML, error) {
@@ -313,6 +510,127 @@ func (a *API) buildTagStats() []tagStat {
 	}
 
 	return stats
+}
+
+func markdownToPlainText(content string) string {
+	var buf bytes.Buffer
+	if err := markdownEngine.Convert([]byte(content), &buf); err != nil {
+		return strings.TrimSpace(content)
+	}
+	safe := sanitizer.Sanitize(buf.String())
+	stripped := htmlTagPattern.ReplaceAllString(safe, " ")
+	unescaped := htmlstd.UnescapeString(stripped)
+	return strings.Join(strings.Fields(unescaped), " ")
+}
+
+func truncateRunes(text string, limit int) string {
+	trimmed := strings.TrimSpace(text)
+	if limit <= 0 {
+		return trimmed
+	}
+	runes := []rune(trimmed)
+	if len(runes) <= limit {
+		return trimmed
+	}
+	return strings.TrimSpace(string(runes[:limit])) + "…"
+}
+
+func buildPostDescription(post *db.Post) string {
+	if post == nil {
+		return ""
+	}
+	if summary := strings.TrimSpace(post.Summary); summary != "" {
+		return truncateRunes(summary, 160)
+	}
+	return truncateRunes(markdownToPlainText(post.Content), 160)
+}
+
+func buildPageDescription(page *db.Page) string {
+	if page == nil {
+		return ""
+	}
+	if summary := strings.TrimSpace(page.Summary); summary != "" {
+		return truncateRunes(summary, 160)
+	}
+	return truncateRunes(markdownToPlainText(page.Content), 160)
+}
+
+func collectTagNames(tags []db.Tag) []string {
+	names := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		if trimmed := strings.TrimSpace(tag.Name); trimmed != "" {
+			names = append(names, trimmed)
+		}
+	}
+	return names
+}
+
+func buildArticleJSONLD(post *db.Post, canonicalURL, siteName, description, imageURL, logoURL string, tagNames []string) template.JS {
+	if post == nil {
+		return ""
+	}
+
+	data := map[string]interface{}{
+		"@context":         "https://schema.org",
+		"@type":            "BlogPosting",
+		"headline":         strings.TrimSpace(post.Title),
+		"mainEntityOfPage": map[string]interface{}{"@type": "WebPage", "@id": canonicalURL},
+	}
+	if canonicalURL != "" {
+		data["url"] = canonicalURL
+	}
+	if description != "" {
+		data["description"] = description
+	}
+	if imageURL != "" {
+		data["image"] = imageURL
+	}
+
+	authorName := strings.TrimSpace(post.User.Username)
+	if authorName == "" {
+		authorName = siteName
+	}
+	data["author"] = map[string]interface{}{
+		"@type": "Person",
+		"name":  authorName,
+	}
+
+	publisher := map[string]interface{}{
+		"@type": "Organization",
+		"name":  siteName,
+	}
+	if logoURL != "" {
+		publisher["logo"] = map[string]interface{}{
+			"@type": "ImageObject",
+			"url":   logoURL,
+		}
+	}
+	data["publisher"] = publisher
+
+	if len(tagNames) > 0 {
+		data["keywords"] = strings.Join(tagNames, ", ")
+	}
+
+	if !post.CreatedAt.IsZero() {
+		data["datePublished"] = post.CreatedAt.UTC().Format(time.RFC3339)
+	}
+	updated := post.UpdatedAt
+	if updated.IsZero() {
+		updated = post.CreatedAt
+	}
+	if !updated.IsZero() {
+		data["dateModified"] = updated.UTC().Format(time.RFC3339)
+	}
+
+	if body := markdownToPlainText(post.Content); body != "" {
+		data["articleBody"] = body
+	}
+
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		return ""
+	}
+	return template.JS(encoded)
 }
 
 func buildAboutHabitHeatmap(entries []service.HabitHeatmapEntry, start, end, generatedAt time.Time) aboutHeatmapData {

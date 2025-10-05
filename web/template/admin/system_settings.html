@@ -13,9 +13,38 @@
                                 <input type="text" x-model="form.siteName" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="例如：CommitLog" />
                                 <span class="text-xs text-slate-500 dark:text-slate-400">用于浏览器标题、后台导航等位置。</span>
                         </label>
-			<div class="space-y-6">
-				<div class="flex flex-col gap-2">
-					<span class="inline-flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">站点 Logo<span class="text-rose-500">*</span></span>
+                        <label class="flex flex-col gap-2">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">站点描述<span class="ml-1 text-rose-500">*</span></span>
+                                <textarea x-model="form.siteDescription" rows="3" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="简要介绍博客定位与价值主张，建议 80-160 字。"></textarea>
+                                <span class="text-xs text-slate-500 dark:text-slate-400">搜索引擎摘要与社交分享默认文案，会出现在未填写专属描述的页面。</span>
+                        </label>
+                        <label class="flex flex-col gap-2">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">默认关键词</span>
+                                <input type="text" x-model="form.siteKeywords" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="例如：AI, 全栈工程师, 博客" />
+                                <span class="text-xs text-slate-500 dark:text-slate-400">使用逗号、空格或分号分隔，系统会自动去重与规范格式。</span>
+                        </label>
+                        <div class="space-y-2">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">默认分享图</span>
+                                <div class="flex items-center gap-4">
+                                        <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60">
+                                                <template x-if="form.siteSocialImage">
+                                                        <img :src="form.siteSocialImage" alt="分享图预览" class="h-full w-full object-cover" @error="form.siteSocialImage = ''" />
+                                                </template>
+                                                <template x-if="!form.siteSocialImage">
+                                                        <span class="text-xs font-medium text-slate-400 dark:text-slate-500">暂无图片</span>
+                                                </template>
+                                        </div>
+                                        <div class="max-w-sm space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                                                <p>文章未设置封面时用于社交媒体与消息卡片展示，建议尺寸 1200×630px。</p>
+                                                <p x-show="form.siteSocialImage" x-text="form.siteSocialImage" class="truncate text-[11px] text-slate-400 dark:text-slate-500" x-cloak></p>
+                                        </div>
+                                </div>
+                                <input type="url" x-model="form.siteSocialImage" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="https://example.com/og.png" />
+                                <span class="text-xs text-slate-500 dark:text-slate-400">可直接粘贴网络地址或后台上传的图片链接。</span>
+                        </div>
+                        <div class="space-y-6">
+                                <div class="flex flex-col gap-2">
+                                        <span class="inline-flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">站点 Logo<span class="text-rose-500">*</span></span>
 					<p class="text-xs text-slate-500 dark:text-slate-400">请分别上传适用于浅色与深色模式的 Logo，建议使用透明背景 PNG 或 SVG。</p>
 				</div>
 				<div class="grid gap-6 md:grid-cols-2">
@@ -80,7 +109,7 @@
 						<input type="text" x-model="form.adminFooterText" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="例如：日拱一卒，功不唐捐" />
 						<span class="text-xs text-slate-500 dark:text-slate-400">展示于后台页面底部，可填写团队座右铭或提示语。</span>
 					</label>
-					<label class="flex flex-col gap-2">
+					<label class="flex flex-col gap-2 mt-2">
 						<span class="text-sm font-medium text-slate-700 dark:text-slate-200">前台页脚文案</span>
 						<input type="text" x-model="form.publicFooterText" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="例如：激发创造，延迟满足" />
 						<span class="text-xs text-slate-500 dark:text-slate-400">展示于前台页脚，可用于呈现品牌口号或版权信息。</span>
@@ -161,16 +190,19 @@
                         showApiKey: false,
                         showDeepSeekKey: false,
                         aiTesting: false,
-				form: {
-					siteName: '',
-					siteLogoUrl: '',
-					siteLogoUrlLight: '',
-					siteLogoUrlDark: '',
-					adminFooterText: '',
-					publicFooterText: '',
-					aiProvider: 'openai',
-					openaiApiKey: '',
-					deepseekApiKey: '',
+                                form: {
+                                        siteName: '',
+                                        siteLogoUrl: '',
+                                        siteLogoUrlLight: '',
+                                        siteLogoUrlDark: '',
+                                        siteDescription: '',
+                                        siteKeywords: '',
+                                        siteSocialImage: '',
+                                        adminFooterText: '',
+                                        publicFooterText: '',
+                                        aiProvider: 'openai',
+                                        openaiApiKey: '',
+                                        deepseekApiKey: '',
 				},
 				logoUploadingLight: false,
 				logoUploadingDark: false,
@@ -342,16 +374,20 @@
                                         this.aiTesting = false;
                                 }
                         },
-				submit() {
-					if (!this.form.siteName.trim()) {
-						window.AdminUI.toast({ message: '请填写站点名称', type: 'warning' });
-						return;
-					}
-					this.applyLogoFallbacks();
-					if (!this.form.siteLogoUrlLight?.trim()) {
-						window.AdminUI.toast({ message: '请上传浅色模式 Logo', type: 'warning' });
-						return;
-					}
+                                submit() {
+                                        if (!this.form.siteName.trim()) {
+                                                window.AdminUI.toast({ message: '请填写站点名称', type: 'warning' });
+                                                return;
+                                        }
+                                        if (!this.form.siteDescription.trim()) {
+                                                window.AdminUI.toast({ message: '请填写站点描述', type: 'warning' });
+                                                return;
+                                        }
+                                        this.applyLogoFallbacks();
+                                        if (!this.form.siteLogoUrlLight?.trim()) {
+                                                window.AdminUI.toast({ message: '请上传浅色模式 Logo', type: 'warning' });
+                                                return;
+                                        }
 					if (!this.form.siteLogoUrlDark?.trim()) {
 						window.AdminUI.toast({ message: '请上传深色模式 Logo', type: 'warning' });
 						return;
@@ -360,17 +396,20 @@
 					this.loading = true;
 					fetch('/admin/api/system/settings', {
 						method: 'PUT',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							siteName: this.form.siteName,
-							siteLogoUrl: this.form.siteLogoUrlLight,
-							siteLogoUrlLight: this.form.siteLogoUrlLight,
-							siteLogoUrlDark: this.form.siteLogoUrlDark,
-							adminFooterText: this.form.adminFooterText,
-							publicFooterText: this.form.publicFooterText,
-							aiProvider: this.form.aiProvider,
-							openaiApiKey: this.form.openaiApiKey,
-							deepseekApiKey: this.form.deepseekApiKey,
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                        siteName: this.form.siteName,
+                                                        siteLogoUrl: this.form.siteLogoUrlLight,
+                                                        siteLogoUrlLight: this.form.siteLogoUrlLight,
+                                                        siteLogoUrlDark: this.form.siteLogoUrlDark,
+                                                        siteDescription: this.form.siteDescription,
+                                                        siteKeywords: this.form.siteKeywords,
+                                                        siteSocialImage: this.form.siteSocialImage,
+                                                        adminFooterText: this.form.adminFooterText,
+                                                        publicFooterText: this.form.publicFooterText,
+                                                        aiProvider: this.form.aiProvider,
+                                                        openaiApiKey: this.form.openaiApiKey,
+                                                        deepseekApiKey: this.form.deepseekApiKey,
 						}),
 					})
 						.then(response => response.json())

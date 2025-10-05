@@ -47,6 +47,9 @@ type systemSettingsRequest struct {
 	SiteLogoURL      string `json:"siteLogoUrl"`
 	SiteLogoURLLight string `json:"siteLogoUrlLight"`
 	SiteLogoURLDark  string `json:"siteLogoUrlDark"`
+	SiteDescription  string `json:"siteDescription"`
+	SiteKeywords     string `json:"siteKeywords"`
+	SiteSocialImage  string `json:"siteSocialImage"`
 	AIProvider       string `json:"aiProvider"`
 	OpenAIAPIKey     string `json:"openaiApiKey"`
 	DeepSeekAPIKey   string `json:"deepseekApiKey"`
@@ -95,6 +98,9 @@ func (r systemSettingsRequest) toInput() service.SystemSettingsInput {
 		SiteLogoURL:      r.SiteLogoURL,
 		SiteLogoURLLight: r.SiteLogoURLLight,
 		SiteLogoURLDark:  r.SiteLogoURLDark,
+		SiteDescription:  r.SiteDescription,
+		SiteKeywords:     r.SiteKeywords,
+		SiteSocialImage:  r.SiteSocialImage,
 		AIProvider:       r.AIProvider,
 		OpenAIAPIKey:     r.OpenAIAPIKey,
 		DeepSeekAPIKey:   r.DeepSeekAPIKey,
@@ -109,6 +115,9 @@ func systemSettingsPayload(settings service.SystemSettings) gin.H {
 		"siteLogoUrl":      settings.SiteLogoURL,
 		"siteLogoUrlLight": settings.SiteLogoURLLight,
 		"siteLogoUrlDark":  settings.SiteLogoURLDark,
+		"siteDescription":  settings.SiteDescription,
+		"siteKeywords":     settings.SiteKeywords,
+		"siteSocialImage":  settings.SiteSocialImage,
 		"aiProvider":       settings.AIProvider,
 		"openaiApiKey":     settings.OpenAIAPIKey,
 		"deepseekApiKey":   settings.DeepSeekAPIKey,

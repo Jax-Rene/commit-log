@@ -3,22 +3,42 @@
 <html lang="zh-CN" class="scroll-smooth">
 
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="color-scheme" content="light dark">
-	<title>{{if .title}}{{.title}} · {{end}}{{.site.name}}</title>
-	<meta name="description" content="{{.site.name}} - AI 全栈工程师的技术与成长记录">
-	<link rel="preconnect" href="https://fonts.googleapis.com">
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-	<link href="/static/css/output.css" rel="stylesheet">
-	<script src="https://unpkg.com/htmx.org@1.9.12"></script>
-	<script src="https://unpkg.com/alpinejs@3.13.5" defer></script>
-	<style>
-		body {
-			font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-		}
-	</style>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="light dark">
+        {{ $seo := .seo }}
+        {{ $site := .site }}
+        <title>{{if $seo.fullTitle}}{{$seo.fullTitle}}{{else if $seo.title}}{{if $site.name}}{{$seo.title}} · {{$site.name}}{{else}}{{$seo.title}}{{end}}{{else if $site.name}}{{$site.name}}{{else}}CommitLog{{end}}</title>
+        {{with $seo.description}}<meta name="description" content="{{.}}">{{end}}
+        {{with $seo.keywords}}<meta name="keywords" content="{{.}}">{{end}}
+        {{with $seo.robots}}<meta name="robots" content="{{.}}">{{end}}
+        {{with $seo.canonical}}<link rel="canonical" href="{{.}}">{{end}}
+        {{if $site.name}}<meta property="og:site_name" content="{{$site.name}}">{{end}}
+        {{with $seo.ogTitle}}<meta property="og:title" content="{{.}}">{{end}}
+        {{with $seo.ogDescription}}<meta property="og:description" content="{{.}}">{{end}}
+        {{with $seo.ogType}}<meta property="og:type" content="{{.}}">{{end}}
+        {{with $seo.ogURL}}<meta property="og:url" content="{{.}}">{{end}}
+        {{with $seo.ogImage}}<meta property="og:image" content="{{.}}">{{end}}
+        {{with $seo.locale}}<meta property="og:locale" content="{{.}}">{{end}}
+        {{with $seo.published}}<meta property="article:published_time" content="{{.}}">{{end}}
+        {{with $seo.modified}}<meta property="article:modified_time" content="{{.}}">{{end}}
+        <meta name="twitter:card" content="{{if $seo.twitterCard}}{{$seo.twitterCard}}{{else}}summary{{end}}">
+        {{with $seo.twitterTitle}}<meta name="twitter:title" content="{{.}}">{{end}}
+        {{with $seo.twitterDescription}}<meta name="twitter:description" content="{{.}}">{{end}}
+        {{with $seo.twitterImage}}<meta name="twitter:image" content="{{.}}">{{end}}
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link href="/static/css/output.css" rel="stylesheet">
+        <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+        <script src="https://unpkg.com/alpinejs@3.13.5" defer></script>
+        <style>
+                body {
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                }
+        </style>
+        {{with $seo.siteJsonld}}<script type="application/ld+json">{{.}}</script>{{end}}
+        {{with $seo.jsonld}}<script type="application/ld+json">{{.}}</script>{{end}}
 </head>
 
 <body class="bg-white text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-950 dark:text-slate-100">

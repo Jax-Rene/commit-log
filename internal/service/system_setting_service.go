@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/commitlog/internal/db"
 	"gorm.io/gorm"
@@ -23,12 +24,23 @@ const (
 
 var supportedAIProviders = []string{AIProviderOpenAI, AIProviderDeepSeek}
 
+const (
+	defaultSiteName        = "CommitLog"
+	defaultSiteDescription = "AI 全栈工程师的技术与成长记录"
+	defaultSiteKeywords    = "AI, 全栈工程师, 博客"
+	defaultAdminFooter     = "日拱一卒，功不唐捐"
+	defaultPublicFooter    = "激发创造，延迟满足"
+)
+
 // SystemSettings 描述后台可配置的系统信息。
 type SystemSettings struct {
 	SiteName         string
 	SiteLogoURL      string
 	SiteLogoURLLight string
 	SiteLogoURLDark  string
+	SiteDescription  string
+	SiteKeywords     string
+	SiteSocialImage  string
 	AIProvider       string
 	OpenAIAPIKey     string
 	DeepSeekAPIKey   string
@@ -48,6 +60,9 @@ type SystemSettingsInput struct {
 	SiteLogoURL      string
 	SiteLogoURLLight string
 	SiteLogoURLDark  string
+	SiteDescription  string
+	SiteKeywords     string
+	SiteSocialImage  string
 	AIProvider       string
 	OpenAIAPIKey     string
 	DeepSeekAPIKey   string
@@ -82,6 +97,9 @@ var settingKeys = []string{
 	db.SettingKeySiteLogoURL,
 	db.SettingKeySiteLogoURLLight,
 	db.SettingKeySiteLogoURLDark,
+	db.SettingKeySiteDescription,
+	db.SettingKeySiteKeywords,
+	db.SettingKeySiteSocialImage,
 	db.SettingKeySiteAdminFooter,
 	db.SettingKeySitePublicFooter,
 	db.SettingKeyAIProvider,
@@ -92,10 +110,12 @@ var settingKeys = []string{
 // GetSettings 读取系统设置，如未设置将返回默认值。
 func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 	result := SystemSettings{
-		SiteName:         "CommitLog",
+		SiteName:         defaultSiteName,
+		SiteDescription:  defaultSiteDescription,
+		SiteKeywords:     NormalizeKeywords(defaultSiteKeywords),
 		AIProvider:       AIProviderOpenAI,
-		AdminFooterText:  "日拱一卒，功不唐捐",
-		PublicFooterText: "激发创造，延迟满足",
+		AdminFooterText:  defaultAdminFooter,
+		PublicFooterText: defaultPublicFooter,
 	}
 
 	var records []db.SystemSetting
@@ -115,6 +135,16 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 			result.SiteLogoURLLight = record.Value
 		case db.SettingKeySiteLogoURLDark:
 			result.SiteLogoURLDark = record.Value
+		case db.SettingKeySiteDescription:
+			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
+				result.SiteDescription = trimmed
+			}
+		case db.SettingKeySiteKeywords:
+			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
+				result.SiteKeywords = NormalizeKeywords(trimmed)
+			}
+		case db.SettingKeySiteSocialImage:
+			result.SiteSocialImage = strings.TrimSpace(record.Value)
 		case db.SettingKeySiteAdminFooter:
 			if strings.TrimSpace(record.Value) != "" {
 				result.AdminFooterText = record.Value
@@ -149,6 +179,12 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 	if strings.TrimSpace(result.SiteLogoURLDark) == "" {
 		result.SiteLogoURLDark = result.SiteLogoURLLight
 	}
+	if strings.TrimSpace(result.SiteDescription) == "" {
+		result.SiteDescription = defaultSiteDescription
+	}
+	if strings.TrimSpace(result.SiteKeywords) == "" {
+		result.SiteKeywords = NormalizeKeywords(defaultSiteKeywords)
+	}
 
 	return result, nil
 }
@@ -165,6 +201,9 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 		SiteLogoURL:      strings.TrimSpace(input.SiteLogoURL),
 		SiteLogoURLLight: strings.TrimSpace(input.SiteLogoURLLight),
 		SiteLogoURLDark:  strings.TrimSpace(input.SiteLogoURLDark),
+		SiteDescription:  strings.TrimSpace(input.SiteDescription),
+		SiteKeywords:     NormalizeKeywords(input.SiteKeywords),
+		SiteSocialImage:  strings.TrimSpace(input.SiteSocialImage),
 		AIProvider:       provider,
 		OpenAIAPIKey:     strings.TrimSpace(input.OpenAIAPIKey),
 		DeepSeekAPIKey:   strings.TrimSpace(input.DeepSeekAPIKey),
@@ -173,7 +212,7 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 	}
 
 	if sanitized.SiteName == "" {
-		sanitized.SiteName = "CommitLog"
+		sanitized.SiteName = defaultSiteName
 	}
 	if sanitized.SiteLogoURLLight == "" {
 		sanitized.SiteLogoURLLight = sanitized.SiteLogoURL
@@ -190,24 +229,39 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 	if sanitized.SiteLogoURLDark == "" {
 		sanitized.SiteLogoURLDark = sanitized.SiteLogoURLLight
 	}
+	if sanitized.SiteDescription == "" {
+		sanitized.SiteDescription = defaultSiteDescription
+	}
+	if sanitized.SiteKeywords == "" {
+		sanitized.SiteKeywords = NormalizeKeywords(defaultSiteKeywords)
+	}
 	if sanitized.AdminFooterText == "" {
-		sanitized.AdminFooterText = "日拱一卒，功不唐捐"
+		sanitized.AdminFooterText = defaultAdminFooter
 	}
 	if sanitized.PublicFooterText == "" {
-		sanitized.PublicFooterText = "激发创造，延迟满足"
+		sanitized.PublicFooterText = defaultPublicFooter
 	}
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		if err := upsertSetting(tx, db.SettingKeySiteName, sanitized.SiteName); err != nil {
 			return err
 		}
-		if err := upsertSetting(tx, db.SettingKeySiteLogoURL, sanitized.SiteLogoURLLight); err != nil {
+		if err := upsertSetting(tx, db.SettingKeySiteLogoURL, sanitized.SiteLogoURL); err != nil {
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeySiteLogoURLLight, sanitized.SiteLogoURLLight); err != nil {
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeySiteLogoURLDark, sanitized.SiteLogoURLDark); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySiteDescription, sanitized.SiteDescription); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySiteKeywords, sanitized.SiteKeywords); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySiteSocialImage, sanitized.SiteSocialImage); err != nil {
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeySiteAdminFooter, sanitized.AdminFooterText); err != nil {
@@ -232,6 +286,47 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 	}
 
 	return sanitized, nil
+}
+
+// NormalizeKeywords 将关键词字符串规范化为使用逗号分隔、去重的格式。
+func NormalizeKeywords(input string) string {
+	return normalizeKeywords(input)
+}
+
+func normalizeKeywords(input string) string {
+	trimmed := strings.TrimSpace(input)
+	if trimmed == "" {
+		return ""
+	}
+
+	tokens := strings.FieldsFunc(trimmed, func(r rune) bool {
+		switch r {
+		case ',', '，', ';', '；':
+			return true
+		default:
+			return unicode.IsSpace(r)
+		}
+	})
+	if len(tokens) == 0 {
+		return ""
+	}
+
+	seen := make(map[string]struct{}, len(tokens))
+	normalized := make([]string, 0, len(tokens))
+	for _, token := range tokens {
+		candidate := strings.TrimSpace(token)
+		if candidate == "" {
+			continue
+		}
+		lower := strings.ToLower(candidate)
+		if _, exists := seen[lower]; exists {
+			continue
+		}
+		seen[lower] = struct{}{}
+		normalized = append(normalized, candidate)
+	}
+
+	return strings.Join(normalized, ", ")
 }
 
 func upsertSetting(tx *gorm.DB, key, value string) error {

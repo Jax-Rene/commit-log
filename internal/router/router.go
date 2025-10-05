@@ -284,6 +284,8 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 		r.Static(trimmedUploadPath, uploadDir)
 	}
 
+	r.GET("/robots.txt", handlers.ShowRobots)
+	r.GET("/sitemap.xml", handlers.ShowSitemap)
 	// 公共站点路由
 	r.GET("/", handlers.ShowHome)
 	r.GET("/posts/more", handlers.LoadMorePosts)
