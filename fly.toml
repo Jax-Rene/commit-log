@@ -39,6 +39,6 @@ primary_region = 'nrt'
     path = '/healthz'
 
 [[vm]]
-  memory = '1gb'
+  memory_mb = 256
   cpu_kind = 'shared'
   cpus = 1
