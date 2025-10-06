@@ -14,7 +14,7 @@
 ## 架构总览
 - `cmd/server/main.go` 是唯一启动入口，负责初始化数据库、路由、配置等依赖。这里禁止添加业务逻辑。
 - `internal/db`、`internal/handler`、`internal/router`、`internal/service` 分别承载数据模型、HTTP 入口、路由编排与业务服务。新增私有包请放在 `internal` 下保持封装。
-- 模板位于 `web/template/{layout,admin}`，建议在同名目录维护配套的 Alpine.js 片段；Tailwind 源文件为 `web/static/css/input.css`，编译输出 `web/static/css/output.css`。
+- 模板位于 `web/template/{layout,admin}`，建议在同名目录维护配套的 Alpine.js 片段；Tailwind 源文件为 `web/static/css/input.css`，通过 Vite 构建输出至 `web/static/dist`。
 - 运维与产品文档集中在 `document/*.md`；演示数据统一由 `scripts/generate_test_data.go` 生成，禁止手动修改 SQLite。
 
 ## 后端开发准则
@@ -25,14 +25,14 @@
 
 ## 前端开发准则
 - 模板命名与 Handler、Service 保持一致，便于追溯来源。共享组件拆入 `components`，减少重复。
-- Tailwind 类名按“布局 → 组件 → 状态”排序，`output.css` 只读。新增组件前先复用或扩展现有样式。
+- Tailwind 类名按“布局 → 组件 → 状态”排序，构建产物目录 `web/static/dist` 只读。新增组件前先复用或扩展现有样式。
 - Alpine.js 状态逻辑精简，保持响应式与声明式的平衡；HTMX 请求命名语义化，显式处理加载/出错状态。
 - 视觉设计遵循四项原则：对比强调信息层级，重复统一风格，对齐保证秩序，亲密性用于分组相关内容。
 
 ## 构建与运行
 - `make run`：以生产配置在 `:8080` 启动服务，用于构建验收。
 - `make dev`：调试模式启动，启用 Gin Debug、模板热加载与丰富日志。
-- `npm run build:css`：单次编译 Tailwind；`npm run watch:css`：监听源文件，适合样式联调。
+- `npm run build`：使用 Vite 编译前端资源并输出至 `web/static/dist`。
 - `go run scripts/generate_test_data.go`：刷新演示数据，确保后台筛选、搜索等功能可验证。
 
 ## 测试与质量保障

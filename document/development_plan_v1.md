@@ -21,10 +21,10 @@
 
 2.  **前端工具链搭建:**
     *   [ ] 在项目根目录执行 `npm init -y`。
-    *   [ ] 安装前端依赖: `npm install -D tailwindcss alpinejs htmx.org easymde`。
+    *   [ ] 安装前端依赖: `npm install -D tailwindcss` 并安装运行时依赖 `alpinejs`、`htmx.org`、`easymde` 等。
     *   [ ] 创建 `tailwind.config.js` 并配置 `content` 路径，使其扫描 `web/template/**/*.html`。
     *   [ ] 创建 `web/static/css/input.css` 并引入 Tailwind 指令。
-    *   [ ] 在 `package.json` 的 `scripts` 中添加 `build:css` 命令，用于编译 Tailwind CSS 到 `web/static/css/output.css`。
+    *   [ ] 在 `package.json` 的 `scripts` 中添加 `build` 命令，使用 Vite 编译前端资源并输出到 `web/static/dist`。
 
 3.  **数据库与模型 (GORM + SQLite):**
     *   [ ] 在 `internal/db` 中引入 GORM 和 SQLite 驱动。
@@ -45,7 +45,7 @@
 
 1.  **HTML 模板引擎集成:**
     *   [ ] 在 Gin 中配置 `html/template` 引擎，加载 `web/template` 目录。
-    *   [ ] 创建后台主布局 `web/template/admin/layout.html`，引入编译好的 `output.css` 和 Alpine.js/HTMX 的 CDN 链接。
+    *   [ ] 创建后台主布局 `web/template/admin/layout.html`，引入通过 Vite 构建的静态资源并初始化 Alpine.js/HTMX。
 
 2.  **后台核心页面开发 (HTML + Tailwind CSS):**
     *   [ ] `login.html`: 登录表单页面。
@@ -114,7 +114,7 @@
 
 1.  **Dockerfile 编写:**
     *   [ ] 创建 `Dockerfile`，使用多阶段构建：
-        *   `node` 镜像作为 `builder` 阶段，用于 `npm run build:css`。
+        *   `node` 镜像作为 `builder` 阶段，用于 `npm run build`。
         *   `golang` 镜像作为 `compiler` 阶段，用于编译 Go 应用。
         *   `debian` 或 `alpine` 作为最终镜像，仅复制编译后的 Go 二进制文件、`web` 目录和 `migrations` (如有)。
 

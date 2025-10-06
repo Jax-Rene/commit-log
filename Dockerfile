@@ -6,11 +6,11 @@
 FROM node:20-bullseye AS assets
 WORKDIR /app
 
-COPY package.json package-lock.json tailwind.config.js ./
+COPY package.json package-lock.json tailwind.config.js vite.config.js ./
 RUN npm ci
 
 COPY web ./web
-RUN npm run build:css
+RUN npm run build
 
 #########################
 # 阶段二：编译 Go 二进制 #
@@ -30,7 +30,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . ./
-COPY --from=assets /app/web/static/css/output.css ./web/static/css/output.css
+COPY --from=assets /app/web/static/dist ./web/static/dist
 
 RUN go build -o /out/commitlog ./cmd/server
 
