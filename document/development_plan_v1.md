@@ -21,7 +21,7 @@
 
 2.  **前端工具链搭建:**
     *   [ ] 在项目根目录执行 `npm init -y`。
-    *   [ ] 安装前端依赖: `npm install -D tailwindcss` 并安装运行时依赖 `alpinejs`、`htmx.org`、`easymde` 等。
+    *   [ ] 安装前端依赖: `npm install -D tailwindcss` 并安装运行时依赖 `alpinejs`、`htmx.org`、`@milkdown/kit`、`@milkdown/theme-nord`、`marked` 等。
     *   [ ] 创建 `tailwind.config.js` 并配置 `content` 路径，使其扫描 `web/template/**/*.html`。
     *   [ ] 创建 `web/static/css/input.css` 并引入 Tailwind 指令。
     *   [ ] 在 `package.json` 的 `scripts` 中添加 `build` 命令，使用 Vite 编译前端资源并输出到 `web/static/dist`。
@@ -53,8 +53,8 @@
     *   [ ] `post_list.html`: 文章管理列表。
     *   [ ] `post_edit.html`: 文章创建/编辑页面，包含一个 `<textarea>` 用于 Markdown 编辑。
 
-3.  **Markdown 编辑器集成 (EasyMDE):**
-    *   [ ] 在 `post_edit.html` 中，使用 Alpine.js (`x-data`, `x-init`) 来初始化 EasyMDE 并将其绑定到 `<textarea>` 上。
+3.  **Markdown 编辑器集成 (Milkdown):**
+    *   [ ] 在 `post_edit.html` 中，使用 Alpine.js (`x-data`, `x-init`) 初始化 Milkdown，并与文章表单状态双向同步。
 
 4.  **后台交互实现 (HTMX):**
     *   [ ] 将登录表单的提交改造为 HTMX 请求 (`hx-post`, `hx-target`)。
@@ -65,7 +65,7 @@
     *   [ ] 引入 AWS Go SDK for S3。
     *   [ ] 在 `internal/service` 中封装一个 `FileUploader` 服务，用于处理文件上传到 R2 的逻辑。
     *   [ ] 在 `internal/handler` 中创建一个接收图片上传的专用接口。
-    *   [ ] 配置 EasyMDE 的图片上传选项，使其调用该接口。
+    *   [ ] 配置 Milkdown 的上传插件与手动插图入口，使其调用该接口。
 
 ---
 

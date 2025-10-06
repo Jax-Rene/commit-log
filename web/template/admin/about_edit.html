@@ -16,11 +16,11 @@
 	{{end}}
 
 	<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-		<label class="flex flex-col gap-2">
+		<div class="flex flex-col gap-2">
 			<span class="text-sm font-medium text-slate-700 dark:text-slate-200">关于我内容<span class="ml-1 text-rose-500">*</span></span>
 			<p class="text-xs text-slate-500 dark:text-slate-400">支持 Markdown 语法，建议包含个人背景、擅长方向与联系渠道。</p>
-			<textarea id="about-content" class="hidden">{{- .content -}}</textarea>
-		</label>
+                        <div id="about-editor" class="milkdown-editor" aria-label="关于我内容编辑器"></div>
+		</div>
 	</section>
 
 	<section class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
@@ -39,157 +39,178 @@
 </div>
 
 <script>
-	function aboutForm(initialContent, initialUpdatedAt) {
-		return {
-			editor: null,
-			fullscreenWatcher: null,
-			loading: false,
-			form: {
-				content: initialContent ? initialContent : ''
-			},
-			updatedAt: initialUpdatedAt ? initialUpdatedAt : '',
+        function aboutForm(initialContent, initialUpdatedAt) {
+                return {
+                        editor: null,
+                        loading: false,
+                        autosaveTimer: null,
+                        autosaveKey: 'about-page',
+                        form: {
+                                content: initialContent ? initialContent : ''
+                        },
+                        updatedAt: initialUpdatedAt ? initialUpdatedAt : '',
 
-			init() {
-				this.initializeEditor();
-			},
+                        async init() {
+                                this.loadAutosavedContent();
+                                await this.initializeEditor();
+                        },
 
-			initializeEditor() {
-				if (this.editor) {
-					return;
-				}
-				const textarea = document.getElementById('about-content');
-				if (!textarea) {
-					return;
-				}
-				const easyMDE = new EasyMDE({
-					element: textarea,
-					spellChecker: false,
-					autosave: {
-						enabled: true,
-						uniqueId: 'about-page',
-						delay: 1000,
-					},
-					status: ['words'],
-					renderingConfig: {
-						singleLineBreaks: false,
-					},
-					toolbar: ['bold', 'italic', 'heading', '|', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'table', 'code', '|', 'preview', 'side-by-side', 'fullscreen'],
-					initialValue: this.form.content || ''
-				});
+                        async initializeEditor() {
+                                if (this.editor) {
+                                        return;
+                                }
+                                const container = document.getElementById('about-editor');
+                                if (!container || !window.AdminMilkdown) {
+                                        return;
+                                }
+                                try {
+                                        this.editor = await window.AdminMilkdown.createEditor({
+                                                element: container,
+                                                initialValue: this.form.content || '',
+                                                onChange: markdown => {
+                                                        this.form.content = markdown;
+                                                        this.scheduleAutosave();
+                                                },
+                                        });
+                                } catch (error) {
+                                        console.error('初始化 Milkdown 失败', error);
+                                }
+                        },
 
-				easyMDE.codemirror.on('change', () => {
-					this.form.content = easyMDE.value();
-				});
+                        loadAutosavedContent() {
+                                const keys = [
+                                        `Milkdown-autosave-${this.autosaveKey}`,
+                                        `EasyMDE-autosave-${this.autosaveKey}`
+                                ];
+                                for (const key of keys) {
+                                        const raw = window.localStorage.getItem(key);
+                                        if (!raw) {
+                                                continue;
+                                        }
+                                        try {
+                                                const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                                                if (parsed && typeof parsed.value === 'string' && parsed.value.trim()) {
+                                                        this.form.content = parsed.value;
+                                                        break;
+                                                }
+                                        } catch (error) {
+                                                console.warn('读取草稿失败', error);
+                                        }
+                                }
+                        },
 
-				easyMDE.codemirror.on('refresh', () => this.syncFullscreenState());
-				this.fullscreenWatcher = () => this.syncFullscreenState();
-				window.addEventListener('keyup', this.fullscreenWatcher);
-				window.addEventListener('resize', this.fullscreenWatcher);
-				window.addEventListener('click', this.fullscreenWatcher);
-				this.syncFullscreenState();
+                        scheduleAutosave() {
+                                if (this.autosaveTimer) {
+                                        clearTimeout(this.autosaveTimer);
+                                }
+                                this.autosaveTimer = setTimeout(() => {
+                                        const payload = {
+                                                time: Date.now(),
+                                                value: this.form.content || ''
+                                        };
+                                        window.localStorage.setItem(
+                                                `Milkdown-autosave-${this.autosaveKey}`,
+                                                JSON.stringify(payload)
+                                        );
+                                }, 800);
+                        },
 
-				this.editor = easyMDE;
-			},
+                        clearAutosave() {
+                                if (this.autosaveTimer) {
+                                        clearTimeout(this.autosaveTimer);
+                                        this.autosaveTimer = null;
+                                }
+                                window.localStorage.removeItem(`Milkdown-autosave-${this.autosaveKey}`);
+                                window.localStorage.removeItem(`EasyMDE-autosave-${this.autosaveKey}`);
+                        },
 
-			syncFullscreenState() {
-				if (!this.editor) {
-					document.body.classList.remove('mde-fullscreen');
-					return;
-				}
-				const isFull = this.editor.isFullscreenActive && this.editor.isFullscreenActive();
-				document.body.classList.toggle('mde-fullscreen', !!isFull);
-			},
+                        destroy() {
+                                if (this.editor && this.editor.destroy) {
+                                        this.editor.destroy();
+                                }
+                                this.clearAutosave();
+                        },
 
-			destroy() {
-				if (this.fullscreenWatcher) {
-					window.removeEventListener('keyup', this.fullscreenWatcher);
-					window.removeEventListener('resize', this.fullscreenWatcher);
-					window.removeEventListener('click', this.fullscreenWatcher);
-					this.fullscreenWatcher = null;
-				}
-				document.body.classList.remove('mde-fullscreen');
-			},
+                        submit() {
+                                const content = this.editor && this.editor.getMarkdown
+                                        ? this.editor.getMarkdown()
+                                        : this.form.content;
+                                if (!content || !content.trim()) {
+                                        window.AdminUI.toast({ message: '请填写关于我内容', type: 'warning' });
+                                        return;
+                                }
 
-			submit() {
-				const content = this.editor ? this.editor.value() : this.form.content;
-				if (!content || !content.trim()) {
-					window.AdminUI.toast({ message: '请填写关于我内容', type: 'warning' });
-					return;
-				}
+                                this.loading = true;
+                                fetch('/admin/api/pages/about', {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ content })
+                                })
+                                        .then(response => response.json())
+                                        .then(data => {
+                                                if (data.error) {
+                                                        window.AdminUI.toast({ message: data.error, type: 'error' });
+                                                        return;
+                                                }
+                                                if (data.message) {
+                                                        this.form.content = content;
+                                                        window.AdminUI.toast({ message: data.message, type: 'success' });
+                                                        this.updatedAt = data.page && data.page.updatedAt ? data.page.updatedAt : this.updatedAt;
+                                                        this.clearAutosave();
+                                                }
+                                        })
+                                        .catch(() => {
+                                                window.AdminUI.toast({ message: '保存失败，请稍后重试', type: 'error' });
+                                        })
+                                        .finally(() => {
+                                                this.loading = false;
+                                        });
+                        },
 
-				this.loading = true;
-				fetch('/admin/api/pages/about', {
-					method: 'PUT',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ content })
-				})
-					.then(response => response.json())
-					.then(data => {
-						if (data.error) {
-							window.AdminUI.toast({ message: data.error, type: 'error' });
-							return;
-						}
-						if (data.message) {
-							this.form.content = content;
-							window.AdminUI.toast({ message: data.message, type: 'success' });
-							this.updatedAt = data.page && data.page.updatedAt ? data.page.updatedAt : this.updatedAt;
-							if (this.editor && this.editor.clearAutosavedValue) {
-								this.editor.clearAutosavedValue();
-							}
-						}
-					})
-					.catch(() => {
-						window.AdminUI.toast({ message: '保存失败，请稍后重试', type: 'error' });
-					})
-					.finally(() => {
-						this.loading = false;
-					});
-			},
-
-			preview() {
-				const markdown = this.editor ? this.editor.value() : this.form.content;
-				const previewWindow = window.open('', '_blank');
-				const parsed = this.editor ? this.editor.markdown(markdown) : markdown;
-				previewWindow.document.write(`
-					<html>
-					<head>
-						<title>预览 · 关于我</title>
+                        preview() {
+                                const markdown = this.editor && this.editor.getMarkdown
+                                        ? this.editor.getMarkdown()
+                                        : this.form.content;
+                                const previewWindow = window.open('', '_blank');
+                                const parsed = this.editor && this.editor.getHTML
+                                        ? this.editor.getHTML()
+                                        : window.AdminMilkdown.renderMarkdown(markdown);
+                                previewWindow.document.write(`
+                                        <html>
+                                        <head>
+                                                <title>预览 · 关于我</title>
                                                 <link rel="stylesheet" href="/static/dist/assets/input.css">
                                                 <link rel="stylesheet" href="/static/dist/assets/admin.css">
-						<style>
-							:root { color-scheme: light dark; }
-							body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 780px; margin: 0 auto; padding: 2rem; color: #1f2937; background: #ffffff; transition: color 0.2s ease, background 0.2s ease; }
-							h1, h2, h3, h4 { margin-top: 1.5rem; margin-bottom: 0.75rem; }
-							p { margin: 1rem 0; line-height: 1.7; }
-							code { background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 0.25rem; }
-							pre { background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
-							img { max-width: 100%; border-radius: 0.5rem; }
-							@media (prefers-color-scheme: dark) {
-								body { color: #e2e8f0; background: #020617; }
-								code { background: rgba(148, 163, 184, 0.12); color: #e2e8f0; }
-							}
-						</style>
+                                                <style>
+                                                        :root { color-scheme: light dark; }
+                                                        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 780px; margin: 0 auto; padding: 2rem; color: #1f2937; background: #ffffff; transition: color 0.2s ease, background 0.2s ease; }
+                                                        h1, h2, h3, h4 { margin-top: 1.5rem; margin-bottom: 0.75rem; }
+                                                        p { margin: 1rem 0; line-height: 1.7; }
+                                                        code { background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 0.25rem; }
+                                                        pre { background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+                                                        img { max-width: 100%; border-radius: 0.5rem; }
+                                                        @media (prefers-color-scheme: dark) {
+                                                                body { color: #e2e8f0; background: #020617; }
+                                                                code { background: rgba(148, 163, 184, 0.12); color: #e2e8f0; }
+                                                        }
+                                                </style>
                                                 <script>window.hljs = window.hljs || (window.opener && window.opener.hljs);</script>
-					</head>
-					<body>
-						<h1>关于我</h1>
-						<div>${parsed}</div>
+                                        </head>
+                                        <body>
+                                                <h1>关于我</h1>
+                                                <div>${parsed}</div>
                                                 <script>
                                                         const highlight = window.hljs || (window.opener && window.opener.hljs);
                                                         if (highlight) {
                                                                 document.querySelectorAll('pre code').forEach(block => highlight.highlightElement(block));
                                                         }
                                                 </script>
-					</body>
-					</html>
-				`);
-				previewWindow.document.close();
-			}
-		};
-	}
-
-	window.addEventListener('beforeunload', () => {
-		document.body.classList.remove('mde-fullscreen');
-	});
+                                        </body>
+                                        </html>
+                                `);
+                                previewWindow.document.close();
+                        }
+                };
+        }
 </script>
 {{end}}

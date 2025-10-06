@@ -309,10 +309,10 @@ func createTestPosts() {
 			coverWidth:  1600,
 			coverHeight: 1050,
 		},
-		{
-			title:       "Markdown编辑器EasyMDE集成指南",
-			content:     "在Web应用中集成一个功能完善的Markdown编辑器可以大大提升用户体验。本文将详细介绍如何在Web应用中集成EasyMDE Markdown编辑器，包括基本配置、高级功能和实际应用案例。",
-			summary:     "详细介绍如何在Web应用中集成EasyMDE Markdown编辑器，包括基本配置和高级功能。",
+                {
+                        title:       "Milkdown Markdown 编辑器集成指南",
+                        content:     "在 Web 应用中集成一个可扩展的 Markdown 编辑器可以极大提升写作效率。本文介绍如何集成 Milkdown，包括基本初始化、GFM 语法支持、图片上传与主题定制等核心能力。",
+                        summary:     "演示如何在 Web 应用中集成 Milkdown，覆盖初始化、上传与主题定制等关键步骤。",
 			tags:        []string{"教程", "Web开发"},
 			coverURL:    "https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1600&q=80",
 			coverWidth:  1600,

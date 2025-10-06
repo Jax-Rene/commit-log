@@ -52,10 +52,15 @@
 			</section>
 
 			<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-				<label class="flex flex-col gap-2">
+				<div class="flex flex-col gap-2">
 					<span class="text-sm font-medium text-slate-700 dark:text-slate-200">文章内容<span class="ml-1 text-rose-500">*</span></span>
-					<textarea id="content" rows="18" x-model="post.content" class="hidden"></textarea>
-				</label>
+                                        <div id="post-editor" class="milkdown-editor" aria-label="文章内容编辑器"></div>
+                                        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                                <button type="button" @click="$refs.editorImageInput.click()" class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">插入图片</button>
+                                                <span>支持直接粘贴或拖拽图片到编辑器。</span>
+                                                <input type="file" accept="image/*" class="hidden" multiple x-ref="editorImageInput" @change="handleEditorImageUpload">
+                                        </div>
+				</div>
 			</section>
 		</section>
 
@@ -166,8 +171,10 @@
 <script>
 	function postForm() {
 		return {
-			loading: false,
-			editor: null,
+                        loading: false,
+                        editor: null,
+                        autosaveTimer: null,
+                        autosaveKey: '',
 			allTags: [],
 			initialTagIds: '{{- range $index, $tag := .post.Tags -}}{{if $index}},{{end}}{{ $tag.ID }}{{- end -}}',
 			postId: '{{if .post.ID}}{{.post.ID}}{{else}}new{{end}}',
@@ -192,34 +199,140 @@
                         summaryPreview: '',
                         summaryUsage: null,
 
-                        init() {
+                        async init() {
                                 this.applyInitialTagSelection();
-				this.initializeEditor();
-				this.fetchTags();
+                                this.autosaveKey = `post-content-${this.postId}`;
+                                this.loadAutosavedContent();
+                                await this.initializeEditor();
+                                this.fetchTags();
 			},
 
-			applyInitialTagSelection() {
-				if (!this.initialTagIds) {
-					return;
-				}
-				this.post.tagIds = this.initialTagIds.split(',').map(id => id.trim()).filter(Boolean);
-			},
+                        applyInitialTagSelection() {
+                                if (!this.initialTagIds) {
+                                        return;
+                                }
+                                this.post.tagIds = this.initialTagIds.split(',').map(id => id.trim()).filter(Boolean);
+                        },
 
-			fetchTags() {
-				fetch('/admin/api/tags')
-					.then(response => response.json())
-					.then(data => {
-						this.allTags = data.tags || [];
+                        loadAutosavedContent() {
+                                if (!this.autosaveKey) {
+                                        return;
+                                }
+                                const keys = [
+                                        `Milkdown-autosave-${this.autosaveKey}`,
+                                        `EasyMDE-autosave-${this.autosaveKey}`
+                                ];
+                                for (const key of keys) {
+                                        const raw = window.localStorage.getItem(key);
+                                        if (!raw) {
+                                                continue;
+                                        }
+                                        try {
+                                                const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                                                if (parsed && typeof parsed.value === 'string' && parsed.value.trim()) {
+                                                        this.post.content = parsed.value;
+                                                        break;
+                                                }
+                                        } catch (error) {
+                                                console.warn('读取文章草稿失败', error);
+                                        }
+                                }
+                        },
+
+                        scheduleAutosave() {
+                                if (this.autosaveTimer) {
+                                        clearTimeout(this.autosaveTimer);
+                                }
+                                if (!this.autosaveKey) {
+                                        return;
+                                }
+                                this.autosaveTimer = setTimeout(() => {
+                                        const payload = {
+                                                time: Date.now(),
+                                                value: this.post.content || ''
+                                        };
+                                        window.localStorage.setItem(
+                                                `Milkdown-autosave-${this.autosaveKey}`,
+                                                JSON.stringify(payload)
+                                        );
+                                }, 800);
+                        },
+
+                        clearAutosave() {
+                                if (this.autosaveTimer) {
+                                        clearTimeout(this.autosaveTimer);
+                                        this.autosaveTimer = null;
+                                }
+                                if (!this.autosaveKey) {
+                                        return;
+                                }
+                                window.localStorage.removeItem(`Milkdown-autosave-${this.autosaveKey}`);
+                                window.localStorage.removeItem(`EasyMDE-autosave-${this.autosaveKey}`);
+                        },
+
+                        fetchTags() {
+                                fetch('/admin/api/tags')
+                                        .then(response => response.json())
+                                        .then(data => {
+                                                this.allTags = data.tags || [];
 						if (this.post.tagIds.length === 0) {
 							return;
 						}
 						const available = new Set(this.allTags.map(tag => tag.id.toString()));
 						this.post.tagIds = this.post.tagIds.filter(id => available.has(id.toString()));
 					})
-					.catch(() => {
-						this.allTags = [];
-					});
-			},
+                                        .catch(() => {
+                                                this.allTags = [];
+                                        });
+                        },
+
+                        async uploadImageFile(file) {
+                                if (!file) {
+                                        return null;
+                                }
+                                const formData = new FormData();
+                                formData.append('image', file);
+                                const response = await fetch('/admin/api/upload/image', {
+                                        method: 'POST',
+                                        body: formData,
+                                });
+                                const data = await response.json();
+                                if (data.success === 1 && data.data && data.data.url) {
+                                        return data.data;
+                                }
+                                const message = data.error || data.message || '图片上传失败';
+                                throw new Error(message);
+                        },
+
+                        handleEditorImageUpload(event) {
+                                const input = event.target;
+                                const files = Array.from(input.files || []);
+                                if (!files.length) {
+                                        return;
+                                }
+                                input.value = '';
+                                Promise.all(files.map(async file => ({ file, result: await this.uploadImageFile(file) })))
+                                        .then(results => {
+                                                if (!this.editor || !this.editor.insertMarkdown) {
+                                                        return;
+                                                }
+                                                let inserted = false;
+                                                results.forEach(({ file, result }) => {
+                                                        if (!result || !result.url) {
+                                                                return;
+                                                        }
+                                                        const alt = result.alt || (file && file.name) || 'image';
+                                                        this.editor.insertMarkdown(`![${alt}](${result.url})`);
+                                                        inserted = true;
+                                                });
+                                                if (inserted) {
+                                                        window.AdminUI.toast({ message: '图片已插入正文', type: 'success' });
+                                                }
+                                        })
+                                        .catch(error => {
+                                                window.AdminUI.toast({ message: error.message || '图片上传失败', type: 'error' });
+                                        });
+                        },
 
 			toggleTag(id) {
 				const value = id.toString();
@@ -390,58 +503,37 @@
 				});
 			},
 
-			initializeEditor() {
-				if (this.editor) {
-					return;
-				}
-				const easyMDE = new EasyMDE({
-					element: document.getElementById('content'),
-					spellChecker: false,
-					status: ['lines', 'words', 'cursor'],
-					toolbar: ['bold', 'italic', 'heading', '|', 'quote', 'unordered-list', 'ordered-list', '|', 'link', {
-						name: 'image',
-						action: EasyMDE.drawImage,
-						className: 'fa fa-picture-o',
-						title: '插入图片'
-					}, 'table', 'code', '|', 'preview', 'side-by-side', 'fullscreen'],
-					autosave: { enabled: true, uniqueId: `post-content-${this.postId}`, delay: 1000 },
-					uploadImage: true,
-					imageUploadEndpoint: '/admin/api/upload/image',
-					imagePathAbsolute: true,
-					imageAccept: 'image/png, image/jpeg, image/gif, image/webp',
-					imageMaxSize: 5 * 1024 * 1024,
-					imageUploadFunction(file, onSuccess, onError) {
-						const formData = new FormData();
-						formData.append('image', file);
-						fetch('/admin/api/upload/image', { method: 'POST', body: formData })
-							.then(response => response.json())
-							.then(data => {
-								if (data.success === 1) {
-									onSuccess(data.data.url);
-								} else {
-									onError(data.message || '上传失败');
-								}
-							})
-							.catch(error => {
-								onError('上传失败: ' + error.message);
-							});
-					},
-					renderingConfig: { codeSyntaxHighlighting: false },
-					initialValue: this.post.content
-				});
+                        async initializeEditor() {
+                                if (this.editor) {
+                                        return;
+                                }
+                                const container = document.getElementById('post-editor');
+                                if (!container || !window.AdminMilkdown) {
+                                        return;
+                                }
+                                try {
+                                        this.editor = await window.AdminMilkdown.createEditor({
+                                                element: container,
+                                                initialValue: this.post.content || '',
+                                                onChange: markdown => {
+                                                        this.post.content = markdown;
+                                                        this.scheduleAutosave();
+                                                },
+                                                uploadImage: async file => {
+                                                        const result = await this.uploadImageFile(file);
+                                                        return result && result.url ? result.url : null;
+                                                },
+                                        });
+                                } catch (error) {
+                                        console.error('初始化 Milkdown 失败', error);
+                                }
+                        },
 
-				easyMDE.codemirror.on('change', () => {
-					this.post.content = easyMDE.value();
-				});
-
-				this.editor = easyMDE;
-			},
-
-			submitForm() {
-				this.loading = true;
-				if (this.editor) {
-					this.post.content = this.editor.value();
-				}
+                        submitForm() {
+                                this.loading = true;
+                                if (this.editor && this.editor.getMarkdown) {
+                                        this.post.content = this.editor.getMarkdown();
+                                }
                                 if (!this.cover.url || this.cover.width <= 0 || this.cover.height <= 0) {
                                         window.AdminUI.toast({ message: '请上传并裁剪文章封面', type: 'warning' });
 					this.loading = false;
@@ -488,9 +580,7 @@
                                         });
                                 }
                                 if (data.message) {
-                                        if (this.editor && this.editor.clearAutosavedValue) {
-                                                this.editor.clearAutosavedValue();
-                                        }
+                                        this.clearAutosave();
                                         window.AdminUI.toast({ message: data.message, type: 'success' });
                                                         if (!window.location.pathname.includes('/edit')) {
                                                                 window.location.href = '/admin/posts';
@@ -507,10 +597,11 @@
 
                         previewPost() {
                                 const preview = window.open('', '_blank');
-                                const parsed = this.editor ? this.editor.markdown(this.post.content) : this.post.content;
+                                const markdown = this.editor && this.editor.getMarkdown ? this.editor.getMarkdown() : this.post.content;
+                                const parsed = this.editor && this.editor.getHTML ? this.editor.getHTML() : window.AdminMilkdown.renderMarkdown(markdown);
                                 preview.document.write(`
-					<html>
-					<head>
+                                        <html>
+                                        <head>
 						<title>预览: ${this.post.title}</title>
                                                 <link rel="stylesheet" href="/static/dist/assets/input.css">
                                                 <link rel="stylesheet" href="/static/dist/assets/admin.css">
@@ -549,7 +640,7 @@
                                         return;
                                 }
                                 const title = (this.post.title || '').trim();
-                                const content = this.editor ? this.editor.value() : this.post.content;
+                                const content = this.editor && this.editor.getMarkdown ? this.editor.getMarkdown() : this.post.content;
                                 const trimmedContent = (content || '').trim();
                                 if (!title && !trimmedContent) {
                                         window.AdminUI.toast({ message: '请先填写文章标题或正文内容再尝试生成摘要', type: 'warning' });
