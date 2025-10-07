@@ -1,0 +1,82 @@
+name: CI & Deploy (Fly.io)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint_test_build:
+    name: Lint / Test / Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ secrets.GO_VERSION || '1.24.x' }}
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ vars.NODE_VERSION || '20.x' }}
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build front-end assets
+        run: npm run build
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Go vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build binary
+        run: go build ./cmd/server
+
+  deploy_prod:
+    name: Deploy to Fly.io (main only)
+    needs: [lint_test_build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@v1
+
+      - name: Deploy
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl deploy \
+            --app "${{ secrets.FLY_APP_NAME }}" \
+            --remote-only \
+            --strategy immediate \
+            --build-arg GIT_SHA=${{ github.sha }} \
+            --config ./fly.toml
