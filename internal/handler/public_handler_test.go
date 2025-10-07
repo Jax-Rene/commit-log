@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/router"
@@ -31,7 +30,7 @@ func setupPublicTestDB(t *testing.T) func() {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.Page{}, &db.Habit{}, &db.HabitLog{}, &db.ProfileContact{}, &db.SystemSetting{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.Page{}, &db.ProfileContact{}, &db.SystemSetting{}); err != nil {
 		t.Fatalf("failed to migrate database: %v", err)
 	}
 
@@ -226,43 +225,5 @@ func TestShowPostDetailDisplaysContacts(t *testing.T) {
 	}
 	if !strings.Contains(body, "mailto:hi@example.com") {
 		t.Fatalf("expected contact link to render")
-	}
-}
-
-func TestShowAboutDoesNotRenderHeatmap(t *testing.T) {
-	cleanup := setupPublicTestDB(t)
-	defer cleanup()
-
-	aboutPage := db.Page{Slug: "about", Title: "关于我", Content: "# 关于我\n坚持做喜欢的事"}
-	if err := db.DB.Create(&aboutPage).Error; err != nil {
-		t.Fatalf("failed to seed about page: %v", err)
-	}
-
-	habit := db.Habit{Name: "晨跑", FrequencyUnit: "daily", FrequencyCount: 1, Status: "active"}
-	if err := db.DB.Create(&habit).Error; err != nil {
-		t.Fatalf("failed to seed habit: %v", err)
-	}
-
-	today := time.Now().In(time.Local)
-	logDate := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, today.Location())
-	if err := db.DB.Create(&db.HabitLog{HabitID: habit.ID, LogDate: logDate}).Error; err != nil {
-		t.Fatalf("failed to seed habit log: %v", err)
-	}
-
-	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/about", nil)
-	r.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", w.Code)
-	}
-
-	body := w.Body.String()
-	if strings.Contains(body, "习惯活动热力图") {
-		t.Fatalf("about page should not render heatmap section")
-	}
-	if strings.Contains(body, habit.Name) {
-		t.Fatalf("habit data should not appear on about page")
 	}
 }

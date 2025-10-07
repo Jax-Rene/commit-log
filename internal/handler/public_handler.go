@@ -13,9 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"cmp"
-	"slices"
-
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
@@ -43,45 +40,6 @@ const (
 type tagStat struct {
 	Name  string
 	Count int
-}
-
-// aboutHeatmapHabit 用于在关于页渲染习惯图例
-type aboutHeatmapHabit struct {
-	ID      uint
-	Name    string
-	TypeTag string
-}
-
-// aboutHeatmapSummary 汇总热力图相关统计数据
-type aboutHeatmapSummary struct {
-	TotalLogs  int
-	ActiveDays int
-	HabitCount int
-}
-
-// aboutHeatmapDay 表示热力图中的单日信息
-type aboutHeatmapDay struct {
-	Date    string
-	Count   int
-	Class   string
-	Muted   bool
-	Tooltip string
-}
-
-// aboutHeatmapWeek 以周为单位组织热力图列
-type aboutHeatmapWeek struct {
-	MonthLabel string
-	Days       []aboutHeatmapDay
-}
-
-// aboutHeatmapData 封装关于页需要的整体热力图数据
-type aboutHeatmapData struct {
-	RangeStart  string
-	RangeEnd    string
-	GeneratedAt string
-	Summary     aboutHeatmapSummary
-	Weeks       []aboutHeatmapWeek
-	Habits      []aboutHeatmapHabit
 }
 
 // ShowHome renders the public home page with filters and masonry layout.
@@ -631,121 +589,6 @@ func buildArticleJSONLD(post *db.Post, canonicalURL, siteName, description, imag
 		return ""
 	}
 	return template.JS(encoded)
-}
-
-func buildAboutHabitHeatmap(entries []service.HabitHeatmapEntry, start, end, generatedAt time.Time) aboutHeatmapData {
-	dayHabits := make(map[string][]aboutHeatmapHabit)
-	legendMap := make(map[uint]aboutHeatmapHabit)
-
-	for _, entry := range entries {
-		dateKey := entry.LogDate.Format("2006-01-02")
-		habit := aboutHeatmapHabit{ID: entry.HabitID, Name: entry.HabitName, TypeTag: entry.HabitType}
-		dayHabits[dateKey] = append(dayHabits[dateKey], habit)
-		if _, exists := legendMap[habit.ID]; !exists {
-			legendMap[habit.ID] = habit
-		}
-	}
-
-	legend := make([]aboutHeatmapHabit, 0, len(legendMap))
-	for _, habit := range legendMap {
-		legend = append(legend, habit)
-	}
-
-	slices.SortFunc(legend, func(a, b aboutHeatmapHabit) int {
-		if diff := cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name)); diff != 0 {
-			return diff
-		}
-		return cmp.Compare(a.ID, b.ID)
-	})
-
-	alignedStart := start
-	for alignedStart.Weekday() != time.Monday {
-		alignedStart = alignedStart.AddDate(0, 0, -1)
-	}
-	alignedEnd := end
-	for alignedEnd.Weekday() != time.Sunday {
-		alignedEnd = alignedEnd.AddDate(0, 0, 1)
-	}
-
-	weeks := make([]aboutHeatmapWeek, 0, 60)
-	lastMonth := 0
-
-	for weekStart := alignedStart; !weekStart.After(alignedEnd); weekStart = weekStart.AddDate(0, 0, 7) {
-		week := aboutHeatmapWeek{Days: make([]aboutHeatmapDay, 0, 7)}
-		weekEnd := weekStart.AddDate(0, 0, 6)
-		label := ""
-
-		for day := weekStart; !day.After(weekEnd); day = day.AddDate(0, 0, 1) {
-			dateKey := day.Format("2006-01-02")
-			habits := append([]aboutHeatmapHabit(nil), dayHabits[dateKey]...)
-			slices.SortFunc(habits, func(a, b aboutHeatmapHabit) int {
-				return cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
-			})
-
-			names := make([]string, 0, len(habits))
-			for _, habit := range habits {
-				names = append(names, habit.Name)
-			}
-
-			count := len(habits)
-			muted := day.Before(start) || day.After(end)
-
-			title := fmt.Sprintf("%s：暂无打卡", dateKey)
-			if count > 0 {
-				title = fmt.Sprintf("%s：%d 次打卡", dateKey, count)
-				if len(names) > 0 {
-					title += "\n习惯：" + strings.Join(names, "、")
-				}
-			}
-
-			week.Days = append(week.Days, aboutHeatmapDay{
-				Date:    dateKey,
-				Count:   count,
-				Class:   colorClassForCount(count),
-				Muted:   muted,
-				Tooltip: title,
-			})
-
-			if !muted && label == "" {
-				month := int(day.Month())
-				if month != lastMonth {
-					label = fmt.Sprintf("%d月", month)
-					lastMonth = month
-				}
-			}
-		}
-
-		week.MonthLabel = label
-		weeks = append(weeks, week)
-	}
-
-	return aboutHeatmapData{
-		RangeStart:  start.Format("2006-01-02"),
-		RangeEnd:    end.Format("2006-01-02"),
-		GeneratedAt: generatedAt.In(time.Local).Format("2006-01-02 15:04"),
-		Summary: aboutHeatmapSummary{
-			TotalLogs:  len(entries),
-			ActiveDays: len(dayHabits),
-			HabitCount: len(legend),
-		},
-		Weeks:  weeks,
-		Habits: legend,
-	}
-}
-
-func colorClassForCount(count int) string {
-	switch {
-	case count <= 0:
-		return "bg-slate-200 dark:bg-slate-700/60"
-	case count == 1:
-		return "bg-emerald-200 dark:bg-emerald-700/60"
-	case count == 2:
-		return "bg-emerald-300 dark:bg-emerald-600/70"
-	case count <= 4:
-		return "bg-emerald-400 dark:bg-emerald-500/80"
-	default:
-		return "bg-emerald-600 dark:bg-emerald-400/80"
-	}
 }
 
 func buildQueryParams(search string, tags []string) string {

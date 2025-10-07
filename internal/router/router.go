@@ -145,18 +145,6 @@ func newTemplateRegistry() *templateRegistry {
 				}
 				return strings.TrimSpace(string(runes[:length])) + "…"
 			},
-			"habitFrequencyText": func(unit string, count int) string {
-				switch strings.ToLower(strings.TrimSpace(unit)) {
-				case "daily":
-					return fmt.Sprintf("每天 %d 次", count)
-				case "weekly":
-					return fmt.Sprintf("每周 %d 次", count)
-				case "monthly":
-					return fmt.Sprintf("每月 %d 次", count)
-				default:
-					return fmt.Sprintf("%s %d 次", unit, count)
-				}
-			},
 		},
 	}
 }
@@ -312,9 +300,6 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 		auth.Use(handlers.AuthRequired())
 		{
 			auth.GET("/dashboard", handlers.ShowDashboard)
-			auth.GET("/habits", handlers.ShowHabitList)
-			auth.GET("/habits/new", handlers.ShowHabitEdit)
-			auth.GET("/habits/:id/edit", handlers.ShowHabitEdit)
 			auth.GET("/posts", handlers.ShowPostList)
 			auth.GET("/posts/new", handlers.ShowPostEdit)
 			auth.GET("/posts/:id/edit", handlers.ShowPostEdit)
@@ -332,16 +317,6 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 				api.POST("/posts/optimize", handlers.OptimizePostContent)
 				api.PUT("/posts/:id", handlers.UpdatePost)
 				api.DELETE("/posts/:id", handlers.DeletePost)
-
-				api.GET("/habits", handlers.ListHabits)
-				api.GET("/habits/heatmap", handlers.GetHabitHeatmap)
-				api.GET("/habits/:id", handlers.GetHabit)
-				api.POST("/habits", handlers.CreateHabit)
-				api.PUT("/habits/:id", handlers.UpdateHabit)
-				api.DELETE("/habits/:id", handlers.DeleteHabit)
-				api.GET("/habits/:id/calendar", handlers.GetHabitCalendar)
-				api.POST("/habits/:id/logs", handlers.QuickLogHabit)
-				api.DELETE("/habits/:id/logs/:logId", handlers.DeleteHabitLog)
 
 				api.GET("/tags", handlers.GetTags)
 				api.POST("/tags", handlers.CreateTag)
