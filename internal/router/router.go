@@ -329,6 +329,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 				api.GET("/posts/:id", handlers.GetPost)
 				api.POST("/posts", handlers.CreatePost)
 				api.POST("/posts/summary", handlers.GeneratePostSummary)
+				api.POST("/posts/optimize", handlers.OptimizePostContent)
 				api.PUT("/posts/:id", handlers.UpdatePost)
 				api.DELETE("/posts/:id", handlers.DeletePost)
 

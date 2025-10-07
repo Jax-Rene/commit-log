@@ -39,6 +39,26 @@ func (f *fakeSummaryGenerator) GenerateSummary(ctx context.Context, input servic
 	}, nil
 }
 
+type fakeContentOptimizer struct {
+	content          string
+	err              error
+	calls            int
+	promptTokens     int
+	completionTokens int
+}
+
+func (f *fakeContentOptimizer) OptimizeContent(ctx context.Context, input service.ContentOptimizationInput) (service.ContentOptimizationResult, error) {
+	f.calls++
+	if f.err != nil {
+		return service.ContentOptimizationResult{}, f.err
+	}
+	return service.ContentOptimizationResult{
+		Content:          f.content,
+		PromptTokens:     f.promptTokens,
+		CompletionTokens: f.completionTokens,
+	}, nil
+}
+
 func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 	os.Exit(m.Run())
@@ -585,6 +605,122 @@ func TestGeneratePostSummaryMissingAPIKey(t *testing.T) {
 	c.Request = req
 
 	api.GeneratePostSummary(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp["error"] != "请在系统设置中配置有效的 AI API Key 后再试" {
+		t.Fatalf("unexpected error message: %v", resp["error"])
+	}
+}
+
+func TestOptimizePostContentSuccess(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	stub := &fakeContentOptimizer{
+		content:          "优化后的 Markdown 内容",
+		promptTokens:     256,
+		completionTokens: 768,
+	}
+	api.optimizer = stub
+
+	payload := map[string]any{
+		"title":   "测试标题",
+		"content": "原始 Markdown 内容",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/optimize", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.OptimizePostContent(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var resp struct {
+		Optimized string `json:"optimized_content"`
+		Usage     struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+		} `json:"usage"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp.Optimized != stub.content {
+		t.Fatalf("unexpected optimized content: %s", resp.Optimized)
+	}
+	if resp.Usage.PromptTokens != stub.promptTokens {
+		t.Fatalf("unexpected prompt tokens: %d", resp.Usage.PromptTokens)
+	}
+	if resp.Usage.CompletionTokens != stub.completionTokens {
+		t.Fatalf("unexpected completion tokens: %d", resp.Usage.CompletionTokens)
+	}
+}
+
+func TestOptimizePostContentRequiresContent(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	api.optimizer = &fakeContentOptimizer{content: "不会触发"}
+
+	payload := map[string]any{
+		"title":   "标题",
+		"content": "   ",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/optimize", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.OptimizePostContent(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp["error"] != "请先填写文章正文后再尝试全文优化" {
+		t.Fatalf("unexpected error message: %v", resp["error"])
+	}
+}
+
+func TestOptimizePostContentMissingAPIKey(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	api.optimizer = &fakeContentOptimizer{err: service.ErrAIAPIKeyMissing}
+
+	payload := map[string]any{
+		"title":   "标题",
+		"content": "正文",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/optimize", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.OptimizePostContent(c)
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)

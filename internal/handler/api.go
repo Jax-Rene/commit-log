@@ -24,6 +24,7 @@ type API struct {
 	analytics *service.AnalyticsService
 	system    *service.SystemSettingService
 	summaries service.SummaryGenerator
+	optimizer service.ContentOptimizer
 	uploadDir string
 	uploadURL string
 }
@@ -45,6 +46,7 @@ const siteSettingsContextKey = "__site_settings"
 func NewAPI(db *gorm.DB, uploadDir, uploadURL string) *API {
 	systemService := service.NewSystemSettingService(db)
 	summaryService := service.NewAISummaryService(systemService)
+	rewriteService := service.NewAIRewriteService(systemService)
 
 	return &API{
 		db:        db,
@@ -57,6 +59,7 @@ func NewAPI(db *gorm.DB, uploadDir, uploadURL string) *API {
 		analytics: service.NewAnalyticsService(db),
 		system:    systemService,
 		summaries: summaryService,
+		optimizer: rewriteService,
 		uploadDir: uploadDir,
 		uploadURL: uploadURL,
 	}

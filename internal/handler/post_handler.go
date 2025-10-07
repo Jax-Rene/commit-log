@@ -222,6 +222,59 @@ func (a *API) GeneratePostSummary(c *gin.Context) {
 	})
 }
 
+// OptimizePostContent 使用 AI 对文章正文进行全文优化，返回优化后的 Markdown。
+func (a *API) OptimizePostContent(c *gin.Context) {
+	if a.optimizer == nil {
+		respondError(c, http.StatusServiceUnavailable, "未配置 AI 全文优化服务，请先在系统设置中完成配置")
+		return
+	}
+
+	var payload struct {
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
+	if !bindJSON(c, &payload, "请求参数不合法") {
+		return
+	}
+
+	title := strings.TrimSpace(payload.Title)
+	content := strings.TrimSpace(payload.Content)
+	if content == "" {
+		respondError(c, http.StatusBadRequest, "请先填写文章正文后再尝试全文优化")
+		return
+	}
+
+	result, err := a.optimizer.OptimizeContent(c.Request.Context(), service.ContentOptimizationInput{
+		Title:   title,
+		Content: content,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrAIAPIKeyMissing):
+			respondError(c, http.StatusBadRequest, "请在系统设置中配置有效的 AI API Key 后再试")
+		case errors.Is(err, service.ErrOptimizationEmpty):
+			respondError(c, http.StatusBadGateway, "AI 全文优化未返回内容，请稍后重试")
+		default:
+			respondError(c, http.StatusBadGateway, fmt.Sprintf("全文优化失败：%v", err))
+		}
+		return
+	}
+
+	optimized := strings.TrimSpace(result.Content)
+	if optimized == "" {
+		respondError(c, http.StatusBadGateway, "AI 全文优化未返回内容，请稍后重试")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"optimized_content": optimized,
+		"usage": gin.H{
+			"prompt_tokens":     result.PromptTokens,
+			"completion_tokens": result.CompletionTokens,
+		},
+	})
+}
+
 func (a *API) maybeGenerateSummary(c *gin.Context, post *db.Post) (notices, warnings []string) {
 	if post == nil {
 		return nil, nil
