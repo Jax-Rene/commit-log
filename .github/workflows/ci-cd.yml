@@ -80,5 +80,3 @@ jobs:
             --strategy immediate \
             --build-arg GIT_SHA=${{ github.sha }} \
             --config ./fly.toml
-
-            
