@@ -146,17 +146,17 @@
 
 * [ ] ~~替换 EasyMD → Milkdown（后续尝试重构整个后台文章编辑的逻辑，本期先不做）~~
 * [ ] ~~支持 Zen Mode（全屏沉浸写作）~~
-* [ ] 回归测试文章发布流程
 
 #### 自动化部署与数据库备份
 
-* [ ] GitHub Actions 配置：lint/test → 构建 → 部署 Fly.io
-* [ ] main 分支合并后自动部署生产环境
+* [x] GitHub Actions 配置：lint/test → 构建 → 部署 Fly.io
+* [x] main 分支合并后自动部署生产环境
 * [x] 支持手动触发预发部署
-* [ ] Fly.io 配置每日定时任务：备份 SQLite
-* [ ] 备份至 Fly Volumes + S3（兼容方案）
-* [ ] 备份失败有告警（邮件/Slack Webhook）
-* [ ] 确认备份可用性（定期恢复测试）
+* [ ] ~~Fly.io 配置每日定时任务：备份 SQLite~~
+      - fly.io 支持天级别快照无需自己再弄一份
+* [ ] ~~备份至 Fly Volumes + S3（兼容方案）~~
+* [ ] ~~备份失败有告警（邮件/Slack Webhook）~~
+* [ ] ~~确认备份可用性（定期恢复测试）~~
 
 #### 访客端交互组件升级
 
