@@ -18,7 +18,7 @@ func (a *API) ShowAboutEditor(c *gin.Context) {
 	page, err := a.pages.GetBySlug("about")
 	if err != nil {
 		if !errors.Is(err, service.ErrPageNotFound) {
-			c.HTML(http.StatusInternalServerError, "about_edit.html", gin.H{
+			a.renderHTML(c, http.StatusInternalServerError, "about_edit.html", gin.H{
 				"title": "关于我",
 				"error": "加载关于页面失败，请稍后再试",
 			})
@@ -35,7 +35,7 @@ func (a *API) ShowAboutEditor(c *gin.Context) {
 		}
 	}
 
-	c.HTML(http.StatusOK, "about_edit.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "about_edit.html", gin.H{
 		"title":     "关于我",
 		"content":   content,
 		"updatedAt": updatedAt,

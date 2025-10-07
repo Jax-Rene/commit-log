@@ -79,6 +79,37 @@
 		</div>
 	</section>
 
+	<section class="grid gap-4 lg:grid-cols-3">
+		<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+			<p class="text-sm text-slate-500 dark:text-slate-400">全站浏览 (PV)</p>
+			<p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{.overview.TotalPageViews}}</p>
+			<p class="mt-3 text-xs text-slate-400 dark:text-slate-500">汇总所有文章的有效浏览次数</p>
+		</div>
+		<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+			<p class="text-sm text-slate-500 dark:text-slate-400">独立访客 (UV)</p>
+			<p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{.overview.TotalUniqueVisitors}}</p>
+			<p class="mt-3 text-xs text-slate-400 dark:text-slate-500">以访客 ID 去重，短时间重复访问不计入</p>
+		</div>
+		<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+			<p class="mb-4 text-sm font-medium text-slate-500 dark:text-slate-400">热门文章</p>
+			{{if gt (len .overview.TopPosts) 0}}
+			<ul class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+				{{range .overview.TopPosts}}
+				<li class="flex items-center justify-between gap-3">
+					<div class="truncate" title="{{.Title}}">{{.Title}}</div>
+					<div class="flex flex-col text-right text-xs text-slate-400 dark:text-slate-500">
+						<span><span class="font-semibold text-slate-900 dark:text-slate-100">{{.PageViews}}</span> PV</span>
+						<span><span class="font-semibold text-slate-900 dark:text-slate-100">{{.UniqueVisitors}}</span> UV</span>
+					</div>
+				</li>
+				{{end}}
+			</ul>
+			{{else}}
+			<p class="text-xs text-slate-400 dark:text-slate-500">暂无浏览数据</p>
+			{{end}}
+		</div>
+	</section>
+
 	<section class="rounded-2xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 		<div class="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
 			<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">文章列表</h2>
@@ -118,6 +149,17 @@
 							<li class="rounded-full bg-blue-50 px-2.5 py-0.5 text-blue-600 dark:bg-blue-500/20 dark:text-blue-200">{{.Name}}</li>
 							{{end}}
 						</ul>
+						{{end}}
+						{{with $stat := index $.postStats .ID}}
+						<div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+							<span class="inline-flex items-center gap-1"><span class="font-semibold text-slate-900 dark:text-slate-100">{{$stat.PageViews}}</span> 次浏览</span>
+							<span class="inline-flex items-center gap-1"><span class="font-semibold text-slate-900 dark:text-slate-100">{{$stat.UniqueVisitors}}</span> 位访客</span>
+							{{if not ($stat.LastViewedAt.IsZero)}}
+							<span>最近 {{ $stat.LastViewedAt.Format "2006-01-02 15:04" }}</span>
+							{{end}}
+						</div>
+						{{else}}
+						<div class="text-xs text-slate-400 dark:text-slate-500">暂无浏览数据</div>
 						{{end}}
 					</div>
 				</div>

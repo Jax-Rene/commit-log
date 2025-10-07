@@ -3,20 +3,16 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
-	"github.com/commitlog/internal/view"
 	"github.com/gin-gonic/gin"
 )
 
 // ShowProfileContacts renders the admin page for managing profile contacts.
 func (a *API) ShowProfileContacts(c *gin.Context) {
-	c.HTML(http.StatusOK, "profile_contacts.html", gin.H{
-		"title":              "社交联系方式",
-		"profileIconOptions": view.ProfileIconOptions(),
-		"profileIconSVGs":    view.ProfileIconSVGMap(),
-	})
+	c.Redirect(http.StatusFound, "/admin/system/settings#contacts")
 }
 
 type profileContactRequest struct {
@@ -25,6 +21,7 @@ type profileContactRequest struct {
 	Value    string `json:"value"`
 	Link     string `json:"link"`
 	Icon     string `json:"icon"`
+	QRImage  string `json:"qrImageUrl"`
 	Sort     *int   `json:"sort"`
 	Visible  *bool  `json:"visible"`
 }
@@ -125,11 +122,16 @@ func (a *API) ReorderProfileContacts(c *gin.Context) {
 }
 
 func (r profileContactRequest) toInput() service.ProfileContactInput {
+	link := r.Link
+	if strings.TrimSpace(link) == "" {
+		link = r.QRImage
+	}
+
 	return service.ProfileContactInput{
 		Platform: r.Platform,
 		Label:    r.Label,
 		Value:    r.Value,
-		Link:     r.Link,
+		Link:     link,
 		Icon:     r.Icon,
 		Sort:     r.Sort,
 		Visible:  r.Visible,
@@ -137,7 +139,7 @@ func (r profileContactRequest) toInput() service.ProfileContactInput {
 }
 
 func profileContactPayload(contact db.ProfileContact) gin.H {
-	return gin.H{
+	payload := gin.H{
 		"id":       contact.ID,
 		"platform": contact.Platform,
 		"label":    contact.Label,
@@ -147,6 +149,10 @@ func profileContactPayload(contact db.ProfileContact) gin.H {
 		"sort":     contact.Sort,
 		"visible":  contact.Visible,
 	}
+	if strings.EqualFold(contact.Platform, "wechat") {
+		payload["qrImageUrl"] = contact.Link
+	}
+	return payload
 }
 
 func handleProfileContactError(c *gin.Context, err error) {

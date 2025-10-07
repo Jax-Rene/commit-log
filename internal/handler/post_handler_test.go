@@ -2,7 +2,9 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,11 +12,52 @@ import (
 	"testing"
 
 	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+type fakeSummaryGenerator struct {
+	summary          string
+	err              error
+	calls            int
+	promptTokens     int
+	completionTokens int
+}
+
+func (f *fakeSummaryGenerator) GenerateSummary(ctx context.Context, input service.SummaryInput) (service.SummaryResult, error) {
+	f.calls++
+	if f.err != nil {
+		return service.SummaryResult{}, f.err
+	}
+	return service.SummaryResult{
+		Summary:          f.summary,
+		PromptTokens:     f.promptTokens,
+		CompletionTokens: f.completionTokens,
+	}, nil
+}
+
+type fakeContentOptimizer struct {
+	content          string
+	err              error
+	calls            int
+	promptTokens     int
+	completionTokens int
+}
+
+func (f *fakeContentOptimizer) OptimizeContent(ctx context.Context, input service.ContentOptimizationInput) (service.ContentOptimizationResult, error) {
+	f.calls++
+	if f.err != nil {
+		return service.ContentOptimizationResult{}, f.err
+	}
+	return service.ContentOptimizationResult{
+		Content:          f.content,
+		PromptTokens:     f.promptTokens,
+		CompletionTokens: f.completionTokens,
+	}, nil
+}
 
 func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
@@ -31,7 +74,7 @@ func setupTestDB(t *testing.T) (*API, func()) {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.Page{}, &db.ProfileContact{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.Page{}, &db.ProfileContact{}, &db.SystemSetting{}); err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 
@@ -124,6 +167,119 @@ func TestCreatePostRejectsUnknownTags(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestCreatePostAutoSummary(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	stub := &fakeSummaryGenerator{summary: "AI 生成的摘要"}
+	api.summaries = stub
+
+	payload := map[string]any{
+		"title":        "AI Test",
+		"content":      "这是正文内容。",
+		"summary":      "",
+		"status":       "published",
+		"tag_ids":      []uint{},
+		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+		"cover_width":  1200,
+		"cover_height": 800,
+	}
+
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.CreatePost(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var response map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if stub.calls != 1 {
+		t.Fatalf("expected summary generator to be called once, got %d", stub.calls)
+	}
+
+	var created db.Post
+	if err := db.DB.First(&created).Error; err != nil {
+		t.Fatalf("failed to load created post: %v", err)
+	}
+	if created.Summary != "AI 生成的摘要" {
+		t.Fatalf("expected summary to be updated, got %q", created.Summary)
+	}
+
+	postData, ok := response["post"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected response to include post object")
+	}
+	if summary, _ := postData["Summary"].(string); summary != "AI 生成的摘要" {
+		t.Fatalf("expected response summary to be updated, got %q", summary)
+	}
+
+	notices, _ := response["notices"].([]any)
+	if len(notices) == 0 {
+		t.Fatalf("expected notices to include AI summary hint")
+	}
+}
+
+func TestCreatePostAutoSummaryFailure(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	stub := &fakeSummaryGenerator{err: errors.New("network error")}
+	api.summaries = stub
+
+	payload := map[string]any{
+		"title":        "AI Failure",
+		"content":      "正文内容",
+		"summary":      "",
+		"status":       "published",
+		"tag_ids":      []uint{},
+		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+		"cover_width":  1200,
+		"cover_height": 800,
+	}
+
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.CreatePost(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var created db.Post
+	if err := db.DB.First(&created).Error; err != nil {
+		t.Fatalf("failed to load created post: %v", err)
+	}
+	if created.Summary != "" {
+		t.Fatalf("expected summary to remain empty on failure")
+	}
+
+	var response map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	warnings, _ := response["warnings"].([]any)
+	if len(warnings) == 0 {
+		t.Fatalf("expected warnings when summary generation fails")
 	}
 }
 
@@ -342,5 +498,239 @@ func TestDeletePost(t *testing.T) {
 	db.DB.Model(&db.Post{}).Where("id = ?", post.ID).Count(&count)
 	if count != 0 {
 		t.Fatalf("expected post to be deleted, still found %d records", count)
+	}
+}
+
+func TestGeneratePostSummarySuccess(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	stub := &fakeSummaryGenerator{
+		summary:          "这是一个精炼摘要",
+		promptTokens:     120,
+		completionTokens: 36,
+	}
+	api.summaries = stub
+
+	payload := map[string]any{
+		"title":   "Go 并发模式",
+		"content": "Goroutine 和 channel 的组合...",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/summary", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.GeneratePostSummary(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var resp struct {
+		Summary string `json:"summary"`
+		Usage   struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+		} `json:"usage"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	if resp.Summary != stub.summary {
+		t.Fatalf("unexpected summary: %s", resp.Summary)
+	}
+
+	if resp.Usage.PromptTokens != stub.promptTokens {
+		t.Fatalf("unexpected prompt tokens: %d", resp.Usage.PromptTokens)
+	}
+	if resp.Usage.CompletionTokens != stub.completionTokens {
+		t.Fatalf("unexpected completion tokens: %d", resp.Usage.CompletionTokens)
+	}
+}
+
+func TestGeneratePostSummaryRequiresContent(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	api.summaries = &fakeSummaryGenerator{summary: "不会触发"}
+
+	payload := map[string]any{
+		"title":   " ",
+		"content": "",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/summary", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.GeneratePostSummary(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp["error"] != "请至少提供文章标题或正文内容" {
+		t.Fatalf("unexpected error message: %v", resp["error"])
+	}
+}
+
+func TestGeneratePostSummaryMissingAPIKey(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	api.summaries = &fakeSummaryGenerator{err: service.ErrAIAPIKeyMissing}
+
+	payload := map[string]any{
+		"title":   "测试",
+		"content": "内容",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/summary", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.GeneratePostSummary(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp["error"] != "请在系统设置中配置有效的 AI API Key 后再试" {
+		t.Fatalf("unexpected error message: %v", resp["error"])
+	}
+}
+
+func TestOptimizePostContentSuccess(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	stub := &fakeContentOptimizer{
+		content:          "优化后的 Markdown 内容",
+		promptTokens:     256,
+		completionTokens: 768,
+	}
+	api.optimizer = stub
+
+	payload := map[string]any{
+		"title":   "测试标题",
+		"content": "原始 Markdown 内容",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/optimize", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.OptimizePostContent(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var resp struct {
+		Optimized string `json:"optimized_content"`
+		Usage     struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+		} `json:"usage"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp.Optimized != stub.content {
+		t.Fatalf("unexpected optimized content: %s", resp.Optimized)
+	}
+	if resp.Usage.PromptTokens != stub.promptTokens {
+		t.Fatalf("unexpected prompt tokens: %d", resp.Usage.PromptTokens)
+	}
+	if resp.Usage.CompletionTokens != stub.completionTokens {
+		t.Fatalf("unexpected completion tokens: %d", resp.Usage.CompletionTokens)
+	}
+}
+
+func TestOptimizePostContentRequiresContent(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	api.optimizer = &fakeContentOptimizer{content: "不会触发"}
+
+	payload := map[string]any{
+		"title":   "标题",
+		"content": "   ",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/optimize", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.OptimizePostContent(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp["error"] != "请先填写文章正文后再尝试全文优化" {
+		t.Fatalf("unexpected error message: %v", resp["error"])
+	}
+}
+
+func TestOptimizePostContentMissingAPIKey(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	api.optimizer = &fakeContentOptimizer{err: service.ErrAIAPIKeyMissing}
+
+	payload := map[string]any{
+		"title":   "标题",
+		"content": "正文",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/optimize", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.OptimizePostContent(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp["error"] != "请在系统设置中配置有效的 AI API Key 后再试" {
+		t.Fatalf("unexpected error message: %v", resp["error"])
 	}
 }

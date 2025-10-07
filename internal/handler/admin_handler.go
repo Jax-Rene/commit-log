@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/service"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -11,7 +12,7 @@ import (
 
 // ShowLoginPage 渲染登录页面
 func (a *API) ShowLoginPage(c *gin.Context) {
-	c.HTML(http.StatusOK, "login.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "login.html", gin.H{
 		"title": "管理员登录",
 	})
 }
@@ -20,26 +21,40 @@ func (a *API) ShowLoginPage(c *gin.Context) {
 func (a *API) Login(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
+	remember := c.PostForm("remember") == "1"
 
 	// 查找用户
 	var user db.User
 	if err := a.db.Where("username = ?", username).First(&user).Error; err != nil {
-		c.HTML(http.StatusUnauthorized, "login_error.html", gin.H{"error": "用户名或密码错误"})
+		a.renderHTML(c, http.StatusUnauthorized, "login_error.html", gin.H{"error": "用户名或密码错误"})
 		return
 	}
 
 	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		c.HTML(http.StatusUnauthorized, "login_error.html", gin.H{"error": "用户名或密码错误"})
+		a.renderHTML(c, http.StatusUnauthorized, "login_error.html", gin.H{"error": "用户名或密码错误"})
 		return
 	}
 
 	// 设置会话
 	session := sessions.Default(c)
+	options := sessions.Options{
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   c.Request.TLS != nil,
+	}
+
+	if remember {
+		options.MaxAge = 30 * 24 * 60 * 60
+	} else {
+		options.MaxAge = 0
+	}
+
+	session.Options(options)
 	session.Set("user_id", user.ID)
 	session.Set("username", user.Username)
 	if err := session.Save(); err != nil {
-		c.HTML(http.StatusInternalServerError, "login_error.html", gin.H{"error": "会话保存失败"})
+		a.renderHTML(c, http.StatusInternalServerError, "login_error.html", gin.H{"error": "会话保存失败"})
 		return
 	}
 
@@ -68,11 +83,21 @@ func (a *API) ShowDashboard(c *gin.Context) {
 	var tagCount int64
 	a.db.Model(&db.Tag{}).Count(&tagCount)
 
-	c.HTML(http.StatusOK, "dashboard.html", gin.H{
+	var overview service.SiteOverview
+	if a.analytics != nil {
+		if ov, err := a.analytics.Overview(5); err == nil {
+			overview = ov
+		} else {
+			c.Error(err)
+		}
+	}
+
+	a.renderHTML(c, http.StatusOK, "dashboard.html", gin.H{
 		"title":     "管理面板",
 		"username":  username,
 		"postCount": postCount,
 		"tagCount":  tagCount,
+		"overview":  overview,
 	})
 }
 

@@ -41,6 +41,83 @@ type ProfileContactInput struct {
 	Visible  *bool
 }
 
+func platformKey(platform string) string {
+	return strings.ToLower(strings.TrimSpace(platform))
+}
+
+func defaultIconForPlatform(platform string) string {
+	switch platformKey(platform) {
+	case "wechat":
+		return "wechat"
+	case "email":
+		return "email"
+	case "github":
+		return "github"
+	case "telegram":
+		return "telegram"
+	case "x", "twitter":
+		return "x"
+	case "website":
+		return "website"
+	default:
+		return ""
+	}
+}
+
+func normalizeUsername(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+	return strings.TrimPrefix(trimmed, "@")
+}
+
+func platformLink(platform, value, link string) string {
+	trimmedLink := strings.TrimSpace(link)
+	if trimmedLink != "" {
+		return trimmedLink
+	}
+	trimmedValue := strings.TrimSpace(value)
+	switch platformKey(platform) {
+	case "email":
+		if trimmedValue == "" {
+			return ""
+		}
+		return "mailto:" + trimmedValue
+	case "github":
+		if trimmedValue == "" {
+			return ""
+		}
+		return fmt.Sprintf("https://github.com/%s", normalizeUsername(trimmedValue))
+	case "telegram":
+		if trimmedValue == "" {
+			return ""
+		}
+		return fmt.Sprintf("https://t.me/%s", normalizeUsername(trimmedValue))
+	case "x", "twitter":
+		if trimmedValue == "" {
+			return ""
+		}
+		return fmt.Sprintf("https://x.com/%s", normalizeUsername(trimmedValue))
+	case "website":
+		return trimmedValue
+	default:
+		return trimmedLink
+	}
+}
+
+func applyPlatformDefaults(contact *db.ProfileContact) {
+	if contact == nil {
+		return
+	}
+	if strings.TrimSpace(contact.Icon) == "" {
+		if icon := defaultIconForPlatform(contact.Platform); icon != "" {
+			contact.Icon = icon
+		}
+	}
+	contact.Link = platformLink(contact.Platform, contact.Value, contact.Link)
+}
+
 // ListContacts 返回联系信息集合，默认按照排序值升序
 // 如果 includeHidden 为 false，则过滤掉 Visible=false 的条目
 func (s *ProfileService) ListContacts(includeHidden bool) ([]db.ProfileContact, error) {
@@ -94,6 +171,7 @@ func (s *ProfileService) CreateContact(input ProfileContactInput) (*db.ProfileCo
 		Sort:     sortValue,
 		Visible:  visible,
 	}
+	applyPlatformDefaults(&contact)
 
 	if err := s.db.Create(&contact).Error; err != nil {
 		return nil, fmt.Errorf("create profile contact: %w", err)
@@ -121,6 +199,7 @@ func (s *ProfileService) UpdateContact(id uint, input ProfileContactInput) (*db.
 	contact.Value = strings.TrimSpace(input.Value)
 	contact.Link = strings.TrimSpace(input.Link)
 	contact.Icon = strings.TrimSpace(input.Icon)
+	applyPlatformDefaults(&contact)
 
 	if input.Sort != nil {
 		contact.Sort = *input.Sort
@@ -175,7 +254,8 @@ func (s *ProfileService) resolveSort(sortPtr *int) (int, error) {
 }
 
 func validateProfileContactInput(input ProfileContactInput) error {
-	if strings.TrimSpace(input.Platform) == "" {
+	platform := strings.TrimSpace(input.Platform)
+	if platform == "" {
 		return fmt.Errorf("%w: platform is required", ErrProfileContactInvalidInput)
 	}
 	if strings.TrimSpace(input.Label) == "" {
@@ -183,6 +263,9 @@ func validateProfileContactInput(input ProfileContactInput) error {
 	}
 	if strings.TrimSpace(input.Value) == "" {
 		return fmt.Errorf("%w: value is required", ErrProfileContactInvalidInput)
+	}
+	if platformKey(platform) == "wechat" && strings.TrimSpace(input.Link) == "" {
+		return fmt.Errorf("%w: wechat contact requires qr image", ErrProfileContactInvalidInput)
 	}
 	return nil
 }

@@ -2,11 +2,14 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -93,7 +96,17 @@ func (a *API) CreatePost(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "文章创建成功", "post": post})
+	notices, warnings := a.maybeGenerateSummary(c, post)
+
+	response := gin.H{"message": "文章创建成功", "post": post}
+	if len(notices) > 0 {
+		response["notices"] = notices
+	}
+	if len(warnings) > 0 {
+		response["warnings"] = warnings
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // UpdatePost 更新文章
@@ -126,7 +139,16 @@ func (a *API) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "文章更新成功", "post": post})
+	notices, warnings := a.maybeGenerateSummary(c, post)
+	response := gin.H{"message": "文章更新成功", "post": post}
+	if len(notices) > 0 {
+		response["notices"] = notices
+	}
+	if len(warnings) > 0 {
+		response["warnings"] = warnings
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // DeletePost 删除文章
@@ -147,6 +169,145 @@ func (a *API) DeletePost(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "文章删除成功"})
+}
+
+// GeneratePostSummary 使用已配置的 AI 服务生成文章摘要，返回预览内容供人工确认。
+func (a *API) GeneratePostSummary(c *gin.Context) {
+	if a.summaries == nil {
+		respondError(c, http.StatusServiceUnavailable, "未配置 AI 摘要服务，请先在系统设置中完成配置")
+		return
+	}
+
+	var payload struct {
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
+	if !bindJSON(c, &payload, "请求参数不合法") {
+		return
+	}
+
+	title := strings.TrimSpace(payload.Title)
+	content := strings.TrimSpace(payload.Content)
+	if title == "" && content == "" {
+		respondError(c, http.StatusBadRequest, "请至少提供文章标题或正文内容")
+		return
+	}
+
+	result, err := a.summaries.GenerateSummary(c.Request.Context(), service.SummaryInput{
+		Title:   title,
+		Content: content,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrAIAPIKeyMissing):
+			respondError(c, http.StatusBadRequest, "请在系统设置中配置有效的 AI API Key 后再试")
+		default:
+			respondError(c, http.StatusBadGateway, fmt.Sprintf("生成摘要失败：%v", err))
+		}
+		return
+	}
+
+	summary := strings.TrimSpace(result.Summary)
+	if summary == "" {
+		respondError(c, http.StatusBadGateway, "AI 摘要服务未返回内容，请稍后重试")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"summary": summary,
+		"usage": gin.H{
+			"prompt_tokens":     result.PromptTokens,
+			"completion_tokens": result.CompletionTokens,
+		},
+	})
+}
+
+// OptimizePostContent 使用 AI 对文章正文进行全文优化，返回优化后的 Markdown。
+func (a *API) OptimizePostContent(c *gin.Context) {
+	if a.optimizer == nil {
+		respondError(c, http.StatusServiceUnavailable, "未配置 AI 全文优化服务，请先在系统设置中完成配置")
+		return
+	}
+
+	var payload struct {
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
+	if !bindJSON(c, &payload, "请求参数不合法") {
+		return
+	}
+
+	title := strings.TrimSpace(payload.Title)
+	content := strings.TrimSpace(payload.Content)
+	if content == "" {
+		respondError(c, http.StatusBadRequest, "请先填写文章正文后再尝试全文优化")
+		return
+	}
+
+	result, err := a.optimizer.OptimizeContent(c.Request.Context(), service.ContentOptimizationInput{
+		Title:   title,
+		Content: content,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrAIAPIKeyMissing):
+			respondError(c, http.StatusBadRequest, "请在系统设置中配置有效的 AI API Key 后再试")
+		case errors.Is(err, service.ErrOptimizationEmpty):
+			respondError(c, http.StatusBadGateway, "AI 全文优化未返回内容，请稍后重试")
+		default:
+			respondError(c, http.StatusBadGateway, fmt.Sprintf("全文优化失败：%v", err))
+		}
+		return
+	}
+
+	optimized := strings.TrimSpace(result.Content)
+	if optimized == "" {
+		respondError(c, http.StatusBadGateway, "AI 全文优化未返回内容，请稍后重试")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"optimized_content": optimized,
+		"usage": gin.H{
+			"prompt_tokens":     result.PromptTokens,
+			"completion_tokens": result.CompletionTokens,
+		},
+	})
+}
+
+func (a *API) maybeGenerateSummary(c *gin.Context, post *db.Post) (notices, warnings []string) {
+	if post == nil {
+		return nil, nil
+	}
+	if strings.TrimSpace(post.Summary) != "" {
+		return nil, nil
+	}
+	if !strings.EqualFold(strings.TrimSpace(post.Status), "published") {
+		return nil, nil
+	}
+	if a.summaries == nil {
+		return nil, []string{"未配置 AI 摘要服务，无法自动生成摘要"}
+	}
+	result, err := a.summaries.GenerateSummary(c.Request.Context(), service.SummaryInput{
+		Title:   post.Title,
+		Content: post.Content,
+	})
+	if err != nil {
+		warnings = append(warnings, fmt.Sprintf("自动摘要生成失败：%v", err))
+		return nil, warnings
+	}
+	summary := strings.TrimSpace(result.Summary)
+	if summary == "" {
+		warnings = append(warnings, "自动摘要生成失败：模型未返回内容")
+		return nil, warnings
+	}
+	if err := a.posts.UpdateSummary(post.ID, summary); err != nil {
+		warnings = append(warnings, "自动摘要保存失败，请稍后重试")
+		return nil, warnings
+	}
+	post.Summary = summary
+	notices = append(notices, "已自动生成文章摘要，可根据需要调整内容")
+	return notices, nil
 }
 
 // ShowPostList 渲染文章管理列表页面
@@ -188,16 +349,41 @@ func (a *API) ShowPostList(c *gin.Context) {
 
 	list, err := a.posts.List(filter)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "post_list.html", gin.H{
+		a.renderHTML(c, http.StatusInternalServerError, "post_list.html", gin.H{
 			"title": "文章管理",
 			"error": "获取文章列表失败",
 		})
 		return
 	}
 
+	statsMap := make(map[uint]*db.PostStatistic)
+	var overview service.SiteOverview
+	if len(list.Posts) > 0 && a.analytics != nil {
+		postIDs := make([]uint, 0, len(list.Posts))
+		for _, post := range list.Posts {
+			postIDs = append(postIDs, post.ID)
+		}
+
+		if statData, statErr := a.analytics.PostStatsMap(postIDs); statErr == nil {
+			for id, stat := range statData {
+				statsMap[id] = stat
+			}
+		} else {
+			c.Error(statErr)
+		}
+	}
+
+	if a.analytics != nil {
+		if ov, ovErr := a.analytics.Overview(5); ovErr == nil {
+			overview = ov
+		} else {
+			c.Error(ovErr)
+		}
+	}
+
 	tags, err := a.tags.List()
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "post_list.html", gin.H{
+		a.renderHTML(c, http.StatusInternalServerError, "post_list.html", gin.H{
 			"title": "文章管理",
 			"error": "获取标签信息失败",
 		})
@@ -231,7 +417,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 		queryParams = "&" + queryParams
 	}
 
-	c.HTML(http.StatusOK, "post_list.html", gin.H{
+	a.renderHTML(c, http.StatusOK, "post_list.html", gin.H{
 		"title":          "文章管理",
 		"posts":          list.Posts,
 		"allTags":        tags,
@@ -248,6 +434,8 @@ func (a *API) ShowPostList(c *gin.Context) {
 		"draftCount":     list.DraftCount,
 		"pages":          pages,
 		"queryParams":    queryParams,
+		"postStats":      statsMap,
+		"overview":       overview,
 	})
 }
 
@@ -271,7 +459,7 @@ func (a *API) ShowPostEdit(c *gin.Context) {
 		}
 	}
 
-	c.HTML(http.StatusOK, "post_edit.html", data)
+	a.renderHTML(c, http.StatusOK, "post_edit.html", data)
 }
 
 func (a *API) currentUserID(c *gin.Context) uint {

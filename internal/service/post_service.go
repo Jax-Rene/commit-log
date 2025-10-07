@@ -72,7 +72,7 @@ func (s *PostService) ListAll() ([]db.Post, error) {
 // Get fetches a post by id with tags preloaded.
 func (s *PostService) Get(id uint) (*db.Post, error) {
 	var post db.Post
-	if err := s.db.Preload("Tags").First(&post, id).Error; err != nil {
+	if err := s.db.Preload("Tags").Preload("User").First(&post, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrPostNotFound
 		}
@@ -131,6 +131,12 @@ func (s *PostService) Update(id uint, input PostInput) (*db.Post, error) {
 	}
 
 	return post, nil
+}
+
+// UpdateSummary 仅更新文章摘要字段。
+func (s *PostService) UpdateSummary(id uint, summary string) error {
+	trimmed := strings.TrimSpace(summary)
+	return s.db.Model(&db.Post{}).Where("id = ?", id).Update("summary", trimmed).Error
 }
 
 // Delete removes a post by id.
