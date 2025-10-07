@@ -40,9 +40,11 @@ jobs:
 
       - name: Install Node dependencies
         run: npm ci
+        working-directory: ${{ github.workspace }}
 
       - name: Build front-end assets
         run: npm run build
+        working-directory: ${{ github.workspace }}
 
       - name: Download Go modules
         run: go mod download
