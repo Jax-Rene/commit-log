@@ -38,3 +38,5 @@ web/static/icon/.DS_Store
 web/static/uploads
 
 *.db
+
+.cache
