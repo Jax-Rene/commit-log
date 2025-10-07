@@ -291,7 +291,7 @@ func (a *API) ensureVisitorID(c *gin.Context) string {
 	}
 
 	visitorID := uuid.NewString()
-	secure := c.Request.TLS != nil
+	secure := strings.EqualFold(a.detectScheme(c), "https")
 
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     visitorCookieName,
@@ -369,8 +369,19 @@ func (a *API) ShowRobots(c *gin.Context) {
 		"User-agent: *",
 		"Allow: /",
 		"Disallow: /admin/",
-		"Disallow: /uploads/",
 	}
+
+	uploadPath := strings.TrimSpace(a.uploadURL)
+	if uploadPath != "" {
+		if !strings.HasPrefix(uploadPath, "/") {
+			uploadPath = "/" + uploadPath
+		}
+		uploadPath = strings.TrimRight(uploadPath, "/") + "/"
+		lines = append(lines, "Disallow: "+uploadPath)
+	} else {
+		lines = append(lines, "Disallow: /static/uploads/")
+	}
+
 	if base != "" {
 		lines = append(lines, "", fmt.Sprintf("Sitemap: %s/sitemap.xml", base))
 	}

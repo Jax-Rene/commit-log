@@ -40,28 +40,27 @@ func (s *AnalyticsService) RecordPostView(postID uint, visitorID string, now tim
 	var stats db.PostStatistic
 
 	if err := s.db.Transaction(func(tx *gorm.DB) error {
-		var visit db.PostVisit
-		result := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("post_id = ? AND visitor_id = ?", postID, visitorID).
-			First(&visit)
+		visit := db.PostVisit{
+			PostID:        postID,
+			VisitorID:     visitorID,
+			LastViewedAt:  now,
+			LastCountedAt: now,
+		}
+		insert := tx.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "post_id"}, {Name: "visitor_id"}},
+			DoNothing: true,
+		}).Create(&visit)
+		if insert.Error != nil {
+			return insert.Error
+		}
 
-		isNewVisitor := false
-
-		switch {
-		case errors.Is(result.Error, gorm.ErrRecordNotFound):
-			isNewVisitor = true
-			visit = db.PostVisit{
-				PostID:        postID,
-				VisitorID:     visitorID,
-				LastViewedAt:  now,
-				LastCountedAt: now,
-			}
-			if err := tx.Create(&visit).Error; err != nil {
+		isNewVisitor := insert.RowsAffected == 1
+		if !isNewVisitor {
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+				Where("post_id = ? AND visitor_id = ?", postID, visitorID).
+				First(&visit).Error; err != nil {
 				return err
 			}
-		case result.Error != nil:
-			return result.Error
-		default:
 			visit.LastViewedAt = now
 			visit.LastCountedAt = now
 			if err := tx.Save(&visit).Error; err != nil {

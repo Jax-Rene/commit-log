@@ -21,8 +21,8 @@ func (PostStatistic) TableName() string {
 // PostVisit 记录访客层面的浏览历史，用于 UV/PV 去重。
 type PostVisit struct {
 	ID            uint   `gorm:"primaryKey"`
-	PostID        uint   `gorm:"index"`
-	VisitorID     string `gorm:"size:64;index"`
+	PostID        uint   `gorm:"uniqueIndex:idx_post_visitor"`
+	VisitorID     string `gorm:"size:64;uniqueIndex:idx_post_visitor"`
 	LastViewedAt  time.Time
 	LastCountedAt time.Time
 	CreatedAt     time.Time
