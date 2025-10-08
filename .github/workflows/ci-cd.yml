@@ -43,7 +43,7 @@ jobs:
         working-directory: .
 
       - name: Build front-end assets
-        run: npm run build:css
+        run: npm run build
         working-directory: .
 
       - name: Download Go modules
