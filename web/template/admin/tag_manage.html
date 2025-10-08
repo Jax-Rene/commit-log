@@ -1,0 +1,352 @@
+{{template "base" .}}
+
+{{define "content"}}
+<div class="space-y-8" x-data="tagManager({{toJSON .tags}})" x-init="init()" x-cloak>
+	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
+		<div class="space-y-2">
+			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">标签管理</h1>
+			<p class="text-sm text-slate-500 dark:text-slate-400">统一维护内容标签，保持站点分类与筛选体验一致。</p>
+			{{if .error}}
+			<p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-500/50 dark:bg-amber-500/10 dark:text-amber-200">{{.error}}</p>
+			{{end}}
+		</div>
+		<button type="button" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90" @click="openCreate()">创建标签</button>
+	</header>
+
+	<div x-show="showCreateDialog" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4" @keydown.escape.window="!creating && closeCreate()">
+		<div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="!creating && closeCreate()"></div>
+		<div class="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl transition-colors dark:border-slate-700 dark:bg-slate-900/90">
+			<div class="space-y-4">
+				<header class="space-y-1">
+					<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">创建标签</h2>
+					<p class="text-xs text-slate-500 dark:text-slate-400">标签名称需保持唯一，建议使用 2-8 个汉字或简洁英文单词。</p>
+				</header>
+				<label class="flex flex-col gap-2">
+					<span class="text-xs font-medium text-slate-600 dark:text-slate-300">标签名称</span>
+					<input x-ref="createInput" type="text" x-model="form.name" @keyup.enter="create()" placeholder="例如：产品设计 / Go / 阅读清单" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" :disabled="creating" />
+				</label>
+				<div class="flex items-center justify-end gap-2">
+					<button type="button" class="rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100" @click="closeCreate()" :disabled="creating">取消</button>
+					<button type="button" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/70" @click="create()" :disabled="creating">
+						<span x-show="!creating">创建标签</span>
+						<span x-show="creating">创建中...</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<section class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+		<header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+			<div class="space-y-1">
+				<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">标签列表</h2>
+				<p class="text-xs text-slate-500 dark:text-slate-400">当前共 <span x-text="tags.length"></span> 个标签，编辑后列表会自动同步。</p>
+			</div>
+			<div class="flex flex-wrap items-center gap-2">
+				<button type="button" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200" @click="refresh()" :disabled="loading">
+					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.023 9.348h4.271V5.077m-16.2 9.575a8.25 8.25 0 0014.198 2.665m2.002-4.285a8.25 8.25 0 00-14.205-2.66M20.294 5.077l-3.633 3.632" />
+					</svg>
+					<span x-show="!loading">刷新列表</span>
+					<span x-show="loading">刷新中...</span>
+				</button>
+			</div>
+		</header>
+
+		<div x-show="loading" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>加载中...</div>
+		<div x-show="!loading && tags.length === 0" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>暂未创建标签，先添加一个用于组织内容。</div>
+
+		<div x-show="!loading && tags.length > 0" class="space-y-3" x-cloak>
+			<template x-for="tag in tags" :key="tag.id">
+				<div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/70 sm:flex-row sm:items-center sm:justify-between">
+					<div class="space-y-2">
+						<div x-show="editingId !== tag.id">
+							<h3 class="text-base font-semibold text-slate-900 dark:text-slate-100" x-text="tag.name"></h3>
+							<p class="text-xs text-slate-500 dark:text-slate-400">创建于 <span x-text="formatDate(tag.createdAt)"></span> · 更新于 <span x-text="formatDate(tag.updatedAt)"></span></p>
+						</div>
+						<div x-show="editingId === tag.id" x-cloak class="space-y-2">
+							<label class="flex flex-col gap-2">
+								<span class="text-xs font-medium text-slate-600 dark:text-slate-300">标签名称</span>
+								<input type="text" x-model="editForm.name" @keyup.enter="update()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
+							</label>
+							<p class="text-xs text-slate-500 dark:text-slate-400">修改后将同步应用到所有关联文章。</p>
+						</div>
+					</div>
+					<div class="flex flex-wrap items-center gap-2">
+						<a x-show="editingId !== tag.id" x-cloak :href="linkedPostsURL(tag)" :aria-disabled="tag.postCount <= 0" :tabindex="tag.postCount > 0 ? 0 : -1" class="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
+							:class="tag.postCount > 0
+								? 'border-blue-200 text-blue-600 hover:border-blue-300 hover:text-blue-700 dark:border-blue-500/40 dark:text-blue-200 dark:hover:border-blue-400/60'
+								: 'cursor-not-allowed border-dashed border-slate-300 text-slate-400 pointer-events-none dark:border-slate-600 dark:text-slate-500'">
+							链接文章 <span x-text="tag.postCount"></span> 个
+						</a>
+						<div x-show="editingId === tag.id" x-cloak class="flex items-center gap-2">
+							<button type="button" @click="update()" :disabled="updatingId === tag.id" class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/80">
+								<span x-show="updatingId !== tag.id">保存</span>
+								<span x-show="updatingId === tag.id">保存中...</span>
+							</button>
+							<button type="button" @click="cancelEdit()" :disabled="updatingId === tag.id" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">取消</button>
+						</div>
+						<div x-show="editingId !== tag.id" class="flex items-center gap-2">
+							<button type="button" @click="startEdit(tag)" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200">编辑</button>
+							<button type="button" @click="confirmDelete(tag)" :disabled="deletingId === tag.id" class="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-rose-100 disabled:text-rose-300 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10 dark:disabled:border-rose-900/30 dark:disabled:text-rose-500/50">
+								<span x-show="deletingId !== tag.id">删除</span>
+								<span x-show="deletingId === tag.id">删除中...</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</template>
+		</div>
+	</section>
+</div>
+
+<script>
+		function tagManager(initialTags) {
+			return {
+				loading: false,
+				creating: false,
+				updatingId: null,
+				deletingId: null,
+				editingId: null,
+				showCreateDialog: false,
+				tags: [],
+				form: {
+					name: ''
+				},
+				editForm: {
+					id: null,
+					name: ''
+				},
+
+				init() {
+					this.tags = this.normalize(initialTags);
+				},
+
+				openCreate() {
+					this.form.name = '';
+					this.showCreateDialog = true;
+					this.$nextTick(() => {
+						const input = this.$refs.createInput;
+						if (input) {
+							input.focus();
+						}
+					});
+				},
+
+				closeCreate() {
+					this.showCreateDialog = false;
+					this.form.name = '';
+				},
+
+				normalize(items) {
+					if (!Array.isArray(items)) {
+						return [];
+					}
+					return items
+					.map(item => this.mapTag(item))
+					.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans'));
+			},
+
+			mapTag(item) {
+				return {
+					id: item.ID ?? item.id,
+					name: item.Name ?? item.name ?? '',
+					createdAt: item.CreatedAt ?? item.createdAt ?? item.created_at ?? '',
+					updatedAt: item.UpdatedAt ?? item.updatedAt ?? item.updated_at ?? '',
+					postCount: Number(item.PostCount ?? item.postCount ?? item.post_count ?? 0)
+				};
+			},
+
+			refresh() {
+				this.loading = true;
+				fetch('/admin/api/tags')
+					.then(async res => {
+						const data = await res.json().catch(() => ({}));
+						if (!res.ok) {
+							throw new Error(data.error || '重新加载标签失败');
+						}
+						if (Array.isArray(data.tags)) {
+							this.tags = this.normalize(data.tags);
+						}
+					})
+					.catch(err => {
+						this.toastError(err.message || '重新加载标签失败，请稍后重试');
+					})
+					.finally(() => {
+						this.loading = false;
+					});
+			},
+
+				create() {
+					const name = (this.form.name || '').trim();
+					if (!name) {
+						this.toastWarning('请填写标签名称');
+						return;
+					}
+					this.creating = true;
+					let shouldClose = false;
+					fetch('/admin/api/tags', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ name })
+					})
+						.then(async res => {
+							const data = await res.json().catch(() => ({}));
+							if (!res.ok) {
+								throw new Error(data.error || '创建标签失败');
+							}
+							if (data.tag) {
+								const mapped = this.mapTag(data.tag);
+								this.tags.push(mapped);
+								this.tags.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans'));
+							}
+							this.toastSuccess(data.message || '标签创建成功');
+							shouldClose = true;
+						})
+						.catch(err => {
+							this.toastError(err.message || '创建标签失败');
+						})
+						.finally(() => {
+							this.creating = false;
+							if (shouldClose) {
+								this.closeCreate();
+							}
+						});
+				},
+
+			startEdit(tag) {
+				this.editingId = tag.id;
+				this.editForm = {
+					id: tag.id,
+					name: tag.name
+				};
+			},
+
+			cancelEdit() {
+				this.editingId = null;
+				this.editForm = { id: null, name: '' };
+				this.updatingId = null;
+			},
+
+			update() {
+				const id = this.editForm.id;
+				const name = (this.editForm.name || '').trim();
+				if (!id) {
+					return;
+				}
+				if (!name) {
+					this.toastWarning('标签名称不能为空');
+					return;
+				}
+				this.updatingId = id;
+				fetch(`/admin/api/tags/${id}`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ name })
+				})
+					.then(async res => {
+						const data = await res.json().catch(() => ({}));
+						if (!res.ok) {
+							throw new Error(data.error || '更新标签失败');
+						}
+						if (data.tag) {
+							const mapped = this.mapTag(data.tag);
+							this.tags = this.tags.map(item => (item.id === mapped.id ? mapped : item))
+								.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans'));
+						}
+						this.toastSuccess(data.message || '标签更新成功');
+						this.cancelEdit();
+					})
+					.catch(err => {
+						this.toastError(err.message || '更新标签失败');
+					})
+					.finally(() => {
+						this.updatingId = null;
+					});
+			},
+
+			confirmDelete(tag) {
+				if (!tag || !tag.id) {
+					return;
+				}
+				if (window.AdminUI && typeof window.AdminUI.confirm === 'function') {
+					window.AdminUI.confirm({
+						title: '删除标签',
+						message: `确定删除「${tag.name}」标签吗？`,
+						description: '若标签已关联文章，删除将会失败，请先解除关联。',
+						confirmText: '删除',
+						cancelText: '保留',
+						tone: 'danger',
+						onConfirm: () => this.remove(tag)
+					});
+				} else if (confirm(`确定删除「${tag.name}」标签吗？`)) {
+					this.remove(tag);
+				}
+			},
+
+			remove(tag) {
+				this.deletingId = tag.id;
+				fetch(`/admin/api/tags/${tag.id}`, { method: 'DELETE' })
+					.then(async res => {
+						const data = await res.json().catch(() => ({}));
+						if (!res.ok) {
+							throw new Error(data.error || '删除标签失败');
+						}
+						this.tags = this.tags.filter(item => item.id !== tag.id);
+						this.toastSuccess(data.message || '标签删除成功');
+					})
+					.catch(err => {
+						this.toastError(err.message || '删除标签失败');
+					})
+					.finally(() => {
+						this.deletingId = null;
+					});
+			},
+
+			formatDate(value) {
+				if (!value) {
+					return '未知时间';
+				}
+				const date = new Date(value);
+				if (Number.isNaN(date.getTime())) {
+					return value;
+				}
+				const formatter = new Intl.DateTimeFormat('zh-CN', {
+					year: 'numeric',
+					month: '2-digit',
+					day: '2-digit',
+					hour: '2-digit',
+					minute: '2-digit'
+				});
+				return formatter.format(date);
+			},
+
+			linkedPostsURL(tag) {
+				const params = new URLSearchParams();
+				if (tag && tag.name) {
+					params.append('tags', tag.name);
+				}
+				return `/admin/posts?${params.toString()}`;
+			},
+
+			toastSuccess(message) {
+				if (window.AdminUI && typeof window.AdminUI.toast === 'function') {
+					window.AdminUI.toast({ type: 'success', message });
+				}
+			},
+
+			toastError(message) {
+				if (window.AdminUI && typeof window.AdminUI.toast === 'function') {
+					window.AdminUI.toast({ type: 'error', message });
+				}
+			},
+
+			toastWarning(message) {
+				if (window.AdminUI && typeof window.AdminUI.toast === 'function') {
+					window.AdminUI.toast({ type: 'warning', message });
+				}
+			}
+		};
+	}
+</script>
+{{end}}

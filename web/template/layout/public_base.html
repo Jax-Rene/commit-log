@@ -46,18 +46,20 @@
 		<nav class="mx-auto flex max-w-6xl items-center gap-6 px-4 py-2">
 			<div class="flex flex-1 items-center gap-3">
 				<a href="/" class="flex items-center gap-3">
-					<div class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
-						{{if or .site.logoUrlLight .site.logoUrlDark}}
-							{{if .site.logoUrlLight}}
-							<img src="{{.site.logoUrlLight}}" alt="{{.site.name}} Logo" class="h-11 w-11 rounded-2xl object-cover dark:hidden" />
-							{{end}}
-							{{if .site.logoUrlDark}}
-							<img src="{{.site.logoUrlDark}}" alt="{{.site.name}} Logo" class="hidden h-11 w-11 rounded-2xl object-cover dark:block" />
-							{{end}}
-						{{else}}
-							<span class="text-lg font-semibold">{{initials .site.name}}</span>
+					{{if or .site.logoUrlLight .site.logoUrlDark}}
+					<div class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl">
+						{{if .site.logoUrlLight}}
+						<img src="{{.site.logoUrlLight}}" alt="{{.site.name}} Logo" class="h-11 w-11 border-0 object-contain dark:hidden" />
+						{{end}}
+						{{if .site.logoUrlDark}}
+						<img src="{{.site.logoUrlDark}}" alt="{{.site.name}} Logo" class="hidden h-11 w-11 border-0 object-contain dark:block" />
 						{{end}}
 					</div>
+					{{else}}
+					<div class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
+						<span class="text-lg font-semibold">{{initials .site.name}}</span>
+					</div>
+					{{end}}
 					<span class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{.site.name}}</span>
 				</a>
 			</div>
