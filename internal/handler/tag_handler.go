@@ -12,6 +12,21 @@ type tagRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
+// ShowTagManagement renders the admin page for managing tags.
+func (a *API) ShowTagManagement(c *gin.Context) {
+	tags, err := a.tags.List()
+	payload := gin.H{
+		"title": "标签管理",
+		"tags":  tags,
+	}
+	if err != nil {
+		c.Error(err)
+		payload["error"] = "加载标签列表失败，请刷新后重试"
+	}
+
+	a.renderHTML(c, http.StatusOK, "tag_manage.html", payload)
+}
+
 // GetTags 获取标签列表
 func (a *API) GetTags(c *gin.Context) {
 	tags, err := a.tags.List()
@@ -23,8 +38,11 @@ func (a *API) GetTags(c *gin.Context) {
 	response := make([]gin.H, 0, len(tags))
 	for _, tag := range tags {
 		response = append(response, gin.H{
-			"id":   tag.ID,
-			"name": tag.Name,
+			"id":         tag.ID,
+			"name":       tag.Name,
+			"created_at": tag.CreatedAt,
+			"updated_at": tag.UpdatedAt,
+			"post_count": tag.PostCount,
 		})
 	}
 

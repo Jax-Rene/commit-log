@@ -136,12 +136,6 @@
 								{{if eq .Status "published"}}已发布{{else}}草稿{{end}}
 							</span>
 							<span>创建于 {{.CreatedAt.Format "2006-01-02 15:04"}}</span>
-							{{if .User}}
-							<span>· {{.User.Username}}</span>
-							{{end}}
-							{{if gt .CoverWidth 0}}
-							<span>· {{.CoverWidth}}×{{.CoverHeight}}</span>
-							{{end}}
 						</div>
 						{{if .Tags}}
 						<ul class="flex flex-wrap gap-2 text-xs">

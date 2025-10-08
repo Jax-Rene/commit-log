@@ -303,6 +303,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 			auth.GET("/posts", handlers.ShowPostList)
 			auth.GET("/posts/new", handlers.ShowPostEdit)
 			auth.GET("/posts/:id/edit", handlers.ShowPostEdit)
+			auth.GET("/tags", handlers.ShowTagManagement)
 			auth.GET("/about", handlers.ShowAboutEditor)
 			auth.GET("/profile/contacts", handlers.ShowProfileContacts)
 			auth.GET("/system/settings", handlers.ShowSystemSettings)

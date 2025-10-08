@@ -27,7 +27,13 @@ func NewTagService(gdb *gorm.DB) *TagService {
 // List returns tags ordered by name.
 func (s *TagService) List() ([]db.Tag, error) {
 	var tags []db.Tag
-	if err := s.db.Order("name asc").Find(&tags).Error; err != nil {
+	if err := s.db.
+		Model(&db.Tag{}).
+		Select("tags.*, COUNT(post_tags.post_id) AS post_count").
+		Joins("LEFT JOIN post_tags ON post_tags.tag_id = tags.id").
+		Group("tags.id").
+		Order("tags.name asc").
+		Find(&tags).Error; err != nil {
 		return nil, err
 	}
 	return tags, nil
@@ -58,6 +64,7 @@ func (s *TagService) Create(name string) (*db.Tag, error) {
 	if err := s.db.Create(&tag).Error; err != nil {
 		return nil, err
 	}
+	tag.PostCount = 0
 
 	return &tag, nil
 }
@@ -87,6 +94,12 @@ func (s *TagService) Update(id uint, name string) (*db.Tag, error) {
 		return nil, err
 	}
 
+	count, err := s.postUsageCount(tag.ID)
+	if err != nil {
+		return nil, err
+	}
+	tag.PostCount = count
+
 	return &tag, nil
 }
 
@@ -100,14 +113,24 @@ func (s *TagService) Delete(id uint) error {
 		return err
 	}
 
-	var count int64
-	s.db.Model(&db.Post{}).
-		Joins("JOIN post_tags ON posts.id = post_tags.post_id").
-		Where("post_tags.tag_id = ?", id).
-		Count(&count)
+	count, err := s.postUsageCount(id)
+	if err != nil {
+		return err
+	}
 	if count > 0 {
 		return ErrTagInUse
 	}
 
 	return s.db.Delete(&tag).Error
+}
+
+func (s *TagService) postUsageCount(id uint) (int64, error) {
+	var count int64
+	if err := s.db.Model(&db.Post{}).
+		Joins("JOIN post_tags ON posts.id = post_tags.post_id").
+		Where("post_tags.tag_id = ?", id).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }
