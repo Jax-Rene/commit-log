@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/commitlog/internal/db"
@@ -77,6 +78,12 @@ func TestAIRewriteServiceOptimizeContent(t *testing.T) {
 		}
 		if payload.MaxTokens != defaultOptimizationMaxTokens {
 			t.Fatalf("unexpected max tokens: %d", payload.MaxTokens)
+		}
+		if strings.Contains(payload.Messages[1].Content, "测试标题") {
+			t.Fatalf("user prompt should not contain title: %q", payload.Messages[1].Content)
+		}
+		if !strings.Contains(payload.Messages[1].Content, "原始内容") {
+			t.Fatalf("user prompt must include content body: %q", payload.Messages[1].Content)
 		}
 
 		response := chatCompletionResponse{

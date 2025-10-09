@@ -20,7 +20,6 @@ var ErrOptimizationEmpty = errors.New("ai full optimization returned empty conte
 
 // ContentOptimizationInput 描述调用全文优化所需的上下文。
 type ContentOptimizationInput struct {
-	Title     string
 	Content   string
 	MaxTokens int
 }
@@ -76,7 +75,6 @@ func (s *AIRewriteService) SetDeepSeekModel(model string) {
 
 // OptimizeContent 调用大模型对文章 Markdown 进行整体润色优化。
 func (s *AIRewriteService) OptimizeContent(ctx context.Context, input ContentOptimizationInput) (ContentOptimizationResult, error) {
-	title := strings.TrimSpace(input.Title)
 	content := strings.TrimSpace(input.Content)
 	if content == "" {
 		return ContentOptimizationResult{}, fmt.Errorf("content is required")
@@ -88,10 +86,10 @@ func (s *AIRewriteService) OptimizeContent(ctx context.Context, input ContentOpt
 	}
 
 	contentSnippet := truncateRunes(content, maxOptimizationContentRuneCount)
-	userPrompt := buildOptimizationPrompt(title, contentSnippet)
+	userPrompt := buildOptimizationPrompt(contentSnippet)
 
 	result, err := s.client.call(ctx, aiChatRequest{
-		SystemPrompt: "你是一名资深中文博客主编，请在不改变核心事实的前提下对文章进行润色重写。请遵循：\n1. 保留并优化 Markdown 结构，确保标题、列表、代码块、引用按需存在且格式正确。\n2. 精炼措辞，提升逻辑连贯性，合并或拆分段落以增强可读性。\n3. 避免重复、冗余或口语化表达，让语气专业但友好。\n4. 保留原有示例、数据、链接与代码，不要添加额外解释。\n5. 输出仅包含优化后的 Markdown 正文，不要附加额外说明。",
+		SystemPrompt: "你是一名资深中文博客主编，请在不改变核心事实的前提下对文章内容进行润色重写。请遵循：\n1. 保留并优化 Markdown 结构，确保标题、列表、代码块、引用按需存在且格式正确。\n2. 精炼措辞，提升逻辑连贯性，合并或拆分段落以增强可读性。\n3. 避免重复、冗余或口语化表达，让语气专业但友好。\n4. 保留原有示例、数据、链接与代码，不要添加额外解释。\n5. 输出仅包含优化后的 Markdown 正文，不要附加额外说明，不要生成新的标题。",
 		UserPrompt:   userPrompt,
 		MaxTokens:    maxTokens,
 		Temperature:  defaultOptimizationTemperature,
@@ -112,14 +110,9 @@ func (s *AIRewriteService) OptimizeContent(ctx context.Context, input ContentOpt
 	}, nil
 }
 
-func buildOptimizationPrompt(title, content string) string {
+func buildOptimizationPrompt(content string) string {
 	var builder strings.Builder
-	if strings.TrimSpace(title) != "" {
-		builder.WriteString("文章标题：\n")
-		builder.WriteString(strings.TrimSpace(title))
-		builder.WriteString("\n\n")
-	}
 	builder.WriteString("文章正文（Markdown）：\n")
-	builder.WriteString(content)
+	builder.WriteString(strings.TrimSpace(content))
 	return builder.String()
 }

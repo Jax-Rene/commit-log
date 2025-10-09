@@ -237,7 +237,6 @@ func (a *API) OptimizePostContent(c *gin.Context) {
 		return
 	}
 
-	title := strings.TrimSpace(payload.Title)
 	content := strings.TrimSpace(payload.Content)
 	if content == "" {
 		respondError(c, http.StatusBadRequest, "请先填写文章正文后再尝试全文优化")
@@ -245,7 +244,6 @@ func (a *API) OptimizePostContent(c *gin.Context) {
 	}
 
 	result, err := a.optimizer.OptimizeContent(c.Request.Context(), service.ContentOptimizationInput{
-		Title:   title,
 		Content: content,
 	})
 	if err != nil {

@@ -63,7 +63,7 @@ type aiChatClient struct {
 func newAIChatClient(settings *SystemSettingService, defaultOpenAIModel, defaultDeepSeekModel string) *aiChatClient {
 	return &aiChatClient{
 		settings:             settings,
-		http:                 &http.Client{Timeout: 20 * time.Second},
+		http:                 &http.Client{Timeout: 180 * time.Second},
 		openAIBaseURL:        "https://api.openai.com/v1",
 		openAIModel:          strings.TrimSpace(defaultOpenAIModel),
 		deepSeekBaseURL:      "https://api.deepseek.com/v1",
