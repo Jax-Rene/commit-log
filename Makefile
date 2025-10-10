@@ -26,6 +26,9 @@ docker-dev:
 docker-dev-down:
 	docker compose -f docker-compose.dev.yml down
 
+lint:
+	staticcheck ./...
+
 # fly.io 部署相关命令
 fly-init: # 初始化 fly.io 配置
 	fly launch --now
