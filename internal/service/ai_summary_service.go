@@ -91,7 +91,7 @@ func (s *AISummaryService) GenerateSummary(ctx context.Context, input SummaryInp
 	userPrompt := buildSummaryPrompt(input.Title, contentSnippet)
 
 	result, err := s.client.call(ctx, aiChatRequest{
-		SystemPrompt: "你是一名中文博客编辑，需要在 80 个汉字以内给出精炼、有吸引力的摘要。摘要需突出观点，不要使用项目符号。",
+		SystemPrompt: "你是一名中文博客内容策划，请在 100 字以内为下文生成一段引人入胜的摘要。\n摘要应突出作者观点，语言流畅自然、富有节奏感，可作为公众号导语使用。\n不得出现项目符号、序号或标题重复内容。",
 		UserPrompt:   userPrompt,
 		MaxTokens:    maxTokens,
 		Temperature:  defaultSummaryTemperature,
