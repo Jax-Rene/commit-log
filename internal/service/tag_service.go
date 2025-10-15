@@ -19,6 +19,13 @@ type TagService struct {
 	db *gorm.DB
 }
 
+// TagUsage 描述标签的使用次数
+type TagUsage struct {
+	ID    uint
+	Name  string
+	Count int64
+}
+
 // NewTagService creates a TagService instance.
 func NewTagService(gdb *gorm.DB) *TagService {
 	return &TagService{db: gdb}
@@ -46,6 +53,42 @@ func (s *TagService) ListWithPosts() ([]db.Tag, error) {
 		return nil, err
 	}
 	return tags, nil
+}
+
+// PublishedUsage 返回已发布文章中标签的使用统计
+func (s *TagService) PublishedUsage() ([]TagUsage, error) {
+	var rows []struct {
+		ID    uint
+		Name  string
+		Count int64
+	}
+
+	query := s.db.Table("tags").
+		Select("tags.id, tags.name, COUNT(DISTINCT post_publications.id) AS count").
+		Joins("JOIN post_publication_tags ON post_publication_tags.tag_id = tags.id").
+		Joins("JOIN post_publications ON post_publications.id = post_publication_tags.post_publication_id").
+		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
+		Where("posts.status = ?", "published").
+		Group("tags.id, tags.name").
+		Order("tags.name asc")
+
+	if err := query.Scan(&rows).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return []TagUsage{}, nil
+		}
+		return nil, err
+	}
+
+	usages := make([]TagUsage, 0, len(rows))
+	for _, row := range rows {
+		usages = append(usages, TagUsage{
+			ID:    row.ID,
+			Name:  row.Name,
+			Count: row.Count,
+		})
+	}
+
+	return usages, nil
 }
 
 // Create inserts a new tag with unique name.

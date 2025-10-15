@@ -1,12 +1,14 @@
 package handler_test
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/router"
@@ -25,12 +27,13 @@ func setupPublicTestDB(t *testing.T) func() {
 		gin.SetMode(gin.TestMode)
 	})
 
-	gdb, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	dsn := fmt.Sprintf("file:public-handler-%d?mode=memory&cache=shared", time.Now().UnixNano())
+	gdb, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.Page{}, &db.ProfileContact{}, &db.SystemSetting{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.PostPublication{}, &db.Tag{}, &db.Page{}, &db.ProfileContact{}, &db.PostStatistic{}, &db.PostVisit{}, &db.SystemSetting{}); err != nil {
 		t.Fatalf("failed to migrate database: %v", err)
 	}
 
@@ -48,25 +51,89 @@ func setupPublicTestDB(t *testing.T) func() {
 	}
 }
 
+func seedPublishedPostAt(t *testing.T, title, content string, publishedAt time.Time) db.Post {
+	t.Helper()
+
+	summary := fmt.Sprintf("%s 摘要", title)
+	post := db.Post{
+		Title:       title,
+		Content:     content,
+		Summary:     summary,
+		Status:      "draft",
+		UserID:      1,
+		CoverURL:    fmt.Sprintf("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?title=%s", urlSafe(title)),
+		CoverWidth:  1280,
+		CoverHeight: 720,
+	}
+	if err := db.DB.Create(&post).Error; err != nil {
+		t.Fatalf("failed to create post: %v", err)
+	}
+
+	publication := db.PostPublication{
+		PostID:      post.ID,
+		Title:       post.Title,
+		Content:     post.Content,
+		Summary:     post.Summary,
+		ReadingTime: 1,
+		CoverURL:    post.CoverURL,
+		CoverWidth:  post.CoverWidth,
+		CoverHeight: post.CoverHeight,
+		UserID:      post.UserID,
+		PublishedAt: publishedAt,
+		Version:     1,
+	}
+	if err := db.DB.Create(&publication).Error; err != nil {
+		t.Fatalf("failed to create publication: %v", err)
+	}
+
+	updates := map[string]any{
+		"status":                "published",
+		"published_at":          publication.PublishedAt,
+		"publication_count":     1,
+		"latest_publication_id": publication.ID,
+	}
+	if err := db.DB.Model(&post).Updates(updates).Error; err != nil {
+		t.Fatalf("failed to update post metadata: %v", err)
+	}
+
+	if err := db.DB.First(&post, post.ID).Error; err != nil {
+		t.Fatalf("failed to reload post: %v", err)
+	}
+
+	return post
+}
+
+func seedPublishedPost(t *testing.T, title, content string) db.Post {
+	return seedPublishedPostAt(t, title, content, time.Now())
+}
+
+func seedDraftPost(t *testing.T, title string) db.Post {
+	t.Helper()
+	post := db.Post{
+		Title:       title,
+		Content:     "草稿内容",
+		Status:      "draft",
+		UserID:      1,
+		CoverURL:    fmt.Sprintf("https://images.unsplash.com/photo-1441986300917-64674bd600d8?title=%s", urlSafe(title)),
+		CoverWidth:  960,
+		CoverHeight: 1280,
+	}
+	if err := db.DB.Create(&post).Error; err != nil {
+		t.Fatalf("failed to create draft: %v", err)
+	}
+	return post
+}
+
+func urlSafe(input string) string {
+	return strings.ReplaceAll(input, " ", "+")
+}
+
 func TestShowHomeExcludesDrafts(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-	published := db.Post{Title: "Published Post", Content: "内容", Summary: "摘要", Status: "published", UserID: 1}
-	published.CoverURL = "https://images.unsplash.com/photo-1472214103451-9374bd1c798e"
-	published.CoverWidth = 1280
-	published.CoverHeight = 720
-	if err := db.DB.Create(&published).Error; err != nil {
-		t.Fatalf("failed to create published post: %v", err)
-	}
-
-	draft := db.Post{Title: "Draft Post", Content: "草稿", Status: "draft", UserID: 1}
-	draft.CoverURL = "https://images.unsplash.com/photo-1441986300917-64674bd600d8"
-	draft.CoverWidth = 800
-	draft.CoverHeight = 1200
-	if err := db.DB.Create(&draft).Error; err != nil {
-		t.Fatalf("failed to create draft post: %v", err)
-	}
+	published := seedPublishedPost(t, "Published Post", "内容")
+	draft := seedDraftPost(t, "Draft Post")
 
 	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
 	w := httptest.NewRecorder()
@@ -90,14 +157,10 @@ func TestLoadMorePostsHandlesPagination(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
+	now := time.Now()
 	for i := 1; i <= 7; i++ {
-		post := db.Post{Title: "Post " + strconv.Itoa(i), Content: "内容", Status: "published", UserID: 1}
-		post.CoverURL = "https://images.unsplash.com/photo-1523475472560-d2df97ec485c?sig=" + strconv.Itoa(i)
-		post.CoverWidth = 1200 + i*10
-		post.CoverHeight = 800 + i*5
-		if err := db.DB.Create(&post).Error; err != nil {
-			t.Fatalf("failed to seed post %d: %v", i, err)
-		}
+		title := "Post " + strconv.Itoa(i)
+		seedPublishedPostAt(t, title, "内容", now.Add(-time.Duration(i)*time.Minute))
 	}
 
 	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
@@ -110,8 +173,12 @@ func TestLoadMorePostsHandlesPagination(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	if !strings.Contains(w.Body.String(), "Post 1") {
-		t.Fatalf("expected response to include paginated posts")
+	body := w.Body.String()
+	if !strings.Contains(body, "Post 7") {
+		t.Fatalf("expected paginated response to include remaining posts")
+	}
+	if strings.Contains(body, "Post 1") {
+		t.Fatalf("expected second page to exclude first page items")
 	}
 }
 
@@ -119,13 +186,7 @@ func TestShowPostDetailRejectsDraft(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-	draft := db.Post{Title: "Drafted", Content: "草稿", Status: "draft", UserID: 1}
-	draft.CoverURL = "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f"
-	draft.CoverWidth = 1080
-	draft.CoverHeight = 1350
-	if err := db.DB.Create(&draft).Error; err != nil {
-		t.Fatalf("failed to create draft: %v", err)
-	}
+	draft := seedDraftPost(t, "Drafted")
 
 	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
 	w := httptest.NewRecorder()
@@ -197,13 +258,7 @@ func TestShowPostDetailDisplaysContacts(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-	post := db.Post{Title: "公开文章", Content: "## 内容", Status: "published", UserID: 1}
-	post.CoverURL = "https://images.unsplash.com/photo-1498050108023-c5249f4df085"
-	post.CoverWidth = 1280
-	post.CoverHeight = 720
-	if err := db.DB.Create(&post).Error; err != nil {
-		t.Fatalf("failed to seed post: %v", err)
-	}
+	post := seedPublishedPost(t, "公开文章", "## 内容")
 
 	contact := db.ProfileContact{Platform: "邮箱", Label: "联系邮箱", Value: "hi@example.com", Link: "mailto:hi@example.com", Icon: "email", Sort: 0, Visible: true}
 	if err := db.DB.Create(&contact).Error; err != nil {

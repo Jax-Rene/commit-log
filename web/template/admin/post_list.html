@@ -135,7 +135,10 @@
 							<span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
 								{{if eq .Status "published"}}已发布{{else}}草稿{{end}}
 							</span>
-							<span>创建于 {{.CreatedAt.Format "2006-01-02 15:04"}}</span>
+					<span>创建于 {{.CreatedAt.Format "2006-01-02 15:04"}}</span>
+					{{if not (.PublishedAt.IsZero)}}
+					<span>· 发布于 {{.PublishedAt.Format "2006-01-02 15:04"}}</span>
+					{{end}}
 						</div>
 						{{if .Tags}}
 						<ul class="flex flex-wrap gap-2 text-xs">

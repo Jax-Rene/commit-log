@@ -21,7 +21,6 @@ type postPayload struct {
 	Title       string `json:"title"`
 	Content     string `json:"content"`
 	Summary     string `json:"summary"`
-	Status      string `json:"status"`
 	TagIDs      []uint `json:"tag_ids"`
 	CoverURL    string `json:"cover_url"`
 	CoverWidth  int    `json:"cover_width"`
@@ -33,7 +32,6 @@ func (p postPayload) toInput(userID uint) service.PostInput {
 		Title:       p.Title,
 		Content:     p.Content,
 		Summary:     p.Summary,
-		Status:      p.Status,
 		TagIDs:      p.TagIDs,
 		UserID:      userID,
 		CoverURL:    p.CoverURL,
@@ -141,6 +139,64 @@ func (a *API) UpdatePost(c *gin.Context) {
 
 	notices, warnings := a.maybeGenerateSummary(c, post)
 	response := gin.H{"message": "文章更新成功", "post": post}
+	if len(notices) > 0 {
+		response["notices"] = notices
+	}
+	if len(warnings) > 0 {
+		response["warnings"] = warnings
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// PublishPost 发布文章并生成快照
+func (a *API) PublishPost(c *gin.Context) {
+	id, err := parseUintParam(c, "id")
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "无效的文章ID")
+		return
+	}
+
+	publication, err := a.posts.Publish(id, a.currentUserID(c))
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrPostNotFound):
+			respondError(c, http.StatusNotFound, "文章不存在")
+			return
+		case errors.Is(err, service.ErrCoverRequired):
+			respondError(c, http.StatusBadRequest, "请上传文章封面后再发布")
+			return
+		case errors.Is(err, service.ErrCoverInvalid):
+			respondError(c, http.StatusBadRequest, "封面尺寸无效，请重新裁剪")
+			return
+		case errors.Is(err, service.ErrInvalidPublishState):
+			respondError(c, http.StatusBadRequest, "请完善标题与正文内容后再发布")
+			return
+		default:
+			respondError(c, http.StatusInternalServerError, "发布文章失败")
+			return
+		}
+	}
+
+	post, err := a.posts.Get(id)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "发布完成但刷新文章信息失败，请手动刷新页面")
+		return
+	}
+
+	notices, warnings := a.maybeGenerateSummary(c, post)
+
+	if refreshed, refreshErr := a.posts.LatestPublication(id); refreshErr == nil {
+		publication = refreshed
+	} else {
+		c.Error(refreshErr)
+	}
+
+	response := gin.H{
+		"message":     "文章发布成功",
+		"publication": publication,
+		"post":        post,
+	}
 	if len(notices) > 0 {
 		response["notices"] = notices
 	}
@@ -449,6 +505,11 @@ func (a *API) ShowPostEdit(c *gin.Context) {
 			if err == nil {
 				data["title"] = "编辑文章"
 				data["post"] = post
+				if publication, pubErr := a.posts.LatestPublication(post.ID); pubErr == nil {
+					data["latestPublication"] = publication
+				} else if !errors.Is(pubErr, service.ErrPublicationNotFound) {
+					c.Error(pubErr)
+				}
 			} else if errors.Is(err, service.ErrPostNotFound) {
 				data["error"] = "文章不存在"
 			} else {

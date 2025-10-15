@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	htmlstd "html"
 	"html/template"
@@ -50,13 +51,12 @@ func (a *API) ShowHome(c *gin.Context) {
 
 	filter := service.PostFilter{
 		Search:   search,
-		Status:   "published",
 		TagNames: tags,
 		Page:     page,
 		PerPage:  6,
 	}
 
-	posts, err := a.posts.List(filter)
+	publications, err := a.posts.ListPublished(filter)
 	if err != nil {
 		a.renderHTML(c, http.StatusInternalServerError, "home.html", gin.H{
 			"title": "首页",
@@ -74,7 +74,7 @@ func (a *API) ShowHome(c *gin.Context) {
 	noindex := false
 
 	if search != "" {
-		metaDescription = fmt.Sprintf("搜索“%s”的结果，共 %d 篇文章。", search, posts.Total)
+		metaDescription = fmt.Sprintf("搜索“%s”的结果，共 %d 篇文章。", search, publications.Total)
 		metaKeywords = append(metaKeywords, search)
 		noindex = true
 	}
@@ -87,8 +87,8 @@ func (a *API) ShowHome(c *gin.Context) {
 		}
 		metaKeywords = append(metaKeywords, tags...)
 	}
-	if posts.Page > 1 && metaDescription == "" {
-		metaDescription = fmt.Sprintf("第 %d 页文章列表。", posts.Page)
+	if publications.Page > 1 && metaDescription == "" {
+		metaDescription = fmt.Sprintf("第 %d 页文章列表。", publications.Page)
 	}
 
 	canonical := ""
@@ -101,10 +101,10 @@ func (a *API) ShowHome(c *gin.Context) {
 		"search":      search,
 		"tags":        tags,
 		"tagOptions":  tagOptions,
-		"posts":       posts.Posts,
-		"page":        posts.Page,
-		"totalPages":  posts.TotalPages,
-		"hasMore":     posts.Page < posts.TotalPages,
+		"posts":       publications.Publications,
+		"page":        publications.Page,
+		"totalPages":  publications.TotalPages,
+		"hasMore":     publications.Page < publications.TotalPages,
 		"queryParams": queryParams,
 		"year":        time.Now().Year(),
 	}
@@ -137,22 +137,21 @@ func (a *API) LoadMorePosts(c *gin.Context) {
 
 	filter := service.PostFilter{
 		Search:   search,
-		Status:   "published",
 		TagNames: tags,
 		Page:     page,
 		PerPage:  6,
 	}
 
-	posts, err := a.posts.List(filter)
+	publications, err := a.posts.ListPublished(filter)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "")
 		return
 	}
 
-	hasMore := page < posts.TotalPages
+	hasMore := page < publications.TotalPages
 
 	a.renderHTML(c, http.StatusOK, "post_cards.html", gin.H{
-		"posts":       posts.Posts,
+		"posts":       publications.Publications,
 		"hasMore":     hasMore,
 		"nextPage":    page + 1,
 		"queryParams": buildQueryParams(search, tags),
@@ -167,11 +166,17 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		return
 	}
 
-	post, err := a.posts.Get(uint(id))
-	if err != nil || post.Status != "published" {
-		c.AbortWithStatus(http.StatusNotFound)
+	publication, err := a.posts.LatestPublication(uint(id))
+	if err != nil {
+		if errors.Is(err, service.ErrPublicationNotFound) {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
+
+	postID := publication.PostID
 
 	visitorID := a.ensureVisitorID(c)
 
@@ -181,7 +186,7 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 	)
 
 	if a.analytics != nil {
-		if stats, recordErr := a.analytics.RecordPostView(post.ID, visitorID, time.Now().UTC()); recordErr == nil {
+		if stats, recordErr := a.analytics.RecordPostView(postID, visitorID, time.Now().UTC()); recordErr == nil {
 			pageViews = stats.PageViews
 			uniqueVisitors = stats.UniqueVisitors
 		} else {
@@ -194,7 +199,7 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		contacts = nil
 	}
 
-	htmlContent, err := renderMarkdown(post.Content)
+	htmlContent, err := renderMarkdown(publication.Content)
 	if err != nil {
 		a.renderHTML(c, http.StatusInternalServerError, "post_detail.html", gin.H{
 			"title":    "文章详情",
@@ -205,13 +210,13 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		return
 	}
 	site := a.siteSettings(c)
-	description := buildPostDescription(post)
-	tagNames := collectTagNames(post.Tags)
-	canonicalPath := fmt.Sprintf("/posts/%d", post.ID)
+	description := buildPublicationDescription(publication)
+	tagNames := collectTagNames(publication.Tags)
+	canonicalPath := fmt.Sprintf("/posts/%d", publication.PostID)
 	canonicalURL := a.absoluteURL(c, canonicalPath)
 
 	metaImage := ""
-	if cover := strings.TrimSpace(post.CoverURL); cover != "" {
+	if cover := strings.TrimSpace(publication.CoverURL); cover != "" {
 		metaImage = a.absoluteURL(c, cover)
 	}
 
@@ -222,19 +227,28 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		logoURL = a.absoluteURL(c, site.LogoDark)
 	}
 
-	jsonLD := buildArticleJSONLD(post, canonicalURL, site.Name, description, metaImage, logoURL, tagNames)
+	jsonLD := buildPublicationJSONLD(publication, canonicalURL, site.Name, description, metaImage, logoURL, tagNames)
+
+	publishedAt := publication.PublishedAt
+	if publishedAt.IsZero() {
+		publishedAt = publication.CreatedAt
+	}
+	modifiedAt := publication.UpdatedAt
+	if modifiedAt.IsZero() {
+		modifiedAt = publishedAt
+	}
 
 	payload := gin.H{
-		"title":           post.Title,
-		"post":            post,
+		"title":           publication.Title,
+		"post":            publication,
 		"content":         htmlContent,
 		"contacts":        contacts,
 		"pageViews":       pageViews,
 		"uniqueVisitors":  uniqueVisitors,
 		"year":            time.Now().Year(),
 		"metaType":        "article",
-		"metaPublishedAt": post.CreatedAt,
-		"metaModifiedAt":  post.UpdatedAt,
+		"metaPublishedAt": publishedAt,
+		"metaModifiedAt":  modifiedAt,
 		"canonical":       canonicalPath,
 	}
 	if description != "" {
@@ -392,7 +406,7 @@ func (a *API) ShowRobots(c *gin.Context) {
 
 // ShowSitemap exposes a simple XML sitemap for published resources.
 func (a *API) ShowSitemap(c *gin.Context) {
-	posts, err := a.posts.ListAll()
+	publications, err := a.posts.ListAllPublished()
 	if err != nil {
 		c.String(http.StatusInternalServerError, "")
 		return
@@ -411,16 +425,16 @@ func (a *API) ShowSitemap(c *gin.Context) {
 		{Loc: a.absoluteURL(c, "/about"), ChangeFreq: "yearly", Priority: "0.4"},
 	}
 
-	for _, post := range posts {
-		if strings.ToLower(strings.TrimSpace(post.Status)) != "published" {
-			continue
-		}
-		lastMod := post.UpdatedAt
+	for _, publication := range publications {
+		lastMod := publication.UpdatedAt
 		if lastMod.IsZero() {
-			lastMod = post.CreatedAt
+			lastMod = publication.PublishedAt
+		}
+		if lastMod.IsZero() {
+			lastMod = publication.CreatedAt
 		}
 		entries = append(entries, sitemapEntry{
-			Loc:        a.absoluteURL(c, fmt.Sprintf("/posts/%d", post.ID)),
+			Loc:        a.absoluteURL(c, fmt.Sprintf("/posts/%d", publication.PostID)),
 			LastMod:    lastMod.UTC().Format(time.RFC3339),
 			ChangeFreq: "weekly",
 			Priority:   "0.7",
@@ -460,21 +474,15 @@ func renderMarkdown(content string) (template.HTML, error) {
 }
 
 func (a *API) buildTagStats() []tagStat {
-	tagsWithPosts, err := a.tags.ListWithPosts()
+	usages, err := a.tags.PublishedUsage()
 	if err != nil {
 		return nil
 	}
 
-	stats := make([]tagStat, 0, len(tagsWithPosts))
-	for _, tag := range tagsWithPosts {
-		count := 0
-		for _, post := range tag.Posts {
-			if post.Status == "published" {
-				count++
-			}
-		}
-		if count > 0 {
-			stats = append(stats, tagStat{Name: tag.Name, Count: count})
+	stats := make([]tagStat, 0, len(usages))
+	for _, usage := range usages {
+		if usage.Count > 0 {
+			stats = append(stats, tagStat{Name: usage.Name, Count: int(usage.Count)})
 		}
 	}
 
@@ -504,14 +512,14 @@ func truncateRunes(text string, limit int) string {
 	return strings.TrimSpace(string(runes[:limit])) + "…"
 }
 
-func buildPostDescription(post *db.Post) string {
-	if post == nil {
+func buildPublicationDescription(publication *db.PostPublication) string {
+	if publication == nil {
 		return ""
 	}
-	if summary := strings.TrimSpace(post.Summary); summary != "" {
+	if summary := strings.TrimSpace(publication.Summary); summary != "" {
 		return truncateRunes(summary, 160)
 	}
-	return truncateRunes(markdownToPlainText(post.Content), 160)
+	return truncateRunes(markdownToPlainText(publication.Content), 160)
 }
 
 func buildPageDescription(page *db.Page) string {
@@ -534,15 +542,15 @@ func collectTagNames(tags []db.Tag) []string {
 	return names
 }
 
-func buildArticleJSONLD(post *db.Post, canonicalURL, siteName, description, imageURL, logoURL string, tagNames []string) template.JS {
-	if post == nil {
+func buildPublicationJSONLD(publication *db.PostPublication, canonicalURL, siteName, description, imageURL, logoURL string, tagNames []string) template.JS {
+	if publication == nil {
 		return ""
 	}
 
 	data := map[string]interface{}{
 		"@context":         "https://schema.org",
 		"@type":            "BlogPosting",
-		"headline":         strings.TrimSpace(post.Title),
+		"headline":         strings.TrimSpace(publication.Title),
 		"mainEntityOfPage": map[string]interface{}{"@type": "WebPage", "@id": canonicalURL},
 	}
 	if canonicalURL != "" {
@@ -555,7 +563,7 @@ func buildArticleJSONLD(post *db.Post, canonicalURL, siteName, description, imag
 		data["image"] = imageURL
 	}
 
-	authorName := strings.TrimSpace(post.User.Username)
+	authorName := strings.TrimSpace(publication.User.Username)
 	if authorName == "" {
 		authorName = siteName
 	}
@@ -580,18 +588,22 @@ func buildArticleJSONLD(post *db.Post, canonicalURL, siteName, description, imag
 		data["keywords"] = strings.Join(tagNames, ", ")
 	}
 
-	if !post.CreatedAt.IsZero() {
-		data["datePublished"] = post.CreatedAt.UTC().Format(time.RFC3339)
+	publishedAt := publication.PublishedAt
+	if publishedAt.IsZero() {
+		publishedAt = publication.CreatedAt
 	}
-	updated := post.UpdatedAt
+	if !publishedAt.IsZero() {
+		data["datePublished"] = publishedAt.UTC().Format(time.RFC3339)
+	}
+	updated := publication.UpdatedAt
 	if updated.IsZero() {
-		updated = post.CreatedAt
+		updated = publishedAt
 	}
 	if !updated.IsZero() {
 		data["dateModified"] = updated.UTC().Format(time.RFC3339)
 	}
 
-	if body := markdownToPlainText(post.Content); body != "" {
+	if body := markdownToPlainText(publication.Content); body != "" {
 		data["articleBody"] = body
 	}
 

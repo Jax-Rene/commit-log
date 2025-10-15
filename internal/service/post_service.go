@@ -10,9 +10,11 @@ import (
 )
 
 var (
-	ErrPostNotFound  = errors.New("post not found")
-	ErrCoverRequired = errors.New("cover image is required")
-	ErrCoverInvalid  = errors.New("cover dimensions are invalid")
+	ErrPostNotFound        = errors.New("post not found")
+	ErrCoverRequired       = errors.New("cover image is required")
+	ErrCoverInvalid        = errors.New("cover dimensions are invalid")
+	ErrPublicationNotFound = errors.New("post publication not found")
+	ErrInvalidPublishState = errors.New("post is missing required fields for publishing")
 )
 
 // PostService wraps post related database operations.
@@ -42,12 +44,20 @@ type PostListResult struct {
 	PerPage        int
 }
 
+// PublicationListResult 用于前台展示发布快照
+type PublicationListResult struct {
+	Publications []db.PostPublication
+	Total        int64
+	TotalPages   int
+	Page         int
+	PerPage      int
+}
+
 // PostInput represents fields accepted when creating or updating a post.
 type PostInput struct {
 	Title       string
 	Content     string
 	Summary     string
-	Status      string
 	TagIDs      []uint
 	UserID      uint
 	CoverURL    string
@@ -91,12 +101,13 @@ func (s *PostService) Create(input PostInput) (*db.Post, error) {
 	post := db.Post{
 		Title:       strings.TrimSpace(input.Title),
 		Content:     input.Content,
-		Summary:     input.Summary,
-		Status:      input.Status,
+		Summary:     strings.TrimSpace(input.Summary),
+		Status:      "draft",
 		UserID:      input.UserID,
 		CoverURL:    coverURL,
 		CoverWidth:  coverWidth,
 		CoverHeight: coverHeight,
+		ReadingTime: calculateReadingTime(input.Content),
 	}
 
 	return s.saveWithTags(&post, input.TagIDs)
@@ -119,11 +130,11 @@ func (s *PostService) Update(id uint, input PostInput) (*db.Post, error) {
 
 	existing.Title = strings.TrimSpace(input.Title)
 	existing.Content = input.Content
-	existing.Summary = input.Summary
-	existing.Status = input.Status
+	existing.Summary = strings.TrimSpace(input.Summary)
 	existing.CoverURL = coverURL
 	existing.CoverWidth = coverWidth
 	existing.CoverHeight = coverHeight
+	existing.ReadingTime = calculateReadingTime(input.Content)
 
 	post, err := s.saveWithTags(&existing, input.TagIDs)
 	if err != nil {
@@ -136,7 +147,29 @@ func (s *PostService) Update(id uint, input PostInput) (*db.Post, error) {
 // UpdateSummary 仅更新文章摘要字段。
 func (s *PostService) UpdateSummary(id uint, summary string) error {
 	trimmed := strings.TrimSpace(summary)
-	return s.db.Model(&db.Post{}).Where("id = ?", id).Update("summary", trimmed).Error
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&db.Post{}).Where("id = ?", id).Update("summary", trimmed).Error; err != nil {
+			return err
+		}
+
+		if trimmed == "" {
+			return nil
+		}
+
+		var publication db.PostPublication
+		if err := tx.Where("post_id = ?", id).
+			Order("published_at desc, id desc").
+			First(&publication).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil
+			}
+			return err
+		}
+
+		return tx.Model(&db.PostPublication{}).
+			Where("id = ?", publication.ID).
+			Update("summary", trimmed).Error
+	})
 }
 
 // Delete removes a post by id.
@@ -200,6 +233,160 @@ func (s *PostService) List(filter PostFilter) (*PostListResult, error) {
 	return result, nil
 }
 
+// Publish 创建文章发布快照，并更新文章发布状态
+func (s *PostService) Publish(postID, userID uint) (*db.PostPublication, error) {
+	var post db.Post
+	if err := s.db.Preload("Tags").First(&post, postID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrPostNotFound
+		}
+		return nil, err
+	}
+
+	if strings.TrimSpace(post.Title) == "" {
+		return nil, ErrInvalidPublishState
+	}
+	if strings.TrimSpace(post.Content) == "" {
+		return nil, ErrInvalidPublishState
+	}
+	if strings.TrimSpace(post.CoverURL) == "" {
+		return nil, ErrCoverRequired
+	}
+	if post.CoverWidth <= 0 || post.CoverHeight <= 0 {
+		return nil, ErrCoverInvalid
+	}
+
+	readingTime := calculateReadingTime(post.Content)
+	now := time.Now()
+	version := post.PublicationCount + 1
+
+	publication := db.PostPublication{
+		PostID:      post.ID,
+		Title:       post.Title,
+		Content:     post.Content,
+		Summary:     post.Summary,
+		ReadingTime: readingTime,
+		CoverURL:    post.CoverURL,
+		CoverWidth:  post.CoverWidth,
+		CoverHeight: post.CoverHeight,
+		UserID:      userID,
+		PublishedAt: now,
+		Version:     version,
+	}
+
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&publication).Error; err != nil {
+			return err
+		}
+
+		if len(post.Tags) > 0 {
+			if err := tx.Model(&publication).Association("Tags").Replace(post.Tags); err != nil {
+				return err
+			}
+		}
+
+		updates := map[string]interface{}{
+			"status":                "published",
+			"reading_time":          readingTime,
+			"published_at":          now,
+			"publication_count":     version,
+			"latest_publication_id": publication.ID,
+		}
+
+		if err := tx.Model(&db.Post{}).
+			Where("id = ?", post.ID).
+			Updates(updates).Error; err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := s.db.Preload("Tags").Preload("User").First(&publication, publication.ID).Error; err != nil {
+		return nil, err
+	}
+
+	return &publication, nil
+}
+
+// LatestPublication 返回文章最近一次发布快照
+func (s *PostService) LatestPublication(postID uint) (*db.PostPublication, error) {
+	var publication db.PostPublication
+	if err := s.db.Preload("Tags").
+		Preload("User").
+		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
+		Where("posts.id = ?", postID).
+		First(&publication).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrPublicationNotFound
+		}
+		return nil, err
+	}
+	return &publication, nil
+}
+
+// ListPublished 返回最新发布的文章快照列表
+func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, error) {
+	result := &PublicationListResult{Page: filter.Page, PerPage: filter.PerPage}
+	if result.Page <= 0 {
+		result.Page = 1
+	}
+	if result.PerPage <= 0 {
+		result.PerPage = 10
+	}
+
+	baseQuery := s.db.Model(&db.PostPublication{}).
+		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
+		Where("posts.status = ?", "published")
+	baseQuery = s.applyPublicationFilters(baseQuery, filter)
+
+	if err := baseQuery.Count(&result.Total).Error; err != nil {
+		return nil, err
+	}
+
+	offset := (result.Page - 1) * result.PerPage
+
+	var publications []db.PostPublication
+	dataQuery := s.db.Model(&db.PostPublication{}).
+		Preload("Tags").
+		Preload("User").
+		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
+		Where("posts.status = ?", "published")
+	dataQuery = s.applyPublicationFilters(dataQuery, filter)
+
+	if err := dataQuery.
+		Order("post_publications.published_at desc, post_publications.id desc").
+		Limit(result.PerPage).
+		Offset(offset).
+		Find(&publications).Error; err != nil {
+		return nil, err
+	}
+
+	if result.Total == 0 {
+		result.TotalPages = 1
+	} else {
+		result.TotalPages = int((result.Total + int64(result.PerPage) - 1) / int64(result.PerPage))
+	}
+
+	result.Publications = publications
+	return result, nil
+}
+
+// ListAllPublished 返回所有文章的最新发布快照
+func (s *PostService) ListAllPublished() ([]db.PostPublication, error) {
+	var publications []db.PostPublication
+	if err := s.db.Preload("Tags").
+		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
+		Where("posts.status = ?", "published").
+		Order("post_publications.published_at desc, post_publications.id desc").
+		Find(&publications).Error; err != nil {
+		return nil, err
+	}
+	return publications, nil
+}
+
 func (s *PostService) saveWithTags(post *db.Post, tagIDs []uint) (*db.Post, error) {
 	return post, s.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(post).Error; err != nil {
@@ -257,6 +444,33 @@ func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeSta
 	return query
 }
 
+func (s *PostService) applyPublicationFilters(query *gorm.DB, filter PostFilter) *gorm.DB {
+	if filter.Search != "" {
+		search := "%" + filter.Search + "%"
+		query = query.Where("post_publications.title LIKE ? OR post_publications.content LIKE ? OR post_publications.summary LIKE ?", search, search, search)
+	}
+
+	if len(filter.TagNames) > 0 {
+		subQuery := s.db.Model(&db.PostPublication{}).
+			Select("post_publications.id").
+			Joins("JOIN post_publication_tags ON post_publication_tags.post_publication_id = post_publications.id").
+			Joins("JOIN tags ON tags.id = post_publication_tags.tag_id").
+			Where("tags.name IN ?", filter.TagNames)
+
+		query = query.Where("post_publications.id IN (?)", subQuery)
+	}
+
+	if filter.StartDate != nil {
+		query = query.Where("post_publications.published_at >= ?", filter.StartDate)
+	}
+
+	if filter.EndDate != nil {
+		query = query.Where("post_publications.published_at <= ?", filter.EndDate)
+	}
+
+	return query
+}
+
 func normalizeCover(input PostInput) (string, int, int, error) {
 	coverURL := strings.TrimSpace(input.CoverURL)
 	if coverURL == "" {
@@ -268,4 +482,25 @@ func normalizeCover(input PostInput) (string, int, int, error) {
 	}
 
 	return coverURL, input.CoverWidth, input.CoverHeight, nil
+}
+
+func calculateReadingTime(content string) int {
+	trimmed := strings.TrimSpace(content)
+	if trimmed == "" {
+		return 0
+	}
+
+	runes := []rune(trimmed)
+	if len(runes) == 0 {
+		return 0
+	}
+
+	minutes := len(runes) / 400
+	if len(runes)%400 != 0 {
+		minutes++
+	}
+	if minutes < 1 {
+		minutes = 1
+	}
+	return minutes
 }

@@ -79,9 +79,6 @@ func TestAIRewriteServiceOptimizeContent(t *testing.T) {
 		if payload.MaxTokens != defaultOptimizationMaxTokens {
 			t.Fatalf("unexpected max tokens: %d", payload.MaxTokens)
 		}
-		if strings.Contains(payload.Messages[1].Content, "测试标题") {
-			t.Fatalf("user prompt should not contain title: %q", payload.Messages[1].Content)
-		}
 		if !strings.Contains(payload.Messages[1].Content, "原始内容") {
 			t.Fatalf("user prompt must include content body: %q", payload.Messages[1].Content)
 		}
@@ -104,7 +101,6 @@ func TestAIRewriteServiceOptimizeContent(t *testing.T) {
 	}})
 
 	result, err := svc.OptimizeContent(context.Background(), ContentOptimizationInput{
-		Title:   "测试标题",
 		Content: "原始内容",
 	})
 	if err != nil {
@@ -126,7 +122,6 @@ func TestAIRewriteServiceMissingAPIKey(t *testing.T) {
 	svc := NewAIRewriteService(system)
 
 	_, err := svc.OptimizeContent(context.Background(), ContentOptimizationInput{
-		Title:   "测试标题",
 		Content: "一些正文",
 	})
 	if err == nil {

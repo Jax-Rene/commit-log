@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -181,7 +182,6 @@ func TestCreatePostAutoSummary(t *testing.T) {
 		"title":        "AI Test",
 		"content":      "这是正文内容。",
 		"summary":      "",
-		"status":       "published",
 		"tag_ids":      []uint{},
 		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
 		"cover_width":  1200,
@@ -202,32 +202,64 @@ func TestCreatePostAutoSummary(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	var response map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
+	if stub.calls != 0 {
+		t.Fatalf("expected summary generator not to run when saving draft, got %d", stub.calls)
+	}
+
+	var createResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("failed to decode create response: %v", err)
+	}
+	postData, ok := createResp["post"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected create response to include post object")
+	}
+	postID := uint(postData["ID"].(float64))
+
+	w = httptest.NewRecorder()
+	c, _ = gin.CreateTestContext(w)
+	publishReq := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/api/posts/%d/publish", postID), nil)
+	c.Params = gin.Params{{Key: "id", Value: fmt.Sprintf("%d", postID)}}
+	c.Request = publishReq
+
+	api.PublishPost(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected publish status 200, got %d", w.Code)
 	}
 
 	if stub.calls != 1 {
-		t.Fatalf("expected summary generator to be called once, got %d", stub.calls)
+		t.Fatalf("expected summary generator to run on publish, got %d", stub.calls)
+	}
+
+	var publishResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &publishResp); err != nil {
+		t.Fatalf("failed to decode publish response: %v", err)
 	}
 
 	var created db.Post
-	if err := db.DB.First(&created).Error; err != nil {
+	if err := db.DB.First(&created, postID).Error; err != nil {
 		t.Fatalf("failed to load created post: %v", err)
+	}
+	if created.Status != "published" {
+		t.Fatalf("expected post status published, got %s", created.Status)
 	}
 	if created.Summary != "AI 生成的摘要" {
 		t.Fatalf("expected summary to be updated, got %q", created.Summary)
 	}
+	if created.LatestPublicationID == nil {
+		t.Fatalf("expected latest publication id to be stored")
+	}
 
-	postData, ok := response["post"].(map[string]any)
+	publicationData, ok := publishResp["publication"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected response to include post object")
+		t.Fatalf("expected publish response to include publication")
 	}
-	if summary, _ := postData["Summary"].(string); summary != "AI 生成的摘要" {
-		t.Fatalf("expected response summary to be updated, got %q", summary)
+	if summary, _ := publicationData["Summary"].(string); summary != "AI 生成的摘要" {
+		t.Fatalf("expected publication summary to be updated, got %q", summary)
 	}
 
-	notices, _ := response["notices"].([]any)
+	notices, _ := publishResp["notices"].([]any)
 	if len(notices) == 0 {
 		t.Fatalf("expected notices to include AI summary hint")
 	}
@@ -244,7 +276,6 @@ func TestCreatePostAutoSummaryFailure(t *testing.T) {
 		"title":        "AI Failure",
 		"content":      "正文内容",
 		"summary":      "",
-		"status":       "published",
 		"tag_ids":      []uint{},
 		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
 		"cover_width":  1200,
@@ -265,21 +296,51 @@ func TestCreatePostAutoSummaryFailure(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
+	if stub.calls != 0 {
+		t.Fatalf("expected summary generator not to run when saving draft, got %d", stub.calls)
+	}
+
+	var createResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("failed to decode create response: %v", err)
+	}
+	postData, ok := createResp["post"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected create response to include post object")
+	}
+	postID := uint(postData["ID"].(float64))
+
+	w = httptest.NewRecorder()
+	c, _ = gin.CreateTestContext(w)
+	publishReq := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/api/posts/%d/publish", postID), nil)
+	c.Params = gin.Params{{Key: "id", Value: fmt.Sprintf("%d", postID)}}
+	c.Request = publishReq
+
+	api.PublishPost(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected publish status 200, got %d", w.Code)
+	}
+
+	if stub.calls != 1 {
+		t.Fatalf("expected summary generator to run once on publish, got %d", stub.calls)
+	}
+
+	var publishResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &publishResp); err != nil {
+		t.Fatalf("failed to decode publish response: %v", err)
+	}
+	warnings, _ := publishResp["warnings"].([]any)
+	if len(warnings) == 0 {
+		t.Fatalf("expected warnings when summary generation fails")
+	}
+
 	var created db.Post
-	if err := db.DB.First(&created).Error; err != nil {
-		t.Fatalf("failed to load created post: %v", err)
+	if err := db.DB.First(&created, postID).Error; err != nil {
+		t.Fatalf("failed to load post: %v", err)
 	}
 	if created.Summary != "" {
 		t.Fatalf("expected summary to remain empty on failure")
-	}
-
-	var response map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-	warnings, _ := response["warnings"].([]any)
-	if len(warnings) == 0 {
-		t.Fatalf("expected warnings when summary generation fails")
 	}
 }
 
