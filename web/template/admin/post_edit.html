@@ -14,20 +14,20 @@
 		<section class="space-y-6">
 			<label class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 				<span class="text-sm font-medium text-slate-700 dark:text-slate-200">文章标题<span class="ml-1 text-rose-500">*</span></span>
-				<input type="text" x-model="post.title" placeholder="请输入文章标题" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" required>
+                                <input type="text" x-model="post.title" @input="markDirty()" placeholder="请输入文章标题" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" required>
 			</label>
 
 			<label class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 				<span class="text-sm font-medium text-slate-700 dark:text-slate-200">文章摘要</span>
-				<textarea x-model="post.summary" rows="4" placeholder="简要描述文章的核心观点" class="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30"></textarea>
+                                <textarea x-model="post.summary" @input="markDirty()" rows="4" placeholder="简要描述文章的核心观点" class="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30"></textarea>
 			</label>
 
 			<section class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-				<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-					<div>
-						<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">文章封面<span class="ml-1 text-rose-500">*</span></h2>
-						<p class="text-xs text-slate-500 dark:text-slate-400">支持横图或竖图，建议尺寸 ≥ 1200px，上传后可裁剪。</p>
-					</div>
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                                <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">文章封面<span class="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800/70 dark:text-slate-400">发布前必填</span></h2>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400">支持横图或竖图，建议尺寸 ≥ 1200px，上传后可裁剪。</p>
+                                        </div>
 					<label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/60 dark:hover:bg-blue-500/10 dark:hover:text-slate-100">
 						<input type="file" accept="image/*" class="hidden" @change="handleCoverFile($event)">
 						<span>选择图片</span>
@@ -121,9 +121,28 @@
 						</div>
 
 						<div class="border-t border-slate-100 pt-4 dark:border-slate-800/80">
-							<div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">发布流程</div>
-							<p class="mt-1 text-xs text-slate-400 dark:text-slate-500">预览与发布前请确认封面、标签及摘要信息。</p>
-							<div class="mt-3 space-y-2">
+                                                        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">发布流程</div>
+                                                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">预览与发布前请确认封面、标签及摘要信息。</p>
+                                                        <div class="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-400">
+                                                                <div class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                                                        <span>自动保存</span>
+                                                                        <span>每 30 秒</span>
+                                                                </div>
+                                                                <div class="mt-2 space-y-1 text-xs">
+                                                                        <p class="flex items-center gap-2" x-show="autoSaving" x-transition>
+                                                                                <span class="flex h-2 w-2 animate-ping rounded-full bg-blue-500/70"></span>
+                                                                                <span class="text-blue-600 dark:text-blue-300">自动保存中...</span>
+                                                                        </p>
+                                                                        <p class="text-slate-500 dark:text-slate-400" x-show="!autoSaving && lastAutoSavedAt" x-transition>
+                                                                                最近自动保存：<span x-text="formatDateTime(lastAutoSavedAt)"></span>
+                                                                        </p>
+                                                                        <p class="text-slate-400 dark:text-slate-500" x-show="!autoSaving && !lastAutoSavedAt" x-transition>
+                                                                                草稿内容将自动保存，无需手动提交。
+                                                                        </p>
+                                                                        <p class="text-rose-500 dark:text-rose-400" x-show="autoSaveError" x-text="autoSaveError" x-transition></p>
+                                                                </div>
+                                                        </div>
+                                                        <div class="mt-3 space-y-2">
 								<button type="button" @click="previewPost()" class="group inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-200 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-indigo-400/60 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-100">
 									<svg class="h-4 w-4 text-slate-400 transition-colors group-hover:text-indigo-600 dark:text-slate-500 dark:group-hover:text-indigo-200" viewBox="0 0 24 24" fill="none" stroke="currentColor">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12Z" />
@@ -289,6 +308,14 @@
 
             return {
                     loading: false,
+                    autoSaving: false,
+                    autoSavePending: false,
+                    autoSaveError: '',
+                    autoSaveIntervalId: null,
+                    lastAutoSavedAt: null,
+                    autoSaveRevision: 0,
+                    visibilityHandler: null,
+                    unloadHandler: null,
                     editor: null,
                     allTags: [],
                     initialTagIds,
@@ -343,17 +370,49 @@
 			optimizedContent: '',
 			optimizedContentHtml: '',
 			optimizationUsage: null,
+			shortcutHandler: null,
 
                         init() {
                                 this.applyInitialTagSelection();
-				this.initializeEditor();
-				this.fetchTags();
-				if (this.postId && this.postId !== 'new') {
-					this.postId = this.postId.toString();
+                                this.initializeEditor();
+                                this.fetchTags();
+                                if (this.postId && this.postId !== 'new') {
+                                        this.postId = this.postId.toString();
+                                }
+                                if (this.latestPublication.publishedAtRaw) {
+                                        this.latestPublication.publishedAt = this.formatDateTime(this.latestPublication.publishedAtRaw);
+                                }
+                                this.bindKeyboardShortcuts();
+                                this.initAutoSaveLifecycle();
+                        },
+
+			bindKeyboardShortcuts() {
+				if (this.shortcutHandler) {
+					return;
 				}
-				if (this.latestPublication.publishedAtRaw) {
-					this.latestPublication.publishedAt = this.formatDateTime(this.latestPublication.publishedAtRaw);
+				this.shortcutHandler = event => {
+					if (!(event.ctrlKey || event.metaKey)) {
+						return;
+					}
+					const key = typeof event.key === 'string' ? event.key.toLowerCase() : '';
+					if (key !== 's') {
+						return;
+					}
+					event.preventDefault();
+					if (this.loading || this.autoSaving || this.publishing) {
+						return;
+					}
+					this.saveDraft();
+				};
+				window.addEventListener('keydown', this.shortcutHandler);
+			},
+
+			unbindKeyboardShortcuts() {
+				if (!this.shortcutHandler) {
+					return;
 				}
+				window.removeEventListener('keydown', this.shortcutHandler);
+				this.shortcutHandler = null;
 			},
 
                         applyInitialTagSelection() {
@@ -379,14 +438,92 @@
 					});
 			},
 
-			toggleTag(id) {
-				const value = id.toString();
-				if (this.post.tagIds.includes(value)) {
-					this.post.tagIds = this.post.tagIds.filter(tagId => tagId !== value);
-				} else {
-					this.post.tagIds.push(value);
-				}
-			},
+                        toggleTag(id) {
+                                const value = id.toString();
+                                if (this.post.tagIds.includes(value)) {
+                                        this.post.tagIds = this.post.tagIds.filter(tagId => tagId !== value);
+                                } else {
+                                        this.post.tagIds.push(value);
+                                }
+                                this.markDirty();
+                        },
+
+                        markDirty() {
+                                this.autoSaveRevision += 1;
+                                this.autoSavePending = true;
+                                this.autoSaveError = '';
+                        },
+
+                        initAutoSaveLifecycle() {
+                                this.startAutoSaveTimer();
+                                if (!this.visibilityHandler) {
+                                        this.visibilityHandler = () => {
+                                                if (document.visibilityState === 'hidden') {
+                                                        this.autoSaveIfNeeded();
+                                                }
+                                        };
+                                        document.addEventListener('visibilitychange', this.visibilityHandler);
+                                }
+                                if (!this.unloadHandler) {
+                                        this.unloadHandler = () => {
+                                                this.autoSaveIfNeeded();
+                                                this.stopAutoSaveTimer();
+						this.unbindKeyboardShortcuts();
+                                        };
+                                        window.addEventListener('pagehide', this.unloadHandler);
+                                        window.addEventListener('beforeunload', this.unloadHandler);
+                                }
+                        },
+
+                        startAutoSaveTimer() {
+                                this.stopAutoSaveTimer();
+                                this.autoSaveIntervalId = window.setInterval(() => {
+                                        this.autoSaveIfNeeded();
+                                }, 30000);
+                        },
+
+                        stopAutoSaveTimer() {
+                                if (this.autoSaveIntervalId) {
+                                        clearInterval(this.autoSaveIntervalId);
+                                        this.autoSaveIntervalId = null;
+                                }
+                        },
+
+                        async autoSaveIfNeeded() {
+                                if (this.autoSaving || this.loading || this.publishing) {
+                                        return;
+                                }
+                                if (!this.autoSavePending) {
+                                        return;
+                                }
+                                if (this.editor) {
+                                        const editorValue = this.editor.value();
+                                        if (editorValue !== this.post.content) {
+                                                this.post.content = editorValue;
+                                        }
+                                }
+                                const hasMeaningfulContent =
+                                        (this.post.title && this.post.title.trim()) ||
+                                        (this.post.summary && this.post.summary.trim()) ||
+                                        (this.post.content && this.post.content.trim());
+                                if (!hasMeaningfulContent && this.postId === 'new') {
+                                        return;
+                                }
+                                this.autoSaving = true;
+                                try {
+                                        const saved = await this.saveDraft({
+                                                redirectOnCreate: false,
+                                                silent: true,
+                                                notifyOnSilent: false,
+                                                useLoadingState: false
+                                        });
+                                        if (!saved && !this.autoSaveError) {
+                                                this.autoSaveError = '自动保存失败，请稍后重试';
+                                        }
+                                } finally {
+                                        this.autoSaving = false;
+                                }
+                        },
 
 			handleCoverFile(event) {
 				const input = event.target;
@@ -447,10 +584,11 @@
 					})
 						.then(response => response.json())
 						.then(data => {
-							if (data.success === 1) {
-								this.cover.url = data.data.url;
-								this.cover.width = data.data.width || 0;
-								this.cover.height = data.data.height || 0;
+                                                        if (data.success === 1) {
+                                                                this.cover.url = data.data.url;
+                                                                this.cover.width = data.data.width || 0;
+                                                                this.cover.height = data.data.height || 0;
+                                                                this.markDirty();
                                                         } else {
                                                                 window.AdminUI.toast({ message: data.error || data.message || '封面上传失败', type: 'error' });
 							}
@@ -473,9 +611,10 @@
 				this.coverSource = '';
 			},
 
-			removeCover() {
-				this.cover = { url: '', width: 0, height: 0 };
-			},
+                        removeCover() {
+                                this.cover = { url: '', width: 0, height: 0 };
+                                this.markDirty();
+                        },
 
 			setAspect(ratio) {
 				this.cropAspect = ratio;
@@ -588,119 +727,151 @@
 					initialValue: this.post.content
 				});
 
-				easyMDE.codemirror.on('change', () => {
-					this.post.content = easyMDE.value();
-				});
+                                easyMDE.codemirror.on('change', () => {
+                                        this.post.content = easyMDE.value();
+                                        this.markDirty();
+                                });
 
 				this.editor = easyMDE;
 			},
 
-			async saveDraft(options = {}) {
-				const { redirectOnCreate = true, silent = false } = options;
-				if (this.loading) {
-					return false;
-				}
-				this.loading = true;
-				if (this.editor) {
-					this.post.content = this.editor.value();
-				}
-				if (!this.cover.url || this.cover.width <= 0 || this.cover.height <= 0) {
-					window.AdminUI.toast({ message: '请上传并裁剪文章封面', type: 'warning' });
-					this.loading = false;
-					return false;
-				}
-			const payload = {
-				title: this.post.title,
-				summary: this.post.summary,
-				content: this.post.content,
-				tag_ids: this.post.tagIds.map(id => Number(id)).filter(id => !Number.isNaN(id)),
-				cover_url: this.cover.url,
-				cover_width: this.cover.width,
-				cover_height: this.cover.height
-			};
+                        async saveDraft(options = {}) {
+                                const {
+                                        redirectOnCreate = true,
+                                        silent = false,
+                                        notifyOnSilent = false,
+                                        useLoadingState = true
+                                } = options;
+                                if (this.loading) {
+                                        return false;
+                                }
+                                const shouldToggleLoading = useLoadingState;
+                                if (shouldToggleLoading) {
+                                        this.loading = true;
+                                }
+                                if (this.editor) {
+                                        this.post.content = this.editor.value();
+                                }
+                                const revisionAtStart = this.autoSaveRevision;
+                                const payload = {
+                                        title: this.post.title,
+                                        summary: this.post.summary,
+                                        content: this.post.content,
+                                        tag_ids: this.post.tagIds.map(id => Number(id)).filter(id => !Number.isNaN(id)),
+                                        cover_url: this.cover.url || '',
+                                        cover_width: this.cover.width || 0,
+                                        cover_height: this.cover.height || 0
+                                };
 
-			let previousAutosaveId = null;
-			if (this.editor && this.editor.options && this.editor.options.autosave) {
-				previousAutosaveId = this.editor.options.autosave.uniqueId;
-			}
+                                let previousAutosaveId = null;
+                                if (this.editor && this.editor.options && this.editor.options.autosave) {
+                                        previousAutosaveId = this.editor.options.autosave.uniqueId;
+                                }
 
-				let url = '/admin/api/posts';
-				let method = 'POST';
-				if (this.postId !== 'new') {
-					url = `/admin/api/posts/${this.postId}`;
-					method = 'PUT';
-				}
+                                let url = '/admin/api/posts';
+                                let method = 'POST';
+                                if (this.postId !== 'new') {
+                                        url = `/admin/api/posts/${this.postId}`;
+                                        method = 'PUT';
+                                }
 
-				try {
-					const response = await fetch(url, {
-						method,
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify(payload)
-					});
-					const data = await response.json();
-					if (!response.ok) {
-						const message = data.error || data.message || '保存失败，请稍后重试';
-						window.AdminUI.toast({ message, type: 'error' });
-						return false;
-					}
+                                try {
+                                        const response = await fetch(url, {
+                                                method,
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify(payload)
+                                        });
+                                        const data = await response.json();
+                                        if (!response.ok) {
+                                                const message = data.error || data.message || '保存失败，请稍后重试';
+                                                if (silent && !notifyOnSilent) {
+                                                        this.autoSaveError = message;
+                                                } else {
+                                                        window.AdminUI.toast({ message, type: 'error' });
+                                                }
+                                                return false;
+                                        }
 
-				if (data.post) {
-					if (typeof data.post.ID !== 'undefined' && data.post.ID !== null) {
-						this.postId = data.post.ID.toString();
-					}
-					if (typeof data.post.summary === 'string') {
-						this.post.summary = data.post.summary;
-					}
-					if (typeof data.post.Status === 'string') {
-						this.post.status = data.post.Status;
-					}
-				}
+                                        if (data.post) {
+                                                if (typeof data.post.ID !== 'undefined' && data.post.ID !== null) {
+                                                        this.postId = data.post.ID.toString();
+                                                }
+                                                if (typeof data.post.summary === 'string') {
+                                                        this.post.summary = data.post.summary;
+                                                }
+                                                if (typeof data.post.Status === 'string') {
+                                                        this.post.status = data.post.Status;
+                                                }
+                                                if (typeof data.post.CoverURL === 'string' && data.post.CoverURL !== this.cover.url) {
+                                                        this.cover.url = data.post.CoverURL;
+                                                }
+                                                if (typeof data.post.CoverWidth === 'number' && data.post.CoverWidth !== this.cover.width) {
+                                                        this.cover.width = data.post.CoverWidth;
+                                                }
+                                                if (typeof data.post.CoverHeight === 'number' && data.post.CoverHeight !== this.cover.height) {
+                                                        this.cover.height = data.post.CoverHeight;
+                                                }
+                                        }
 
-				if (this.editor && typeof this.editor.clearAutosavedValue === 'function') {
-					this.editor.clearAutosavedValue();
-				}
-				if (this.editor && this.editor.options && this.editor.options.autosave && this.postId !== 'new') {
-					const autosave = this.editor.options.autosave;
-					const newId = `post-content-${this.postId}`;
-					if (previousAutosaveId && previousAutosaveId !== newId) {
-						try {
-							window.localStorage.removeItem(`smde_${previousAutosaveId}`);
-						} catch (_) {}
-					}
-					autosave.uniqueId = newId;
-				}
+                                        if (this.editor && typeof this.editor.clearAutosavedValue === 'function') {
+                                                this.editor.clearAutosavedValue();
+                                        }
+                                        if (this.editor && this.editor.options && this.editor.options.autosave && this.postId !== 'new') {
+                                                const autosave = this.editor.options.autosave;
+                                                const newId = `post-content-${this.postId}`;
+                                                if (previousAutosaveId && previousAutosaveId !== newId) {
+                                                        try {
+                                                                window.localStorage.removeItem(`smde_${previousAutosaveId}`);
+                                                        } catch (_) {}
+                                                }
+                                                autosave.uniqueId = newId;
+                                        }
 
-				if (Array.isArray(data.notices)) {
-					data.notices.forEach(message => {
-						window.AdminUI.toast({ message, type: 'info' });
-					});
-					}
-					if (Array.isArray(data.warnings)) {
-						data.warnings.forEach(message => {
-							window.AdminUI.toast({ message, type: 'warning' });
-						});
-					}
+                                        const shouldNotify = !silent || notifyOnSilent;
+                                        if (shouldNotify && Array.isArray(data.notices)) {
+                                                data.notices.forEach(message => {
+                                                        window.AdminUI.toast({ message, type: 'info' });
+                                                });
+                                        }
+                                        if (shouldNotify && Array.isArray(data.warnings)) {
+                                                data.warnings.forEach(message => {
+                                                        window.AdminUI.toast({ message, type: 'warning' });
+                                                });
+                                        }
 
-				if (!silent && data.message) {
-					window.AdminUI.toast({ message: data.message, type: 'success' });
-				}
+                                        if (!silent && data.message) {
+                                                window.AdminUI.toast({ message: data.message, type: 'success' });
+                                        }
 
-				if (this.postId !== 'new' && !window.location.pathname.includes('/edit')) {
-						if (redirectOnCreate) {
-							window.location.href = `/admin/posts/${this.postId}/edit`;
-						} else {
-							window.history.replaceState({}, '', `/admin/posts/${this.postId}/edit`);
-						}
-					}
+                                        if (this.autoSaveRevision === revisionAtStart) {
+                                                this.autoSavePending = false;
+                                        }
+                                        this.lastAutoSavedAt = new Date();
+                                        this.autoSaveError = '';
 
-					return true;
-				} catch (error) {
-					window.AdminUI.toast({ message: error.message || '保存失败，请稍后重试', type: 'error' });
-					return false;
-				} finally {
-					this.loading = false;
-				}
-			},
+                                        if (this.postId !== 'new' && !window.location.pathname.includes('/edit')) {
+                                                if (redirectOnCreate) {
+                                                        window.location.href = `/admin/posts/${this.postId}/edit`;
+                                                } else {
+                                                        window.history.replaceState({}, '', `/admin/posts/${this.postId}/edit`);
+                                                }
+                                        }
+
+                                        return true;
+                                } catch (error) {
+                                        const message = error.message || '保存失败，请稍后重试';
+                                        if (silent && !notifyOnSilent) {
+                                                this.autoSaveError = message;
+                                        } else {
+                                                window.AdminUI.toast({ message, type: 'error' });
+                                        }
+                                        return false;
+                                } finally {
+                                        if (shouldToggleLoading) {
+                                                this.loading = false;
+                                        }
+                                }
+                        },
 
 			async publishPost() {
 				if (this.publishing) {
@@ -711,7 +882,7 @@
 					return;
 				}
 
-				const saved = await this.saveDraft({ redirectOnCreate: false, silent: true });
+                                const saved = await this.saveDraft({ redirectOnCreate: false, silent: true, notifyOnSilent: true });
 				if (!saved) {
 					return;
 				}
@@ -871,13 +1042,14 @@
 					this.closeOptimizationModal();
 					return;
 				}
-				this.post.content = this.optimizedContent;
-				if (this.editor) {
-					this.editor.value(this.optimizedContent);
-				}
-				window.AdminUI.toast({ message: '已替换为优化后的正文', type: 'success' });
-				this.closeOptimizationModal();
-			},
+                                this.post.content = this.optimizedContent;
+                                if (this.editor) {
+                                        this.editor.value(this.optimizedContent);
+                                }
+                                this.markDirty();
+                                window.AdminUI.toast({ message: '已替换为优化后的正文', type: 'success' });
+                                this.closeOptimizationModal();
+                        },
 
 			formatDateTime(value) {
 				if (!value) {
@@ -963,6 +1135,7 @@
                                 }
                                 this.post.summary = this.summaryPreview;
                                 this.closeSummaryModal();
+                                this.markDirty();
                                 window.AdminUI.toast({ message: '已使用最新生成的摘要', type: 'success' });
                         }
                 };

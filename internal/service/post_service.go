@@ -474,7 +474,7 @@ func (s *PostService) applyPublicationFilters(query *gorm.DB, filter PostFilter)
 func normalizeCover(input PostInput) (string, int, int, error) {
 	coverURL := strings.TrimSpace(input.CoverURL)
 	if coverURL == "" {
-		return "", 0, 0, ErrCoverRequired
+		return "", 0, 0, nil
 	}
 
 	if input.CoverWidth <= 0 || input.CoverHeight <= 0 {

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -168,5 +169,75 @@ func TestPostService_PublishFlow(t *testing.T) {
 	}
 	if filteredNone.Total != 0 || len(filteredNone.Publications) != 0 {
 		t.Fatalf("expected no publications for unknown tag")
+	}
+}
+
+func TestPostService_CreateAndUpdateWithoutCover(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "draft-writer"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	input := PostInput{
+		Title:   "草稿允许无封面",
+		Content: "内容",
+		Summary: "摘要",
+		UserID:  user.ID,
+	}
+
+	post, err := svc.Create(input)
+	if err != nil {
+		t.Fatalf("create post without cover: %v", err)
+	}
+	if post.CoverURL != "" {
+		t.Fatalf("expected empty cover url, got %s", post.CoverURL)
+	}
+	if post.CoverWidth != 0 || post.CoverHeight != 0 {
+		t.Fatalf("expected zero cover dimensions, got %dx%d", post.CoverWidth, post.CoverHeight)
+	}
+
+	update := input
+	update.Title = "更新后的标题"
+	updated, err := svc.Update(post.ID, update)
+	if err != nil {
+		t.Fatalf("update post without cover: %v", err)
+	}
+	if updated.Title != "更新后的标题" {
+		t.Fatalf("unexpected title after update: %s", updated.Title)
+	}
+	if updated.CoverURL != "" {
+		t.Fatalf("expected empty cover url after update, got %s", updated.CoverURL)
+	}
+	if updated.CoverWidth != 0 || updated.CoverHeight != 0 {
+		t.Fatalf("expected zero cover dimensions after update, got %dx%d", updated.CoverWidth, updated.CoverHeight)
+	}
+}
+
+func TestPostService_PublishRequiresCover(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "publisher"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	input := PostInput{
+		Title:   "缺少封面",
+		Content: "正文",
+		Summary: "摘要",
+		UserID:  user.ID,
+	}
+
+	post, err := svc.Create(input)
+	if err != nil {
+		t.Fatalf("create draft without cover: %v", err)
+	}
+
+	if _, err := svc.Publish(post.ID, user.ID); !errors.Is(err, ErrCoverRequired) {
+		t.Fatalf("expected ErrCoverRequired when publishing without cover, got %v", err)
 	}
 }
