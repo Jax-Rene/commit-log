@@ -32,7 +32,7 @@
 ## 构建与运行
 - `make run`：以生产配置在 `:8080` 启动服务，用于构建验收。
 - `make dev`：调试模式启动，启用 Gin Debug、模板热加载与丰富日志。
-- `npm run build`：使用 Vite 编译前端资源并输出至 `web/static/dist`。
+- `pnpm run build`：使用 Vite 编译前端资源并输出至 `web/static/dist`。
 - `go run scripts/generate_test_data.go`：刷新演示数据，确保后台筛选、搜索等功能可验证。
 
 ## 测试与质量保障
