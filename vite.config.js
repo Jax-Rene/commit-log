@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         admin: path.resolve(__dirname, 'web/frontend/admin.js'),
         public: path.resolve(__dirname, 'web/frontend/public.js'),
+        milkdown_v2: path.resolve(__dirname, 'web/frontend/milkdown_v2.js'),
       },
       output: {
         entryFileNames: 'assets/[name].js',

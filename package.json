@@ -25,6 +25,9 @@
     "easymde": "^2.20.0",
     "flatpickr": "^4.6.13",
     "highlight.js": "^11.10.0",
-    "htmx.org": "^2.0.6"
+    "htmx.org": "^2.0.6",
+    "@milkdown/core": "^7.17.1",
+    "@milkdown/preset-commonmark": "^7.17.1",
+    "@milkdown/theme-nord": "^7.17.1"
   }
 }

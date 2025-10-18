@@ -493,8 +493,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 	})
 }
 
-// ShowPostEdit 渲染文章编辑页面
-func (a *API) ShowPostEdit(c *gin.Context) {
+func (a *API) postEditPageData(c *gin.Context) gin.H {
 	data := gin.H{
 		"title": "创建文章",
 	}
@@ -518,7 +517,17 @@ func (a *API) ShowPostEdit(c *gin.Context) {
 		}
 	}
 
-	a.renderHTML(c, http.StatusOK, "post_edit.html", data)
+	return data
+}
+
+// ShowPostEdit 渲染文章编辑页面（EasyMDE 版本）
+func (a *API) ShowPostEdit(c *gin.Context) {
+	a.renderHTML(c, http.StatusOK, "post_edit.html", a.postEditPageData(c))
+}
+
+// ShowPostEditV2 渲染文章编辑页面（Milkdown 版本实验）
+func (a *API) ShowPostEditV2(c *gin.Context) {
+	a.renderHTML(c, http.StatusOK, "post_edit_v2.html", a.postEditPageData(c))
 }
 
 func (a *API) currentUserID(c *gin.Context) uint {
