@@ -52,7 +52,13 @@ func TestAISummaryServiceGenerateSummary(t *testing.T) {
 	defer cleanup()
 
 	system := NewSystemSettingService(db.DB)
-	if _, err := system.UpdateSettings(SystemSettingsInput{SiteName: "CommitLog", SiteLogoURL: "https://example.com/logo.png", AIProvider: AIProviderOpenAI, OpenAIAPIKey: "sk-test"}); err != nil {
+	if _, err := system.UpdateSettings(SystemSettingsInput{
+		SiteName:        "CommitLog",
+		SiteLogoURL:     "https://example.com/logo.png",
+		AIProvider:      AIProviderOpenAI,
+		OpenAIAPIKey:    "sk-test",
+		AISummaryPrompt: "自定义摘要提示",
+	}); err != nil {
 		t.Fatalf("failed to seed settings: %v", err)
 	}
 
@@ -75,6 +81,9 @@ func TestAISummaryServiceGenerateSummary(t *testing.T) {
 		}
 		if payload.Model == "" {
 			t.Fatalf("expected model to be set")
+		}
+		if len(payload.Messages) == 0 || payload.Messages[0].Content != "自定义摘要提示" {
+			t.Fatalf("unexpected system prompt: %#v", payload.Messages)
 		}
 
 		response := chatCompletionResponse{
@@ -135,6 +144,9 @@ func TestAISummaryServiceGenerateSummaryDeepSeek(t *testing.T) {
 		}
 		if payload.Model == "" {
 			t.Fatalf("expected model to be set for deepseek")
+		}
+		if len(payload.Messages) == 0 || payload.Messages[0].Content != defaultSummarySystemPrompt {
+			t.Fatalf("expected default system prompt, got %#v", payload.Messages)
 		}
 
 		response := chatCompletionResponse{

@@ -42,7 +42,11 @@ func TestAIRewriteServiceOptimizeContent(t *testing.T) {
 	defer cleanup()
 
 	system := NewSystemSettingService(db.DB)
-	if _, err := system.UpdateSettings(SystemSettingsInput{AIProvider: AIProviderOpenAI, OpenAIAPIKey: "sk-test"}); err != nil {
+	if _, err := system.UpdateSettings(SystemSettingsInput{
+		AIProvider:      AIProviderOpenAI,
+		OpenAIAPIKey:    "sk-test",
+		AIRewritePrompt: " 自定义优化提示 ",
+	}); err != nil {
 		t.Fatalf("failed to seed settings: %v", err)
 	}
 
@@ -78,6 +82,9 @@ func TestAIRewriteServiceOptimizeContent(t *testing.T) {
 		}
 		if payload.MaxTokens != defaultOptimizationMaxTokens {
 			t.Fatalf("unexpected max tokens: %d", payload.MaxTokens)
+		}
+		if payload.Messages[0].Content != "自定义优化提示" {
+			t.Fatalf("unexpected system prompt: %q", payload.Messages[0].Content)
 		}
 		if !strings.Contains(payload.Messages[1].Content, "原始内容") {
 			t.Fatalf("user prompt must include content body: %q", payload.Messages[1].Content)

@@ -88,8 +88,18 @@ func (s *AIRewriteService) OptimizeContent(ctx context.Context, input ContentOpt
 	contentSnippet := truncateRunes(content, maxOptimizationContentRuneCount)
 	userPrompt := buildOptimizationPrompt(contentSnippet)
 
-	result, err := s.client.call(ctx, aiChatRequest{
-		SystemPrompt: "你是一名资深中文博客主编，请在不改变核心事实的前提下对文章内容进行润色重写。请遵循：\n1. 保留并优化 Markdown 结构，确保标题、列表、代码块、引用按需存在且格式正确。\n2. 精炼措辞，提升逻辑连贯性，合并或拆分段落以增强可读性。\n3. 避免重复、冗余或口语化表达，让语气专业但友好。\n4. 保留原有示例、数据、链接、图片链接与代码，不要添加额外解释。\n5. 输出仅包含优化后的 Markdown 正文，不要附加额外说明，不要生成新的标题。",
+	settings, err := s.client.settings.GetSettings()
+	if err != nil {
+		return ContentOptimizationResult{}, fmt.Errorf("读取系统设置失败: %w", err)
+	}
+
+	systemPrompt := strings.TrimSpace(settings.AIRewritePrompt)
+	if systemPrompt == "" {
+		systemPrompt = defaultRewriteSystemPrompt
+	}
+
+	result, err := s.client.callWithSettings(ctx, settings, aiChatRequest{
+		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
 		MaxTokens:    maxTokens,
 		Temperature:  defaultOptimizationTemperature,
