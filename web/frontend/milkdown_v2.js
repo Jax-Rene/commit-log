@@ -25,10 +25,10 @@ function getInitialMarkdown() {
 	if (typeof window !== 'undefined' && window.__MILKDOWN_V2__) {
 		const { content } = window.__MILKDOWN_V2__;
 		if (typeof content === 'string') {
-			return content;
+			return content.trim().length > 0 ? content : '# ';
 		}
 	}
-	return '# 欢迎使用 Milkdown 编辑器\n';
+	return '# ';
 }
 
 async function initialize() {
