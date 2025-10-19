@@ -1,7 +1,25 @@
-import { Editor, rootCtx, defaultValueCtx } from '@milkdown/core';
-import { commonmark } from '@milkdown/preset-commonmark';
-import { nord } from '@milkdown/theme-nord';
-import milkdownTheme from '@milkdown/theme-nord/style.css?raw';
+import { Crepe } from '@milkdown/crepe';
+import commonStyleUrl from '@milkdown/crepe/theme/common/style.css?url';
+import nordStyleUrl from '@milkdown/crepe/theme/nord.css?url';
+
+const styleUrls = [commonStyleUrl, nordStyleUrl];
+
+function ensureStyles() {
+	styleUrls.forEach((href, index) => {
+		if (!href) {
+			return;
+		}
+		const id = `milkdown-crepe-style-${index}`;
+		if (document.getElementById(id)) {
+			return;
+		}
+		const link = document.createElement('link');
+		link.id = id;
+		link.rel = 'stylesheet';
+		link.href = href;
+		document.head.appendChild(link);
+	});
+}
 
 function getInitialMarkdown() {
 	if (typeof window !== 'undefined' && window.__MILKDOWN_V2__) {
@@ -20,27 +38,24 @@ async function initialize() {
 		return;
 	}
 
-	if (!document.getElementById('milkdown-theme-style')) {
-		const style = document.createElement('style');
-		style.id = 'milkdown-theme-style';
-		style.textContent = milkdownTheme;
-		document.head.appendChild(style);
-	}
+	ensureStyles();
 
 	const initial = getInitialMarkdown();
 
 	try {
-		const instance = await Editor.make()
-			.config((ctx) => {
-				ctx.set(rootCtx, mount);
-				ctx.set(defaultValueCtx, initial);
-			})
-			.use(nord)
-			.use(commonmark)
-			.create();
+		const crepe = new Crepe({
+			root: mount,
+			defaultValue: initial,
+		});
+
+		await crepe.create();
 
 		if (typeof window !== 'undefined') {
-			window.MilkdownV2 = { instance };
+			window.MilkdownV2 = {
+				crepe,
+				editor: crepe.editor,
+				getMarkdown: crepe.getMarkdown,
+			};
 		}
 	} catch (error) {
 		console.error('[milkdown] 初始化失败', error);

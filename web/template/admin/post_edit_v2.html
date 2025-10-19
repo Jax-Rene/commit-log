@@ -10,7 +10,7 @@
 
 <style>
 	body.milkdown-immersive {
-		background-color: var(--milkdown-bg, #ffffff);
+		background-color: var(--crepe-color-background, #ffffff);
 	}
 
 	body.milkdown-immersive header,
@@ -51,7 +51,11 @@ window.__MILKDOWN_V2__ = {{$initial | toJSON}};
 document.body.classList.add('milkdown-immersive');
 window.addEventListener('pagehide', () => {
 	document.body.classList.remove('milkdown-immersive');
-});
+	const crepe = window.MilkdownV2?.crepe;
+	if (crepe && typeof crepe.destroy === 'function') {
+		void crepe.destroy();
+	}
+}, { once: true });
 </script>
 <script type="module" src="/static/dist/assets/milkdown_v2.js"></script>
 {{end}}
