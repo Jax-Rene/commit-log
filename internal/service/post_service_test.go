@@ -241,3 +241,62 @@ func TestPostService_PublishRequiresCover(t *testing.T) {
 		t.Fatalf("expected ErrCoverRequired when publishing without cover, got %v", err)
 	}
 }
+
+func TestPostService_DeriveTitleFromContent(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "auto-title"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	post, err := svc.Create(PostInput{
+		Title:   "   ",
+		Content: "   # 自动标题  \n这是一段正文", // first heading should become title
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("create post with derived title: %v", err)
+	}
+	if post.Title != "自动标题" {
+		t.Fatalf("expected derived title '自动标题', got %q", post.Title)
+	}
+
+	updated, err := svc.Update(post.ID, PostInput{
+		Title:   "",
+		Content: "# 新的标题\n更新的正文",
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("update post with derived title: %v", err)
+	}
+	if updated.Title != "新的标题" {
+		t.Fatalf("expected derived title '新的标题', got %q", updated.Title)
+	}
+
+	// When没有可用的首行标题时，保持现有标题
+	preserved, err := svc.Update(post.ID, PostInput{
+		Title:   "",
+		Content: "正文没有标题\n# 二级标题",
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("update post without heading: %v", err)
+	}
+	if preserved.Title != "新的标题" {
+		t.Fatalf("expected title to remain '新的标题', got %q", preserved.Title)
+	}
+
+	explicit, err := svc.Update(post.ID, PostInput{
+		Title:   "显式标题",
+		Content: "# 应忽略的标题",
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("update post with explicit title: %v", err)
+	}
+	if explicit.Title != "显式标题" {
+		t.Fatalf("expected explicit title to be kept, got %q", explicit.Title)
+	}
+}

@@ -99,7 +99,7 @@ func (s *PostService) Create(input PostInput) (*db.Post, error) {
 	}
 
 	post := db.Post{
-		Title:       strings.TrimSpace(input.Title),
+		Title:       determinePostTitle(input, ""),
 		Content:     input.Content,
 		Summary:     strings.TrimSpace(input.Summary),
 		Status:      "draft",
@@ -128,7 +128,7 @@ func (s *PostService) Update(id uint, input PostInput) (*db.Post, error) {
 		return nil, err
 	}
 
-	existing.Title = strings.TrimSpace(input.Title)
+	existing.Title = determinePostTitle(input, existing.Title)
 	existing.Content = input.Content
 	existing.Summary = strings.TrimSpace(input.Summary)
 	existing.CoverURL = coverURL
@@ -503,4 +503,47 @@ func calculateReadingTime(content string) int {
 		minutes = 1
 	}
 	return minutes
+}
+
+func determinePostTitle(input PostInput, existing string) string {
+	trimmed := strings.TrimSpace(input.Title)
+	if trimmed != "" {
+		return trimmed
+	}
+
+	if heading := extractFirstHeading(input.Content); heading != "" {
+		return heading
+	}
+
+	return strings.TrimSpace(existing)
+}
+
+func extractFirstHeading(content string) string {
+	if content == "" {
+		return ""
+	}
+
+	firstLine := content
+	if idx := strings.IndexRune(content, '\n'); idx >= 0 {
+		firstLine = content[:idx]
+	}
+
+	trimmed := strings.TrimSpace(firstLine)
+	if trimmed == "" {
+		return ""
+	}
+
+	if !strings.HasPrefix(trimmed, "#") {
+		return ""
+	}
+
+	trimmed = strings.TrimLeft(trimmed, "#")
+	trimmed = strings.TrimSpace(trimmed)
+	if trimmed == "" {
+		return ""
+	}
+
+	trimmed = strings.TrimRight(trimmed, "#")
+	trimmed = strings.TrimSpace(trimmed)
+	return trimmed
 }
