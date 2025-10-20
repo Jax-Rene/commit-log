@@ -1,4 +1,7 @@
+import { listenerCtx } from '@milkdown/kit/plugin/listener';
 import { Crepe } from '@milkdown/crepe';
+import { cursor } from '@milkdown/plugin-cursor';
+import { upload, uploadConfig } from '@milkdown/plugin-upload';
 import commonStyleUrl from '@milkdown/crepe/theme/common/style.css?url';
 import nordStyleUrl from '@milkdown/crepe/theme/nord.css?url';
 
@@ -72,6 +75,115 @@ function pickProperty(source, candidates, fallback) {
                 }
         }
         return fallback;
+}
+
+function usePlugins(editor, plugins) {
+        if (!editor || !plugins) {
+                return;
+        }
+        plugins.forEach(plugin => {
+                if (!plugin) {
+                        return;
+                }
+                if (Array.isArray(plugin)) {
+                        usePlugins(editor, plugin);
+                        return;
+                }
+                if (typeof editor.use === 'function') {
+                        editor.use(plugin);
+                }
+        });
+}
+
+async function uploadImageViaAPI(file) {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        let response;
+        try {
+                response = await fetch('/admin/api/upload/image', {
+                        method: 'POST',
+                        body: formData,
+                });
+        } catch (error) {
+                const message = error?.message || '网络异常，图片上传失败';
+                throw new Error(message);
+        }
+
+        let payload = null;
+        try {
+                payload = await response.json();
+        } catch (error) {
+                console.error('[milkdown] 图片上传响应解析失败', error);
+        }
+
+        if (!response.ok || !payload || payload.success !== 1) {
+                const message =
+                        payload?.error ||
+                        payload?.message ||
+                        `图片上传失败（${response?.status ?? '未知状态'}）`;
+                throw new Error(message);
+        }
+
+        const url = payload?.data?.url || payload?.data?.filePath;
+        if (!url) {
+                throw new Error('图片上传成功但未返回访问地址');
+        }
+        return url;
+}
+
+function applyMilkdownPlugins(editor, toast) {
+        if (!editor || typeof editor.config !== 'function') {
+                return;
+        }
+
+        editor.config(ctx => {
+                ctx.update(uploadConfig.key, prev => {
+                        const fallbackUploader =
+                                prev && typeof prev.uploader === 'function' ? prev.uploader : null;
+                        return {
+                                ...prev,
+                                enableHtmlFileUploader: true,
+                                uploader: async (files, schema) => {
+                                        const imageNode = schema?.nodes?.image;
+                                        const items = files ? Array.from(files).filter(file => file && file.type && file.type.startsWith('image/')) : [];
+
+                                        if (!items.length || !imageNode) {
+                                                return fallbackUploader ? fallbackUploader(files, schema) : [];
+                                        }
+
+                                        const createdNodes = [];
+                                        for (const file of items) {
+                                                try {
+                                                        const url = await uploadImageViaAPI(file);
+                                                        const node = imageNode.createAndFill({
+                                                                src: url,
+                                                                alt: file.name || '',
+                                                        });
+                                                        if (node) {
+                                                                createdNodes.push(node);
+                                                        }
+                                                } catch (error) {
+                                                        const message = error?.message || '图片上传失败';
+                                                        if (typeof toast === 'function') {
+                                                                toast({ type: 'error', message });
+                                                        } else {
+                                                                console.error('[milkdown] 图片上传失败', error);
+                                                        }
+                                                }
+                                        }
+
+                                        if (!createdNodes.length) {
+                                                return fallbackUploader ? fallbackUploader(files, schema) : [];
+                                        }
+
+                                        return createdNodes;
+                                },
+                        };
+                });
+        });
+
+        usePlugins(editor, [upload, cursor]);
 }
 
 class PostDraftController {
@@ -493,10 +605,13 @@ async function initialize() {
 	const initial = getInitialMarkdown();
 
 	try {
+                const toast = createToast();
                 const crepe = new Crepe({
                         root: mount,
                         defaultValue: initial,
                 });
+
+                applyMilkdownPlugins(crepe.editor, toast);
 
                 await crepe.create();
 
@@ -504,6 +619,35 @@ async function initialize() {
                         const initialData = typeof window.__MILKDOWN_V2__ === 'object' ? window.__MILKDOWN_V2__ : {};
                         const controller = new PostDraftController(crepe, initialData);
                         controller.init();
+
+                        crepe.editor.action(ctx => {
+                                try {
+                                        const listener = ctx.get(listenerCtx);
+                                        if (!listener) {
+                                                return;
+                                        }
+                                        listener.markdownUpdated((_ctx, markdown) => {
+                                                if (typeof markdown !== 'string') {
+                                                        return;
+                                                }
+                                                if (markdown === controller.currentContent) {
+                                                        return;
+                                                }
+                                                controller.currentContent = markdown;
+                                                controller.postData.Content = markdown;
+                                                if (markdown !== controller.lastSavedContent) {
+                                                        controller.markDirty();
+                                                }
+                                        });
+                                        listener.blur(() => {
+                                                if (typeof controller.autoSaveIfNeeded === 'function') {
+                                                        void controller.autoSaveIfNeeded();
+                                                }
+                                        });
+                                } catch (error) {
+                                        console.error('[milkdown] 监听器初始化失败', error);
+                                }
+                        });
 
                         window.MilkdownV2 = {
                                 crepe,
