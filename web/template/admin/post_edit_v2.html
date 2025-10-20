@@ -25,25 +25,36 @@
 		min-height: 100vh;
 	}
 
-	body.milkdown-immersive main > * {
-		margin: 0;
-		height: 100vh;
-	}
+        body.milkdown-immersive main > * {
+                margin: 0;
+                min-height: 100vh;
+        }
 
-	.milkdown-immersive-shell {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-	}
+        .milkdown-immersive-shell {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+        }
 
-	.milkdown-immersive-shell .milkdown {
-		flex: 1 1 auto;
-		min-height: 0;
-	}
+        .milkdown-immersive-wrapper {
+                flex: 1 1 auto;
+                display: flex;
+        }
+
+        .milkdown-immersive-shell .milkdown {
+                flex: 1 1 auto;
+                min-height: 0;
+                --crepe-color-background: #ffffff;
+                background-color: #ffffff;
+        }
 </style>
 
 <div class="milkdown-immersive-shell">
-	<div id="milkdown-app" class="milkdown"></div>
+        <div
+                class="milkdown-immersive-wrapper mx-8 pt-24 pb-10 md:mx-24 md:pb-24 lg:mx-40 xl:mx-80 2xl:mx-auto 2xl:max-w-4xl w-full"
+        >
+                <div id="milkdown-app" class="milkdown"></div>
+        </div>
 </div>
 
 <script>
