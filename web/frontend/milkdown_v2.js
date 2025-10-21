@@ -1,15 +1,16 @@
-import { listenerCtx } from '@milkdown/kit/plugin/listener';
 import { Crepe } from '@milkdown/crepe';
+import { listenerCtx } from '@milkdown/kit/plugin/listener';
 import { cursor } from '@milkdown/plugin-cursor';
 import { upload, uploadConfig } from '@milkdown/plugin-upload';
+import { replaceAll } from '@milkdown/kit/utils';
 import commonStyleUrl from '@milkdown/crepe/theme/common/style.css?url';
 import nordStyleUrl from '@milkdown/crepe/theme/nord.css?url';
 
 const styleUrls = [commonStyleUrl, nordStyleUrl];
 
 function ensureStyles() {
-	styleUrls.forEach((href, index) => {
-		if (!href) {
+        styleUrls.forEach((href, index) => {
+                if (!href) {
 			return;
 		}
 		const id = `milkdown-crepe-style-${index}`;
@@ -20,14 +21,104 @@ function ensureStyles() {
 		link.id = id;
 		link.rel = 'stylesheet';
 		link.href = href;
-		document.head.appendChild(link);
-	});
+                document.head.appendChild(link);
+        });
+}
+
+function normalizePreviewFeatures(features) {
+        const featureFlags = typeof features === 'object' && features !== null ? { ...features } : {};
+        const Feature = Crepe.Feature || {};
+        const disabledDefaults = {};
+        if (Feature.BlockEdit) {
+                disabledDefaults[Feature.BlockEdit] = false;
+        }
+        if (Feature.Toolbar) {
+                disabledDefaults[Feature.Toolbar] = false;
+        }
+        if (Feature.Placeholder) {
+                disabledDefaults[Feature.Placeholder] = false;
+        }
+        return { ...disabledDefaults, ...featureFlags };
+}
+
+function applyMarkdownToInstance(instance, markdown, { flush = false, silent = false } = {}) {
+        if (!instance || typeof instance.editor?.action !== 'function') {
+                return false;
+        }
+        const normalized = typeof markdown === 'string' ? markdown : '';
+        try {
+                instance.editor.action(replaceAll(normalized, flush));
+                return true;
+        } catch (error) {
+                if (!silent) {
+                        console.warn('[milkdown] Markdown 更新失败', error);
+                }
+                return false;
+        }
+}
+
+function ensureSetMarkdown(instance, options = {}) {
+        const { flush = false, silent = false } = options;
+        if (!instance || typeof instance.editor?.action !== 'function') {
+                return instance;
+        }
+        const existing = instance.setMarkdown;
+        if (typeof existing === 'function' && existing.__commitLogPatched__) {
+                return instance;
+        }
+        const setter = async (markdown, override = {}) => {
+                const shouldFlush = typeof override.flush === 'boolean' ? override.flush : flush;
+                const shouldSilence = typeof override.silent === 'boolean' ? override.silent : silent;
+                return applyMarkdownToInstance(instance, markdown, {
+                        flush: shouldFlush,
+                        silent: shouldSilence,
+                });
+        };
+        setter.__commitLogPatched__ = true;
+        Object.defineProperty(instance, 'setMarkdown', {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: setter,
+        });
+        return instance;
+}
+
+async function createReadOnlyViewer({ mount, markdown = '', features, featureConfigs } = {}) {
+        if (!mount) {
+                throw new Error('[milkdown] 预览需要有效的挂载节点');
+        }
+        ensureStyles();
+        const normalized = typeof markdown === 'string' ? markdown : '';
+        const preview = new Crepe({
+                root: mount,
+                defaultValue: normalized.trim() ? normalized : '# ',
+                features: normalizePreviewFeatures(features),
+                featureConfigs,
+        });
+        ensureSetMarkdown(preview, { flush: true, silent: true });
+        if (typeof preview.setReadonly === 'function') {
+                preview.setReadonly(true);
+        }
+        mount.innerHTML = '';
+        await preview.create();
+        if (typeof preview.setMarkdown === 'function') {
+                try {
+                        const result = preview.setMarkdown(normalized);
+                        if (result && typeof result.then === 'function') {
+                                await result;
+                        }
+                } catch (error) {
+                        console.warn('[milkdown] 预览内容设置失败', error);
+                }
+        }
+        return preview;
 }
 
 function getInitialMarkdown() {
-	if (typeof window !== 'undefined' && window.__MILKDOWN_V2__) {
-		const { content } = window.__MILKDOWN_V2__;
-		if (typeof content === 'string') {
+        if (typeof window !== 'undefined' && window.__MILKDOWN_V2__) {
+                const { content } = window.__MILKDOWN_V2__;
+                if (typeof content === 'string') {
 			return content.trim().length > 0 ? content : '# ';
 		}
 	}
@@ -75,6 +166,22 @@ function pickProperty(source, candidates, fallback) {
                 }
         }
         return fallback;
+}
+
+function cloneValue(value) {
+        if (typeof structuredClone === 'function') {
+                try {
+                        return structuredClone(value);
+                } catch (error) {
+                        console.warn('[milkdown] 复制数据失败，将使用回退方案', error);
+                }
+        }
+        try {
+                return JSON.parse(JSON.stringify(value));
+        } catch (error) {
+                console.warn('[milkdown] JSON 克隆数据失败，将返回原始引用', error);
+        }
+        return value;
 }
 
 function usePlugins(editor, plugins) {
@@ -196,6 +303,7 @@ class PostDraftController {
                 this.postData = this.normalizePost(initialData.post);
                 this.latestPublication = initialData.latestPublication || null;
                 this.postId = this.resolvePostId(this.postData);
+                this.eventTarget = typeof window !== 'undefined' ? window : null;
                 this.loading = false;
                 this.autoSaving = false;
                 this.autoSavePending = false;
@@ -212,6 +320,34 @@ class PostDraftController {
                 const initialContent = this.safeGetInitialContent();
                 this.currentContent = initialContent;
                 this.lastSavedContent = initialContent;
+        }
+
+        getPostSnapshot() {
+                if (!this.postData || typeof this.postData !== 'object') {
+                        return {};
+                }
+                return cloneValue(this.postData) || {};
+        }
+
+        emitPostEvent(type, detail = {}) {
+                if (!this.eventTarget || typeof this.eventTarget.dispatchEvent !== 'function' || !type) {
+                        return;
+                }
+                const payload = {
+                        controller: this,
+                        post: this.getPostSnapshot(),
+                        ...detail,
+                };
+                try {
+                        this.eventTarget.dispatchEvent(new CustomEvent(`post-editor:${type}`, { detail: payload }));
+                } catch (error) {
+                        console.warn('[milkdown] 分发事件失败', type, error);
+                }
+        }
+
+        notifyPostChange(reason = '') {
+                const detail = reason ? { reason } : {};
+                this.emitPostEvent('post-updated', detail);
         }
 
         normalizePost(post) {
@@ -404,6 +540,67 @@ class PostDraftController {
                 this.autoSaveRevision += 1;
                 this.autoSavePending = true;
                 this.autoSaveError = '';
+                this.emitPostEvent('dirty', { revision: this.autoSaveRevision });
+        }
+
+        setTitle(value) {
+                const normalized = coerceString(value, '').trim();
+                if (this.postData.Title === normalized) {
+                        return this.postData.Title;
+                }
+                this.postData.Title = normalized;
+                this.postData.title = normalized;
+                this.markDirty();
+                this.notifyPostChange('title');
+                return normalized;
+        }
+
+        setSummary(value) {
+                const normalized = coerceString(value, '');
+                if (this.postData.Summary === normalized) {
+                        return this.postData.Summary;
+                }
+                this.postData.Summary = normalized;
+                this.postData.summary = normalized;
+                this.markDirty();
+                this.notifyPostChange('summary');
+                return normalized;
+        }
+
+        setCover(info = {}) {
+                const nextUrl = coerceString(pickProperty(info, ['url', 'CoverURL', 'cover_url'], ''), '').trim();
+                const nextWidth = coerceNumber(pickProperty(info, ['width', 'CoverWidth', 'cover_width'], 0), 0);
+                const nextHeight = coerceNumber(pickProperty(info, ['height', 'CoverHeight', 'cover_height'], 0), 0);
+
+                const sameAsBefore =
+                        this.postData.CoverURL === nextUrl &&
+                        this.postData.CoverWidth === nextWidth &&
+                        this.postData.CoverHeight === nextHeight;
+                if (sameAsBefore) {
+                        return {
+                                url: this.postData.CoverURL,
+                                width: this.postData.CoverWidth,
+                                height: this.postData.CoverHeight,
+                        };
+                }
+
+                this.postData.CoverURL = nextUrl;
+                this.postData.cover_url = nextUrl;
+                this.postData.CoverWidth = nextWidth;
+                this.postData.cover_width = nextWidth;
+                this.postData.CoverHeight = nextHeight;
+                this.postData.cover_height = nextHeight;
+                this.markDirty();
+                this.notifyPostChange('cover');
+                return {
+                        url: nextUrl,
+                        width: nextWidth,
+                        height: nextHeight,
+                };
+        }
+
+        clearCover() {
+                return this.setCover({ url: '', width: 0, height: 0 });
         }
 
         buildPayload(content) {
@@ -449,6 +646,7 @@ class PostDraftController {
                 if (resolvedId !== 'new') {
                         this.postId = resolvedId;
                 }
+                this.notifyPostChange('server');
         }
 
         async saveDraft(options = {}) {
@@ -540,6 +738,8 @@ class PostDraftController {
                         this.lastAutoSavedAt = new Date();
                         this.autoSaveError = '';
 
+                        this.notifyPostChange('save');
+
                         if (this.postId !== 'new' && window.location && !window.location.pathname.includes('/edit')) {
                                 const target = `/admin/posts/${this.postId}/edit`;
                                 if (redirectOnCreate) {
@@ -610,10 +810,10 @@ async function initialize() {
                         root: mount,
                         defaultValue: initial,
                 });
-
                 applyMilkdownPlugins(crepe.editor, toast);
 
                 await crepe.create();
+                ensureSetMarkdown(crepe);
 
                 if (typeof window !== 'undefined') {
                         const initialData = typeof window.__MILKDOWN_V2__ === 'object' ? window.__MILKDOWN_V2__ : {};
@@ -654,8 +854,12 @@ async function initialize() {
                                 editor: crepe.editor,
                                 getMarkdown: crepe.getMarkdown,
                                 controller,
+                                createReadOnlyViewer,
                                 saveDraft: controller.saveDraft.bind(controller),
                         };
+
+                        controller.emitPostEvent('ready');
+                        controller.notifyPostChange('init');
                 }
         } catch (error) {
                 console.error('[milkdown] 初始化失败', error);
