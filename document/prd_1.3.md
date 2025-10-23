@@ -44,8 +44,8 @@
 
 ### P0 全面提升 Markdown 编辑器体验
 
-* [ ] 替换 Milkdown Markdown 编辑器框架
-
+* [x] 替换 Milkdown Markdown 编辑器框架
+* [x] Crepe Editor 支持字数统计功能
 
 
 ### P1 提升 AI 能力以及体验

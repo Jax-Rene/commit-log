@@ -184,6 +184,70 @@ function cloneValue(value) {
         return value;
 }
 
+function calculateContentMetrics(markdown) {
+        const source = coerceString(markdown, '');
+        if (!source.trim()) {
+                return { words: 0, characters: 0, paragraphs: 0 };
+        }
+
+        const withoutCode = source
+                .replace(/```[\s\S]*?```/g, ' ')
+                .replace(/`[^`]*`/g, ' ');
+
+        const withoutLinks = withoutCode
+                .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+                .replace(/\[[^\]]*\]\([^)]*\)/g, '$1 ');
+
+        const normalized = withoutLinks
+                .replace(/[#>*_~`\-]+/g, ' ')
+                .replace(/\d+\./g, ' ')
+                .replace(/&[a-z]+;/gi, ' ')
+                .replace(/\r/g, '\n');
+
+        const paragraphCount = normalized
+                .split(/\n{2,}/)
+                .map(block => block.trim())
+                .filter(Boolean).length;
+
+        const collapsed = normalized
+                .replace(/\n+/g, ' ')
+                .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                .replace(/[^\p{Letter}\p{Number}\p{Mark}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]+/gu, ' ')
+                .trim();
+
+        if (!collapsed) {
+                return { words: 0, characters: 0, paragraphs: paragraphCount };
+        }
+
+        const segments = collapsed.split(/\s+/).filter(Boolean);
+        let words = 0;
+        let characters = 0;
+
+        for (const segment of segments) {
+                const cjkMatches = segment.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu);
+                if (cjkMatches && cjkMatches.length > 0) {
+                        words += cjkMatches.length;
+                        characters += cjkMatches.length;
+                }
+
+                const remaining = segment.replace(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu, '');
+                const normalizedRemaining = remaining.replace(/\s+/g, '');
+                if (normalizedRemaining.length > 0) {
+                        words += 1;
+                        characters += normalizedRemaining.length;
+                } else if (!cjkMatches) {
+                        words += 1;
+                        characters += segment.length;
+                }
+        }
+
+        return {
+                words,
+                characters,
+                paragraphs: paragraphCount,
+        };
+}
+
 function usePlugins(editor, plugins) {
         if (!editor || !plugins) {
                 return;
@@ -316,10 +380,12 @@ class PostDraftController {
                 this.unloadHandler = null;
                 this.boundKeyHandler = this.handleKeydown.bind(this);
                 this.pendingAutoSaveFlush = false;
+                this.contentMetrics = { words: 0, characters: 0, paragraphs: 0 };
 
                 const initialContent = this.safeGetInitialContent();
                 this.currentContent = initialContent;
                 this.lastSavedContent = initialContent;
+                this.updateContentMetrics(initialContent);
         }
 
         getPostSnapshot() {
@@ -348,6 +414,13 @@ class PostDraftController {
         notifyPostChange(reason = '') {
                 const detail = reason ? { reason } : {};
                 this.emitPostEvent('post-updated', detail);
+        }
+
+        updateContentMetrics(markdown) {
+                const metrics = calculateContentMetrics(markdown);
+                this.contentMetrics = metrics;
+                this.emitPostEvent('metrics', { metrics });
+                return metrics;
         }
 
         normalizePost(post) {
@@ -456,6 +529,7 @@ class PostDraftController {
                         }
                         const isInitialChange = this.currentContent === this.lastSavedContent && markdown === this.lastSavedContent;
                         this.currentContent = markdown;
+                        this.updateContentMetrics(markdown);
                         if (isInitialChange || this.currentContent === this.lastSavedContent) {
                                 this.autoSavePending = false;
                                 return;
@@ -835,6 +909,7 @@ async function initialize() {
                                                 }
                                                 controller.currentContent = markdown;
                                                 controller.postData.Content = markdown;
+                                                controller.updateContentMetrics(markdown);
                                                 if (markdown !== controller.lastSavedContent) {
                                                         controller.markDirty();
                                                 }

@@ -112,6 +112,42 @@
                                                 <span x-show="!optimizingContent">AI 全文优化</span>
                                                 <span x-show="optimizingContent">优化中...</span>
                                         </button>
+                                        <div class="relative">
+                                                <button type="button" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2 font-medium text-slate-600 transition hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/60 dark:hover:text-blue-200" @click="toggleStatisticsMenu()" :aria-expanded="statisticsMenuOpen">
+                                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.5 19.5h15M7.5 15l3-4.5 3 3 3-4.5"></path>
+                                                        </svg>
+                                                        <span>Statistics</span>
+                                                        <svg class="h-3.5 w-3.5 text-slate-400 transition-transform dark:text-slate-500" :class="statisticsMenuOpen ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 8l4 4 4-4"></path>
+                                                        </svg>
+                                                </button>
+                                                <div x-cloak x-show="statisticsMenuOpen" x-transition.origin-top-right class="absolute right-0 top-full z-10 mt-2 w-64 rounded-xl border border-slate-200 bg-white/95 p-3 text-xs text-slate-500 shadow-xl shadow-slate-200/80 backdrop-blur supports-backdrop-blur:bg-white/80 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-400">
+                                                        <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Statistics</p>
+                                                        <ul class="space-y-2">
+                                                                <li class="flex items-center justify-between">
+                                                                        <span class="font-medium text-slate-600 dark:text-slate-200">Words</span>
+                                                                        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100" x-text="formatNumber(contentMetrics?.words)"></span>
+                                                                </li>
+                                                                <li class="flex items-center justify-between">
+                                                                        <span class="font-medium text-slate-600 dark:text-slate-200">Characters</span>
+                                                                        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100" x-text="formatNumber(contentMetrics?.characters)"></span>
+                                                                </li>
+                                                                <li class="flex items-center justify-between">
+                                                                        <span class="font-medium text-slate-600 dark:text-slate-200">Paragraphs</span>
+                                                                        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100" x-text="paragraphCountLabel()"></span>
+                                                                </li>
+                                                                <li class="flex items-center justify-between">
+                                                                        <span class="font-medium text-slate-600 dark:text-slate-200">Modification Date</span>
+                                                                        <span class="text-sm font-medium text-slate-900 dark:text-slate-100" x-text="statisticsUpdatedLabel()"></span>
+                                                                </li>
+                                                                <li class="flex items-center justify-between">
+                                                                        <span class="font-medium text-slate-600 dark:text-slate-200">Create Date</span>
+                                                                        <span class="text-sm font-medium text-slate-900 dark:text-slate-100" x-text="statisticsCreatedLabel()"></span>
+                                                                </li>
+                                                        </ul>
+                                                </div>
+                                        </div>
                                         <button type="button" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2 font-medium text-slate-600 transition hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/60 dark:hover:text-blue-200" @click="openMetadataPanel()">
                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8.25 6.75h7.5M8.25 12h7.5M8.25 17.25h4.5"></path>
@@ -373,10 +409,16 @@ document.addEventListener('alpine:init', () => {
 
         Alpine.data('postEditorShell', () => ({
                 controller: null,
+                contentMetrics: { words: 0, characters: 0, paragraphs: 0 },
+                numberFormatter: null,
+                handleMetricsUpdate: null,
                 panelOpen: false,
                 quickActionsExpanded: false,
                 quickActionsHovering: false,
                 quickActionsTimer: null,
+                statisticsMenuOpen: false,
+                postCreatedAt: '',
+                postUpdatedAt: '',
                 metadata: {
                         title: '',
                         summary: '',
@@ -406,6 +448,15 @@ document.addEventListener('alpine:init', () => {
                 },
                 statusTimer: null,
                 init() {
+                        this.numberFormatter = new Intl.NumberFormat('zh-CN');
+                        this.handleMetricsUpdate = event => {
+                                const detail = event?.detail || {};
+                                if (detail.metrics) {
+                                        this.applyContentMetrics(detail.metrics);
+                                } else if (detail.controller?.contentMetrics) {
+                                        this.applyContentMetrics(detail.controller.contentMetrics);
+                                }
+                        };
                         this.handleReady = event => {
                                 if (event?.detail?.controller) {
                                         this.attachController(event.detail.controller);
@@ -427,6 +478,7 @@ document.addEventListener('alpine:init', () => {
                         window.addEventListener('post-editor:ready', this.handleReady);
                         window.addEventListener('post-editor:post-updated', this.handlePostUpdate);
                         window.addEventListener('post-editor:dirty', () => this.refreshStatus());
+                        window.addEventListener('post-editor:metrics', this.handleMetricsUpdate);
                         this.tryAttachController();
                         this.refreshStatus();
                         this.statusTimer = window.setInterval(() => this.refreshStatus(), 3000);
@@ -438,6 +490,10 @@ document.addEventListener('alpine:init', () => {
                                 this.cancelQuickActionsTimer();
                                 window.removeEventListener('post-editor:ready', this.handleReady);
                                 window.removeEventListener('post-editor:post-updated', this.handlePostUpdate);
+                                if (this.handleMetricsUpdate) {
+                                        window.removeEventListener('post-editor:metrics', this.handleMetricsUpdate);
+                                        this.handleMetricsUpdate = null;
+                                }
                                 void this.destroyOptimizationPreview('source');
                                 void this.destroyOptimizationPreview('optimized');
                         };
@@ -447,8 +503,10 @@ document.addEventListener('alpine:init', () => {
                 toggleQuickActions() {
                         this.quickActionsExpanded = !this.quickActionsExpanded;
                         if (this.quickActionsExpanded) {
+                                this.closeStatisticsMenu();
                                 this.scheduleQuickActionsCollapse();
                         } else {
+                                this.closeStatisticsMenu();
                                 this.cancelQuickActionsTimer();
                         }
                 },
@@ -457,13 +515,14 @@ document.addEventListener('alpine:init', () => {
                                 return;
                         }
                         this.quickActionsExpanded = false;
+                        this.closeStatisticsMenu();
                         this.cancelQuickActionsTimer();
                 },
                 scheduleQuickActionsCollapse() {
                         this.cancelQuickActionsTimer();
                         this.quickActionsTimer = window.setTimeout(() => {
                                 if (!this.quickActionsHovering) {
-                                        this.quickActionsExpanded = false;
+                                        this.collapseQuickActions();
                                 }
                         }, 2400);
                 },
@@ -492,6 +551,23 @@ document.addEventListener('alpine:init', () => {
                 handleQuickActionsOutside() {
                         this.collapseQuickActions();
                 },
+                toggleStatisticsMenu() {
+                        if (this.statisticsMenuOpen) {
+                                this.closeStatisticsMenu();
+                                return;
+                        }
+                        this.statisticsMenuOpen = true;
+                        this.cancelQuickActionsTimer();
+                },
+                closeStatisticsMenu() {
+                        if (!this.statisticsMenuOpen) {
+                                return;
+                        }
+                        this.statisticsMenuOpen = false;
+                        if (this.quickActionsExpanded) {
+                                this.scheduleQuickActionsCollapse();
+                        }
+                },
                 openMetadataPanel() {
                         this.togglePanel(true);
                         this.collapseQuickActions();
@@ -519,6 +595,8 @@ document.addEventListener('alpine:init', () => {
                                 return;
                         }
                         this.controller = controller;
+                        this.applyContentMetrics(controller.contentMetrics);
+                        this.updatePostTimestamps(controller.postData);
                 },
                 syncPost(post) {
                         if (!post || typeof post !== 'object') {
@@ -530,6 +608,18 @@ document.addEventListener('alpine:init', () => {
                         const coverWidth = sanitizeNumber(post.CoverWidth ?? post.cover_width ?? 0);
                         const coverHeight = sanitizeNumber(post.CoverHeight ?? post.cover_height ?? 0);
                         this.metadata.cover = { url: coverUrl, width: coverWidth, height: coverHeight };
+                        this.updatePostTimestamps(post);
+                },
+                updatePostTimestamps(post) {
+                        if (!post || typeof post !== 'object') {
+                                this.postCreatedAt = '';
+                                this.postUpdatedAt = '';
+                                return;
+                        }
+                        const createdAt = sanitizeString(post.CreatedAt ?? post.created_at ?? post.createdAt ?? '');
+                        const updatedAt = sanitizeString(post.UpdatedAt ?? post.updated_at ?? post.updatedAt ?? '');
+                        this.postCreatedAt = createdAt;
+                        this.postUpdatedAt = updatedAt;
                 },
                 refreshStatus() {
                         const controller = this.ensureController();
@@ -543,6 +633,39 @@ document.addEventListener('alpine:init', () => {
                         const resolvedId = sanitizeString(controller.postId || 'new').trim();
                         this.postId = resolvedId || 'new';
                         this.savingDraft = !!controller.loading;
+                        this.applyContentMetrics(controller.contentMetrics);
+                        this.updatePostTimestamps(controller.postData);
+                },
+                applyContentMetrics(metrics) {
+                        this.contentMetrics = this.normalizeContentMetrics(metrics);
+                },
+                normalizeContentMetrics(metrics) {
+                        if (!metrics || typeof metrics !== 'object') {
+                                return { words: 0, characters: 0, paragraphs: 0 };
+                        }
+                        const words = Math.max(0, Math.round(sanitizeNumber(metrics.words)));
+                        const characters = Math.max(0, Math.round(sanitizeNumber(metrics.characters)));
+                        const paragraphs = Math.max(0, Math.round(sanitizeNumber(metrics.paragraphs)));
+                        return { words, characters, paragraphs };
+                },
+                formatNumber(value) {
+                        if (!this.numberFormatter) {
+                                this.numberFormatter = new Intl.NumberFormat('zh-CN');
+                        }
+                        const sanitized = Math.max(0, Math.round(sanitizeNumber(value)));
+                        return this.numberFormatter.format(sanitized);
+                },
+                paragraphCountLabel() {
+                        const paragraphs = Math.max(0, Math.round(sanitizeNumber(this.contentMetrics?.paragraphs)));
+                        return this.formatNumber(paragraphs);
+                },
+                statisticsUpdatedLabel() {
+                        const formatted = this.formatDateTime(this.postUpdatedAt);
+                        return formatted || 'N/A';
+                },
+                statisticsCreatedLabel() {
+                        const formatted = this.formatDateTime(this.postCreatedAt);
+                        return formatted || 'N/A';
                 },
                 autoSaveIndicatorClasses() {
                         if (this.autoSaveError) {
@@ -801,6 +924,7 @@ document.addEventListener('alpine:init', () => {
                         if (this.optimizingContent) {
                                 return;
                         }
+                        this.closeStatisticsMenu();
                         const controller = this.ensureController();
                         if (!controller) {
                                 toast({ message: '编辑器尚未就绪，请稍后重试', type: 'warning' });
