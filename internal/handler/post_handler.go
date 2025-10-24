@@ -329,6 +329,68 @@ func (a *API) OptimizePostContent(c *gin.Context) {
 	})
 }
 
+// RewritePostSelection 使用 AI 对选中片段进行定向改写。
+func (a *API) RewritePostSelection(c *gin.Context) {
+	if a.snippetRewriter == nil {
+		respondError(c, http.StatusServiceUnavailable, "未配置 AI Chat 能力，请先在系统设置中完成配置")
+		return
+	}
+
+	var payload struct {
+		Selection   string `json:"selection"`
+		Instruction string `json:"instruction"`
+		Context     string `json:"context"`
+	}
+	if !bindJSON(c, &payload, "请求参数不合法") {
+		return
+	}
+
+	selection := strings.TrimSpace(payload.Selection)
+	if selection == "" {
+		respondError(c, http.StatusBadRequest, "请先选择需要改写的段落后再试")
+		return
+	}
+
+	instruction := strings.TrimSpace(payload.Instruction)
+	if instruction == "" {
+		respondError(c, http.StatusBadRequest, "请输入改写指令")
+		return
+	}
+
+	contextText := strings.TrimSpace(payload.Context)
+
+	result, err := a.snippetRewriter.RewriteSnippet(c.Request.Context(), service.SnippetRewriteInput{
+		Selection:   selection,
+		Instruction: instruction,
+		Context:     contextText,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrAIAPIKeyMissing):
+			respondError(c, http.StatusBadRequest, "请在系统设置中配置有效的 AI API Key 后再试")
+		case errors.Is(err, service.ErrSnippetRewriteEmpty):
+			respondError(c, http.StatusBadGateway, "AI Chat 未返回内容，请稍后重试")
+		default:
+			respondError(c, http.StatusBadGateway, fmt.Sprintf("AI Chat 请求失败：%v", err))
+		}
+		return
+	}
+
+	rewritten := strings.TrimSpace(result.Content)
+	if rewritten == "" {
+		respondError(c, http.StatusBadGateway, "AI Chat 未返回内容，请稍后重试")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"content": rewritten,
+		"usage": gin.H{
+			"prompt_tokens":     result.PromptTokens,
+			"completion_tokens": result.CompletionTokens,
+		},
+	})
+}
+
 func (a *API) maybeGenerateSummary(c *gin.Context, post *db.Post) (notices, warnings []string) {
 	if post == nil {
 		return nil, nil

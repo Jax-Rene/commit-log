@@ -1,4 +1,5 @@
 import { Crepe } from '@milkdown/crepe';
+import { editorViewCtx } from '@milkdown/kit/core';
 import { listenerCtx } from '@milkdown/kit/plugin/listener';
 import { cursor } from '@milkdown/plugin-cursor';
 import { upload, uploadConfig } from '@milkdown/plugin-upload';
@@ -7,6 +8,14 @@ import commonStyleUrl from '@milkdown/crepe/theme/common/style.css?url';
 import nordStyleUrl from '@milkdown/crepe/theme/nord.css?url';
 
 const styleUrls = [commonStyleUrl, nordStyleUrl];
+
+const INLINE_AI_CHAT_ICON = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+    <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 4.6L18.8 9l-3.4 3 1 4.9L12 14.8 7.6 17.9l1-4.9L5.2 9l4.9-.4L12 3z" />
+  </svg>
+`;
+
+let inlineAIToolbarHandler = null;
 
 function ensureStyles() {
         styleUrls.forEach((href, index) => {
@@ -245,6 +254,221 @@ function calculateContentMetrics(markdown) {
                 words,
                 characters,
                 paragraphs: paragraphCount,
+        };
+}
+
+function clamp(value, min, max) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) {
+                return min;
+        }
+        if (numeric < min) {
+                return min;
+        }
+        if (numeric > max) {
+                return max;
+        }
+        return numeric;
+}
+
+function normalizeSelectionContent(value) {
+        if (typeof value !== 'string') {
+                return '';
+        }
+        return value.replace(/\r\n/g, '\n').replace(/\u00a0/g, ' ');
+}
+
+function readInlineSelection(editor, controller) {
+        if (!editor || typeof editor.action !== 'function') {
+                return null;
+        }
+        let info = null;
+        editor.action(ctx => {
+                const view = ctx.get(editorViewCtx);
+                if (!view) {
+                        return;
+                }
+                const { state } = view;
+                const selection = state.selection;
+                if (!selection || selection.empty) {
+                        return;
+                }
+                const { from, to } = selection;
+                if (from === to) {
+                        return;
+                }
+                const raw = state.doc.textBetween(from, to, '\n', '\n');
+                const normalized = normalizeSelectionContent(raw);
+                if (!normalized.trim()) {
+                        return;
+                }
+
+                let coords = null;
+                try {
+                        const start = view.coordsAtPos(from);
+                        const end = view.coordsAtPos(Math.max(from, to - 1));
+                        const left = Math.min(start.left, end.left);
+                        const right = Math.max(start.right, end.right);
+                        const top = Math.min(start.top, end.top);
+                        const bottom = Math.max(start.bottom, end.bottom);
+                        coords = {
+                                left,
+                                right,
+                                top,
+                                bottom,
+                                width: right - left,
+                                height: bottom - top,
+                        };
+                } catch (error) {
+                        coords = null;
+                }
+
+                let contextText = normalized;
+                try {
+                        const range = selection.$from?.blockRange(selection.$to);
+                        if (range) {
+                                const block = normalizeSelectionContent(
+                                        state.doc.textBetween(range.start, range.end, '\n', '\n'),
+                                );
+                                if (block.trim()) {
+                                        contextText = block;
+                                }
+                        }
+                } catch (error) {
+                        // ignore block range issues
+                }
+
+                let revision = 0;
+                if (controller && typeof controller === 'object') {
+                        const rawRevision = controller.autoSaveRevision;
+                        if (Number.isFinite(rawRevision)) {
+                                revision = Number(rawRevision);
+                        } else if (typeof rawRevision === 'string') {
+                                const parsed = Number(rawRevision);
+                                if (Number.isFinite(parsed)) {
+                                        revision = parsed;
+                                }
+                        }
+                }
+
+                info = {
+                        from,
+                        to,
+                        text: raw,
+                        normalizedText: normalized,
+                        context: contextText,
+                        coords,
+                        revision,
+                        docSize: state.doc.content.size,
+                };
+        });
+        return info;
+}
+
+function applyInlineAIResult(editor, payload = {}) {
+        if (!editor || typeof editor.action !== 'function') {
+                throw new Error('编辑器尚未就绪');
+        }
+        const { from, to, expected, replacement } = payload;
+        let applied = false;
+        let failure = null;
+        editor.action(ctx => {
+                const view = ctx.get(editorViewCtx);
+                if (!view) {
+                        failure = new Error('编辑器尚未就绪');
+                        return;
+                }
+                const { state } = view;
+                const docSize = state.doc.content.size;
+                const start = clamp(from, 0, docSize);
+                const end = clamp(to, 0, docSize);
+                if (start === end) {
+                        failure = new Error('无法定位原始选区，请重新选择后再试');
+                        return;
+                }
+                const current = normalizeSelectionContent(state.doc.textBetween(start, end, '\n', '\n'));
+                const expectedNormalized = normalizeSelectionContent(expected || '');
+                if (expectedNormalized.trim() && current.trim() && expectedNormalized.trim() !== current.trim()) {
+                        failure = new Error('选中内容已发生变化，请重新选择后再试');
+                        return;
+                }
+                const text = typeof replacement === 'string' ? replacement : '';
+                const tr = state.tr.insertText(text, start, end);
+                view.dispatch(tr.scrollIntoView());
+                applied = true;
+        });
+        if (failure) {
+                throw failure;
+        }
+        return applied;
+}
+
+function setupInlineAI(crepe, toast, getController) {
+        const editor = crepe?.editor;
+        if (!editor || typeof editor.action !== 'function') {
+                inlineAIToolbarHandler = null;
+                return null;
+        }
+
+        let latestInfo = null;
+        const notify =
+                typeof toast === 'function'
+                        ? toast
+                        : ({ type, message }) => {
+                                  const prefix = type === 'error' ? '[error]' : '[warn]';
+                                  console.warn(`${prefix} ${message}`);
+                          };
+
+        const hide = () => {
+                if (typeof window === 'undefined' || typeof window.getSelection !== 'function') {
+                        return;
+                }
+                try {
+                        const selection = window.getSelection();
+                        if (selection && typeof selection.removeAllRanges === 'function') {
+                                selection.removeAllRanges();
+                        }
+                } catch (error) {
+                        console.warn('[milkdown] 清理选区失败', error);
+                }
+        };
+
+        const dispatchInlineAI = () => {
+                const controller = typeof getController === 'function' ? getController() : null;
+                const info = readInlineSelection(editor, controller);
+                latestInfo = info;
+                if (!info || !info.normalizedText || !info.normalizedText.trim()) {
+                        notify({ type: 'warning', message: '请选择需要改写的段落后再试' });
+                        hide();
+                        return;
+                }
+                window.dispatchEvent(new CustomEvent('post-editor:inline-ai', { detail: { selection: info } }));
+                hide();
+        };
+
+        inlineAIToolbarHandler = () => {
+                try {
+                        dispatchInlineAI();
+                } catch (error) {
+                        console.warn('[milkdown] AI Chat 工具触发失败', error);
+                }
+        };
+
+        const destroy = () => {
+                inlineAIToolbarHandler = null;
+        };
+
+        return {
+                hide,
+                destroy,
+                getLatestSelection: () => latestInfo,
+                readSelection: () => {
+                        const controller = typeof getController === 'function' ? getController() : null;
+                        const info = readInlineSelection(editor, controller);
+                        latestInfo = info;
+                        return info;
+                },
+                applyChange: options => applyInlineAIResult(editor, options),
         };
 }
 
@@ -880,9 +1104,46 @@ async function initialize() {
 
 	try {
                 const toast = createToast();
+                inlineAIToolbarHandler = null;
+
+                const toolbarKey = Crepe?.Feature?.Toolbar ?? 'toolbar';
+                const featureConfigs = {
+                        [toolbarKey]: {
+                                buildToolbar(builder) {
+                                        try {
+                                                if (!builder || typeof builder.getGroup !== 'function') {
+                                                        return;
+                                                }
+                                                const group = builder.getGroup('function');
+                                                if (!group || typeof group.addItem !== 'function') {
+                                                        return;
+                                                }
+                                                const items = Array.isArray(group.group?.items) ? group.group.items : [];
+                                                if (items.some(item => item && item.key === 'inline-ai-chat')) {
+                                                        return;
+                                                }
+                                                group.addItem('inline-ai-chat', {
+                                                        icon: INLINE_AI_CHAT_ICON,
+                                                        active: () => false,
+                                                        onRun: () => {
+                                                                if (typeof inlineAIToolbarHandler === 'function') {
+                                                                        inlineAIToolbarHandler();
+                                                                } else {
+                                                                        console.warn('[milkdown] AI Chat 功能尚未就绪');
+                                                                }
+                                                        },
+                                                });
+                                        } catch (error) {
+                                                console.warn('[milkdown] 注册 AI Chat 工具失败', error);
+                                        }
+                                },
+                        },
+                };
+
                 const crepe = new Crepe({
                         root: mount,
                         defaultValue: initial,
+                        featureConfigs,
                 });
                 applyMilkdownPlugins(crepe.editor, toast);
 
@@ -893,6 +1154,8 @@ async function initialize() {
                         const initialData = typeof window.__MILKDOWN_V2__ === 'object' ? window.__MILKDOWN_V2__ : {};
                         const controller = new PostDraftController(crepe, initialData);
                         controller.init();
+
+                        const inlineAI = setupInlineAI(crepe, toast, () => controller);
 
                         crepe.editor.action(ctx => {
                                 try {
@@ -931,6 +1194,13 @@ async function initialize() {
                                 controller,
                                 createReadOnlyViewer,
                                 saveDraft: controller.saveDraft.bind(controller),
+                                inlineAI: inlineAI
+                                        ? {
+                                                hideToolbar: inlineAI.hide,
+                                                getSelection: inlineAI.readSelection,
+                                                applyChange: options => inlineAI.applyChange(options),
+                                        }
+                                        : null,
                         };
 
                         controller.emitPostEvent('ready');

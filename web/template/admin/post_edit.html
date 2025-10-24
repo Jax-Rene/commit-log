@@ -321,6 +321,65 @@
                 </div>
         </div>
 
+        <div x-show="inlineAI.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 backdrop-blur-sm" @keydown.escape.window="closeInlineAI()">
+                <div class="relative w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl transition-colors dark:border-slate-800 dark:bg-slate-950" x-trap.noscroll="inlineAI.open">
+                        <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+                                <div>
+                                        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">AI Chat 改写</h3>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">选中段落后输入你的需求，模型将返回改写建议。</p>
+                                </div>
+                                <button type="button" class="rounded-full p-1.5 text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" @click="closeInlineAI()" aria-label="关闭 AI Chat 弹窗">✕</button>
+                        </div>
+                        <div class="flex max-h-[70vh] flex-col gap-5 overflow-y-auto px-6 py-6">
+                                <div class="space-y-2">
+                                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">原始选区</p>
+                                        <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 whitespace-pre-wrap break-words" x-text="inlineAI.selection.text || inlineAI.selection.normalized"></div>
+                                        <template x-if="inlineAI.selection.context && inlineAI.selection.context.trim() && inlineAI.selection.context.trim() !== (inlineAI.selection.text || inlineAI.selection.normalized || '').trim()">
+                                                <div class="space-y-2">
+                                                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">上下文参考</p>
+                                                        <div class="rounded-xl border border-dashed border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300 whitespace-pre-wrap break-words" x-text="inlineAI.selection.context"></div>
+                                                </div>
+                                        </template>
+                                </div>
+                                <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-200">改写指令</label>
+                                        <textarea rows="3" x-model="inlineAI.instruction" placeholder="例如：请改写成更具鼓动性的语气，并保留原有数据引用。" class="w-full resize-y rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-500/40"></textarea>
+                                </div>
+                                <template x-if="inlineAI.error">
+                                        <div class="rounded-xl border border-rose-200 bg-rose-50/80 px-3 py-2 text-xs text-rose-600 dark:border-rose-500/50 dark:bg-rose-500/10 dark:text-rose-200" x-text="inlineAI.error"></div>
+                                </template>
+                                <div class="flex flex-wrap items-center gap-3">
+                                        <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:bg-blue-500 dark:hover:bg-blue-400 dark:disabled:bg-slate-700/70" @click="runInlineAIChat()" :disabled="inlineAI.loading">
+                                                <svg x-show="inlineAI.loading" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v3m4.95 1.05-2.12 2.12M21 12h-3m-1.05 4.95-2.12-2.12M12 21v-3m-4.95-1.05 2.12-2.12M3 12h3m1.05-4.95 2.12 2.12"></path></svg>
+                                                <svg x-show="!inlineAI.loading" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3l2.5 6.5L21 11l-5 4.5 1.5 6.5L12 18l-5.5 4 1.5-6.5L3 11l6.5-1.5L12 3z"></path></svg>
+                                                <span x-text="inlineAI.loading ? '生成中…' : '生成改写建议'"></span>
+                                        </button>
+                                        <template x-if="inlineAI.usage">
+                                                <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800/70 dark:text-slate-300" x-text="inlineAIUsageLabel()"></span>
+                                        </template>
+                                </div>
+                                <template x-if="inlineAI.suggestion">
+                                        <div class="space-y-2">
+                                                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">AI 改写建议</p>
+                                                <div class="rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-sm leading-relaxed text-slate-800 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-slate-200 whitespace-pre-wrap break-words" x-text="inlineAI.suggestion"></div>
+                                        </div>
+                                </template>
+                        </div>
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+                                <div class="flex items-center gap-2">
+                                        <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-100" @click="copyInlineAISuggestion()" :disabled="!inlineAI.suggestion">
+                                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 9V5.25A2.25 2.25 0 0 1 11.25 3h7.5A2.25 2.25 0 0 1 21 5.25v7.5A2.25 2.25 0 0 1 18.75 15H15m-6 6H5.25A2.25 2.25 0 0 1 3 18.75v-7.5A2.25 2.25 0 0 1 5.25 9h7.5A2.25 2.25 0 0 1 15 11.25v7.5A2.25 2.25 0 0 1 12.75 21H9Z"></path></svg>
+                                                <span>复制建议</span>
+                                        </button>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                        <button type="button" class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-100" @click="closeInlineAI()">取消</button>
+                                        <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400 dark:bg-blue-500 dark:hover:bg-blue-400 dark:disabled:bg-slate-700" @click="applyInlineAISuggestion()" :disabled="!inlineAI.suggestion">应用到选区</button>
+                                </div>
+                        </div>
+                </div>
+        </div>
+
         <div x-show="coverModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
                 <div class="relative w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl transition-colors dark:bg-slate-950">
                         <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">裁剪封面</h3>
@@ -446,7 +505,17 @@ document.addEventListener('alpine:init', () => {
                         source: { instance: null, mount: null, ready: false, rendering: null },
                         optimized: { instance: null, mount: null, ready: false, rendering: null },
                 },
+                inlineAI: {
+                        open: false,
+                        instruction: '',
+                        selection: { from: 0, to: 0, text: '', normalized: '', context: '', revision: 0 },
+                        suggestion: '',
+                        usage: null,
+                        loading: false,
+                        error: '',
+                },
                 statusTimer: null,
+                handleInlineAIRequest: null,
                 init() {
                         this.numberFormatter = new Intl.NumberFormat('zh-CN');
                         this.handleMetricsUpdate = event => {
@@ -455,6 +524,45 @@ document.addEventListener('alpine:init', () => {
                                         this.applyContentMetrics(detail.metrics);
                                 } else if (detail.controller?.contentMetrics) {
                                         this.applyContentMetrics(detail.controller.contentMetrics);
+                                }
+                        };
+                        this.handleInlineAIRequest = event => {
+                                const selection = event?.detail?.selection || {};
+                                const normalized = sanitizeString(selection.normalizedText || selection.text || '');
+                                if (!normalized.trim()) {
+                                        toast({ message: '请选择需要改写的段落后再试', type: 'warning' });
+                                        return;
+                                }
+                                const from = typeof selection.from === 'number' && Number.isFinite(selection.from)
+                                        ? selection.from
+                                        : 0;
+                                const to = typeof selection.to === 'number' && Number.isFinite(selection.to)
+                                        ? selection.to
+                                        : 0;
+                                const context = sanitizeString(selection.context || '');
+                                const revision = typeof selection.revision === 'number' && Number.isFinite(selection.revision)
+                                        ? selection.revision
+                                        : 0;
+                                this.inlineAI.open = true;
+                                this.inlineAI.instruction = '';
+                                this.inlineAI.loading = false;
+                                this.inlineAI.error = '';
+                                this.inlineAI.suggestion = '';
+                                this.inlineAI.usage = null;
+                                this.inlineAI.selection = {
+                                        from,
+                                        to,
+                                        text: sanitizeString(selection.text || normalized),
+                                        normalized,
+                                        context,
+                                        revision,
+                                };
+                                if (window.MilkdownV2?.inlineAI?.hideToolbar) {
+                                        try {
+                                                window.MilkdownV2.inlineAI.hideToolbar();
+                                        } catch (error) {
+                                                console.warn('[post-editor] 隐藏 AI Chat 工具条失败', error);
+                                        }
                                 }
                         };
                         this.handleReady = event => {
@@ -475,6 +583,7 @@ document.addEventListener('alpine:init', () => {
                                 }
                                 this.refreshStatus();
                         };
+                        window.addEventListener('post-editor:inline-ai', this.handleInlineAIRequest);
                         window.addEventListener('post-editor:ready', this.handleReady);
                         window.addEventListener('post-editor:post-updated', this.handlePostUpdate);
                         window.addEventListener('post-editor:dirty', () => this.refreshStatus());
@@ -493,6 +602,10 @@ document.addEventListener('alpine:init', () => {
                                 if (this.handleMetricsUpdate) {
                                         window.removeEventListener('post-editor:metrics', this.handleMetricsUpdate);
                                         this.handleMetricsUpdate = null;
+                                }
+                                if (this.handleInlineAIRequest) {
+                                        window.removeEventListener('post-editor:inline-ai', this.handleInlineAIRequest);
+                                        this.handleInlineAIRequest = null;
                                 }
                                 void this.destroyOptimizationPreview('source');
                                 void this.destroyOptimizationPreview('optimized');
@@ -779,6 +892,129 @@ document.addEventListener('alpine:init', () => {
                                 return '未提供用量信息';
                         }
                         return `Prompt ${prompt} · Completion ${completion}`;
+                },
+                inlineAIUsageLabel() {
+                        const usage = this.inlineAI?.usage;
+                        if (!usage) {
+                                return '';
+                        }
+                        const prompt = sanitizeNumber(usage.prompt_tokens ?? usage.promptTokens ?? 0);
+                        const completion = sanitizeNumber(usage.completion_tokens ?? usage.completionTokens ?? 0);
+                        if (!prompt && !completion) {
+                                return '';
+                        }
+                        return `Prompt ${prompt} · Completion ${completion}`;
+                },
+                closeInlineAI() {
+                        this.inlineAI.open = false;
+                        this.inlineAI.loading = false;
+                        this.inlineAI.error = '';
+                        this.inlineAI.instruction = '';
+                        this.inlineAI.suggestion = '';
+                        this.inlineAI.usage = null;
+                        if (window.MilkdownV2?.inlineAI?.hideToolbar) {
+                                try {
+                                        window.MilkdownV2.inlineAI.hideToolbar();
+                                } catch (error) {
+                                        console.warn('[post-editor] 关闭 AI Chat 弹窗时隐藏工具条失败', error);
+                                }
+                        }
+                },
+                async runInlineAIChat() {
+                        if (this.inlineAI.loading) {
+                                return;
+                        }
+                        const selection = this.inlineAI.selection || {};
+                        const selectionText = sanitizeString(selection.normalized || selection.text || '');
+                        if (!selectionText.trim()) {
+                                toast({ message: '请选择需要改写的段落后再试', type: 'warning' });
+                                return;
+                        }
+                        const instruction = sanitizeString(this.inlineAI.instruction).trim();
+                        if (!instruction) {
+                                toast({ message: '请输入改写指令', type: 'warning' });
+                                return;
+                        }
+                        this.inlineAI.loading = true;
+                        this.inlineAI.error = '';
+                        this.inlineAI.suggestion = '';
+                        this.inlineAI.usage = null;
+                        try {
+                                const response = await fetch('/admin/api/posts/chat', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                                selection: selectionText,
+                                                instruction,
+                                                context: sanitizeString(selection.context || ''),
+                                        }),
+                                });
+                                const data = await response.json();
+                                if (!response.ok) {
+                                        const message = sanitizeString(data?.error || data?.message || 'AI Chat 请求失败，请稍后重试');
+                                        throw new Error(message || 'AI Chat 请求失败，请稍后重试');
+                                }
+                                const suggestion = sanitizeString(data?.content ?? data?.result ?? '');
+                                if (!suggestion.trim()) {
+                                        throw new Error('AI Chat 未返回内容，请稍后重试');
+                                }
+                                this.inlineAI.suggestion = suggestion;
+                                this.inlineAI.usage = data?.usage || null;
+                                toast({ message: 'AI 已返回改写建议', type: 'success' });
+                        } catch (error) {
+                                const message = sanitizeString(error?.message || 'AI Chat 请求失败，请稍后重试');
+                                this.inlineAI.error = message;
+                                toast({ message, type: 'error' });
+                        } finally {
+                                this.inlineAI.loading = false;
+                        }
+                },
+                applyInlineAISuggestion() {
+                        const suggestion = sanitizeString(this.inlineAI.suggestion).trim();
+                        if (!suggestion) {
+                                this.closeInlineAI();
+                                return;
+                        }
+                        const selection = this.inlineAI.selection || {};
+                        const from = selection.from;
+                        const to = selection.to;
+                        if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) {
+                                toast({ message: '无法定位原始选区，请重新选择后再试', type: 'error' });
+                                return;
+                        }
+                        try {
+                                const applied = window.MilkdownV2?.inlineAI?.applyChange({
+                                        from,
+                                        to,
+                                        expected: selection.normalized || selection.text || '',
+                                        replacement: suggestion,
+                                });
+                                if (!applied) {
+                                        throw new Error('未能应用 AI 改写内容');
+                                }
+                                this.closeInlineAI();
+                                toast({ message: '已应用 AI 改写内容', type: 'success' });
+                        } catch (error) {
+                                const message = sanitizeString(error?.message || '应用改写内容失败，请稍后重试');
+                                toast({ message, type: 'error' });
+                        }
+                },
+                async copyInlineAISuggestion() {
+                        const suggestion = sanitizeString(this.inlineAI.suggestion).trim();
+                        if (!suggestion) {
+                                toast({ message: '暂无可复制的内容', type: 'warning' });
+                                return;
+                        }
+                        if (!navigator?.clipboard?.writeText) {
+                                toast({ message: '浏览器不支持快速复制，请手动复制文本', type: 'warning' });
+                                return;
+                        }
+                        try {
+                                await navigator.clipboard.writeText(suggestion);
+                                toast({ message: '已复制到剪贴板', type: 'success' });
+                        } catch (error) {
+                                toast({ message: '复制失败，请手动选择文本', type: 'error' });
+                        }
                 },
                 async ensureOptimizationPreviewMount(target) {
                         const preview = this.optimizationPreviews?.[target];

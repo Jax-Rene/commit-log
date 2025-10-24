@@ -50,6 +50,6 @@
 
 ### P1 提升 AI 能力以及体验
 
-* [ ] 支持段落级 AI Chat
+* [x] 支持段落级 AI Chat
 
-* [ ] 优化 Prompt 提升 AI 效果
+* [x] 优化 Prompt 提升 AI 效果
