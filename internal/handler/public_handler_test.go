@@ -282,3 +282,28 @@ func TestShowPostDetailDisplaysContacts(t *testing.T) {
 		t.Fatalf("expected contact link to render")
 	}
 }
+
+func TestShowPostDetailStripsLeadingTitleFromContent(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	content := "# 公开文章\n\n正文段落"
+	post := seedPublishedPost(t, "公开文章", content)
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(post.ID)), nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	if strings.Contains(body, "# 公开文章") {
+		t.Fatalf("expected rendered content to exclude leading markdown title")
+	}
+	if !strings.Contains(body, "正文段落") {
+		t.Fatalf("expected rendered content to retain body text")
+	}
+}

@@ -124,6 +124,13 @@ async function createReadOnlyViewer({ mount, markdown = '', features, featureCon
         return preview;
 }
 
+if (typeof window !== 'undefined') {
+        window.MilkdownV2 = window.MilkdownV2 || {};
+        if (typeof window.MilkdownV2.createReadOnlyViewer !== 'function') {
+                window.MilkdownV2.createReadOnlyViewer = createReadOnlyViewer;
+        }
+}
+
 function getInitialMarkdown() {
         if (typeof window !== 'undefined' && window.__MILKDOWN_V2__) {
                 const { content } = window.__MILKDOWN_V2__;
@@ -598,6 +605,7 @@ class PostDraftController {
                 this.autoSaveError = '';
                 this.autoSaveRevision = 0;
                 this.lastAutoSavedAt = null;
+                this.publishing = false;
                 this.autoSaveIntervalId = null;
                 this.changeMonitorId = null;
                 this.visibilityHandler = null;
@@ -947,6 +955,110 @@ class PostDraftController {
                 this.notifyPostChange('server');
         }
 
+        setLatestPublication(publication) {
+                if (!publication || typeof publication !== 'object') {
+                        this.latestPublication = null;
+                        return this.latestPublication;
+                }
+                this.latestPublication = cloneValue(publication) || publication;
+                return this.latestPublication;
+        }
+
+        getLatestPublication() {
+                return cloneValue(this.latestPublication);
+        }
+
+        async publish(options = {}) {
+                const { silent = false } = options;
+                if (this.publishing) {
+                        return false;
+                }
+
+                const shouldSaveDraft = this.postId === 'new' || this.autoSavePending;
+                if (shouldSaveDraft) {
+                        const saved = await this.saveDraft({
+                                redirectOnCreate: false,
+                                silent: true,
+                                notifyOnSilent: false,
+                                useLoadingState: false,
+                        });
+                        if (!saved) {
+                                if (!silent) {
+                                        this.toast({ message: '请先完善内容并保存草稿后再发布', type: 'warning' });
+                                }
+                                return false;
+                        }
+                }
+
+                if (this.postId === 'new') {
+                        if (!silent) {
+                                this.toast({ message: '文章尚未保存，无法发布', type: 'warning' });
+                        }
+                        return false;
+                }
+
+                this.publishing = true;
+                try {
+                        const response = await fetch(`/admin/api/posts/${this.postId}/publish`, {
+                                method: 'POST',
+                        });
+                        let data = {};
+                        try {
+                                data = await response.json();
+                        } catch (error) {
+                                data = {};
+                        }
+                        if (!response.ok) {
+                                const message = data?.error || data?.message || '发布失败，请稍后重试';
+                                if (!silent) {
+                                        this.toast({ message, type: 'error' });
+                                }
+                                return false;
+                        }
+
+                        if (data?.post) {
+                                this.updatePostData(data.post);
+                        }
+                        if (data?.publication) {
+                                this.setLatestPublication(data.publication);
+                        }
+
+                        const shouldNotify = !silent;
+                        if (shouldNotify && Array.isArray(data?.notices)) {
+                                data.notices.forEach(message => {
+                                        this.toast({ message, type: 'info' });
+                                });
+                        }
+                        if (shouldNotify && Array.isArray(data?.warnings)) {
+                                data.warnings.forEach(message => {
+                                        this.toast({ message, type: 'warning' });
+                                });
+                        }
+                        if (shouldNotify && data?.message) {
+                                this.toast({ message: data.message, type: 'success' });
+                        }
+
+                        this.lastSavedContent = this.currentContent;
+                        this.autoSavePending = false;
+                        this.autoSaveError = '';
+                        this.lastAutoSavedAt = new Date();
+
+                        this.notifyPostChange('publish');
+                        if (this.latestPublication) {
+                                this.emitPostEvent('publication', { publication: this.getLatestPublication() });
+                        }
+                        return true;
+                } catch (error) {
+                        const message = error?.message || '发布失败，请稍后重试';
+                        if (!silent) {
+                                this.toast({ message, type: 'error' });
+                        }
+                        return false;
+                } finally {
+                        this.publishing = false;
+                }
+        }
+
         async saveDraft(options = {}) {
                 const {
                         redirectOnCreate = false,
@@ -1190,15 +1302,16 @@ async function initialize() {
                         window.MilkdownV2 = {
                                 crepe,
                                 editor: crepe.editor,
-                                getMarkdown: crepe.getMarkdown,
-                                controller,
-                                createReadOnlyViewer,
-                                saveDraft: controller.saveDraft.bind(controller),
-                                inlineAI: inlineAI
-                                        ? {
-                                                hideToolbar: inlineAI.hide,
-                                                getSelection: inlineAI.readSelection,
-                                                applyChange: options => inlineAI.applyChange(options),
+                        getMarkdown: crepe.getMarkdown,
+                        controller,
+                        createReadOnlyViewer,
+                        saveDraft: controller.saveDraft.bind(controller),
+                        publish: controller.publish.bind(controller),
+                        inlineAI: inlineAI
+                                ? {
+                                        hideToolbar: inlineAI.hide,
+                                        getSelection: inlineAI.readSelection,
+                                        applyChange: options => inlineAI.applyChange(options),
                                         }
                                         : null,
                         };

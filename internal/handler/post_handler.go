@@ -138,7 +138,7 @@ func (a *API) UpdatePost(c *gin.Context) {
 	}
 
 	notices, warnings := a.maybeGenerateSummary(c, post)
-	response := gin.H{"message": "文章更新成功", "post": post}
+	response := gin.H{"message": "草稿更新成功", "post": post}
 	if len(notices) > 0 {
 		response["notices"] = notices
 	}

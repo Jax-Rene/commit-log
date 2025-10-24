@@ -105,6 +105,22 @@
                                                 <span x-show="!savingDraft">保存草稿</span>
                                                 <span x-show="savingDraft">保存中...</span>
                                         </button>
+                                        <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-slate-600 shadow-sm dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-slate-200">
+                                                <div class="flex items-start justify-between gap-3">
+                                                        <div>
+                                                                <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300">发布状态</p>
+                                                                <p class="mt-1 text-sm font-medium text-slate-700 dark:text-slate-100" x-text="publishStatusLabel()"></p>
+                                                        </div>
+                                                        <button type="button" class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500/90 disabled:cursor-not-allowed disabled:bg-emerald-300 dark:bg-emerald-400 dark:hover:bg-emerald-300/80 dark:disabled:bg-emerald-600/60" @click="publishArticle()" :disabled="publishing || savingDraft">
+                                                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 5v14M7 10l5-5 5 5"></path>
+                                                                </svg>
+                                                                <span x-show="!publishing" x-text="publishButtonLabel()"></span>
+                                                                <span x-show="publishing">发布中...</span>
+                                                        </button>
+                                                </div>
+                                                <p class="mt-2 leading-relaxed text-[11px] text-slate-500 dark:text-slate-400" x-text="publishStatusDescription()"></p>
+                                        </div>
                                         <button type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-white transition hover:bg-emerald-500/90 disabled:cursor-not-allowed disabled:bg-emerald-300 dark:bg-emerald-500/90 dark:hover:bg-emerald-400 dark:disabled:bg-emerald-700/70" @click="optimizeContent()" :disabled="optimizingContent">
                                                 <svg class="h-4 w-4 text-emerald-100 transition-colors dark:text-emerald-200" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v2.25M19.5 12H21M3 12h2.25M16.95 7.05l1.59-1.59M5.46 18.54l1.59-1.59M7.05 7.05 5.46 5.46M18.54 18.54l-1.59-1.59M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z"></path>
@@ -471,6 +487,7 @@ document.addEventListener('alpine:init', () => {
                 contentMetrics: { words: 0, characters: 0, paragraphs: 0 },
                 numberFormatter: null,
                 handleMetricsUpdate: null,
+                handlePublicationUpdate: null,
                 panelOpen: false,
                 quickActionsExpanded: false,
                 quickActionsHovering: false,
@@ -516,8 +533,11 @@ document.addEventListener('alpine:init', () => {
                 },
                 statusTimer: null,
                 handleInlineAIRequest: null,
+                latestPublication: null,
+                publishing: false,
                 init() {
                         this.numberFormatter = new Intl.NumberFormat('zh-CN');
+                        this.latestPublication = window.__MILKDOWN_V2__?.latestPublication || null;
                         this.handleMetricsUpdate = event => {
                                 const detail = event?.detail || {};
                                 if (detail.metrics) {
@@ -565,6 +585,12 @@ document.addEventListener('alpine:init', () => {
                                         }
                                 }
                         };
+                        this.handlePublicationUpdate = event => {
+                                const publication = event?.detail?.publication;
+                                if (publication && typeof publication === 'object') {
+                                        this.latestPublication = publication;
+                                }
+                        };
                         this.handleReady = event => {
                                 if (event?.detail?.controller) {
                                         this.attachController(event.detail.controller);
@@ -584,6 +610,7 @@ document.addEventListener('alpine:init', () => {
                                 this.refreshStatus();
                         };
                         window.addEventListener('post-editor:inline-ai', this.handleInlineAIRequest);
+                        window.addEventListener('post-editor:publication', this.handlePublicationUpdate);
                         window.addEventListener('post-editor:ready', this.handleReady);
                         window.addEventListener('post-editor:post-updated', this.handlePostUpdate);
                         window.addEventListener('post-editor:dirty', () => this.refreshStatus());
@@ -606,6 +633,10 @@ document.addEventListener('alpine:init', () => {
                                 if (this.handleInlineAIRequest) {
                                         window.removeEventListener('post-editor:inline-ai', this.handleInlineAIRequest);
                                         this.handleInlineAIRequest = null;
+                                }
+                                if (this.handlePublicationUpdate) {
+                                        window.removeEventListener('post-editor:publication', this.handlePublicationUpdate);
+                                        this.handlePublicationUpdate = null;
                                 }
                                 void this.destroyOptimizationPreview('source');
                                 void this.destroyOptimizationPreview('optimized');
@@ -685,6 +716,92 @@ document.addEventListener('alpine:init', () => {
                         this.togglePanel(true);
                         this.collapseQuickActions();
                 },
+                async publishArticle() {
+                        const controller = this.ensureController();
+                        if (!controller || typeof controller.publish !== 'function') {
+                                toast({ message: '编辑器尚未就绪，请稍后重试', type: 'error' });
+                                return;
+                        }
+                        if (this.publishing || this.savingDraft) {
+                                return;
+                        }
+                        this.publishing = true;
+                        try {
+                                const success = await controller.publish({ silent: false });
+                                if (success) {
+                                        if (typeof controller.getLatestPublication === 'function') {
+                                                this.latestPublication = controller.getLatestPublication() || null;
+                                        } else {
+                                                this.latestPublication = controller.latestPublication || null;
+                                        }
+                                        this.refreshStatus();
+                                } else {
+                                        this.refreshStatus();
+                                }
+                        } finally {
+                                this.publishing = !!controller.publishing;
+                        }
+                },
+                hasPublishedVersion() {
+                        if (this.latestPublication && typeof this.latestPublication === 'object') {
+                                return true;
+                        }
+                        const controller = this.ensureController();
+                        if (!controller || !controller.postData) {
+                                return false;
+                        }
+                        const status = sanitizeString(controller.postData.Status ?? controller.postData.status ?? '');
+                        return status.toLowerCase() === 'published';
+                },
+                publishButtonLabel() {
+                        return this.hasPublishedVersion() ? '更新文章' : '发布文章';
+                },
+                publishStatusLabel() {
+                        if (this.publishing) {
+                                return '正在更新线上版本';
+                        }
+                        return this.hasPublishedVersion() ? '线上版本已就绪' : '当前为草稿';
+                },
+                publishStatusDescription() {
+                        if (this.publishing) {
+                                return '正在同步最新内容，请稍候...';
+                        }
+                        const timestamp = this.latestPublicationTimestamp();
+                        if (timestamp) {
+                                return `最近发布于 ${timestamp}`;
+                        }
+                        return '发布后文章会立即同步至线上站点。';
+                },
+                latestPublicationTimestamp() {
+                        const publication = this.latestPublication;
+                        let publishedAt = '';
+                        if (publication && typeof publication === 'object') {
+                                publishedAt = sanitizeString(
+                                        publication.PublishedAt ??
+                                                publication.published_at ??
+                                                publication.publishedAt ??
+                                                publication.CreatedAt ??
+                                                publication.created_at ??
+                                                publication.createdAt ??
+                                                '',
+                                );
+                        }
+                        if (!publishedAt) {
+                                const controller = this.ensureController();
+                                if (controller && controller.postData) {
+                                        publishedAt = sanitizeString(
+                                                controller.postData.PublishedAt ??
+                                                        controller.postData.published_at ??
+                                                        controller.postData.publishedAt ??
+                                                        '',
+                                        );
+                                }
+                        }
+                        if (!publishedAt) {
+                                return '';
+                        }
+                        return this.formatDateTime(publishedAt);
+                },
                 tryAttachController() {
                         if (this.controller || !window.MilkdownV2 || !window.MilkdownV2.controller) {
                                 return;
@@ -708,6 +825,11 @@ document.addEventListener('alpine:init', () => {
                                 return;
                         }
                         this.controller = controller;
+                        if (typeof controller.getLatestPublication === 'function') {
+                                this.latestPublication = controller.getLatestPublication() || null;
+                        } else if (controller.latestPublication) {
+                                this.latestPublication = controller.latestPublication;
+                        }
                         this.applyContentMetrics(controller.contentMetrics);
                         this.updatePostTimestamps(controller.postData);
                 },
@@ -746,6 +868,12 @@ document.addEventListener('alpine:init', () => {
                         const resolvedId = sanitizeString(controller.postId || 'new').trim();
                         this.postId = resolvedId || 'new';
                         this.savingDraft = !!controller.loading;
+                        this.publishing = !!controller.publishing;
+                        if (typeof controller.getLatestPublication === 'function') {
+                                this.latestPublication = controller.getLatestPublication() || null;
+                        } else {
+                                this.latestPublication = controller.latestPublication || null;
+                        }
                         this.applyContentMetrics(controller.contentMetrics);
                         this.updatePostTimestamps(controller.postData);
                 },

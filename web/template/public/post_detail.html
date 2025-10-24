@@ -27,8 +27,19 @@
 	</header>
 
 	<section class="post-content">
-		{{.content}}
+		{{- if .post.Summary }}
+		<aside class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-left shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+			<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300">全文总结</div>
+			<p class="whitespace-pre-line text-base leading-relaxed text-amber-900 dark:text-amber-100/90">{{.post.Summary}}</p>
+		</aside>
+		{{- end }}
+		<div id="post-milkdown-viewer" class="milkdown-preview hidden" data-milkdown-viewer></div>
+		<div id="post-html-fallback" data-post-fallback>
+			{{.content}}
+		</div>
 	</section>
+
+	<script type="application/json" id="post-markdown-data">{{- toJSON .post.Content -}}</script>
 
 	{{template "contact_links.html" (dict "Contacts" .contacts "Heading" "联系作者" "Subtitle" "在这些平台找到我。")}}
 </article>

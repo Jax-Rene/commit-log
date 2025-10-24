@@ -199,6 +199,9 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		contacts = nil
 	}
 
+	trimmedContent := stripLeadingTitle(publication.Title, publication.Content)
+	publication.Content = trimmedContent
+
 	htmlContent, err := renderMarkdown(publication.Content)
 	if err != nil {
 		a.renderHTML(c, http.StatusInternalServerError, "post_detail.html", gin.H{
@@ -462,6 +465,35 @@ func (a *API) ShowSitemap(c *gin.Context) {
 
 	c.Header("Content-Type", "application/xml; charset=utf-8")
 	c.String(http.StatusOK, builder.String())
+}
+
+func stripLeadingTitle(title, content string) string {
+	trimmedTitle := strings.TrimSpace(title)
+	if trimmedTitle == "" {
+		return content
+	}
+
+	lines := strings.Split(content, "\n")
+	index := 0
+	for index < len(lines) && strings.TrimSpace(lines[index]) == "" {
+		index++
+	}
+	if index >= len(lines) {
+		return content
+	}
+
+	firstLine := strings.TrimSpace(lines[index])
+	normalized := strings.TrimSpace(strings.TrimLeft(firstLine, "#"))
+	if normalized != trimmedTitle {
+		return content
+	}
+
+	index++
+	for index < len(lines) && strings.TrimSpace(lines[index]) == "" {
+		index++
+	}
+
+	return strings.Join(lines[index:], "\n")
 }
 
 func renderMarkdown(content string) (template.HTML, error) {
