@@ -593,25 +593,23 @@ func (a *API) currentUserID(c *gin.Context) uint {
 	}
 
 	session := sessions.Default(c)
-	if session != nil {
-		if val := session.Get("user_id"); val != nil {
-			switch v := val.(type) {
-			case uint:
-				if v > 0 {
-					return v
-				}
-			case int:
-				if v > 0 {
-					return uint(v)
-				}
-			case int64:
-				if v > 0 {
-					return uint(v)
-				}
-			case string:
-				if parsed, err := strconv.ParseUint(v, 10, 32); err == nil && parsed > 0 {
-					return uint(parsed)
-				}
+	if val := session.Get("user_id"); val != nil {
+		switch v := val.(type) {
+		case uint:
+			if v > 0 {
+				return v
+			}
+		case int:
+			if v > 0 {
+				return uint(v)
+			}
+		case int64:
+			if v > 0 {
+				return uint(v)
+			}
+		case string:
+			if parsed, err := strconv.ParseUint(v, 10, 32); err == nil && parsed > 0 {
+				return uint(parsed)
 			}
 		}
 	}

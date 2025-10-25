@@ -411,9 +411,5 @@ func prefersJSON(c *gin.Context) bool {
 	}
 
 	contentType := strings.ToLower(c.ContentType())
-	if strings.Contains(contentType, "application/json") {
-		return true
-	}
-
-	return false
+	return strings.Contains(contentType, "application/json")
 }

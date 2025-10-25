@@ -105,14 +105,6 @@ func (c *aiChatClient) SetDeepSeekModel(model string) {
 	c.deepSeekModel = model
 }
 
-func (c *aiChatClient) call(ctx context.Context, req aiChatRequest) (aiChatResponse, error) {
-	settings, err := c.settings.GetSettings()
-	if err != nil {
-		return aiChatResponse{}, fmt.Errorf("读取系统设置失败: %w", err)
-	}
-	return c.callWithSettings(ctx, settings, req)
-}
-
 func (c *aiChatClient) callWithSettings(ctx context.Context, settings SystemSettings, req aiChatRequest) (aiChatResponse, error) {
 	provider := normalizeAIProvider(settings.AIProvider)
 	if provider == "" {
