@@ -194,13 +194,9 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		}
 	}
 
-	contacts, contactErr := a.profiles.ListContacts(false)
-	if contactErr != nil {
-		contacts = nil
-	}
+	contacts := a.visibleContacts(c)
 
-	trimmedContent := stripLeadingTitle(publication.Title, publication.Content)
-	publication.Content = trimmedContent
+	publication = clonePublicationForView(publication)
 
 	htmlContent, err := renderMarkdown(publication.Content)
 	if err != nil {
@@ -329,10 +325,7 @@ func (a *API) ShowAbout(c *gin.Context) {
 	now := time.Now().In(time.Local)
 	canonical := "/about"
 
-	contacts, contactErr := a.profiles.ListContacts(false)
-	if contactErr != nil {
-		contacts = nil
-	}
+	contacts := a.visibleContacts(c)
 
 	page, err := a.pages.GetBySlug("about")
 	if err != nil {
@@ -467,6 +460,21 @@ func (a *API) ShowSitemap(c *gin.Context) {
 	c.String(http.StatusOK, builder.String())
 }
 
+func clonePublicationForView(publication *db.PostPublication) *db.PostPublication {
+	if publication == nil {
+		return nil
+	}
+
+	trimmed := stripLeadingTitle(publication.Title, publication.Content)
+	if trimmed == publication.Content {
+		return publication
+	}
+
+	cloned := *publication
+	cloned.Content = trimmed
+	return &cloned
+}
+
 func stripLeadingTitle(title, content string) string {
 	trimmedTitle := strings.TrimSpace(title)
 	if trimmedTitle == "" {
@@ -503,6 +511,15 @@ func renderMarkdown(content string) (template.HTML, error) {
 	}
 	safe := sanitizer.SanitizeBytes(buf.Bytes())
 	return template.HTML(safe), nil
+}
+
+func (a *API) visibleContacts(c *gin.Context) []db.ProfileContact {
+	contacts, err := a.profiles.ListContacts(false)
+	if err != nil {
+		c.Error(fmt.Errorf("list contacts: %w", err))
+		return nil
+	}
+	return contacts
 }
 
 func (a *API) buildTagStats() []tagStat {
