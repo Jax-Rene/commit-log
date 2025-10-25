@@ -1,4 +1,4 @@
-# CommitLog 项目开发计划 V2
+# CommitLog 项目开发计划 1.1
 
 ## P0 关键项
 

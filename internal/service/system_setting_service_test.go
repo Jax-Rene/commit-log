@@ -69,6 +69,12 @@ func TestSystemSettingServiceDefaults(t *testing.T) {
 	if settings.AIProvider != AIProviderOpenAI {
 		t.Fatalf("expected default provider openai, got %s", settings.AIProvider)
 	}
+	if settings.AISummaryPrompt != defaultSummarySystemPrompt {
+		t.Fatalf("unexpected summary prompt default: %q", settings.AISummaryPrompt)
+	}
+	if settings.AIRewritePrompt != defaultRewriteSystemPrompt {
+		t.Fatalf("unexpected rewrite prompt default: %q", settings.AIRewritePrompt)
+	}
 }
 
 func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
@@ -89,6 +95,8 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 		AIProvider:       "deepseek",
 		OpenAIAPIKey:     "sk-xxxx",
 		DeepSeekAPIKey:   "ds-12345",
+		AISummaryPrompt:  " 摘要提示 ",
+		AIRewritePrompt:  " 重写提示 ",
 	}
 
 	saved, err := svc.UpdateSettings(input)
@@ -113,6 +121,12 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	}
 	if saved.DeepSeekAPIKey != "ds-12345" {
 		t.Fatalf("expected deepseek key to be persisted, got %q", saved.DeepSeekAPIKey)
+	}
+	if saved.AISummaryPrompt != "摘要提示" {
+		t.Fatalf("expected summary prompt sanitized, got %q", saved.AISummaryPrompt)
+	}
+	if saved.AIRewritePrompt != "重写提示" {
+		t.Fatalf("expected rewrite prompt sanitized, got %q", saved.AIRewritePrompt)
 	}
 
 	fetched, err := svc.GetSettings()
@@ -153,6 +167,12 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if fetched.DeepSeekAPIKey != input.DeepSeekAPIKey {
 		t.Fatalf("expected deepseek api key %q, got %q", input.DeepSeekAPIKey, fetched.DeepSeekAPIKey)
 	}
+	if fetched.AISummaryPrompt != "摘要提示" {
+		t.Fatalf("expected summary prompt %q, got %q", "摘要提示", fetched.AISummaryPrompt)
+	}
+	if fetched.AIRewritePrompt != "重写提示" {
+		t.Fatalf("expected rewrite prompt %q, got %q", "重写提示", fetched.AIRewritePrompt)
+	}
 }
 
 func TestSystemSettingServiceFallbackSiteName(t *testing.T) {
@@ -179,6 +199,12 @@ func TestSystemSettingServiceFallbackSiteName(t *testing.T) {
 	}
 	if saved.AIProvider != AIProviderOpenAI {
 		t.Fatalf("expected provider fallback to openai, got %q", saved.AIProvider)
+	}
+	if saved.AISummaryPrompt != defaultSummarySystemPrompt {
+		t.Fatalf("expected summary prompt fallback to default, got %q", saved.AISummaryPrompt)
+	}
+	if saved.AIRewritePrompt != defaultRewriteSystemPrompt {
+		t.Fatalf("expected rewrite prompt fallback to default, got %q", saved.AIRewritePrompt)
 	}
 }
 

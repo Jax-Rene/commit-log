@@ -1,7 +1,9 @@
 package service
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/commitlog/internal/db"
 	"gorm.io/driver/sqlite"
@@ -11,7 +13,8 @@ import (
 
 func setupProfileServiceTestDB(t *testing.T) func() {
 	t.Helper()
-	gdb, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	dsn := fmt.Sprintf("file:profile-service-%d?mode=memory&cache=shared", time.Now().UnixNano())
+	gdb, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		t.Fatalf("failed to open test database: %v", err)
 	}

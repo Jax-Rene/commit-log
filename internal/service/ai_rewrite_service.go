@@ -13,10 +13,16 @@ const (
 	defaultOptimizationMaxTokens    = 4096
 	defaultOptimizationTemperature  = 0.35
 	maxOptimizationContentRuneCount = 16000
+	defaultSnippetRewriteMaxTokens  = 1024
+	maxSnippetSelectionRuneCount    = 4000
+	maxSnippetContextRuneCount      = 8000
 )
 
 // ErrOptimizationEmpty 表示模型未返回可用内容。
 var ErrOptimizationEmpty = errors.New("ai full optimization returned empty content")
+
+// ErrSnippetRewriteEmpty 表示片段改写未返回内容。
+var ErrSnippetRewriteEmpty = errors.New("ai snippet rewrite returned empty content")
 
 // ContentOptimizationInput 描述调用全文优化所需的上下文。
 type ContentOptimizationInput struct {
@@ -34,6 +40,26 @@ type ContentOptimizationResult struct {
 // ContentOptimizer 定义全文优化的能力，便于在业务层注入不同实现。
 type ContentOptimizer interface {
 	OptimizeContent(ctx context.Context, input ContentOptimizationInput) (ContentOptimizationResult, error)
+}
+
+// SnippetRewriteInput 描述片段级改写所需的上下文。
+type SnippetRewriteInput struct {
+	Selection   string
+	Instruction string
+	Context     string
+	MaxTokens   int
+}
+
+// SnippetRewriteResult 返回局部改写后的 Markdown 片段及用量信息。
+type SnippetRewriteResult struct {
+	Content          string
+	PromptTokens     int
+	CompletionTokens int
+}
+
+// SnippetRewriter 定义局部片段改写的能力。
+type SnippetRewriter interface {
+	RewriteSnippet(ctx context.Context, input SnippetRewriteInput) (SnippetRewriteResult, error)
 }
 
 // AIRewriteService 基于大模型接口对文章进行全文优化。
@@ -88,8 +114,18 @@ func (s *AIRewriteService) OptimizeContent(ctx context.Context, input ContentOpt
 	contentSnippet := truncateRunes(content, maxOptimizationContentRuneCount)
 	userPrompt := buildOptimizationPrompt(contentSnippet)
 
-	result, err := s.client.call(ctx, aiChatRequest{
-		SystemPrompt: "你是一名资深中文博客主编，请在不改变核心事实的前提下对文章内容进行润色重写。请遵循：\n1. 保留并优化 Markdown 结构，确保标题、列表、代码块、引用按需存在且格式正确。\n2. 精炼措辞，提升逻辑连贯性，合并或拆分段落以增强可读性。\n3. 避免重复、冗余或口语化表达，让语气专业但友好。\n4. 保留原有示例、数据、链接与代码，不要添加额外解释。\n5. 输出仅包含优化后的 Markdown 正文，不要附加额外说明，不要生成新的标题。",
+	settings, err := s.client.settings.GetSettings()
+	if err != nil {
+		return ContentOptimizationResult{}, fmt.Errorf("读取系统设置失败: %w", err)
+	}
+
+	systemPrompt := strings.TrimSpace(settings.AIRewritePrompt)
+	if systemPrompt == "" {
+		systemPrompt = defaultRewriteSystemPrompt
+	}
+
+	result, err := s.client.callWithSettings(ctx, settings, aiChatRequest{
+		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
 		MaxTokens:    maxTokens,
 		Temperature:  defaultOptimizationTemperature,
@@ -98,7 +134,7 @@ func (s *AIRewriteService) OptimizeContent(ctx context.Context, input ContentOpt
 		return ContentOptimizationResult{}, err
 	}
 
-	optimized := strings.TrimSpace(result.Content)
+	optimized := normalizeAIContent(result.Content)
 	if optimized == "" {
 		return ContentOptimizationResult{}, ErrOptimizationEmpty
 	}
@@ -110,9 +146,128 @@ func (s *AIRewriteService) OptimizeContent(ctx context.Context, input ContentOpt
 	}, nil
 }
 
+// RewriteSnippet 使用 AI 对选中片段进行局部改写。
+func (s *AIRewriteService) RewriteSnippet(ctx context.Context, input SnippetRewriteInput) (SnippetRewriteResult, error) {
+	selection := strings.TrimSpace(input.Selection)
+	if selection == "" {
+		return SnippetRewriteResult{}, fmt.Errorf("selection is required")
+	}
+
+	instruction := strings.TrimSpace(input.Instruction)
+	if instruction == "" {
+		return SnippetRewriteResult{}, fmt.Errorf("instruction is required")
+	}
+
+	maxTokens := input.MaxTokens
+	if maxTokens <= 0 {
+		maxTokens = defaultSnippetRewriteMaxTokens
+	}
+
+	trimmedSelection := truncateRunes(selection, maxSnippetSelectionRuneCount)
+	context := strings.TrimSpace(input.Context)
+	if context != "" {
+		context = truncateRunes(context, maxSnippetContextRuneCount)
+	}
+
+	userPrompt := buildSnippetRewritePrompt(trimmedSelection, instruction, context)
+
+	settings, err := s.client.settings.GetSettings()
+	if err != nil {
+		return SnippetRewriteResult{}, fmt.Errorf("读取系统设置失败: %w", err)
+	}
+
+	systemPrompt := strings.TrimSpace(settings.AIRewritePrompt)
+	if systemPrompt == "" {
+		systemPrompt = defaultRewriteSystemPrompt
+	}
+
+	result, err := s.client.callWithSettings(ctx, settings, aiChatRequest{
+		SystemPrompt: systemPrompt,
+		UserPrompt:   userPrompt,
+		MaxTokens:    maxTokens,
+		Temperature:  defaultOptimizationTemperature,
+	})
+	if err != nil {
+		return SnippetRewriteResult{}, err
+	}
+
+	rewritten := normalizeAIContent(result.Content)
+	if rewritten == "" {
+		return SnippetRewriteResult{}, ErrSnippetRewriteEmpty
+	}
+
+	return SnippetRewriteResult{
+		Content:          rewritten,
+		PromptTokens:     result.PromptTokens,
+		CompletionTokens: result.CompletionTokens,
+	}, nil
+}
+
 func buildOptimizationPrompt(content string) string {
 	var builder strings.Builder
 	builder.WriteString("文章正文（Markdown）：\n")
 	builder.WriteString(strings.TrimSpace(content))
 	return builder.String()
+}
+
+func buildSnippetRewritePrompt(selection, instruction, context string) string {
+	var builder strings.Builder
+	builder.WriteString("请根据下列指令改写选中的文章片段，保持 Markdown 结构并直接返回修改后的片段。\n\n")
+	builder.WriteString("【改写指令】\n")
+	builder.WriteString(strings.TrimSpace(instruction))
+	builder.WriteString("\n\n【原始片段】\n```markdown\n")
+	builder.WriteString(strings.TrimSpace(selection))
+	builder.WriteString("\n```")
+	if trimmedContext := strings.TrimSpace(context); trimmedContext != "" {
+		builder.WriteString("\n\n【上下文参考】\n```markdown\n")
+		builder.WriteString(trimmedContext)
+		builder.WriteString("\n```")
+	}
+	builder.WriteString("\n\n请只输出改写后的 Markdown 片段，不要附加任何说明。")
+	return builder.String()
+}
+
+func normalizeAIContent(content string) string {
+	trimmed := strings.TrimSpace(content)
+	if trimmed == "" {
+		return ""
+	}
+	normalized := strings.ReplaceAll(trimmed, "\r\n", "\n")
+	normalized = strings.ReplaceAll(normalized, "\r", "\n")
+	cleaned := stripCodeFence(normalized)
+	return strings.TrimSpace(cleaned)
+}
+
+func stripCodeFence(content string) string {
+	trimmed := strings.TrimSpace(content)
+	if len(trimmed) < 3 || !strings.HasPrefix(trimmed, "```") {
+		return trimmed
+	}
+
+	body := trimmed[3:]
+	var remainder string
+	if len(body) == 0 {
+		return ""
+	}
+
+	if body[0] == '\n' {
+		remainder = body[1:]
+	} else {
+		newline := strings.IndexByte(body, '\n')
+		if newline == -1 {
+			return strings.TrimSpace(body)
+		}
+		remainder = body[newline+1:]
+	}
+
+	lastFence := strings.LastIndex(remainder, "```")
+	if lastFence == -1 {
+		return strings.TrimSpace(remainder)
+	}
+
+	if suffix := strings.TrimSpace(remainder[lastFence:]); suffix != "```" {
+		return strings.TrimSpace(remainder)
+	}
+
+	return strings.TrimSpace(remainder[:lastFence])
 }

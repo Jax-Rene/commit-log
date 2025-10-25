@@ -46,6 +46,8 @@ type SystemSettings struct {
 	DeepSeekAPIKey   string
 	AdminFooterText  string
 	PublicFooterText string
+	AISummaryPrompt  string
+	AIRewritePrompt  string
 }
 
 // ErrAIAPIKeyMissing 表示未提供必需的 AI 平台 API Key。
@@ -68,6 +70,8 @@ type SystemSettingsInput struct {
 	DeepSeekAPIKey   string
 	AdminFooterText  string
 	PublicFooterText string
+	AISummaryPrompt  string
+	AIRewritePrompt  string
 }
 
 // SystemSettingService 提供系统设置的读取与更新能力。
@@ -105,6 +109,8 @@ var settingKeys = []string{
 	db.SettingKeyAIProvider,
 	db.SettingKeyOpenAIAPIKey,
 	db.SettingKeyDeepSeekAPIKey,
+	db.SettingKeyAISummaryPrompt,
+	db.SettingKeyAIRewritePrompt,
 }
 
 // GetSettings 读取系统设置，如未设置将返回默认值。
@@ -116,6 +122,8 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 		AIProvider:       AIProviderOpenAI,
 		AdminFooterText:  defaultAdminFooter,
 		PublicFooterText: defaultPublicFooter,
+		AISummaryPrompt:  defaultSummarySystemPrompt,
+		AIRewritePrompt:  defaultRewriteSystemPrompt,
 	}
 
 	var records []db.SystemSetting
@@ -161,6 +169,14 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 			result.OpenAIAPIKey = record.Value
 		case db.SettingKeyDeepSeekAPIKey:
 			result.DeepSeekAPIKey = record.Value
+		case db.SettingKeyAISummaryPrompt:
+			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
+				result.AISummaryPrompt = trimmed
+			}
+		case db.SettingKeyAIRewritePrompt:
+			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
+				result.AIRewritePrompt = trimmed
+			}
 		}
 	}
 
@@ -184,6 +200,12 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 	}
 	if strings.TrimSpace(result.SiteKeywords) == "" {
 		result.SiteKeywords = NormalizeKeywords(defaultSiteKeywords)
+	}
+	if strings.TrimSpace(result.AISummaryPrompt) == "" {
+		result.AISummaryPrompt = defaultSummarySystemPrompt
+	}
+	if strings.TrimSpace(result.AIRewritePrompt) == "" {
+		result.AIRewritePrompt = defaultRewriteSystemPrompt
 	}
 
 	return result, nil
@@ -209,6 +231,8 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 		DeepSeekAPIKey:   strings.TrimSpace(input.DeepSeekAPIKey),
 		AdminFooterText:  strings.TrimSpace(input.AdminFooterText),
 		PublicFooterText: strings.TrimSpace(input.PublicFooterText),
+		AISummaryPrompt:  strings.TrimSpace(input.AISummaryPrompt),
+		AIRewritePrompt:  strings.TrimSpace(input.AIRewritePrompt),
 	}
 
 	if sanitized.SiteName == "" {
@@ -240,6 +264,12 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 	}
 	if sanitized.PublicFooterText == "" {
 		sanitized.PublicFooterText = defaultPublicFooter
+	}
+	if sanitized.AISummaryPrompt == "" {
+		sanitized.AISummaryPrompt = defaultSummarySystemPrompt
+	}
+	if sanitized.AIRewritePrompt == "" {
+		sanitized.AIRewritePrompt = defaultRewriteSystemPrompt
 	}
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
@@ -277,6 +307,12 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeyDeepSeekAPIKey, sanitized.DeepSeekAPIKey); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeyAISummaryPrompt, sanitized.AISummaryPrompt); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeyAIRewritePrompt, sanitized.AIRewritePrompt); err != nil {
 			return err
 		}
 		return nil

@@ -20,8 +20,8 @@
         *   `web/static`: 存放编译后的 CSS/JS。
 
 2.  **前端工具链搭建:**
-    *   [x] 在项目根目录执行 `npm init -y`。
-    *   [x] 安装前端依赖: `npm install -D tailwindcss` 并安装运行时依赖 `alpinejs`、`htmx.org`、`easymde` 等。
+    *   [x] 在项目根目录执行 `pnpm init`。
+    *   [x] 安装前端依赖: `pnpm add -D tailwindcss` 并安装运行时依赖 `alpinejs`、`htmx.org`、`easymde` 等。
     *   [x] 创建 `tailwind.config.js` 并配置 `content` 路径，使其扫描 `web/template/**/*.html`。
     *   [x] 创建 `web/static/css/input.css` 并引入 Tailwind 指令。
     *   [x] 在 `package.json` 的 `scripts` 中添加 `build` 命令，使用 Vite 编译前端资源并输出到 `web/static/dist`。
@@ -113,7 +113,7 @@
 
 1.  **Dockerfile 编写:**
     *   [x] 创建 `Dockerfile`，使用多阶段构建：
-        *   `node` 镜像作为 `builder` 阶段，用于 `npm run build`。
+        *   `node` 镜像作为 `builder` 阶段，用于 `pnpm run build`。
         *   `golang` 镜像作为 `compiler` 阶段，用于编译 Go 应用。
         *   `debian` 或 `alpine` 作为最终镜像，仅复制编译后的 Go 二进制文件、`web` 目录和 `migrations` (如有)。
 

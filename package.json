@@ -1,6 +1,7 @@
 {
   "name": "commitlog",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.18.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -19,6 +20,13 @@
     "vite": "^6.0.2"
   },
   "dependencies": {
+    "@milkdown/core": "^7.17.1",
+    "@milkdown/crepe": "^7.17.1",
+    "@milkdown/kit": "^7.17.1",
+    "@milkdown/plugin-cursor": "^7.17.1",
+    "@milkdown/plugin-upload": "^7.17.1",
+    "@milkdown/preset-commonmark": "^7.17.1",
+    "@milkdown/theme-nord": "^7.17.1",
     "alpinejs": "^3.15.0",
     "cropperjs": "^1.6.2",
     "easymde": "^2.20.0",

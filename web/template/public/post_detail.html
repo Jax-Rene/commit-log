@@ -3,18 +3,18 @@
 {{define "content"}}
 <article class="mx-auto max-w-3xl space-y-10">
 	<header class="space-y-6 text-center">
-		<p class="text-sm font-medium text-blue-600 dark:text-blue-400">{{formatDate .post.CreatedAt}}</p>
 		<h1 class="text-4xl font-semibold text-slate-900 dark:text-slate-100">{{.post.Title}}</h1>
 		<div class="flex flex-wrap justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
 			{{if gt .post.ReadingTime 0}}
 			<span class="flex items-center">{{.post.ReadingTime}} 分钟阅读</span>
 			{{end}}
 			<span class="flex items-center">{{.pageViews}} 次浏览</span>
+			<span class="flex items-center">{{formatDate .post.PublishedAt}}</span>
 			{{range .post.Tags}}
 			<span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800/80 dark:text-slate-300">{{.Name}}</span>
 			{{end}}
 		</div>
-		{{if .post.CoverURL}}
+		<!-- {{if .post.CoverURL}}
 		<div class="relative w-full overflow-hidden rounded-3xl shadow-md shadow-slate-200/60 dark:shadow-slate-900/80" style="padding-top: {{aspectPadding .post.CoverWidth .post.CoverHeight}};">
 			<img src="{{.post.CoverURL}}" alt="{{.post.Title}} 封面" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
 		</div>
@@ -23,12 +23,23 @@
 			class="flex h-72 w-full items-center justify-center rounded-3xl bg-gradient-to-br {{accent .post.Title}} text-5xl font-semibold text-white shadow-md">
 			{{initials .post.Title}}
 		</div>
-		{{end}}
+		{{end}} -->
 	</header>
 
 	<section class="post-content">
-		{{.content}}
+		{{- if .post.Summary }}
+		<aside class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-left shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+			<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300">全文总结</div>
+			<p class="whitespace-pre-line text-base leading-relaxed text-amber-900 dark:text-amber-100/90">{{.post.Summary}}</p>
+		</aside>
+		{{- end }}
+		<div id="post-milkdown-viewer" class="milkdown-preview hidden" data-milkdown-viewer></div>
+		<div id="post-html-fallback" data-post-fallback>
+			{{.content}}
+		</div>
 	</section>
+
+	<script type="application/json" id="post-markdown-data">{{- toJSON .post.Content -}}</script>
 
 	{{template "contact_links.html" (dict "Contacts" .contacts "Heading" "联系作者" "Subtitle" "在这些平台找到我。")}}
 </article>

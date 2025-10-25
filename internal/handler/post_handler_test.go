@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -53,6 +54,28 @@ func (f *fakeContentOptimizer) OptimizeContent(ctx context.Context, input servic
 		return service.ContentOptimizationResult{}, f.err
 	}
 	return service.ContentOptimizationResult{
+		Content:          f.content,
+		PromptTokens:     f.promptTokens,
+		CompletionTokens: f.completionTokens,
+	}, nil
+}
+
+type fakeSnippetRewriter struct {
+	content          string
+	err              error
+	calls            int
+	promptTokens     int
+	completionTokens int
+	lastInput        service.SnippetRewriteInput
+}
+
+func (f *fakeSnippetRewriter) RewriteSnippet(ctx context.Context, input service.SnippetRewriteInput) (service.SnippetRewriteResult, error) {
+	f.calls++
+	f.lastInput = input
+	if f.err != nil {
+		return service.SnippetRewriteResult{}, f.err
+	}
+	return service.SnippetRewriteResult{
 		Content:          f.content,
 		PromptTokens:     f.promptTokens,
 		CompletionTokens: f.completionTokens,
@@ -181,7 +204,6 @@ func TestCreatePostAutoSummary(t *testing.T) {
 		"title":        "AI Test",
 		"content":      "这是正文内容。",
 		"summary":      "",
-		"status":       "published",
 		"tag_ids":      []uint{},
 		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
 		"cover_width":  1200,
@@ -202,32 +224,64 @@ func TestCreatePostAutoSummary(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	var response map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
+	if stub.calls != 0 {
+		t.Fatalf("expected summary generator not to run when saving draft, got %d", stub.calls)
+	}
+
+	var createResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("failed to decode create response: %v", err)
+	}
+	postData, ok := createResp["post"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected create response to include post object")
+	}
+	postID := uint(postData["ID"].(float64))
+
+	w = httptest.NewRecorder()
+	c, _ = gin.CreateTestContext(w)
+	publishReq := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/api/posts/%d/publish", postID), nil)
+	c.Params = gin.Params{{Key: "id", Value: fmt.Sprintf("%d", postID)}}
+	c.Request = publishReq
+
+	api.PublishPost(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected publish status 200, got %d", w.Code)
 	}
 
 	if stub.calls != 1 {
-		t.Fatalf("expected summary generator to be called once, got %d", stub.calls)
+		t.Fatalf("expected summary generator to run on publish, got %d", stub.calls)
+	}
+
+	var publishResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &publishResp); err != nil {
+		t.Fatalf("failed to decode publish response: %v", err)
 	}
 
 	var created db.Post
-	if err := db.DB.First(&created).Error; err != nil {
+	if err := db.DB.First(&created, postID).Error; err != nil {
 		t.Fatalf("failed to load created post: %v", err)
+	}
+	if created.Status != "published" {
+		t.Fatalf("expected post status published, got %s", created.Status)
 	}
 	if created.Summary != "AI 生成的摘要" {
 		t.Fatalf("expected summary to be updated, got %q", created.Summary)
 	}
+	if created.LatestPublicationID == nil {
+		t.Fatalf("expected latest publication id to be stored")
+	}
 
-	postData, ok := response["post"].(map[string]any)
+	publicationData, ok := publishResp["publication"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected response to include post object")
+		t.Fatalf("expected publish response to include publication")
 	}
-	if summary, _ := postData["Summary"].(string); summary != "AI 生成的摘要" {
-		t.Fatalf("expected response summary to be updated, got %q", summary)
+	if summary, _ := publicationData["Summary"].(string); summary != "AI 生成的摘要" {
+		t.Fatalf("expected publication summary to be updated, got %q", summary)
 	}
 
-	notices, _ := response["notices"].([]any)
+	notices, _ := publishResp["notices"].([]any)
 	if len(notices) == 0 {
 		t.Fatalf("expected notices to include AI summary hint")
 	}
@@ -244,7 +298,6 @@ func TestCreatePostAutoSummaryFailure(t *testing.T) {
 		"title":        "AI Failure",
 		"content":      "正文内容",
 		"summary":      "",
-		"status":       "published",
 		"tag_ids":      []uint{},
 		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
 		"cover_width":  1200,
@@ -265,21 +318,51 @@ func TestCreatePostAutoSummaryFailure(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
+	if stub.calls != 0 {
+		t.Fatalf("expected summary generator not to run when saving draft, got %d", stub.calls)
+	}
+
+	var createResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &createResp); err != nil {
+		t.Fatalf("failed to decode create response: %v", err)
+	}
+	postData, ok := createResp["post"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected create response to include post object")
+	}
+	postID := uint(postData["ID"].(float64))
+
+	w = httptest.NewRecorder()
+	c, _ = gin.CreateTestContext(w)
+	publishReq := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/api/posts/%d/publish", postID), nil)
+	c.Params = gin.Params{{Key: "id", Value: fmt.Sprintf("%d", postID)}}
+	c.Request = publishReq
+
+	api.PublishPost(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected publish status 200, got %d", w.Code)
+	}
+
+	if stub.calls != 1 {
+		t.Fatalf("expected summary generator to run once on publish, got %d", stub.calls)
+	}
+
+	var publishResp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &publishResp); err != nil {
+		t.Fatalf("failed to decode publish response: %v", err)
+	}
+	warnings, _ := publishResp["warnings"].([]any)
+	if len(warnings) == 0 {
+		t.Fatalf("expected warnings when summary generation fails")
+	}
+
 	var created db.Post
-	if err := db.DB.First(&created).Error; err != nil {
-		t.Fatalf("failed to load created post: %v", err)
+	if err := db.DB.First(&created, postID).Error; err != nil {
+		t.Fatalf("failed to load post: %v", err)
 	}
 	if created.Summary != "" {
 		t.Fatalf("expected summary to remain empty on failure")
-	}
-
-	var response map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-	warnings, _ := response["warnings"].([]any)
-	if len(warnings) == 0 {
-		t.Fatalf("expected warnings when summary generation fails")
 	}
 }
 
@@ -698,6 +781,161 @@ func TestOptimizePostContentRequiresContent(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 	if resp["error"] != "请先填写文章正文后再尝试全文优化" {
+		t.Fatalf("unexpected error message: %v", resp["error"])
+	}
+}
+
+func TestRewritePostSelectionSuccess(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	stub := &fakeSnippetRewriter{
+		content:          "改写后的段落",
+		promptTokens:     88,
+		completionTokens: 144,
+	}
+	api.snippetRewriter = stub
+
+	payload := map[string]any{
+		"selection":   "原始段落",
+		"instruction": "请改成更具说服力的语气",
+		"context":     "上下文说明",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/chat", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.RewritePostSelection(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var resp struct {
+		Content string `json:"content"`
+		Usage   struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+		} `json:"usage"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if resp.Content != stub.content {
+		t.Fatalf("unexpected rewritten content: %s", resp.Content)
+	}
+	if resp.Usage.PromptTokens != stub.promptTokens || resp.Usage.CompletionTokens != stub.completionTokens {
+		t.Fatalf("unexpected usage: %+v", resp.Usage)
+	}
+
+	if stub.calls != 1 {
+		t.Fatalf("expected rewriter to be called once, got %d", stub.calls)
+	}
+	if stub.lastInput.Selection != "原始段落" || stub.lastInput.Instruction != "请改成更具说服力的语气" {
+		t.Fatalf("unexpected input: %+v", stub.lastInput)
+	}
+}
+
+func TestRewritePostSelectionRequiresSelection(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	api.snippetRewriter = &fakeSnippetRewriter{content: "不会触发"}
+
+	payload := map[string]any{
+		"selection":   " ",
+		"instruction": "请改成正式语气",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/chat", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.RewritePostSelection(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp["error"] != "请先选择需要改写的段落后再试" {
+		t.Fatalf("unexpected error message: %v", resp["error"])
+	}
+}
+
+func TestRewritePostSelectionRequiresInstruction(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	api.snippetRewriter = &fakeSnippetRewriter{content: "不会触发"}
+
+	payload := map[string]any{
+		"selection":   "原文",
+		"instruction": "",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/chat", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.RewritePostSelection(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp["error"] != "请输入改写指令" {
+		t.Fatalf("unexpected error message: %v", resp["error"])
+	}
+}
+
+func TestRewritePostSelectionMissingAPIKey(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	api.snippetRewriter = &fakeSnippetRewriter{err: service.ErrAIAPIKeyMissing}
+
+	payload := map[string]any{
+		"selection":   "原文",
+		"instruction": "请改成正式语气",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts/chat", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.RewritePostSelection(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp["error"] != "请在系统设置中配置有效的 AI API Key 后再试" {
 		t.Fatalf("unexpected error message: %v", resp["error"])
 	}
 }

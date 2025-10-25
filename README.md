@@ -66,5 +66,5 @@
 
 2.  **编译前端资源:**
     ```bash
-    npm run build
+    pnpm run build
     ```

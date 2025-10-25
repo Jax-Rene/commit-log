@@ -3,7 +3,7 @@ dev:
 	@echo "启动开发模式..."
 	@echo "Gin 会自动重载模板文件"
 	rm -rf ./web/static/dist
-	npm run build
+	pnpm run build
 	GIN_MODE=debug go run cmd/server/main.go
 
 # 测试模式，运行单元测试
@@ -25,6 +25,9 @@ docker-dev:
 # 生产环境关闭：docker 关闭，主要用于模拟生产环境关闭
 docker-dev-down:
 	docker compose -f docker-compose.dev.yml down
+
+lint:
+	staticcheck ./...
 
 # fly.io 部署相关命令
 fly-init: # 初始化 fly.io 配置

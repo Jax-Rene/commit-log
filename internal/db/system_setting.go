@@ -35,6 +35,10 @@ const (
 	SettingKeyAIProvider = "ai_provider"
 	// SettingKeyDeepSeekAPIKey 表示 DeepSeek API Key。
 	SettingKeyDeepSeekAPIKey = "deepseek_api_key"
+	// SettingKeyAISummaryPrompt 表示摘要生成的系统提示语。
+	SettingKeyAISummaryPrompt = "ai_summary_prompt"
+	// SettingKeyAIRewritePrompt 表示全文优化的系统提示语。
+	SettingKeyAIRewritePrompt = "ai_rewrite_prompt"
 	// SettingKeySiteAdminFooter 表示后台页脚文案。
 	SettingKeySiteAdminFooter = "site_admin_footer"
 	// SettingKeySitePublicFooter 表示前台页脚文案。

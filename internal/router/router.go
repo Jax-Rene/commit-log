@@ -316,6 +316,8 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
 				api.POST("/posts", handlers.CreatePost)
 				api.POST("/posts/summary", handlers.GeneratePostSummary)
 				api.POST("/posts/optimize", handlers.OptimizePostContent)
+				api.POST("/posts/chat", handlers.RewritePostSelection)
+				api.POST("/posts/:id/publish", handlers.PublishPost)
 				api.PUT("/posts/:id", handlers.UpdatePost)
 				api.DELETE("/posts/:id", handlers.DeletePost)
 
@@ -409,9 +411,5 @@ func prefersJSON(c *gin.Context) bool {
 	}
 
 	contentType := strings.ToLower(c.ContentType())
-	if strings.Contains(contentType, "application/json") {
-		return true
-	}
-
-	return false
+	return strings.Contains(contentType, "application/json")
 }

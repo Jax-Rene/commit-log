@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/commitlog/internal/config"
 	"github.com/commitlog/internal/db"
@@ -36,7 +37,6 @@ func main() {
 	fmt.Println("文章: 5篇测试文章")
 	fmt.Println("标签: 技术、生活、思考、教程、项目")
 }
-
 
 // 创建测试用户
 func createTestUsers() {
@@ -113,6 +113,8 @@ func createAboutPage() {
 // 创建测试文章
 func createTestPosts() {
 	// 清理旧文章及关联
+	db.DB.Exec("DELETE FROM post_publication_tags")
+	db.DB.Exec("DELETE FROM post_publications")
 	db.DB.Exec("DELETE FROM post_tags")
 	db.DB.Exec("DELETE FROM posts")
 
@@ -386,12 +388,12 @@ func createTestPosts() {
 	}
 
 	// 创建文章
-	for _, data := range contents {
+	for idx, data := range contents {
 		post := db.Post{
 			Title:       data.title,
 			Content:     data.content,
 			Summary:     data.summary,
-			Status:      "published",
+			Status:      "draft",
 			UserID:      admin.ID,
 			ReadingTime: len(data.content) / 200,
 			CoverURL:    data.coverURL,
@@ -420,6 +422,42 @@ func createTestPosts() {
 			if err := db.DB.Model(&post).Association("Tags").Append(postTags); err != nil {
 				log.Printf("关联标签失败: %v", err)
 			}
+		}
+
+		publishedAt := time.Now().Add(-time.Duration(idx) * 12 * time.Hour)
+		publication := db.PostPublication{
+			PostID:      post.ID,
+			Title:       post.Title,
+			Content:     post.Content,
+			Summary:     post.Summary,
+			ReadingTime: post.ReadingTime,
+			CoverURL:    post.CoverURL,
+			CoverWidth:  post.CoverWidth,
+			CoverHeight: post.CoverHeight,
+			UserID:      post.UserID,
+			PublishedAt: publishedAt,
+			Version:     1,
+		}
+
+		if err := db.DB.Create(&publication).Error; err != nil {
+			log.Printf("创建发布快照失败: %v", err)
+			continue
+		}
+
+		if len(postTags) > 0 {
+			if err := db.DB.Model(&publication).Association("Tags").Append(postTags); err != nil {
+				log.Printf("关联发布标签失败: %v", err)
+			}
+		}
+
+		if err := db.DB.Model(&post).Updates(map[string]interface{}{
+			"status":                "published",
+			"published_at":          publishedAt,
+			"publication_count":     1,
+			"latest_publication_id": publication.ID,
+			"reading_time":          post.ReadingTime,
+		}).Error; err != nil {
+			log.Printf("更新文章发布信息失败: %v", err)
 		}
 	}
 
