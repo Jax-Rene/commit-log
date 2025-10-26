@@ -556,14 +556,23 @@ func (a *API) ShowPostList(c *gin.Context) {
 }
 
 func (a *API) postEditPageData(c *gin.Context) gin.H {
-	data := gin.H{
-		"title": "创建文章",
-	}
+        data := gin.H{
+                "title":    "创建文章",
+                "allTags":  []db.Tag{},
+                "tagError": "",
+        }
 
-	if idParam := c.Param("id"); idParam != "" {
-		if id, err := strconv.ParseUint(idParam, 10, 32); err == nil {
-			post, err := a.posts.Get(uint(id))
-			if err == nil {
+        if tags, err := a.tags.List(); err == nil {
+                data["allTags"] = tags
+        } else {
+                c.Error(err)
+                data["tagError"] = "加载标签失败，请稍后重试"
+        }
+
+        if idParam := c.Param("id"); idParam != "" {
+                if id, err := strconv.ParseUint(idParam, 10, 32); err == nil {
+                        post, err := a.posts.Get(uint(id))
+                        if err == nil {
 				data["title"] = "编辑文章"
 				data["post"] = post
 				if publication, pubErr := a.posts.LatestPublication(post.ID); pubErr == nil {

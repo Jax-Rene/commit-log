@@ -685,6 +685,11 @@ class PostDraftController {
                         source.UserID = source.user_id;
                 }
 
+                const normalizedTags = this.normalizeTags(source.Tags);
+                const primaryTags = normalizedTags.map(tag => cloneValue(tag) || { ...tag });
+                source.Tags = primaryTags;
+                source.tags = primaryTags.map(tag => cloneValue(tag) || { ...tag });
+
                 return {
                         Title: '',
                         Summary: '',
@@ -696,6 +701,129 @@ class PostDraftController {
                         CoverHeight: 0,
                         ...source,
                 };
+        }
+
+        normalizeTag(tag) {
+                if (tag === null || tag === undefined) {
+                        return null;
+                }
+                let source = {};
+                if (typeof tag === 'object') {
+                        source = cloneValue(tag) || { ...tag };
+                } else {
+                        const numeric = coerceNumber(tag, NaN);
+                        if (!Number.isFinite(numeric)) {
+                                return null;
+                        }
+                        source = { ID: numeric };
+                }
+                const idCandidate = pickProperty(source, ['ID', 'id', 'Id'], null);
+                const id = coerceNumber(idCandidate, NaN);
+                if (!Number.isFinite(id)) {
+                        return null;
+                }
+                const nameCandidate = coerceString(pickProperty(source, ['Name', 'name'], ''), '');
+                const slugCandidate = coerceString(pickProperty(source, ['Slug', 'slug'], ''), '');
+                const name = nameCandidate.trim();
+                const slug = slugCandidate.trim();
+                const normalized = {
+                        ...source,
+                        ID: id,
+                        id,
+                        Name: name,
+                        name,
+                };
+                if (slug) {
+                        normalized.Slug = slug;
+                        normalized.slug = slug;
+                } else {
+                        delete normalized.Slug;
+                        delete normalized.slug;
+                }
+                return normalized;
+        }
+
+        normalizeTags(tags) {
+                if (!Array.isArray(tags)) {
+                        return [];
+                }
+                const normalized = [];
+                const seen = new Set();
+                for (const tag of tags) {
+                        const normalizedTag = this.normalizeTag(tag);
+                        if (!normalizedTag) {
+                                continue;
+                        }
+                        const id = this.getTagId(normalizedTag);
+                        if (id === null || seen.has(id)) {
+                                continue;
+                        }
+                        seen.add(id);
+                        normalized.push(normalizedTag);
+                }
+                return normalized;
+        }
+
+        getTagId(tag) {
+                if (tag && typeof tag === 'object') {
+                        const value = pickProperty(tag, ['ID', 'id', 'Id'], null);
+                        const numeric = coerceNumber(value, NaN);
+                        return Number.isFinite(numeric) ? numeric : null;
+                }
+                const numeric = coerceNumber(tag, NaN);
+                return Number.isFinite(numeric) ? numeric : null;
+        }
+
+        tagIdSequence(tags) {
+                if (!Array.isArray(tags)) {
+                        return [];
+                }
+                return tags
+                        .map(tag => this.getTagId(tag))
+                        .filter(id => id !== null);
+        }
+
+        resolveTagsFromIds(ids, availableTags = []) {
+                const raw = Array.isArray(ids) ? ids : [];
+                const uniqueIds = [];
+                for (const value of raw) {
+                        const id = this.getTagId(value);
+                        if (id === null || uniqueIds.includes(id)) {
+                                continue;
+                        }
+                        uniqueIds.push(id);
+                }
+                const available = this.normalizeTags(availableTags);
+                const existing = this.normalizeTags(this.postData?.Tags);
+                const lookup = [...available, ...existing];
+                const resolved = [];
+                for (const id of uniqueIds) {
+                        const match = lookup.find(tag => this.getTagId(tag) === id);
+                        if (match) {
+                                resolved.push(match);
+                        }
+                }
+                return resolved;
+        }
+
+        setTags(tags) {
+                const normalized = this.normalizeTags(tags);
+                const previous = this.tagIdSequence(this.postData?.Tags);
+                const next = this.tagIdSequence(normalized);
+                const sameSelection = previous.length === next.length && previous.every((id, index) => id === next[index]);
+                const clones = normalized.map(tag => cloneValue(tag) || { ...tag });
+                this.postData.Tags = clones;
+                this.postData.tags = clones.map(tag => cloneValue(tag) || { ...tag });
+                if (!sameSelection) {
+                        this.markDirty();
+                }
+                this.notifyPostChange('tags');
+                return this.postData.Tags;
+        }
+
+        setTagIds(ids, availableTags = []) {
+                const resolved = this.resolveTagsFromIds(ids, availableTags);
+                return this.setTags(resolved);
         }
 
         resolvePostId(post) {
@@ -918,17 +1046,7 @@ class PostDraftController {
                 const coverHeight = coerceNumber(pickProperty(post, ['CoverHeight', 'cover_height'], 0), 0);
                 const tags = Array.isArray(post.Tags) ? post.Tags : Array.isArray(post.tags) ? post.tags : [];
                 const tagIds = tags
-                        .map(tag => {
-                                if (!tag || typeof tag !== 'object') {
-                                        return null;
-                                }
-                                const identifier = pickProperty(tag, ['ID', 'id', 'Id'], null);
-                                if (identifier === null || identifier === undefined) {
-                                        return null;
-                                }
-                                const numeric = Number(identifier);
-                                return Number.isFinite(numeric) ? numeric : null;
-                        })
+                        .map(tag => this.getTagId(tag))
                         .filter(id => id !== null);
 
                 return {

@@ -7,7 +7,7 @@
                 {{$content = .post.Content}}
         {{end}}
 {{end}}
-{{$initial := dict "content" $content "post" .post "latestPublication" .latestPublication}}
+{{$initial := dict "content" $content "post" .post "latestPublication" .latestPublication "allTags" .allTags "tagError" .tagError}}
 
 <style>
         body.milkdown-immersive {
@@ -233,6 +233,46 @@
                                         <template x-if="summaryUsage">
                                                 <p class="text-xs text-slate-400 dark:text-slate-500">提示词用量：<span x-text="summaryUsageLabel()"></span></p>
                                         </template>
+                                </section>
+
+                                <section class="space-y-4">
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                <div>
+                                                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">文章标签</h3>
+                                                        <p class="text-xs text-slate-500 dark:text-slate-400">为文章挑选合适标签，帮助归档与专题聚合。</p>
+                                                </div>
+                                                <a href="/admin/tags" class="inline-flex items-center gap-1 text-xs font-medium text-blue-600 transition hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200">
+                                                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4" d="M10 4.167v11.666M4.167 10h11.666"></path>
+                                                        </svg>
+                                                        <span>管理标签</span>
+                                                </a>
+                                        </div>
+                                        <template x-if="tagError">
+                                                <div class="rounded-xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-xs text-rose-600 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200" x-text="tagError"></div>
+                                        </template>
+                                        <div class="rounded-xl border border-slate-200/80 bg-white/70 px-3 py-3 dark:border-slate-700 dark:bg-slate-900/40" x-show="availableTags.length > 0" x-cloak>
+                                                <div class="max-h-60 space-y-2 overflow-y-auto pr-1">
+                                                        <template x-for="tag in availableTags" :key="`panel-tag-${tag.id}`">
+                                                                <label class="flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/60">
+                                                                        <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800" :value="tag.id" :checked="isTagSelected(tag.id)" @change="toggleTag(tag)">
+                                                                        <span class="truncate" x-text="tag.name"></span>
+                                                                </label>
+                                                        </template>
+                                                </div>
+                                        </div>
+                                        <div x-show="!tagError && availableTags.length === 0" x-cloak class="rounded-xl border border-dashed border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                                                暂无可用标签，请先前往标签管理创建。
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+                                                <span class="font-semibold uppercase tracking-wide">已选择</span>
+                                                <template x-if="metadata.tags.length === 0">
+                                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-500 dark:bg-slate-800/70 dark:text-slate-300">未选择</span>
+                                                </template>
+                                                <template x-for="tag in metadata.tags" :key="`panel-selected-${tag.id}`">
+                                                        <span class="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 dark:bg-blue-500/20 dark:text-blue-200" x-text="tag.name"></span>
+                                                </template>
+                                        </div>
                                 </section>
 
                                 <section class="space-y-3">
@@ -493,12 +533,16 @@ document.addEventListener('alpine:init', () => {
                 quickActionsHovering: false,
                 quickActionsTimer: null,
                 statisticsMenuOpen: false,
+                availableTags: [],
+                selectedTagIDs: [],
+                tagError: '',
                 postCreatedAt: '',
                 postUpdatedAt: '',
                 metadata: {
                         title: '',
                         summary: '',
                         cover: { url: '', width: 0, height: 0 },
+                        tags: [],
                 },
                 summaryUsage: null,
                 optimizationUsage: null,
@@ -536,6 +580,11 @@ document.addEventListener('alpine:init', () => {
                 latestPublication: null,
                 publishing: false,
                 init() {
+                        this.availableTags = this.normalizeTags(window.__MILKDOWN_V2__?.allTags || []);
+                        this.tagError = sanitizeString(window.__MILKDOWN_V2__?.tagError || '');
+                        if (window.__MILKDOWN_V2__?.post) {
+                                this.syncTagsFromController(window.__MILKDOWN_V2__.post);
+                        }
                         this.numberFormatter = new Intl.NumberFormat('zh-CN');
                         this.latestPublication = window.__MILKDOWN_V2__?.latestPublication || null;
                         this.handleMetricsUpdate = event => {
@@ -648,6 +697,7 @@ document.addEventListener('alpine:init', () => {
                         this.quickActionsExpanded = !this.quickActionsExpanded;
                         if (this.quickActionsExpanded) {
                                 this.closeStatisticsMenu();
+                                this.cancelQuickActionsTimer();
                                 this.scheduleQuickActionsCollapse();
                         } else {
                                 this.closeStatisticsMenu();
@@ -665,7 +715,7 @@ document.addEventListener('alpine:init', () => {
                 scheduleQuickActionsCollapse() {
                         this.cancelQuickActionsTimer();
                         this.quickActionsTimer = window.setTimeout(() => {
-                                if (!this.quickActionsHovering) {
+                                if (!this.quickActionsHovering && !this.statisticsMenuOpen) {
                                         this.collapseQuickActions();
                                 }
                         }, 2400);
@@ -832,6 +882,7 @@ document.addEventListener('alpine:init', () => {
                         }
                         this.applyContentMetrics(controller.contentMetrics);
                         this.updatePostTimestamps(controller.postData);
+                        this.syncTagsFromController(controller.postData);
                 },
                 syncPost(post) {
                         if (!post || typeof post !== 'object') {
@@ -843,6 +894,7 @@ document.addEventListener('alpine:init', () => {
                         const coverWidth = sanitizeNumber(post.CoverWidth ?? post.cover_width ?? 0);
                         const coverHeight = sanitizeNumber(post.CoverHeight ?? post.cover_height ?? 0);
                         this.metadata.cover = { url: coverUrl, width: coverWidth, height: coverHeight };
+                        this.syncTagsFromController(post);
                         this.updatePostTimestamps(post);
                 },
                 updatePostTimestamps(post) {
@@ -876,6 +928,7 @@ document.addEventListener('alpine:init', () => {
                         }
                         this.applyContentMetrics(controller.contentMetrics);
                         this.updatePostTimestamps(controller.postData);
+                        this.syncTagsFromController(controller.postData);
                 },
                 applyContentMetrics(metrics) {
                         this.contentMetrics = this.normalizeContentMetrics(metrics);
@@ -888,6 +941,138 @@ document.addEventListener('alpine:init', () => {
                         const characters = Math.max(0, Math.round(sanitizeNumber(metrics.characters)));
                         const paragraphs = Math.max(0, Math.round(sanitizeNumber(metrics.paragraphs)));
                         return { words, characters, paragraphs };
+                },
+                normalizeTag(tag) {
+                        if (tag === null || tag === undefined) {
+                                return null;
+                        }
+                        let source = {};
+                        if (typeof tag === 'object') {
+                                source = { ...tag };
+                        } else {
+                                const numeric = Number(tag);
+                                if (!Number.isFinite(numeric)) {
+                                        return null;
+                                }
+                                source = { id: numeric };
+                        }
+                        const idCandidate = source.ID ?? source.id ?? source.Id;
+                        const id = Number(idCandidate);
+                        if (!Number.isFinite(id)) {
+                                return null;
+                        }
+                        const nameCandidate = sanitizeString(source.Name ?? source.name ?? '').trim();
+                        const slugCandidate = sanitizeString(source.Slug ?? source.slug ?? '').trim();
+                        const name = nameCandidate || `标签 #${id}`;
+                        const normalized = {
+                                id,
+                                ID: id,
+                                name,
+                                Name: name,
+                        };
+                        if (slugCandidate) {
+                                normalized.slug = slugCandidate;
+                                normalized.Slug = slugCandidate;
+                        }
+                        return normalized;
+                },
+                normalizeTags(tags) {
+                        if (!Array.isArray(tags)) {
+                                return [];
+                        }
+                        const normalized = [];
+                        const seen = new Set();
+                        for (const item of tags) {
+                                const normalizedTag = this.normalizeTag(item);
+                                if (!normalizedTag) {
+                                        continue;
+                                }
+                                if (seen.has(normalizedTag.id)) {
+                                        continue;
+                                }
+                                seen.add(normalizedTag.id);
+                                normalized.push(normalizedTag);
+                        }
+                        return normalized;
+                },
+                tagId(tag) {
+                        if (tag && typeof tag === 'object') {
+                                const value = tag.id ?? tag.ID ?? tag.Id;
+                                const numeric = Number(value);
+                                return Number.isFinite(numeric) ? numeric : null;
+                        }
+                        const numeric = Number(tag);
+                        return Number.isFinite(numeric) ? numeric : null;
+                },
+                resolveTagById(id) {
+                        const numeric = this.tagId(id);
+                        if (numeric === null) {
+                                return null;
+                        }
+                        const sources = [];
+                        if (Array.isArray(this.availableTags)) {
+                                sources.push(...this.availableTags);
+                        }
+                        if (Array.isArray(this.metadata?.tags)) {
+                                sources.push(...this.metadata.tags);
+                        }
+                        for (const candidate of sources) {
+                                const candidateId = this.tagId(candidate);
+                                if (candidateId === numeric) {
+                                        return this.normalizeTag(candidate);
+                                }
+                        }
+                        return this.normalizeTag({ id: numeric });
+                },
+                syncTagsFromController(post) {
+                        const source = post && typeof post === 'object' ? post.Tags ?? post.tags ?? [] : [];
+                        const normalized = this.normalizeTags(source);
+                        this.metadata.tags = normalized;
+                        this.selectedTagIDs = normalized.map(tag => tag.id);
+                },
+                isTagSelected(tag) {
+                        const id = this.tagId(tag);
+                        if (id === null) {
+                                return false;
+                        }
+                        return this.selectedTagIDs.some(value => value === id);
+                },
+                toggleTag(tag) {
+                        const id = this.tagId(tag);
+                        if (id === null) {
+                                return;
+                        }
+                        if (this.isTagSelected(id)) {
+                                this.selectedTagIDs = this.selectedTagIDs.filter(value => value !== id);
+                        } else {
+                                this.selectedTagIDs = [...this.selectedTagIDs, id];
+                        }
+                        this.applyTagSelection();
+                },
+                applyTagSelection() {
+                        const uniqueIds = [];
+                        for (const value of this.selectedTagIDs) {
+                                const id = this.tagId(value);
+                                if (id === null || uniqueIds.includes(id)) {
+                                        continue;
+                                }
+                                uniqueIds.push(id);
+                        }
+                        this.selectedTagIDs = uniqueIds;
+                        const selected = uniqueIds
+                                .map(id => this.resolveTagById(id))
+                                .filter(Boolean)
+                                .map(tag => this.normalizeTag(tag));
+                        this.metadata.tags = selected;
+                        const controller = this.ensureController();
+                        if (controller) {
+                                if (typeof controller.setTagIds === 'function') {
+                                        controller.setTagIds(uniqueIds, this.availableTags);
+                                } else if (typeof controller.setTags === 'function') {
+                                        const payload = selected.map(tag => ({ ID: tag.id, Name: tag.name, Slug: tag.slug }));
+                                        controller.setTags(payload);
+                                }
+                        }
                 },
                 formatNumber(value) {
                         if (!this.numberFormatter) {
