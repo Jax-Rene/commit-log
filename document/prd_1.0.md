@@ -1,4 +1,4 @@
-# CommitLog 项目开发计划 MVP
+# CommitLog 项目开发计划 1.0
 
 ## 0. MVP 规划与优先级
 

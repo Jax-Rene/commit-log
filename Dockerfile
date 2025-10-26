@@ -6,11 +6,15 @@
 FROM node:20-bullseye AS assets
 WORKDIR /app
 
-COPY package.json package-lock.json tailwind.config.js vite.config.js ./
-RUN npm ci
+ENV PNPM_HOME="/root/.local/share/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@10.18.1 --activate
+
+COPY package.json pnpm-lock.yaml tailwind.config.js vite.config.js ./
+RUN pnpm install --frozen-lockfile
 
 COPY web ./web
-RUN npm run build
+RUN pnpm run build
 
 #########################
 # 阶段二：编译 Go 二进制 #

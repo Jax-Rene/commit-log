@@ -32,7 +32,7 @@
             </div>
 
             <!-- 登录表单 -->
-            <form class="space-y-6" action="/admin/login" method="POST">
+            <form id="login-form" class="space-y-6" action="/admin/login" method="POST">
                 <!-- 用户名输入 -->
                 <div class="space-y-2">
                     <label for="username" class="text-sm font-medium text-slate-300">用户名</label>
@@ -99,4 +99,28 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('login-form');
+    if (!form) {
+        return;
+    }
+    function triggerSubmit(event) {
+        if (event.key !== 'Enter') {
+            return;
+        }
+        var target = event.target;
+        if (target && (target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+            return;
+        }
+        event.preventDefault();
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+            return;
+        }
+        form.submit();
+    }
+    document.addEventListener('keydown', triggerSubmit);
+});
+</script>
 {{end}}

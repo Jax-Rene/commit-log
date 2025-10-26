@@ -1,4 +1,4 @@
-# CommitLog 项目开发计划 V3
+# CommitLog 项目开发计划 1.2
 
 ## 0. 版本定位与目标
 

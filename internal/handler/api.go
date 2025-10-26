@@ -14,17 +14,18 @@ import (
 
 // API bundles shared dependencies for HTTP handlers.
 type API struct {
-	db        *gorm.DB
-	posts     *service.PostService
-	tags      *service.TagService
-	pages     *service.PageService
-	profiles  *service.ProfileService
-	analytics *service.AnalyticsService
-	system    *service.SystemSettingService
-	summaries service.SummaryGenerator
-	optimizer service.ContentOptimizer
-	uploadDir string
-	uploadURL string
+	db              *gorm.DB
+	posts           *service.PostService
+	tags            *service.TagService
+	pages           *service.PageService
+	profiles        *service.ProfileService
+	analytics       *service.AnalyticsService
+	system          *service.SystemSettingService
+	summaries       service.SummaryGenerator
+	optimizer       service.ContentOptimizer
+	snippetRewriter service.SnippetRewriter
+	uploadDir       string
+	uploadURL       string
 }
 
 type siteViewModel struct {
@@ -47,17 +48,18 @@ func NewAPI(db *gorm.DB, uploadDir, uploadURL string) *API {
 	rewriteService := service.NewAIRewriteService(systemService)
 
 	return &API{
-		db:        db,
-		posts:     service.NewPostService(db),
-		tags:      service.NewTagService(db),
-		pages:     service.NewPageService(db),
-		profiles:  service.NewProfileService(db),
-		analytics: service.NewAnalyticsService(db),
-		system:    systemService,
-		summaries: summaryService,
-		optimizer: rewriteService,
-		uploadDir: uploadDir,
-		uploadURL: uploadURL,
+		db:              db,
+		posts:           service.NewPostService(db),
+		tags:            service.NewTagService(db),
+		pages:           service.NewPageService(db),
+		profiles:        service.NewProfileService(db),
+		analytics:       service.NewAnalyticsService(db),
+		system:          systemService,
+		summaries:       summaryService,
+		optimizer:       rewriteService,
+		snippetRewriter: rewriteService,
+		uploadDir:       uploadDir,
+		uploadURL:       uploadURL,
 	}
 }
 

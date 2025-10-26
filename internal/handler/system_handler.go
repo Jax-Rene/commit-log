@@ -55,6 +55,8 @@ type systemSettingsRequest struct {
 	DeepSeekAPIKey   string `json:"deepseekApiKey"`
 	AdminFooterText  string `json:"adminFooterText"`
 	PublicFooterText string `json:"publicFooterText"`
+	AISummaryPrompt  string `json:"aiSummaryPrompt"`
+	AIRewritePrompt  string `json:"aiRewritePrompt"`
 }
 
 type aiTestRequest struct {
@@ -106,6 +108,8 @@ func (r systemSettingsRequest) toInput() service.SystemSettingsInput {
 		DeepSeekAPIKey:   r.DeepSeekAPIKey,
 		AdminFooterText:  r.AdminFooterText,
 		PublicFooterText: r.PublicFooterText,
+		AISummaryPrompt:  r.AISummaryPrompt,
+		AIRewritePrompt:  r.AIRewritePrompt,
 	}
 }
 
@@ -123,6 +127,8 @@ func systemSettingsPayload(settings service.SystemSettings) gin.H {
 		"deepseekApiKey":   settings.DeepSeekAPIKey,
 		"adminFooterText":  settings.AdminFooterText,
 		"publicFooterText": settings.PublicFooterText,
+		"aiSummaryPrompt":  settings.AISummaryPrompt,
+		"aiRewritePrompt":  settings.AIRewritePrompt,
 	}
 }
 

@@ -21,7 +21,6 @@ type postPayload struct {
 	Title       string `json:"title"`
 	Content     string `json:"content"`
 	Summary     string `json:"summary"`
-	Status      string `json:"status"`
 	TagIDs      []uint `json:"tag_ids"`
 	CoverURL    string `json:"cover_url"`
 	CoverWidth  int    `json:"cover_width"`
@@ -33,7 +32,6 @@ func (p postPayload) toInput(userID uint) service.PostInput {
 		Title:       p.Title,
 		Content:     p.Content,
 		Summary:     p.Summary,
-		Status:      p.Status,
 		TagIDs:      p.TagIDs,
 		UserID:      userID,
 		CoverURL:    p.CoverURL,
@@ -140,7 +138,65 @@ func (a *API) UpdatePost(c *gin.Context) {
 	}
 
 	notices, warnings := a.maybeGenerateSummary(c, post)
-	response := gin.H{"message": "文章更新成功", "post": post}
+	response := gin.H{"message": "草稿更新成功", "post": post}
+	if len(notices) > 0 {
+		response["notices"] = notices
+	}
+	if len(warnings) > 0 {
+		response["warnings"] = warnings
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// PublishPost 发布文章并生成快照
+func (a *API) PublishPost(c *gin.Context) {
+	id, err := parseUintParam(c, "id")
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "无效的文章ID")
+		return
+	}
+
+	publication, err := a.posts.Publish(id, a.currentUserID(c))
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrPostNotFound):
+			respondError(c, http.StatusNotFound, "文章不存在")
+			return
+		case errors.Is(err, service.ErrCoverRequired):
+			respondError(c, http.StatusBadRequest, "请上传文章封面后再发布")
+			return
+		case errors.Is(err, service.ErrCoverInvalid):
+			respondError(c, http.StatusBadRequest, "封面尺寸无效，请重新裁剪")
+			return
+		case errors.Is(err, service.ErrInvalidPublishState):
+			respondError(c, http.StatusBadRequest, "请完善标题与正文内容后再发布")
+			return
+		default:
+			respondError(c, http.StatusInternalServerError, "发布文章失败")
+			return
+		}
+	}
+
+	post, err := a.posts.Get(id)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "发布完成但刷新文章信息失败，请手动刷新页面")
+		return
+	}
+
+	notices, warnings := a.maybeGenerateSummary(c, post)
+
+	if refreshed, refreshErr := a.posts.LatestPublication(id); refreshErr == nil {
+		publication = refreshed
+	} else {
+		c.Error(refreshErr)
+	}
+
+	response := gin.H{
+		"message":     "文章发布成功",
+		"publication": publication,
+		"post":        post,
+	}
 	if len(notices) > 0 {
 		response["notices"] = notices
 	}
@@ -266,6 +322,68 @@ func (a *API) OptimizePostContent(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"optimized_content": optimized,
+		"usage": gin.H{
+			"prompt_tokens":     result.PromptTokens,
+			"completion_tokens": result.CompletionTokens,
+		},
+	})
+}
+
+// RewritePostSelection 使用 AI 对选中片段进行定向改写。
+func (a *API) RewritePostSelection(c *gin.Context) {
+	if a.snippetRewriter == nil {
+		respondError(c, http.StatusServiceUnavailable, "未配置 AI Chat 能力，请先在系统设置中完成配置")
+		return
+	}
+
+	var payload struct {
+		Selection   string `json:"selection"`
+		Instruction string `json:"instruction"`
+		Context     string `json:"context"`
+	}
+	if !bindJSON(c, &payload, "请求参数不合法") {
+		return
+	}
+
+	selection := strings.TrimSpace(payload.Selection)
+	if selection == "" {
+		respondError(c, http.StatusBadRequest, "请先选择需要改写的段落后再试")
+		return
+	}
+
+	instruction := strings.TrimSpace(payload.Instruction)
+	if instruction == "" {
+		respondError(c, http.StatusBadRequest, "请输入改写指令")
+		return
+	}
+
+	contextText := strings.TrimSpace(payload.Context)
+
+	result, err := a.snippetRewriter.RewriteSnippet(c.Request.Context(), service.SnippetRewriteInput{
+		Selection:   selection,
+		Instruction: instruction,
+		Context:     contextText,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrAIAPIKeyMissing):
+			respondError(c, http.StatusBadRequest, "请在系统设置中配置有效的 AI API Key 后再试")
+		case errors.Is(err, service.ErrSnippetRewriteEmpty):
+			respondError(c, http.StatusBadGateway, "AI Chat 未返回内容，请稍后重试")
+		default:
+			respondError(c, http.StatusBadGateway, fmt.Sprintf("AI Chat 请求失败：%v", err))
+		}
+		return
+	}
+
+	rewritten := strings.TrimSpace(result.Content)
+	if rewritten == "" {
+		respondError(c, http.StatusBadGateway, "AI Chat 未返回内容，请稍后重试")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"content": rewritten,
 		"usage": gin.H{
 			"prompt_tokens":     result.PromptTokens,
 			"completion_tokens": result.CompletionTokens,
@@ -437,18 +555,31 @@ func (a *API) ShowPostList(c *gin.Context) {
 	})
 }
 
-// ShowPostEdit 渲染文章编辑页面
-func (a *API) ShowPostEdit(c *gin.Context) {
-	data := gin.H{
-		"title": "创建文章",
-	}
+func (a *API) postEditPageData(c *gin.Context) gin.H {
+        data := gin.H{
+                "title":    "创建文章",
+                "allTags":  []db.Tag{},
+                "tagError": "",
+        }
 
-	if idParam := c.Param("id"); idParam != "" {
-		if id, err := strconv.ParseUint(idParam, 10, 32); err == nil {
-			post, err := a.posts.Get(uint(id))
-			if err == nil {
+        if tags, err := a.tags.List(); err == nil {
+                data["allTags"] = tags
+        } else {
+                c.Error(err)
+                data["tagError"] = "加载标签失败，请稍后重试"
+        }
+
+        if idParam := c.Param("id"); idParam != "" {
+                if id, err := strconv.ParseUint(idParam, 10, 32); err == nil {
+                        post, err := a.posts.Get(uint(id))
+                        if err == nil {
 				data["title"] = "编辑文章"
 				data["post"] = post
+				if publication, pubErr := a.posts.LatestPublication(post.ID); pubErr == nil {
+					data["latestPublication"] = publication
+				} else if !errors.Is(pubErr, service.ErrPublicationNotFound) {
+					c.Error(pubErr)
+				}
 			} else if errors.Is(err, service.ErrPostNotFound) {
 				data["error"] = "文章不存在"
 			} else {
@@ -457,7 +588,12 @@ func (a *API) ShowPostEdit(c *gin.Context) {
 		}
 	}
 
-	a.renderHTML(c, http.StatusOK, "post_edit.html", data)
+	return data
+}
+
+// ShowPostEdit 渲染文章编辑页面（Milkdown 版本）
+func (a *API) ShowPostEdit(c *gin.Context) {
+	a.renderHTML(c, http.StatusOK, "post_edit.html", a.postEditPageData(c))
 }
 
 func (a *API) currentUserID(c *gin.Context) uint {
@@ -466,25 +602,23 @@ func (a *API) currentUserID(c *gin.Context) uint {
 	}
 
 	session := sessions.Default(c)
-	if session != nil {
-		if val := session.Get("user_id"); val != nil {
-			switch v := val.(type) {
-			case uint:
-				if v > 0 {
-					return v
-				}
-			case int:
-				if v > 0 {
-					return uint(v)
-				}
-			case int64:
-				if v > 0 {
-					return uint(v)
-				}
-			case string:
-				if parsed, err := strconv.ParseUint(v, 10, 32); err == nil && parsed > 0 {
-					return uint(parsed)
-				}
+	if val := session.Get("user_id"); val != nil {
+		switch v := val.(type) {
+		case uint:
+			if v > 0 {
+				return v
+			}
+		case int:
+			if v > 0 {
+				return uint(v)
+			}
+		case int64:
+			if v > 0 {
+				return uint(v)
+			}
+		case string:
+			if parsed, err := strconv.ParseUint(v, 10, 32); err == nil && parsed > 0 {
+				return uint(parsed)
 			}
 		}
 	}

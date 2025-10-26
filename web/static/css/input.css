@@ -71,6 +71,19 @@
   .post-content hr {
     @apply my-10 border-slate-200 dark:border-slate-700;
   }
+
+  .post-content [data-milkdown-viewer] {
+    @apply space-y-6;
+  }
+
+  .post-content [data-milkdown-viewer] .milkdown {
+    @apply bg-transparent p-0 text-base leading-relaxed text-slate-700 shadow-none dark:text-slate-200;
+    box-shadow: none;
+  }
+
+  .post-content [data-milkdown-viewer] .milkdown .ProseMirror {
+    @apply bg-transparent p-0 text-base leading-relaxed text-slate-700 dark:text-slate-200;
+  }
 }
 
 @layer components {

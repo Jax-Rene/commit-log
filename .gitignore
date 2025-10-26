@@ -37,6 +37,8 @@ web/static/.DS_Store
 web/static/css/output.css
 web/static/icon/.DS_Store
 web/static/uploads
+web/static/dist/
+web/static/dist/**
 
 *.db
 

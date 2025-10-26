@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"strings"
 )
 
@@ -90,8 +91,18 @@ func (s *AISummaryService) GenerateSummary(ctx context.Context, input SummaryInp
 	contentSnippet := truncateRunes(input.Content, maxSummaryContentRuneCount)
 	userPrompt := buildSummaryPrompt(input.Title, contentSnippet)
 
-	result, err := s.client.call(ctx, aiChatRequest{
-		SystemPrompt: "你是一名中文博客编辑，需要在 80 个汉字以内给出精炼、有吸引力的摘要。摘要需突出观点，不要使用项目符号。",
+	settings, err := s.client.settings.GetSettings()
+	if err != nil {
+		return SummaryResult{}, fmt.Errorf("读取系统设置失败: %w", err)
+	}
+
+	systemPrompt := strings.TrimSpace(settings.AISummaryPrompt)
+	if systemPrompt == "" {
+		systemPrompt = defaultSummarySystemPrompt
+	}
+
+	result, err := s.client.callWithSettings(ctx, settings, aiChatRequest{
+		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
 		MaxTokens:    maxTokens,
 		Temperature:  defaultSummaryTemperature,
