@@ -474,6 +474,128 @@ function handleMarkdownTablePaste(view, event) {
         return true;
 }
 
+// 预置 Emoji 选项，配合斜杠菜单实现快捷搜索
+const EMOJI_SLASH_ITEMS = [
+        { key: 'grinning-face', emoji: '😀', label: '微笑 smile happy' },
+        { key: 'grinning-face-with-smiling-eyes', emoji: '😁', label: '露齿笑 grin' },
+        { key: 'face-with-tears-of-joy', emoji: '😂', label: '喜极而泣 joy lol' },
+        { key: 'rolling-on-the-floor-laughing', emoji: '🤣', label: '笑到打滚 rofl' },
+        { key: 'smiling-face-with-smiling-eyes', emoji: '😊', label: '害羞微笑 blush' },
+        { key: 'winking-face', emoji: '😉', label: '眨眼 wink' },
+        { key: 'smiling-face-with-heart-eyes', emoji: '😍', label: '花痴 love heart-eyes' },
+        { key: 'smiling-face-with-sunglasses', emoji: '😎', label: '酷 cool sunglasses' },
+        { key: 'thinking-face', emoji: '🤔', label: '思考 thinking question' },
+        { key: 'neutral-face', emoji: '😐', label: '无语 neutral' },
+        { key: 'expressionless-face', emoji: '😑', label: '面瘫 expressionless' },
+        { key: 'sleeping-face', emoji: '😴', label: '睡觉 sleepy sleep' },
+        { key: 'crying-face', emoji: '😢', label: '哭 sad cry' },
+        { key: 'loudly-crying-face', emoji: '😭', label: '嚎啕大哭 sob' },
+        { key: 'pouting-face', emoji: '😡', label: '生气 angry' },
+        { key: 'face-with-symbols-on-mouth', emoji: '🤬', label: '暴怒 rage' },
+        { key: 'face-with-open-mouth', emoji: '😮', label: '惊讶 surprised' },
+        { key: 'astonished-face', emoji: '😲', label: '震惊 astonished' },
+        { key: 'partying-face', emoji: '🥳', label: '派对 celebrate party' },
+        { key: 'hugging-face', emoji: '🤗', label: '拥抱 hug' },
+        { key: 'folded-hands', emoji: '🙏', label: '感谢 thank pray' },
+        { key: 'thumbs-up', emoji: '👍', label: '点赞 good thumbs-up' },
+        { key: 'thumbs-down', emoji: '👎', label: '点踩 thumbs-down' },
+        { key: 'clapping-hands', emoji: '👏', label: '鼓掌 clap bravo' },
+        { key: 'ok-hand', emoji: '👌', label: 'OK perfect' },
+        { key: 'flexed-biceps', emoji: '💪', label: '加油 muscle strong' },
+        { key: 'fire', emoji: '🔥', label: '火 hot fire' },
+        { key: 'glowing-star', emoji: '✨', label: '闪耀 sparkles' },
+        { key: 'white-medium-star', emoji: '⭐', label: '星星 star' },
+        { key: 'light-bulb', emoji: '💡', label: '灵感 idea bulb' },
+        { key: 'warning', emoji: '⚠️', label: '警告 warning' },
+        { key: 'check-mark-button', emoji: '✅', label: '完成 done check' },
+        { key: 'cross-mark', emoji: '❌', label: '否决 cross' },
+        { key: 'question-mark', emoji: '❓', label: '疑问 question help' },
+        { key: 'high-voltage', emoji: '⚡', label: '电力 energy lightning' },
+        { key: 'rocket', emoji: '🚀', label: '火箭 rocket launch' },
+        { key: 'party-popper', emoji: '🎉', label: '庆祝 celebrate tada' },
+        { key: 'wrapped-gift', emoji: '🎁', label: '礼物 gift' },
+        { key: 'calendar', emoji: '📅', label: '日程 calendar schedule' },
+        { key: 'memo', emoji: '📝', label: '记录 memo note' },
+];
+
+function insertEmojiFromSlash(ctx, emoji) {
+        if (!ctx || !emoji) {
+                return;
+        }
+        try {
+                const view = ctx.get(editorViewCtx);
+                if (!view) {
+                        return;
+                }
+                const { state } = view;
+                if (!state) {
+                        return;
+                }
+                const { selection } = state;
+                if (!selection) {
+                        return;
+                }
+                const { from, to } = selection;
+                let start = from;
+                try {
+                        const $from = selection.$from;
+                        const parent = $from.parent;
+                        const offset = $from.parentOffset;
+                        if (parent) {
+                                let textBefore = '';
+                                if (typeof parent.textBetween === 'function') {
+                                        textBefore = parent.textBetween(0, offset, '\n', '\n');
+                                } else if (typeof parent.textContent === 'string') {
+                                        textBefore = parent.textContent.slice(0, offset);
+                                }
+                                const match = textBefore.match(/\/[^\s]*$/);
+                                if (match && match[0]) {
+                                        const commandLength = match[0].length;
+                                        start = Math.max(from - commandLength, 0);
+                                }
+                        }
+                } catch (error) {
+                        console.warn('[milkdown] Emoji 匹配命令失败', error);
+                }
+                const insertContent = `${emoji} `;
+                const transaction = state.tr.insertText(insertContent, start, to).scrollIntoView();
+                view.dispatch(transaction);
+                view.focus();
+        } catch (error) {
+                console.warn('[milkdown] Emoji 插入失败', error);
+        }
+}
+
+function registerEmojiSlashMenu(builder) {
+        if (!builder || typeof builder.addGroup !== 'function') {
+                return;
+        }
+        let groupInstance = null;
+        try {
+                groupInstance = builder.addGroup('emoji', 'Emoji 表情');
+        } catch (error) {
+                try {
+                        groupInstance = builder.getGroup('emoji');
+                } catch (innerError) {
+                        console.warn('[milkdown] Emoji 分组初始化失败', innerError);
+                }
+        }
+        if (!groupInstance || typeof groupInstance.addItem !== 'function') {
+                return;
+        }
+        EMOJI_SLASH_ITEMS.forEach(item => {
+                if (!item || !item.key || !item.emoji) {
+                        return;
+                }
+                const label = typeof item.label === 'string' && item.label.trim().length > 0 ? item.label : `${item.emoji} Emoji`;
+                groupInstance.addItem(`emoji-${item.key}`, {
+                        label,
+                        icon: item.emoji,
+                        onRun: ctx => insertEmojiFromSlash(ctx, item.emoji),
+                });
+        });
+}
+
 function readInlineSelection(editor, controller) {
         if (!editor || typeof editor.action !== 'function') {
                 return null;
@@ -1547,6 +1669,7 @@ async function initialize() {
                 inlineAIToolbarHandler = null;
 
                 const toolbarKey = Crepe?.Feature?.Toolbar ?? 'toolbar';
+                const blockEditKey = Crepe?.Feature?.BlockEdit ?? 'block-edit';
                 const featureConfigs = {
                         [toolbarKey]: {
                                 buildToolbar(builder) {
@@ -1575,6 +1698,15 @@ async function initialize() {
                                                 });
                                         } catch (error) {
                                                 console.warn('[milkdown] 注册 AI Chat 工具失败', error);
+                                        }
+                                },
+                        },
+                        [blockEditKey]: {
+                                buildMenu(builder) {
+                                        try {
+                                                registerEmojiSlashMenu(builder);
+                                        } catch (error) {
+                                                console.warn('[milkdown] 注册 Emoji 菜单失败', error);
                                         }
                                 },
                         },
