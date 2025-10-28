@@ -492,6 +492,8 @@ func stripLeadingTitle(title, content string) string {
 
 	firstLine := strings.TrimSpace(lines[index])
 	normalized := strings.TrimSpace(strings.TrimLeft(firstLine, "#"))
+	normalized = strings.Trim(normalized, "*")
+
 	if normalized != trimmedTitle {
 		return content
 	}
