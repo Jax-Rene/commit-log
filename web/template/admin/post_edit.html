@@ -10,8 +10,12 @@
 {{$initial := dict "content" $content "post" .post "latestPublication" .latestPublication "allTags" .allTags "tagError" .tagError}}
 
 <style>
+        body {
+                background-color: #fdfcff;
+        }
+
         body.milkdown-immersive {
-                background-color: var(--crepe-color-background, #ffffff);
+                background-color: #fdfcff;
                 overflow-x: hidden;
         }
 
@@ -60,8 +64,8 @@
                 min-height: 0;
                 overflow-x: hidden;
                 overflow-y: auto;
-                --crepe-color-background: #ffffff;
-                background-color: #ffffff;
+                --crepe-color-background: #fdfcff;
+                background-color: #fdfcff;
         }
 
         .milkdown-preview .milkdown {

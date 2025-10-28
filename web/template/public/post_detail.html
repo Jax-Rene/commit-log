@@ -1,6 +1,11 @@
 {{template "base" .}}
 
 {{define "content"}}
+<style>
+	body.bg-white {
+		background-color: #fdfcff !important;
+	}
+</style>
 <article class="mx-auto max-w-3xl space-y-10">
 	<header class="space-y-6 text-center">
 		<h1 class="text-4xl font-semibold text-slate-900 dark:text-slate-100">{{.post.Title}}</h1>

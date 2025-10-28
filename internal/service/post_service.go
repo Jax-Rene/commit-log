@@ -506,11 +506,6 @@ func calculateReadingTime(content string) int {
 }
 
 func determinePostTitle(input PostInput, existing string) string {
-	trimmed := strings.TrimSpace(input.Title)
-	if trimmed != "" {
-		return trimmed
-	}
-
 	if heading := extractFirstHeading(input.Content); heading != "" {
 		return heading
 	}
