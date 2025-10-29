@@ -87,6 +87,30 @@
 }
 
 @layer components {
+  /* 由于 Milkdown 动态注入主题样式，会覆盖字号与字重，所以这里用 !important 兜底 */
+  .milkdown .ProseMirror h1 {
+    @apply mt-8 font-black text-slate-900;
+    font-size: 1.5rem !important;
+    line-height: 1.75rem !important;
+    font-weight: 900 !important;
+  }
+
+  .milkdown .ProseMirror h2 {
+    @apply mt-8 font-black text-slate-900;
+    font-size: 1.25rem !important;
+    line-height: 1.25rem !important;
+    font-weight: 900 !important;
+  }
+
+  .milkdown .ProseMirror h3 {
+    @apply mt-6 font-bold text-slate-900;
+    font-size: 1rem !important;
+    line-height: 1.25rem !important;
+    font-weight: 700 !important;
+  }
+}
+
+@layer components {
   .tag-filter-pill {
     @apply inline-flex items-center rounded-full px-3 py-1.5 font-medium text-slate-600;
     border: 1px solid rgb(247, 247, 247);
