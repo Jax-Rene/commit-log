@@ -12,6 +12,7 @@
 <style>
         body {
                 background-color: #fdfcff;
+                color:#0f172a; /* 确保正文采用 text-slate-900 色值 */
         }
 
         body.milkdown-immersive {
@@ -66,6 +67,7 @@
                 overflow-y: auto;
                 --crepe-color-background: #fdfcff;
                 background-color: #fdfcff;
+                color: #0f172a; /* 覆写编辑器正文默认前景色 */
         }
 
         .milkdown-preview .milkdown {
@@ -76,11 +78,32 @@
         .milkdown-preview .milkdown .ProseMirror {
                 padding: 0;
         }
+
+        @media (prefers-color-scheme: dark) {
+                body {
+                        background-color: #020617;
+                        color: #f1f5f9; /* 匹配 dark:text-slate-100 */
+                }
+
+                body.milkdown-immersive {
+                        background-color: #020617;
+                }
+
+                .milkdown-immersive-shell .milkdown {
+                        --crepe-color-background: #020617;
+                        background-color: #020617;
+                        color: #f1f5f9; /* 深色模式下提升文字可读性 */
+                }
+
+                .milkdown-preview .milkdown {
+                        background-color: transparent;
+                }
+        }
 </style>
 
 <div class="milkdown-immersive-shell" x-data="postEditorShell()" x-init="init()" x-cloak>
         <div class="milkdown-immersive-wrapper">
-                <div class="milkdown-immersive-container mx-auto flex w-full max-w-screen-xl flex-col px-6 pt-24 pb-10 md:px-12 md:pb-24 lg:px-16 xl:px-20 2xl:max-w-screen-2xl 2xl:px-24">
+                <div class="milkdown-immersive-container mx-auto flex w-full max-w-screen-xl flex-col px-6 pt-10 pb-10 md:px-12 md:pb-24 lg:px-16 xl:px-20 2xl:max-w-screen-2xl 2xl:px-24">
                         <div id="milkdown-app" class="milkdown"></div>
                 </div>
         </div>
