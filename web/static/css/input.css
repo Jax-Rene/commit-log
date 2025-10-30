@@ -25,19 +25,23 @@
 
 @layer components {
   .post-content {
-    @apply space-y-6 text-base leading-relaxed text-slate-700 dark:text-slate-200;
+    @apply space-y-6 text-base leading-relaxed text-slate-900 dark:text-slate-100;
   }
 
   .post-content h2 {
-    @apply mt-8 text-2xl font-semibold text-slate-900 dark:text-slate-100;
+    @apply mt-8 text-sm font-black text-slate-900 dark:text-slate-100;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
 
   .post-content h3 {
-    @apply mt-6 text-xl font-semibold text-slate-900 dark:text-slate-100;
+    @apply mt-6 text-sm font-bold text-slate-900 dark:text-slate-100;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
 
   .post-content p {
-    @apply text-slate-700 dark:text-slate-200;
+    @apply text-slate-900 dark:text-slate-100;
   }
 
   .post-content a {
@@ -77,12 +81,12 @@
   }
 
   .post-content [data-milkdown-viewer] .milkdown {
-    @apply bg-transparent p-0 text-base leading-relaxed text-slate-700 shadow-none dark:text-slate-200;
+    @apply bg-transparent p-0 text-base leading-relaxed text-slate-900 shadow-none dark:text-slate-100;
     box-shadow: none;
   }
 
   .post-content [data-milkdown-viewer] .milkdown .ProseMirror {
-    @apply bg-transparent p-0 text-base leading-relaxed text-slate-700 dark:text-slate-200;
+    @apply bg-transparent p-0 text-base leading-relaxed text-slate-900 dark:text-slate-100;
   }
 }
 
