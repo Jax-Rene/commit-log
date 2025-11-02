@@ -1,10 +1,21 @@
 {{template "base" .}}
 
 {{define "content"}}
-<article class="mx-auto max-w-3xl space-y-10">
-	<header class="space-y-6 text-center">
-		<h1 class="text-4xl font-semibold text-slate-900 dark:text-slate-100">{{.post.Title}}</h1>
-		<div class="flex flex-wrap justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+<style>
+	body.bg-white {
+		background-color: var(--surface-soft-light) !important;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		body.bg-white {
+			background-color: var(--surface-soft-dark) !important;
+		}
+	}
+</style>
+<article class="mx-auto mt-10 w-full space-y-10 px-6">
+	<header class="space-y-6">
+		<h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">{{.post.Title}}</h1>
+		<div class="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
 			{{if gt .post.ReadingTime 0}}
 			<span class="flex items-center">{{.post.ReadingTime}} 分钟阅读</span>
 			{{end}}

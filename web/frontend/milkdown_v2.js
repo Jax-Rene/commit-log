@@ -1,5 +1,5 @@
 import { Crepe } from '@milkdown/crepe';
-import { editorViewCtx } from '@milkdown/kit/core';
+import { editorViewCtx, editorViewOptionsCtx } from '@milkdown/kit/core';
 import { listenerCtx } from '@milkdown/kit/plugin/listener';
 import { cursor } from '@milkdown/plugin-cursor';
 import { upload, uploadConfig } from '@milkdown/plugin-upload';
@@ -283,6 +283,317 @@ function normalizeSelectionContent(value) {
                 return '';
         }
         return value.replace(/\r\n/g, '\n').replace(/\u00a0/g, ' ');
+}
+
+function splitMarkdownTableRow(line) {
+        if (typeof line !== 'string') {
+                return [];
+        }
+        let content = line.trim();
+        if (!content) {
+                return [];
+        }
+        while (content.startsWith('|')) {
+                content = content.slice(1);
+                content = content.trimStart();
+        }
+        while (content.endsWith('|')) {
+                content = content.slice(0, -1);
+                content = content.trimEnd();
+        }
+        if (!content) {
+                return [''];
+        }
+        const cells = [];
+        let current = '';
+        for (let index = 0; index < content.length; index += 1) {
+                const char = content[index];
+                if (char === '\\' && index + 1 < content.length) {
+                        const nextChar = content[index + 1];
+                        if (nextChar === '|') {
+                                current += '|';
+                                index += 1;
+                                continue;
+                        }
+                        current += char;
+                        continue;
+                }
+                if (char === '|') {
+                        cells.push(current.trim());
+                        current = '';
+                        continue;
+                }
+                current += char;
+        }
+        cells.push(current.trim());
+        return cells;
+}
+
+function isMarkdownAlignmentToken(token) {
+        if (typeof token !== 'string') {
+                return false;
+        }
+        const normalized = token.replace(/\s+/g, '');
+        if (!normalized) {
+                return false;
+        }
+        return /^:?-{3,}:?$/.test(normalized);
+}
+
+function alignmentFromToken(token) {
+        const normalized = typeof token === 'string' ? token.trim() : '';
+        if (!normalized) {
+                return 'left';
+        }
+        const hasLeft = normalized.startsWith(':');
+        const hasRight = normalized.endsWith(':');
+        if (hasLeft && hasRight) {
+                return 'center';
+        }
+        if (hasRight) {
+                return 'right';
+        }
+        if (hasLeft) {
+                return 'left';
+        }
+        return 'left';
+}
+
+function parseMarkdownTable(text) {
+        if (typeof text !== 'string') {
+                return null;
+        }
+        const rawLines = text.replace(/\r/g, '\n').split('\n');
+        const lines = rawLines.map(line => line.trim()).filter(Boolean);
+        if (lines.length < 3) {
+                return null;
+        }
+        const headerCells = splitMarkdownTableRow(lines[0]);
+        const alignmentCells = splitMarkdownTableRow(lines[1]);
+        if (headerCells.length < 2 || alignmentCells.length !== headerCells.length) {
+                return null;
+        }
+        if (!alignmentCells.every(isMarkdownAlignmentToken)) {
+                return null;
+        }
+        const rows = lines.slice(2).filter(Boolean).map(line => {
+                const cells = splitMarkdownTableRow(line);
+                const normalized = [];
+                for (let index = 0; index < headerCells.length; index += 1) {
+                        normalized.push((cells[index] ?? '').trim());
+                }
+                return normalized;
+        });
+        if (!rows.length) {
+                return null;
+        }
+        return {
+                headers: headerCells.map(cell => cell.trim()),
+                alignments: alignmentCells.map(alignmentFromToken),
+                rows,
+        };
+}
+
+function buildTableNodeFromMarkdown(schema, tableData) {
+        if (!schema || !tableData) {
+                return null;
+        }
+        const tableType = pickProperty(schema.nodes, ['table'], null);
+        const headerRowType = pickProperty(schema.nodes, ['table_header_row', 'tableHeaderRow'], null);
+        const bodyRowType = pickProperty(schema.nodes, ['table_row', 'tableRow'], null);
+        const headerCellType = pickProperty(schema.nodes, ['table_header', 'tableHeader'], null);
+        const bodyCellType = pickProperty(schema.nodes, ['table_cell', 'tableCell'], null);
+        const paragraphType = pickProperty(schema.nodes, ['paragraph'], null);
+        if (!tableType || !headerRowType || !bodyRowType || !headerCellType || !bodyCellType || !paragraphType) {
+                return null;
+        }
+        const columnCount = tableData.headers.length;
+        const alignments = tableData.alignments;
+        const createParagraph = value => {
+                const trimmed = typeof value === 'string' ? value.trim() : '';
+                if (trimmed) {
+                        return paragraphType.create(null, schema.text(trimmed));
+                }
+                if (typeof paragraphType.createAndFill === 'function') {
+                        const fallback = paragraphType.createAndFill();
+                        if (fallback) {
+                                return fallback;
+                        }
+                }
+                return paragraphType.create(null);
+        };
+        const createCell = (cellType, value, columnIndex) => {
+                const paragraph = createParagraph(value);
+                const alignment = alignments[columnIndex] || 'left';
+                return cellType.create({ alignment }, paragraph ? [paragraph] : undefined);
+        };
+        const headerCells = tableData.headers.map((value, index) => createCell(headerCellType, value, index));
+        const headerRow = headerRowType.create(null, headerCells);
+        const bodyRows = tableData.rows.map(rowValues => {
+                const normalized = [];
+                for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+                        normalized.push(rowValues[columnIndex] ?? '');
+                }
+                const cells = normalized.map((value, index) => createCell(bodyCellType, value, index));
+                return bodyRowType.create(null, cells);
+        });
+        return tableType.create(null, [headerRow, ...bodyRows]);
+}
+
+// 处理 Markdown 表格黏贴，自动插入结构化表格
+function handleMarkdownTablePaste(view, event) {
+        if (!view || !event || !event.clipboardData) {
+                return false;
+        }
+        const clipboardTypes = Array.from(event.clipboardData.types || []);
+        if (clipboardTypes.includes('application/x-prosemirror-slice')) {
+                return false;
+        }
+        if (clipboardTypes.includes('text/html')) {
+                const html = event.clipboardData.getData('text/html') || '';
+                if (/<table[\s>]/i.test(html)) {
+                        return false;
+                }
+        }
+        const text = event.clipboardData.getData('text/plain');
+        if (!text || text.indexOf('|') === -1) {
+                return false;
+        }
+        const tableData = parseMarkdownTable(text);
+        if (!tableData) {
+                return false;
+        }
+        const tableNode = buildTableNodeFromMarkdown(view.state?.schema, tableData);
+        if (!tableNode) {
+                return false;
+        }
+        event.preventDefault();
+        const transaction = view.state.tr.replaceSelectionWith(tableNode).scrollIntoView();
+        view.dispatch(transaction);
+        view.focus();
+        return true;
+}
+
+// 预置 Emoji 选项，配合斜杠菜单实现快捷搜索
+const EMOJI_SLASH_ITEMS = [
+        { key: 'grinning-face', emoji: '😀', label: '微笑 smile happy' },
+        { key: 'grinning-face-with-smiling-eyes', emoji: '😁', label: '露齿笑 grin' },
+        { key: 'face-with-tears-of-joy', emoji: '😂', label: '喜极而泣 joy lol' },
+        { key: 'rolling-on-the-floor-laughing', emoji: '🤣', label: '笑到打滚 rofl' },
+        { key: 'smiling-face-with-smiling-eyes', emoji: '😊', label: '害羞微笑 blush' },
+        { key: 'winking-face', emoji: '😉', label: '眨眼 wink' },
+        { key: 'smiling-face-with-heart-eyes', emoji: '😍', label: '花痴 love heart-eyes' },
+        { key: 'smiling-face-with-sunglasses', emoji: '😎', label: '酷 cool sunglasses' },
+        { key: 'thinking-face', emoji: '🤔', label: '思考 thinking question' },
+        { key: 'neutral-face', emoji: '😐', label: '无语 neutral' },
+        { key: 'expressionless-face', emoji: '😑', label: '面瘫 expressionless' },
+        { key: 'sleeping-face', emoji: '😴', label: '睡觉 sleepy sleep' },
+        { key: 'crying-face', emoji: '😢', label: '哭 sad cry' },
+        { key: 'loudly-crying-face', emoji: '😭', label: '嚎啕大哭 sob' },
+        { key: 'pouting-face', emoji: '😡', label: '生气 angry' },
+        { key: 'face-with-symbols-on-mouth', emoji: '🤬', label: '暴怒 rage' },
+        { key: 'face-with-open-mouth', emoji: '😮', label: '惊讶 surprised' },
+        { key: 'astonished-face', emoji: '😲', label: '震惊 astonished' },
+        { key: 'partying-face', emoji: '🥳', label: '派对 celebrate party' },
+        { key: 'hugging-face', emoji: '🤗', label: '拥抱 hug' },
+        { key: 'folded-hands', emoji: '🙏', label: '感谢 thank pray' },
+        { key: 'thumbs-up', emoji: '👍', label: '点赞 good thumbs-up' },
+        { key: 'thumbs-down', emoji: '👎', label: '点踩 thumbs-down' },
+        { key: 'clapping-hands', emoji: '👏', label: '鼓掌 clap bravo' },
+        { key: 'ok-hand', emoji: '👌', label: 'OK perfect' },
+        { key: 'flexed-biceps', emoji: '💪', label: '加油 muscle strong' },
+        { key: 'fire', emoji: '🔥', label: '火 hot fire' },
+        { key: 'glowing-star', emoji: '✨', label: '闪耀 sparkles' },
+        { key: 'white-medium-star', emoji: '⭐', label: '星星 star' },
+        { key: 'light-bulb', emoji: '💡', label: '灵感 idea bulb' },
+        { key: 'warning', emoji: '⚠️', label: '警告 warning' },
+        { key: 'check-mark-button', emoji: '✅', label: '完成 done check' },
+        { key: 'cross-mark', emoji: '❌', label: '否决 cross' },
+        { key: 'question-mark', emoji: '❓', label: '疑问 question help' },
+        { key: 'high-voltage', emoji: '⚡', label: '电力 energy lightning' },
+        { key: 'rocket', emoji: '🚀', label: '火箭 rocket launch' },
+        { key: 'party-popper', emoji: '🎉', label: '庆祝 celebrate tada' },
+        { key: 'wrapped-gift', emoji: '🎁', label: '礼物 gift' },
+        { key: 'calendar', emoji: '📅', label: '日程 calendar schedule' },
+        { key: 'memo', emoji: '📝', label: '记录 memo note' },
+];
+
+function insertEmojiFromSlash(ctx, emoji) {
+        if (!ctx || !emoji) {
+                return;
+        }
+        try {
+                const view = ctx.get(editorViewCtx);
+                if (!view) {
+                        return;
+                }
+                const { state } = view;
+                if (!state) {
+                        return;
+                }
+                const { selection } = state;
+                if (!selection) {
+                        return;
+                }
+                const { from, to } = selection;
+                let start = from;
+                try {
+                        const $from = selection.$from;
+                        const parent = $from.parent;
+                        const offset = $from.parentOffset;
+                        if (parent) {
+                                let textBefore = '';
+                                if (typeof parent.textBetween === 'function') {
+                                        textBefore = parent.textBetween(0, offset, '\n', '\n');
+                                } else if (typeof parent.textContent === 'string') {
+                                        textBefore = parent.textContent.slice(0, offset);
+                                }
+                                const match = textBefore.match(/\/[^\s]*$/);
+                                if (match && match[0]) {
+                                        const commandLength = match[0].length;
+                                        start = Math.max(from - commandLength, 0);
+                                }
+                        }
+                } catch (error) {
+                        console.warn('[milkdown] Emoji 匹配命令失败', error);
+                }
+                const insertContent = `${emoji} `;
+                const transaction = state.tr.insertText(insertContent, start, to).scrollIntoView();
+                view.dispatch(transaction);
+                view.focus();
+        } catch (error) {
+                console.warn('[milkdown] Emoji 插入失败', error);
+        }
+}
+
+function registerEmojiSlashMenu(builder) {
+        if (!builder || typeof builder.addGroup !== 'function') {
+                return;
+        }
+        let groupInstance = null;
+        try {
+                groupInstance = builder.addGroup('emoji', 'Emoji 表情');
+        } catch (error) {
+                try {
+                        groupInstance = builder.getGroup('emoji');
+                } catch (innerError) {
+                        console.warn('[milkdown] Emoji 分组初始化失败', innerError);
+                }
+        }
+        if (!groupInstance || typeof groupInstance.addItem !== 'function') {
+                return;
+        }
+        EMOJI_SLASH_ITEMS.forEach(item => {
+                if (!item || !item.key || !item.emoji) {
+                        return;
+                }
+                const label = typeof item.label === 'string' && item.label.trim().length > 0 ? item.label : `${item.emoji} Emoji`;
+                groupInstance.addItem(`emoji-${item.key}`, {
+                        label,
+                        icon: item.emoji,
+                        onRun: ctx => insertEmojiFromSlash(ctx, item.emoji),
+                });
+        });
 }
 
 function readInlineSelection(editor, controller) {
@@ -581,6 +892,27 @@ function applyMilkdownPlugins(editor, toast) {
 
                                         return createdNodes;
                                 },
+                        };
+                });
+        });
+
+        editor.config(ctx => {
+                ctx.update(editorViewOptionsCtx, prev => {
+                        const previous = prev || {};
+                        const previousHandlePaste =
+                                typeof previous.handlePaste === 'function' ? previous.handlePaste : null;
+                        const handlePaste = (view, event, slice) => {
+                                if (handleMarkdownTablePaste(view, event)) {
+                                        return true;
+                                }
+                                if (previousHandlePaste) {
+                                        return previousHandlePaste(view, event, slice);
+                                }
+                                return false;
+                        };
+                        return {
+                                ...previous,
+                                handlePaste,
                         };
                 });
         });
@@ -1337,6 +1669,7 @@ async function initialize() {
                 inlineAIToolbarHandler = null;
 
                 const toolbarKey = Crepe?.Feature?.Toolbar ?? 'toolbar';
+                const blockEditKey = Crepe?.Feature?.BlockEdit ?? 'block-edit';
                 const featureConfigs = {
                         [toolbarKey]: {
                                 buildToolbar(builder) {
@@ -1365,6 +1698,15 @@ async function initialize() {
                                                 });
                                         } catch (error) {
                                                 console.warn('[milkdown] 注册 AI Chat 工具失败', error);
+                                        }
+                                },
+                        },
+                        [blockEditKey]: {
+                                buildMenu(builder) {
+                                        try {
+                                                registerEmojiSlashMenu(builder);
+                                        } catch (error) {
+                                                console.warn('[milkdown] 注册 Emoji 菜单失败', error);
                                         }
                                 },
                         },
