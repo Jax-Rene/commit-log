@@ -1713,25 +1713,41 @@ document.addEventListener('alpine:init', () => {
                                 return;
                         }
                         this.uploadingCover = true;
-                        this.cropper.getCroppedCanvas({ imageSmoothingQuality: 'high' }).toBlob(async blob => {
-                                if (!blob) {
-                                        this.uploadingCover = false;
-                                        toast({ message: '生成裁剪图片失败，请重试', type: 'error' });
-                                        return;
-                                }
-                                try {
-                                        await this.uploadCroppedImage(blob);
-                                        toast({ message: '封面已更新', type: 'success' });
-                                } catch (error) {
-                                        toast({ message: error?.message || '封面上传失败，请稍后重试', type: 'error' });
-                                } finally {
-                                        this.uploadingCover = false;
-                                }
-                        }, 'image/png');
-                },
-                async uploadCroppedImage(blob) {
-                        const formData = new FormData();
-                        formData.append('image', blob, `cover-${Date.now()}.png`);
+			const canvas = this.cropper.getCroppedCanvas({
+				imageSmoothingEnabled: true,
+				imageSmoothingQuality: 'high',
+				maxWidth: 2560,
+				maxHeight: 2560,
+			});
+			if (!canvas) {
+				this.uploadingCover = false;
+				toast({ message: '生成裁剪图片失败，请重试', type: 'error' });
+				return;
+			}
+			// 限制导出尺寸与质量，避免巨大封面导致后端超载
+			canvas.toBlob(
+				async blob => {
+					if (!blob) {
+						this.uploadingCover = false;
+						toast({ message: '生成裁剪图片失败，请重试', type: 'error' });
+						return;
+					}
+					try {
+						await this.uploadCroppedImage(blob);
+						toast({ message: '封面已更新', type: 'success' });
+					} catch (error) {
+						toast({ message: error?.message || '封面上传失败，请稍后重试', type: 'error' });
+					} finally {
+						this.uploadingCover = false;
+					}
+				},
+				'image/jpeg',
+				0.85,
+			);
+		},
+		async uploadCroppedImage(blob) {
+			const formData = new FormData();
+			formData.append('image', blob, `cover-${Date.now()}.jpg`);
                         const response = await fetch('/admin/api/upload/image', {
                                 method: 'POST',
                                 body: formData,
