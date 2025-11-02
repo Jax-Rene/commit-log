@@ -5,10 +5,10 @@
 @layer base {
   /* 统一柔和主题配色变量 */
   :root {
-    --surface-soft-light: #fdfcff;
+    --surface-soft-light: #ffffff;
     --surface-soft-dark: #020617;
     --surface-soft-foreground-light: #0f172a;
-    --surface-soft-foreground-dark: #f1f5f9;
+    --surface-soft-foreground-dark: #ffffff;
   }
 }
 
