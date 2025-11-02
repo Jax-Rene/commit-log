@@ -2,11 +2,13 @@ package handler
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
 	"io"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -16,8 +18,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"golang.org/x/image/draw"
 	_ "image/gif"
 )
+
+const (
+	maxUploadBytes    = 20 << 20 // 20MB
+	maxImageDimension = 3840     // 限制边长为 4K
+	jpegQuality       = 82       // 输出 JPG 质量
+	sampleGrid        = 64       // 检测透明像素的采样网格
+)
+
+var errImageTooLarge = errors.New("uploaded image exceeds allowed size")
 
 // UploadImage 处理图片上传请求
 func (a *API) UploadImage(c *gin.Context) {
@@ -42,12 +54,16 @@ func (a *API) UploadImage(c *gin.Context) {
 		return
 	}
 
-	ext := filepath.Ext(file.Filename)
-	newFilename := fmt.Sprintf("%s-%s%s", time.Now().Format("20060102"), uuid.New().String(), ext)
-	filePath := filepath.Join(uploadDir, newFilename)
+	originalExt := normalizeExt(filepath.Ext(file.Filename))
+	baseName := fmt.Sprintf("%s-%s", time.Now().Format("20060102"), uuid.New().String())
 
-	data, cfg, format, err := readImageData(file)
+	processed, err := processUploadedImage(file)
 	if err != nil {
+		if errors.Is(err, errImageTooLarge) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "图片体积超过限制，请控制在 20MB 以内", "success": 0})
+			return
+		}
+		filePath := filepath.Join(uploadDir, baseName+resolveExtFromFormat("", originalExt))
 		// 回退：直接保存原文件
 		if err := c.SaveUploadedFile(file, filePath); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "保存文件失败", "success": 0})
@@ -62,57 +78,190 @@ func (a *API) UploadImage(c *gin.Context) {
 		return
 	}
 
-	if err := compressAndSave(filePath, data, format); err != nil {
+	filePath := filepath.Join(uploadDir, baseName+resolveExtFromFormat(processed.format, originalExt))
+	if err := saveProcessedImage(filePath, processed); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "压缩图片失败", "success": 0})
 		return
 	}
 
-	respondSuccess(c, filePath, cfg.Width, cfg.Height, uploadDir, a.uploadURL)
+	respondSuccess(c, filePath, processed.width, processed.height, uploadDir, a.uploadURL)
 }
 
-func readImageData(file *multipart.FileHeader) ([]byte, image.Config, string, error) {
-	src, err := file.Open()
-	if err != nil {
-		return nil, image.Config{}, "", err
-	}
-	defer src.Close()
-
-	data, err := io.ReadAll(src)
-	if err != nil {
-		return nil, image.Config{}, "", err
-	}
-
-	reader := bytes.NewReader(data)
-	cfg, format, err := image.DecodeConfig(reader)
-	if err != nil {
-		return nil, image.Config{}, "", err
-	}
-
-	return data, cfg, format, nil
+type processedImage struct {
+	img    image.Image
+	width  int
+	height int
+	format string
 }
 
-func compressAndSave(path string, data []byte, format string) error {
-	img, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return err
-	}
-
+func saveProcessedImage(path string, img processedImage) error {
 	out, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer out.Close()
 
+	switch img.format {
+	case "jpeg", "jpg":
+		return jpeg.Encode(out, img.img, &jpeg.Options{Quality: jpegQuality})
+	case "png":
+		encoder := png.Encoder{CompressionLevel: png.DefaultCompression}
+		return encoder.Encode(out, img.img)
+	default:
+		return fmt.Errorf("unsupported image format: %s", img.format)
+	}
+}
+
+func processUploadedImage(file *multipart.FileHeader) (processedImage, error) {
+	img, format, err := decodeUploadedImage(file)
+	if err != nil {
+		return processedImage{}, err
+	}
+
+	img = resizeIfNeeded(img, maxImageDimension)
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+
+	outputFormat := normalizeOutputFormat(format, img)
+
+	return processedImage{
+		img:    img,
+		width:  width,
+		height: height,
+		format: outputFormat,
+	}, nil
+}
+
+func decodeUploadedImage(file *multipart.FileHeader) (image.Image, string, error) {
+	src, err := file.Open()
+	if err != nil {
+		return nil, "", fmt.Errorf("open upload failed: %w", err)
+	}
+	defer src.Close()
+
+	data, err := readWithLimit(src, maxUploadBytes)
+	if err != nil {
+		return nil, "", err
+	}
+
+	img, format, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, "", fmt.Errorf("decode image failed: %w", err)
+	}
+
+	return img, format, nil
+}
+
+func readWithLimit(r io.Reader, limit int64) ([]byte, error) {
+	limited := &io.LimitedReader{R: r, N: limit + 1}
+	data, err := io.ReadAll(limited)
+	if err != nil {
+		return nil, fmt.Errorf("read image failed: %w", err)
+	}
+	if int64(len(data)) > limit {
+		return nil, errImageTooLarge
+	}
+	return data, nil
+}
+
+func resizeIfNeeded(src image.Image, maxSide int) image.Image {
+	if maxSide <= 0 {
+		return src
+	}
+
+	bounds := src.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+	if width <= maxSide && height <= maxSide {
+		return src
+	}
+
+	scale := float64(maxSide) / float64(width)
+	if height > width {
+		scale = float64(maxSide) / float64(height)
+	}
+
+	newWidth := int(math.Round(float64(width) * scale))
+	newHeight := int(math.Round(float64(height) * scale))
+	if newWidth < 1 {
+		newWidth = 1
+	}
+	if newHeight < 1 {
+		newHeight = 1
+	}
+
+	dst := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
+	draw.CatmullRom.Scale(dst, dst.Bounds(), src, bounds, draw.Over, nil)
+	return dst
+}
+
+func normalizeOutputFormat(format string, img image.Image) string {
 	switch strings.ToLower(format) {
 	case "jpeg", "jpg":
-		return jpeg.Encode(out, img, &jpeg.Options{Quality: 78})
+		return "jpeg"
 	case "png":
-		encoder := png.Encoder{CompressionLevel: png.BestCompression}
-		return encoder.Encode(out, img)
+		if hasVisibleAlpha(img) {
+			return "png"
+		}
+		return "jpeg"
 	default:
-		_, err = out.Write(data)
-		return err
+		return "jpeg"
 	}
+}
+
+func hasVisibleAlpha(img image.Image) bool {
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+	if width == 0 || height == 0 {
+		return false
+	}
+
+	stepX := width / sampleGrid
+	if stepX < 1 {
+		stepX = 1
+	}
+	stepY := height / sampleGrid
+	if stepY < 1 {
+		stepY = 1
+	}
+
+	for y := bounds.Min.Y; y < bounds.Max.Y; y += stepY {
+		for x := bounds.Min.X; x < bounds.Max.X; x += stepX {
+			_, _, _, alpha := img.At(x, y).RGBA()
+			if alpha < 0xffff {
+				return true
+			}
+		}
+	}
+
+	_, _, _, alpha := img.At(bounds.Max.X-1, bounds.Max.Y-1).RGBA()
+	return alpha < 0xffff
+}
+
+func normalizeExt(ext string) string {
+	trimmed := strings.TrimSpace(strings.ToLower(ext))
+	if trimmed == "" {
+		return ""
+	}
+	if !strings.HasPrefix(trimmed, ".") {
+		trimmed = "." + trimmed
+	}
+	return trimmed
+}
+
+func resolveExtFromFormat(format, fallback string) string {
+	switch strings.ToLower(format) {
+	case "jpeg", "jpg":
+		return ".jpg"
+	case "png":
+		return ".png"
+	}
+	if fallback != "" {
+		return fallback
+	}
+	return ".img"
 }
 
 func imageDimensions(path string) (int, int, error) {
