@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -76,6 +77,9 @@ func (s *PostService) ListAll() ([]db.Post, error) {
 	if err := s.db.Preload("Tags").Order("created_at desc").Find(&posts).Error; err != nil {
 		return nil, err
 	}
+	for i := range posts {
+		posts[i].PopulateDerivedFields()
+	}
 	return posts, nil
 }
 
@@ -99,7 +103,6 @@ func (s *PostService) Create(input PostInput) (*db.Post, error) {
 	}
 
 	post := db.Post{
-		Title:       determinePostTitle(input, ""),
 		Content:     input.Content,
 		Summary:     strings.TrimSpace(input.Summary),
 		Status:      "draft",
@@ -128,7 +131,6 @@ func (s *PostService) Update(id uint, input PostInput) (*db.Post, error) {
 		return nil, err
 	}
 
-	existing.Title = determinePostTitle(input, existing.Title)
 	existing.Content = input.Content
 	existing.Summary = strings.TrimSpace(input.Summary)
 	existing.CoverURL = coverURL
@@ -209,6 +211,10 @@ func (s *PostService) List(filter PostFilter) (*PostListResult, error) {
 		return nil, err
 	}
 
+	for i := range posts {
+		posts[i].PopulateDerivedFields()
+	}
+
 	filterWithoutStatus := filter
 	filterWithoutStatus.Status = ""
 
@@ -243,6 +249,8 @@ func (s *PostService) Publish(postID, userID uint) (*db.PostPublication, error) 
 		return nil, err
 	}
 
+	post.PopulateDerivedFields()
+
 	if strings.TrimSpace(post.Title) == "" {
 		return nil, ErrInvalidPublishState
 	}
@@ -262,7 +270,6 @@ func (s *PostService) Publish(postID, userID uint) (*db.PostPublication, error) 
 
 	publication := db.PostPublication{
 		PostID:      post.ID,
-		Title:       post.Title,
 		Content:     post.Content,
 		Summary:     post.Summary,
 		ReadingTime: readingTime,
@@ -308,6 +315,7 @@ func (s *PostService) Publish(postID, userID uint) (*db.PostPublication, error) 
 		return nil, err
 	}
 
+	publication.PopulateDerivedFields()
 	return &publication, nil
 }
 
@@ -324,6 +332,7 @@ func (s *PostService) LatestPublication(postID uint) (*db.PostPublication, error
 		}
 		return nil, err
 	}
+	publication.PopulateDerivedFields()
 	return &publication, nil
 }
 
@@ -364,6 +373,10 @@ func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, 
 		return nil, err
 	}
 
+	for i := range publications {
+		publications[i].PopulateDerivedFields()
+	}
+
 	if result.Total == 0 {
 		result.TotalPages = 1
 	} else {
@@ -383,6 +396,9 @@ func (s *PostService) ListAllPublished() ([]db.PostPublication, error) {
 		Order("post_publications.published_at desc, post_publications.id desc").
 		Find(&publications).Error; err != nil {
 		return nil, err
+	}
+	for i := range publications {
+		publications[i].PopulateDerivedFields()
 	}
 	return publications, nil
 }
@@ -408,14 +424,21 @@ func (s *PostService) saveWithTags(post *db.Post, tagIDs []uint) (*db.Post, erro
 			return err
 		}
 
-		return tx.Preload("Tags").First(post, post.ID).Error
+		if err := tx.Preload("Tags").First(post, post.ID).Error; err != nil {
+			return err
+		}
+
+		post.PopulateDerivedFields()
+		return nil
 	})
 }
 
 func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeStatus bool) *gorm.DB {
 	if filter.Search != "" {
 		search := "%" + filter.Search + "%"
-		query = query.Where("posts.title LIKE ? OR posts.content LIKE ? OR posts.summary LIKE ?", search, search, search)
+		alias := "posts"
+		titleExpr := derivedTitleQueryExpr(alias)
+		query = query.Where(fmt.Sprintf("(%s LIKE ? OR %s.content LIKE ? OR %s.summary LIKE ?)", titleExpr, alias, alias), search, search, search)
 	}
 
 	if includeStatus && filter.Status != "" {
@@ -447,7 +470,9 @@ func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeSta
 func (s *PostService) applyPublicationFilters(query *gorm.DB, filter PostFilter) *gorm.DB {
 	if filter.Search != "" {
 		search := "%" + filter.Search + "%"
-		query = query.Where("post_publications.title LIKE ? OR post_publications.content LIKE ? OR post_publications.summary LIKE ?", search, search, search)
+		alias := "post_publications"
+		titleExpr := derivedTitleQueryExpr(alias)
+		query = query.Where(fmt.Sprintf("(%s LIKE ? OR %s.content LIKE ? OR %s.summary LIKE ?)", titleExpr, alias, alias), search, search, search)
 	}
 
 	if len(filter.TagNames) > 0 {
@@ -505,45 +530,8 @@ func calculateReadingTime(content string) int {
 	return minutes
 }
 
-func determinePostTitle(input PostInput, existing string) string {
-	trimmed := strings.TrimSpace(input.Title)
-	if trimmed != "" {
-		return trimmed
-	}
-
-	if heading := extractFirstHeading(input.Content); heading != "" {
-		return heading
-	}
-
-	return strings.TrimSpace(existing)
-}
-
-func extractFirstHeading(content string) string {
-	if content == "" {
-		return ""
-	}
-
-	firstLine := content
-	if idx := strings.IndexRune(content, '\n'); idx >= 0 {
-		firstLine = content[:idx]
-	}
-
-	trimmed := strings.TrimSpace(firstLine)
-	if trimmed == "" {
-		return ""
-	}
-
-	if !strings.HasPrefix(trimmed, "#") {
-		return ""
-	}
-
-	trimmed = strings.TrimLeft(trimmed, "#")
-	trimmed = strings.TrimSpace(trimmed)
-	if trimmed == "" {
-		return ""
-	}
-
-	trimmed = strings.TrimRight(trimmed, "#")
-	trimmed = strings.TrimSpace(trimmed)
+func derivedTitleQueryExpr(alias string) string {
+	line := fmt.Sprintf("CASE WHEN instr(%s.content, char(10)) > 0 THEN substr(%s.content, 1, instr(%s.content, char(10)) - 1) ELSE %s.content END", alias, alias, alias, alias)
+	trimmed := fmt.Sprintf("TRIM(RTRIM(LTRIM(TRIM(%s), '#'), '#'))", line)
 	return trimmed
 }

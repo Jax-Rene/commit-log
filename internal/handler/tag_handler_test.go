@@ -77,7 +77,7 @@ func TestDeleteTagBlockedWhenInUse(t *testing.T) {
 		t.Fatalf("failed to seed tag: %v", err)
 	}
 
-	post := db.Post{Title: "Test", Content: "Content", Status: "draft", UserID: 1}
+	post := db.Post{Content: "# Test\nContent", Status: "draft", UserID: 1}
 	if err := db.DB.Create(&post).Error; err != nil {
 		t.Fatalf("failed to seed post: %v", err)
 	}

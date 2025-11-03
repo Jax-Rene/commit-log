@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/commitlog/internal/db"
@@ -168,8 +169,9 @@ func (s *AnalyticsService) Overview(limit int) (SiteOverview, error) {
 	}
 
 	var topPosts []TopPostStat
+	titleExpr := derivedTitleQueryExpr("p")
 	if err := s.db.Table("post_statistics ps").
-		Select("ps.post_id, p.title, ps.page_views, ps.unique_visitors").
+		Select(fmt.Sprintf("ps.post_id, %s AS title, ps.page_views, ps.unique_visitors", titleExpr)).
 		Joins("JOIN posts p ON p.id = ps.post_id").
 		Order("ps.page_views DESC").
 		Limit(limit).

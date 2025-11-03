@@ -36,6 +36,19 @@ func Init(databasePath string) error {
 		return err
 	}
 
+	migrator := DB.Migrator()
+	if migrator.HasColumn(&Post{}, "title") {
+		if dropErr := migrator.DropColumn(&Post{}, "title"); dropErr != nil {
+			return dropErr
+		}
+	}
+
+	if migrator.HasColumn(&PostPublication{}, "title") {
+		if dropErr := migrator.DropColumn(&PostPublication{}, "title"); dropErr != nil {
+			return dropErr
+		}
+	}
+
 	return nil
 }
 

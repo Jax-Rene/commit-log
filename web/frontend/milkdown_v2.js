@@ -129,6 +129,7 @@ if (typeof window !== 'undefined') {
         if (typeof window.MilkdownV2.createReadOnlyViewer !== 'function') {
                 window.MilkdownV2.createReadOnlyViewer = createReadOnlyViewer;
         }
+        window.MilkdownV2.deriveTitleFromMarkdown = deriveTitleFromMarkdown;
 }
 
 function getInitialMarkdown() {
@@ -167,6 +168,88 @@ function coerceString(value, fallback = '') {
                 return String(value);
         }
         return fallback;
+}
+
+function deriveTitleFromMarkdown(content) {
+        const source = coerceString(content, '');
+        if (!source) {
+                return '';
+        }
+        const newlineIndex = source.indexOf('\n');
+        const firstLine = newlineIndex >= 0 ? source.slice(0, newlineIndex) : source;
+        let trimmed = firstLine.trim();
+        if (!trimmed) {
+                return '';
+        }
+        if (trimmed.startsWith('#')) {
+                trimmed = trimmed.replace(/^#+/, '').trim();
+                trimmed = trimmed.replace(/#+$/, '').trim();
+        }
+        return trimmed;
+}
+
+function synchronizeTitleHeading(markdown, title) {
+        const source = coerceString(markdown, '');
+        const normalizedTitle = coerceString(title, '').trim();
+        const lines = source.split('\n');
+
+        let index = 0;
+        while (index < lines.length && lines[index].trim() === '') {
+                index++;
+        }
+
+        if (index < lines.length && lines[index].trim() === '---') {
+                index++;
+                while (index < lines.length && lines[index].trim() !== '---') {
+                        index++;
+                }
+                if (index < lines.length) {
+                        index++;
+                }
+        }
+
+        const prefix = lines.slice(0, index);
+        let rest = lines.slice(index);
+
+        while (rest.length > 0 && rest[0].trim() === '') {
+                rest.shift();
+        }
+
+        if (!normalizedTitle) {
+                if (rest.length > 0 && rest[0].trim().startsWith('#')) {
+                        rest.shift();
+                        while (rest.length > 0 && rest[0].trim() === '') {
+                                rest.shift();
+                        }
+                        const result = [...prefix];
+                        if (rest.length > 0) {
+                                if (result.length > 0 && result[result.length - 1].trim() !== '') {
+                                        result.push('');
+                                }
+                                result.push(...rest);
+                        }
+                        return result.join('\n');
+                }
+                return source;
+        }
+
+        if (rest.length > 0 && rest[0].trim().startsWith('#')) {
+                rest.shift();
+        }
+        while (rest.length > 0 && rest[0].trim() === '') {
+                rest.shift();
+        }
+
+        const result = [...prefix];
+        if (result.length > 0 && result[result.length - 1].trim() !== '') {
+                result.push('');
+        }
+        result.push(`# ${normalizedTitle}`);
+        if (rest.length > 0) {
+                result.push('');
+                result.push(...rest);
+        }
+        return result.join('\n');
 }
 
 function pickProperty(source, candidates, fallback) {
@@ -1311,13 +1394,39 @@ class PostDraftController {
 
         setTitle(value) {
                 const normalized = coerceString(value, '').trim();
-                if (this.postData.Title === normalized) {
-                        return this.postData.Title;
+                const previous = coerceString(pickProperty(this.postData, ['Title', 'title'], ''), '').trim();
+                const markdown = this.safeGetMarkdown();
+                const updatedMarkdown = synchronizeTitleHeading(markdown, normalized);
+                const contentChanged = updatedMarkdown !== markdown;
+
+                if (!contentChanged && previous === normalized) {
+                        return previous;
                 }
+
+                if (!this.postData || typeof this.postData !== 'object') {
+                        this.postData = {};
+                }
+
+                if (contentChanged) {
+                        const applyResult = typeof this.setMarkdown === 'function' ? this.setMarkdown(updatedMarkdown, { flush: true }) : null;
+                        if (applyResult && typeof applyResult.then === 'function') {
+                                applyResult.catch(error => console.warn('[milkdown] 更新标题时同步 Markdown 失败', error));
+                        }
+                        this.postData.Content = updatedMarkdown;
+                        this.postData.content = updatedMarkdown;
+                        this.currentContent = updatedMarkdown;
+                        if (typeof this.updateContentMetrics === 'function') {
+                                this.updateContentMetrics(updatedMarkdown);
+                        }
+                }
+
                 this.postData.Title = normalized;
                 this.postData.title = normalized;
                 this.markDirty();
                 this.notifyPostChange('title');
+                if (contentChanged) {
+                        this.notifyPostChange('content');
+                }
                 return normalized;
         }
 
@@ -1371,7 +1480,14 @@ class PostDraftController {
 
         buildPayload(content) {
                 const post = this.postData || {};
-                const title = coerceString(pickProperty(post, ['Title', 'title'], ''), '');
+                const markdown = typeof content === 'string' ? content : coerceString(pickProperty(post, ['Content', 'content'], ''), '');
+                const derivedTitle = deriveTitleFromMarkdown(markdown);
+                const fallbackTitle = coerceString(pickProperty(post, ['Title', 'title'], ''), '');
+                const title = derivedTitle || fallbackTitle;
+                if (post && typeof post === 'object') {
+                        post.Title = title;
+                        post.title = title;
+                }
                 const summary = coerceString(pickProperty(post, ['Summary', 'summary'], ''), '');
                 const coverUrl = coerceString(pickProperty(post, ['CoverURL', 'cover_url'], ''), '');
                 const coverWidth = coerceNumber(pickProperty(post, ['CoverWidth', 'cover_width'], 0), 0);
@@ -1530,6 +1646,12 @@ class PostDraftController {
                 const content = typeof contentOverride === 'string' ? contentOverride : this.safeGetMarkdown();
                 this.currentContent = content;
                 this.postData.Content = content;
+
+                const derivedTitle = deriveTitleFromMarkdown(content);
+                if (this.postData && typeof this.postData === 'object') {
+                        this.postData.Title = derivedTitle;
+                        this.postData.title = derivedTitle;
+                }
 
                 const hasMeaningfulContent = [
                         pickProperty(this.postData, ['Title', 'title'], ''),
