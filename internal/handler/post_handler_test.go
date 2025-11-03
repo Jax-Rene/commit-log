@@ -126,7 +126,7 @@ func TestCreatePostWithTags(t *testing.T) {
 
 	payload := map[string]any{
 		"title":        "Test Post",
-		"content":      "Content",
+		"content":      "# Test Post\nContent",
 		"summary":      "Summary",
 		"status":       "draft",
 		"tag_ids":      []uint{tag.ID},
@@ -169,7 +169,7 @@ func TestCreatePostRejectsUnknownTags(t *testing.T) {
 
 	payload := map[string]any{
 		"title":        "Test Post",
-		"content":      "Content",
+		"content":      "# Test Post\nContent",
 		"summary":      "Summary",
 		"status":       "draft",
 		"tag_ids":      []uint{99},
@@ -381,8 +381,7 @@ func TestUpdatePostReplacesTags(t *testing.T) {
 	}
 
 	post := db.Post{
-		Title:       "Original",
-		Content:     "Original content",
+		Content:     "# Original\nOriginal content",
 		Status:      "draft",
 		UserID:      1,
 		CoverURL:    "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
@@ -400,7 +399,7 @@ func TestUpdatePostReplacesTags(t *testing.T) {
 
 	payload := map[string]any{
 		"title":        "Updated",
-		"content":      "Updated content",
+		"content":      "# Updated\nUpdated content",
 		"summary":      "Updated summary",
 		"status":       "published",
 		"tag_ids":      []uint{replacementTag.ID},
@@ -443,8 +442,7 @@ func TestUpdatePostRejectsUnknownTags(t *testing.T) {
 	defer cleanup()
 
 	post := db.Post{
-		Title:       "Original",
-		Content:     "Original content",
+		Content:     "# Original\nOriginal content",
 		Status:      "draft",
 		UserID:      1,
 		CoverURL:    "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
@@ -458,7 +456,7 @@ func TestUpdatePostRejectsUnknownTags(t *testing.T) {
 
 	payload := map[string]any{
 		"title":        "Updated",
-		"content":      "Updated content",
+		"content":      "# Updated\nUpdated content",
 		"summary":      "Updated summary",
 		"status":       "published",
 		"tag_ids":      []uint{123},
@@ -493,8 +491,7 @@ func TestUpdatePostClearsTagsWhenEmpty(t *testing.T) {
 	}
 
 	post := db.Post{
-		Title:       "Original",
-		Content:     "Original content",
+		Content:     "# Original\nOriginal content",
 		Status:      "draft",
 		UserID:      1,
 		CoverURL:    "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
@@ -512,7 +509,7 @@ func TestUpdatePostClearsTagsWhenEmpty(t *testing.T) {
 
 	payload := map[string]any{
 		"title":        "Updated",
-		"content":      "Updated content",
+		"content":      "# Updated\nUpdated content",
 		"summary":      "Updated summary",
 		"status":       "published",
 		"tag_ids":      []uint{},
@@ -551,8 +548,7 @@ func TestDeletePost(t *testing.T) {
 	defer cleanup()
 
 	post := db.Post{
-		Title:       "Delete Me",
-		Content:     "Content",
+		Content:     "# Delete Me\nContent",
 		Status:      "draft",
 		UserID:      1,
 		CoverURL:    "https://images.unsplash.com/photo-1498050108023-c5249f4df085",

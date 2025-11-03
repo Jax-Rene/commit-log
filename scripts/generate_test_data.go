@@ -389,13 +389,13 @@ func createTestPosts() {
 
 	// 创建文章
 	for idx, data := range contents {
+		contentWithHeading := fmt.Sprintf("# %s\n\n%s", data.title, data.content)
 		post := db.Post{
-			Title:       data.title,
-			Content:     data.content,
+			Content:     contentWithHeading,
 			Summary:     data.summary,
 			Status:      "draft",
 			UserID:      admin.ID,
-			ReadingTime: len(data.content) / 200,
+			ReadingTime: len([]rune(contentWithHeading)) / 200,
 			CoverURL:    data.coverURL,
 			CoverWidth:  data.coverWidth,
 			CoverHeight: data.coverHeight,
@@ -427,7 +427,6 @@ func createTestPosts() {
 		publishedAt := time.Now().Add(-time.Duration(idx) * 12 * time.Hour)
 		publication := db.PostPublication{
 			PostID:      post.ID,
-			Title:       post.Title,
 			Content:     post.Content,
 			Summary:     post.Summary,
 			ReadingTime: post.ReadingTime,

@@ -225,7 +225,7 @@
                         <header class="flex items-start justify-between border-b border-slate-200 px-6 pb-4 pt-6 dark:border-slate-800">
                                 <div class="space-y-1">
                                         <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">文章设置</h2>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">管理文章标题、摘要与封面等元数据。</p>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">管理文章摘要、封面与标签等元数据。</p>
                                 </div>
                                 <button type="button" class="rounded-full p-2 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:text-slate-500 dark:hover:text-slate-200 dark:focus:ring-slate-700/60" @click="closePanel()">
                                         <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor">
@@ -234,14 +234,6 @@
                                 </button>
                         </header>
                         <div class="flex-1 space-y-6 overflow-y-auto px-6 pb-10 pt-6">
-                                <section class="space-y-2">
-                                        <label class="flex flex-col gap-2">
-                                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">文章标题<span class="ml-1 text-rose-500">*</span></span>
-                                                <input type="text" x-ref="titleInput" x-model="metadata.title" @input.debounce.300ms="handleTitleChange(metadata.title)" placeholder="请输入文章标题" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30">
-                                        </label>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">标题将用于首页展示与搜索结果摘要。</p>
-                                </section>
-
                                 <section class="space-y-3">
                                         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                 <div>
@@ -566,7 +558,6 @@ document.addEventListener('alpine:init', () => {
                 postCreatedAt: '',
                 postUpdatedAt: '',
                 metadata: {
-                        title: '',
                         summary: '',
                         cover: { url: '', width: 0, height: 0 },
                         tags: [],
@@ -915,7 +906,6 @@ document.addEventListener('alpine:init', () => {
                         if (!post || typeof post !== 'object') {
                                 return;
                         }
-                        this.metadata.title = sanitizeString(post.Title ?? post.title ?? '');
                         this.metadata.summary = sanitizeString(post.Summary ?? post.summary ?? '');
                         const coverUrl = sanitizeString(post.CoverURL ?? post.cover_url ?? '');
                         const coverWidth = sanitizeNumber(post.CoverWidth ?? post.cover_width ?? 0);
@@ -968,6 +958,26 @@ document.addEventListener('alpine:init', () => {
                         const characters = Math.max(0, Math.round(sanitizeNumber(metrics.characters)));
                         const paragraphs = Math.max(0, Math.round(sanitizeNumber(metrics.paragraphs)));
                         return { words, characters, paragraphs };
+                },
+                deriveTitleFromContent(content) {
+                        if (window.MilkdownV2 && typeof window.MilkdownV2.deriveTitleFromMarkdown === 'function') {
+                                return sanitizeString(window.MilkdownV2.deriveTitleFromMarkdown(content)).trim();
+                        }
+                        const source = sanitizeString(content);
+                        if (!source) {
+                                return '';
+                        }
+                        const newlineIndex = source.indexOf('\n');
+                        const firstLine = newlineIndex >= 0 ? source.slice(0, newlineIndex) : source;
+                        let trimmed = firstLine.trim();
+                        if (!trimmed) {
+                                return '';
+                        }
+                        if (trimmed.startsWith('#')) {
+                                trimmed = trimmed.replace(/^#+/, '').trim();
+                                trimmed = trimmed.replace(/#+$/, '').trim();
+                        }
+                        return trimmed;
                 },
                 normalizeTag(tag) {
                         if (tag === null || tag === undefined) {
@@ -1197,23 +1207,9 @@ document.addEventListener('alpine:init', () => {
                 },
                 togglePanel(force) {
                         this.panelOpen = typeof force === 'boolean' ? force : !this.panelOpen;
-                        if (this.panelOpen) {
-                                this.$nextTick(() => {
-                                        if (!this.metadata.title && this.$refs.titleInput) {
-                                                this.$refs.titleInput.focus();
-                                        }
-                                });
-                        }
                 },
                 closePanel() {
                         this.panelOpen = false;
-                },
-                handleTitleChange(value) {
-                        const controller = this.ensureController();
-                        if (!controller || typeof controller.setTitle !== 'function') {
-                                return;
-                        }
-                        controller.setTitle(value);
                 },
                 handleSummaryChange(value) {
                         const controller = this.ensureController();
@@ -1513,7 +1509,12 @@ document.addEventListener('alpine:init', () => {
                                 toast({ message: '请先填写文章正文再尝试全文优化', type: 'warning' });
                                 return;
                         }
-                        const title = this.metadata.title || sanitizeString(controller.postData?.Title ?? '');
+                        const derivedTitle = this.deriveTitleFromContent(sourceContent);
+                        const title = derivedTitle || sanitizeString(controller.postData?.Title ?? '');
+                        if (controller && controller.postData && (derivedTitle || title)) {
+                                controller.postData.Title = title;
+                                controller.postData.title = title;
+                        }
                         const wasModalOpen = this.optimizationModal;
                         const previousOptimized = this.optimizedContent;
                         const previousUsage = this.optimizationUsage;
@@ -1621,7 +1622,12 @@ document.addEventListener('alpine:init', () => {
                         }
                         const getMarkdown = window.MilkdownV2?.getMarkdown;
                         const content = typeof getMarkdown === 'function' ? getMarkdown() : sanitizeString(controller.postData?.Content ?? '');
-                        const title = this.metadata.title || sanitizeString(controller.postData?.Title ?? '');
+                        const derivedTitle = this.deriveTitleFromContent(content);
+                        const title = derivedTitle || sanitizeString(controller.postData?.Title ?? '');
+                        if (controller && controller.postData && (derivedTitle || title)) {
+                                controller.postData.Title = title;
+                                controller.postData.title = title;
+                        }
                         if (!title && !content) {
                                 toast({ message: '请先填写标题或正文后再生成摘要', type: 'warning' });
                                 return;

@@ -36,7 +36,7 @@ func TestRecordPostViewCounts(t *testing.T) {
 	cleanup := setupAnalyticsTestDB(t)
 	defer cleanup()
 
-	post := db.Post{Title: "测试文章", Status: "published"}
+	post := db.Post{Content: "# 测试文章\n内容", Status: "published"}
 	if err := db.DB.Create(&post).Error; err != nil {
 		t.Fatalf("failed to create post: %v", err)
 	}
@@ -98,7 +98,7 @@ func TestPostStatsMap(t *testing.T) {
 	cleanup := setupAnalyticsTestDB(t)
 	defer cleanup()
 
-	posts := []db.Post{{Title: "A", Status: "published"}, {Title: "B", Status: "published"}}
+	posts := []db.Post{{Content: "# A\n内容", Status: "published"}, {Content: "# B\n内容", Status: "published"}}
 	if err := db.DB.Create(&posts).Error; err != nil {
 		t.Fatalf("failed to create posts: %v", err)
 	}
@@ -138,7 +138,7 @@ func TestOverview(t *testing.T) {
 	cleanup := setupAnalyticsTestDB(t)
 	defer cleanup()
 
-	posts := []db.Post{{Title: "One", Status: "published"}, {Title: "Two", Status: "published"}, {Title: "Three", Status: "published"}}
+	posts := []db.Post{{Content: "# One\n内容", Status: "published"}, {Content: "# Two\n内容", Status: "published"}, {Content: "# Three\n内容", Status: "published"}}
 	if err := db.DB.Create(&posts).Error; err != nil {
 		t.Fatalf("failed to create posts: %v", err)
 	}

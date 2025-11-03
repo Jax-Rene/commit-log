@@ -478,6 +478,10 @@ func clonePublicationForView(publication *db.PostPublication) *db.PostPublicatio
 func stripLeadingTitle(title, content string) string {
 	trimmedTitle := strings.TrimSpace(title)
 	if trimmedTitle == "" {
+		trimmedTitle = db.DeriveTitleFromContent(content)
+	}
+
+	if trimmedTitle == "" {
 		return content
 	}
 
