@@ -37,26 +37,25 @@
                 min-height: 100vh;
         }
 
-        .milkdown-immersive-shell {
-                position: relative;
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-                overflow: hidden;
-        }
+	.milkdown-immersive-shell {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		overflow: visible;
+	}
 
         .milkdown-immersive-wrapper {
                 flex: 1 1 auto;
-                display: flex;
-                overflow-x: hidden;
-                overflow-y: auto;
+                display: block;
+                overflow: visible;
                 min-height: 0;
         }
 
         .milkdown-immersive-container {
                 flex: 1 1 auto;
-                display: flex;
-                flex-direction: column;
+                display: grid;
+                align-items: stretch;
                 min-height: 100%;
         }
 
@@ -79,11 +78,88 @@
                 padding: 0;
         }
 
-        @media (prefers-color-scheme: dark) {
-                body {
-                        background-color: #020617;
-                        color: #f1f5f9; /* 匹配 dark:text-slate-100 */
-                }
+        [data-editor-toc-content] h1,
+        [data-editor-toc-content] h2,
+        [data-editor-toc-content] h3 {
+                scroll-margin-top: 6.5rem;
+        }
+
+        [data-editor-toc-card] nav::before {
+                content: '';
+                position: absolute;
+                top: 0.75rem;
+                bottom: 0.75rem;
+                left: 0.75rem;
+                width: 1px;
+                background: linear-gradient(180deg, rgba(148, 163, 184, 0.28), rgba(148, 163, 184, 0.08));
+        }
+
+        [data-editor-toc-card] ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+        }
+
+        [data-editor-toc-card] .toc-item {
+                position: relative;
+        }
+
+        [data-editor-toc-card] .toc-link {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-size: 0.875rem;
+                line-height: 1.45;
+                color: rgba(71, 85, 105, 0.95);
+                text-decoration: none;
+                transition: color 0.2s ease;
+        }
+
+[data-editor-toc-card] .toc-link:focus-visible {
+        outline: 2px solid rgba(59, 130, 246, 0.4);
+        outline-offset: 4px;
+        border-radius: 12px;
+}
+
+[data-editor-toc-card] .toc-tick {
+        height: 2px;
+        width: 14px;
+        border-radius: 9999px;
+        background-color: rgba(148, 163, 184, 0.5);
+        transition: background-color 0.2s ease, width 0.2s ease;
+}
+
+[data-editor-toc-card] .toc-text {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        color: rgba(30, 41, 59, 0.82);
+}
+
+[data-editor-toc-card] .toc-item[data-level='2'] .toc-text {
+        margin-left: 0.75rem;
+}
+
+[data-editor-toc-card] .toc-item[data-level='3'] .toc-text {
+        margin-left: 1.5rem;
+}
+
+[data-editor-toc-card] .toc-item.is-active .toc-link {
+        color: rgb(30, 64, 175);
+        font-weight: 600;
+}
+
+[data-editor-toc-card] .toc-item.is-active .toc-tick {
+        width: 18px;
+        background-color: rgb(59, 130, 246);
+}
+
+@media (prefers-color-scheme: dark) {
+        body {
+                background-color: #020617;
+                color: #f1f5f9; /* 匹配 dark:text-slate-100 */
+        }
 
                 body.milkdown-immersive {
                         background-color: #020617;
@@ -95,18 +171,57 @@
                         color: #f1f5f9; /* 深色模式下提升文字可读性 */
                 }
 
-                .milkdown-preview .milkdown {
-                        background-color: transparent;
-                }
+        .milkdown-preview .milkdown {
+                background-color: transparent;
         }
+
+        [data-editor-toc-card] nav::before {
+                background: linear-gradient(180deg, rgba(71, 85, 105, 0.55), rgba(71, 85, 105, 0.18));
+        }
+
+        [data-editor-toc-card] .toc-link {
+                color: rgba(148, 163, 184, 0.92);
+        }
+
+        [data-editor-toc-card] .toc-text {
+                color: rgba(226, 232, 240, 0.86);
+        }
+
+        [data-editor-toc-card] .toc-link:focus-visible {
+                outline-color: rgba(148, 197, 255, 0.55);
+        }
+
+        [data-editor-toc-card] .toc-tick {
+                background-color: rgba(148, 163, 184, 0.38);
+        }
+
+        [data-editor-toc-card] .toc-item.is-active .toc-link {
+                color: rgba(191, 219, 254, 0.95);
+        }
+
+        [data-editor-toc-card] .toc-item.is-active .toc-tick {
+                background-color: rgba(191, 219, 254, 0.95);
+        }
+}
 </style>
 
-<div class="milkdown-immersive-shell" x-data="postEditorShell()" x-init="init()" x-cloak>
-        <div class="milkdown-immersive-wrapper">
-                <div class="milkdown-immersive-container mx-auto flex w-full max-w-screen-xl flex-col px-6 pt-10 pb-10 md:px-12 md:pb-24 lg:px-16 xl:px-20 2xl:max-w-screen-2xl 2xl:px-24">
-                        <div id="milkdown-app" class="milkdown"></div>
-                </div>
-        </div>
+	<div class="milkdown-immersive-shell" x-data="postEditorShell()" x-init="init()" x-cloak>
+		<div class="milkdown-immersive-wrapper" data-editor-scroll>
+			<div
+				class="milkdown-immersive-container mx-auto grid w-full max-w-screen-xl grid-cols-1 gap-10 px-6 pt-10 pb-10 md:px-12 md:pb-24 lg:px-16 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-stretch xl:gap-16 xl:px-20 2xl:max-w-screen-2xl 2xl:px-24">
+				<div class="flex min-h-full flex-col">
+					<div id="milkdown-app" class="milkdown" data-editor-toc-content></div>
+				</div>
+				<aside class="hidden xl:flex xl:flex-col">
+					<div data-editor-toc-card class="sticky top-24 hidden w-full max-w-[18rem] rounded-3xl bg-transparent p-5">
+						<div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">CONTENTS</div>
+						<nav class="relative mt-5" aria-label="Table of contents">
+							<ul class="space-y-3" data-toc-list></ul>
+						</nav>
+					</div>
+				</aside>
+			</div>
+		</div>
 
         <div class="pointer-events-none fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
                 <div class="pointer-events-auto flex flex-col items-end gap-3" @mouseenter="handleQuickActionsMouseEnter()" @mouseleave="handleQuickActionsMouseLeave()" @focusin="handleQuickActionsMouseEnter()" @focusout="handleQuickActionsFocusOut($event)" @click.outside="handleQuickActionsOutside()">
@@ -509,6 +624,317 @@ window.addEventListener('pagehide', milkdownCleanup, { once: true });
 window.addEventListener('beforeunload', milkdownCleanup, { once: true });
 </script>
 <script>
+function setupPostEditorToc() {
+        const card = document.querySelector('[data-editor-toc-card]');
+        const list = card?.querySelector('[data-toc-list]');
+        const contentHost = document.querySelector('[data-editor-toc-content]');
+        const scrollContainer = document.querySelector('[data-editor-scroll]');
+        if (!card || !list || !contentHost) {
+                return null;
+        }
+
+        const slugCounts = new Map();
+        const itemsMap = new Map();
+        const scrollRoot = scrollContainer || window;
+        const mq = typeof window.matchMedia === 'function' ? window.matchMedia('(min-width: 1280px)') : null;
+
+        let headingsData = [];
+        let activeId = null;
+        let mutationObserver = null;
+        let hostObserver = null;
+        let rebuildFrame = null;
+        let updateFrame = null;
+        let suppressAutoUpdateUntil = 0;
+
+        const isLargeScreen = () => !mq || mq.matches;
+        const ensureContentRoot = () => contentHost.querySelector('.ProseMirror') || contentHost;
+        const slugify = text => {
+                const base = text
+                        .toLowerCase()
+                        .trim()
+                        .replace(/[\s]+/g, '-')
+                        .replace(/[^a-z0-9\-]/g, '');
+                const safe = base || 'section';
+                const count = slugCounts.get(safe) || 0;
+                slugCounts.set(safe, count + 1);
+                return count === 0 ? safe : `${safe}-${count}`;
+        };
+        const ensureId = heading => {
+                const existing = (heading.getAttribute('id') || '').trim();
+                if (existing) {
+                        return existing;
+                }
+                const text = (heading.textContent || '').trim();
+                const id = slugify(text);
+                heading.setAttribute('id', id);
+                return id;
+        };
+        const parseLevel = heading => {
+                const raw = Number.parseInt(heading.tagName.replace('H', ''), 10);
+                if (Number.isNaN(raw)) {
+                        return 3;
+                }
+                return Math.max(1, Math.min(raw, 3));
+        };
+        const hideCard = () => {
+                if (!card.classList.contains('hidden')) {
+                        card.classList.add('hidden');
+                }
+        };
+        const showCard = () => {
+                if (isLargeScreen()) {
+                        card.classList.remove('hidden');
+                } else {
+                        hideCard();
+                }
+        };
+        const resetActive = () => {
+                if (activeId && itemsMap.has(activeId)) {
+                        const prev = itemsMap.get(activeId);
+                        prev.li.classList.remove('is-active');
+                        prev.link.removeAttribute('aria-current');
+                }
+                activeId = null;
+        };
+        const setActive = id => {
+                if (activeId === id) {
+                        return;
+                }
+                if (activeId && itemsMap.has(activeId)) {
+                        const prev = itemsMap.get(activeId);
+                        prev.li.classList.remove('is-active');
+                        prev.link.removeAttribute('aria-current');
+                }
+                if (!id || !itemsMap.has(id)) {
+                        activeId = null;
+                        return;
+                }
+                const next = itemsMap.get(id);
+                next.li.classList.add('is-active');
+                next.link.setAttribute('aria-current', 'true');
+                activeId = id;
+        };
+        const updateActive = () => {
+                if (!headingsData.length) {
+                        resetActive();
+                        return;
+                }
+                const containerRect = scrollContainer ? scrollContainer.getBoundingClientRect() : null;
+                const baseline = (containerRect ? containerRect.top : 0) + 120;
+                let before = null;
+                let after = null;
+                for (const item of headingsData) {
+                        const rectTop = item.heading.getBoundingClientRect().top;
+                        const diff = rectTop - baseline;
+                        if (diff <= 0) {
+                                const distance = Math.abs(diff);
+                                if (!before || distance <= before.distance) {
+                                        before = { item, distance };
+                                }
+                        } else {
+                                after = { item, distance: diff };
+                                break;
+                        }
+                }
+                let finalCandidate = null;
+                if (before && after) {
+                        finalCandidate = before.distance <= after.distance ? before.item : after.item;
+                } else if (before) {
+                        finalCandidate = before.item;
+                } else if (after) {
+                        finalCandidate = after.item;
+                } else {
+                        finalCandidate = headingsData[headingsData.length - 1];
+                }
+                if (finalCandidate) {
+                        setActive(finalCandidate.id);
+                }
+        };
+        const requestUpdate = () => {
+                if (updateFrame) {
+                        return;
+                }
+                updateFrame = window.requestAnimationFrame(() => {
+                        updateFrame = null;
+                        if (suppressAutoUpdateUntil > performance.now()) {
+                                requestUpdate();
+                                return;
+                        }
+                        updateActive();
+                });
+        };
+        const buildList = root => {
+                const headings = Array.from(root.querySelectorAll('h1, h2, h3')).filter(node => {
+                        const text = (node.textContent || '').trim();
+                        return text.length > 0;
+                });
+                slugCounts.clear();
+                itemsMap.clear();
+                headingsData = [];
+                list.innerHTML = '';
+                if (!headings.length) {
+                        hideCard();
+                        resetActive();
+                        return;
+                }
+                showCard();
+                headings.forEach(heading => {
+                        const id = ensureId(heading);
+                        const text = (heading.textContent || '').trim();
+                        if (!text) {
+                                return;
+                        }
+                        const level = parseLevel(heading);
+                        const li = document.createElement('li');
+                        li.className = 'toc-item';
+                        li.dataset.level = String(level);
+                        const link = document.createElement('a');
+                        link.className = 'toc-link';
+                        link.href = `#${id}`;
+                        link.dataset.tocTarget = id;
+                        link.title = text;
+                        const tick = document.createElement('span');
+                        tick.className = 'toc-tick';
+                        tick.setAttribute('aria-hidden', 'true');
+                        const textNode = document.createElement('span');
+                        textNode.className = 'toc-text';
+                        textNode.textContent = text;
+                        link.append(tick, textNode);
+                        li.appendChild(link);
+                        list.appendChild(li);
+                        const record = { heading, id, li, link };
+                        itemsMap.set(id, record);
+                        headingsData.push(record);
+                });
+                requestUpdate();
+        };
+        const rebuild = () => {
+                if (!isLargeScreen()) {
+                        hideCard();
+                        return;
+                }
+                const root = ensureContentRoot();
+                if (!root) {
+                        hideCard();
+                        list.innerHTML = '';
+                        headingsData = [];
+                        resetActive();
+                        return;
+                }
+                buildList(root);
+                if (mutationObserver) {
+                        mutationObserver.disconnect();
+                }
+                mutationObserver = new MutationObserver(requestRebuild);
+                mutationObserver.observe(root, { childList: true, subtree: true, characterData: true });
+        };
+        const requestRebuild = () => {
+                if (rebuildFrame) {
+                        return;
+                }
+                rebuildFrame = window.requestAnimationFrame(() => {
+                        rebuildFrame = null;
+                        rebuild();
+                });
+        };
+        const onScroll = () => requestUpdate();
+        const onResize = () => requestRebuild();
+        const onMediaChange = () => requestRebuild();
+        const onClick = event => {
+                const link = event.target instanceof Element ? event.target.closest('.toc-link') : null;
+                if (!link) {
+                        return;
+                }
+                const targetId = link.dataset.tocTarget || '';
+                if (!targetId || !itemsMap.has(targetId)) {
+                        return;
+                }
+                event.preventDefault();
+                const entry = itemsMap.get(targetId);
+                if (!entry) {
+                        return;
+                }
+                const heading = entry.heading;
+                try {
+                        heading.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+                } catch (error) {
+                        const targetTop = window.scrollY + heading.getBoundingClientRect().top - 120;
+                        window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+                }
+                suppressAutoUpdateUntil = performance.now() + 360;
+                window.requestAnimationFrame(() => {
+                        setActive(targetId);
+                        window.setTimeout(() => {
+                                suppressAutoUpdateUntil = 0;
+                                requestUpdate();
+                        }, 420);
+                });
+                if (typeof window?.history?.replaceState === 'function') {
+                        const url = new URL(window.location.href);
+                        url.hash = targetId;
+                        window.history.replaceState(null, '', url.toString());
+                } else {
+                        window.location.hash = targetId;
+                }
+        };
+
+        list.addEventListener('click', onClick);
+        scrollRoot.addEventListener('scroll', onScroll, { passive: true });
+        if (scrollContainer) {
+                        window.addEventListener('scroll', onScroll, { passive: true });
+        }
+        window.addEventListener('resize', onResize);
+        if (mq) {
+                if (typeof mq.addEventListener === 'function') {
+                        mq.addEventListener('change', onMediaChange);
+                } else if (typeof mq.addListener === 'function') {
+                        mq.addListener(onMediaChange);
+                }
+        }
+
+        hostObserver = new MutationObserver(requestRebuild);
+        hostObserver.observe(contentHost, { childList: true, subtree: false });
+
+        requestRebuild();
+
+        return {
+                refresh: () => requestRebuild(),
+                destroy: () => {
+                        list.removeEventListener('click', onClick);
+                        scrollRoot.removeEventListener('scroll', onScroll);
+                        if (scrollContainer) {
+                                window.removeEventListener('scroll', onScroll);
+                        }
+                        window.removeEventListener('resize', onResize);
+                        if (mq) {
+                                if (typeof mq.removeEventListener === 'function') {
+                                        mq.removeEventListener('change', onMediaChange);
+                                } else if (typeof mq.removeListener === 'function') {
+                                        mq.removeListener(onMediaChange);
+                                }
+                        }
+                        hostObserver.disconnect();
+                        if (mutationObserver) {
+                                mutationObserver.disconnect();
+                                mutationObserver = null;
+                        }
+                        if (rebuildFrame) {
+                                window.cancelAnimationFrame(rebuildFrame);
+                                rebuildFrame = null;
+                        }
+                        if (updateFrame) {
+                                window.cancelAnimationFrame(updateFrame);
+                                updateFrame = null;
+                        }
+                        hideCard();
+                        list.innerHTML = '';
+                        headingsData = [];
+                        itemsMap.clear();
+                        resetActive();
+                },
+        };
+}
+
 document.addEventListener('alpine:init', () => {
         const sanitizeString = value => (typeof value === 'string' ? value : '');
         const sanitizeNumber = value => {
@@ -602,10 +1028,56 @@ document.addEventListener('alpine:init', () => {
                         loading: false,
                         error: '',
                 },
+                editorToc: null,
+                editorTocRefreshTimer: null,
                 statusTimer: null,
                 handleInlineAIRequest: null,
                 latestPublication: null,
                 publishing: false,
+                setupEditorToc() {
+                        if (this.editorToc) {
+                                return;
+                        }
+                        if (typeof setupPostEditorToc !== 'function') {
+                                return;
+                        }
+                        const instance = setupPostEditorToc();
+                        if (instance) {
+                                this.editorToc = instance;
+                        } else {
+                                window.setTimeout(() => {
+                                        if (!this.editorToc) {
+                                                this.setupEditorToc();
+                                        }
+                                }, 400);
+                        }
+                },
+                scheduleEditorTocRefresh() {
+                        if (!this.editorToc) {
+                                this.setupEditorToc();
+                        }
+                        if (this.editorTocRefreshTimer) {
+                                window.clearTimeout(this.editorTocRefreshTimer);
+                        }
+                        this.editorTocRefreshTimer = window.setTimeout(() => {
+                                this.editorTocRefreshTimer = null;
+                                if (this.editorToc && typeof this.editorToc.refresh === 'function') {
+                                        this.editorToc.refresh();
+                                } else if (!this.editorToc) {
+                                        this.setupEditorToc();
+                                }
+                        }, 180);
+                },
+                destroyEditorToc() {
+                        if (this.editorTocRefreshTimer) {
+                                window.clearTimeout(this.editorTocRefreshTimer);
+                                this.editorTocRefreshTimer = null;
+                        }
+                        if (this.editorToc && typeof this.editorToc.destroy === 'function') {
+                                this.editorToc.destroy();
+                        }
+                        this.editorToc = null;
+                },
                 init() {
                         this.availableTags = this.normalizeTags(window.__MILKDOWN_V2__?.allTags || []);
                         this.tagError = sanitizeString(window.__MILKDOWN_V2__?.tagError || '');
@@ -621,6 +1093,7 @@ document.addEventListener('alpine:init', () => {
                                 } else if (detail.controller?.contentMetrics) {
                                         this.applyContentMetrics(detail.controller.contentMetrics);
                                 }
+                                this.scheduleEditorTocRefresh();
                         };
                         this.handleInlineAIRequest = event => {
                                 const selection = event?.detail?.selection || {};
@@ -675,6 +1148,7 @@ document.addEventListener('alpine:init', () => {
                                         this.syncPost(event.detail.post);
                                 }
                                 this.refreshStatus();
+                                this.scheduleEditorTocRefresh();
                         };
                         this.handlePostUpdate = event => {
                                 if (event?.detail?.controller) {
@@ -684,6 +1158,7 @@ document.addEventListener('alpine:init', () => {
                                         this.syncPost(event.detail.post);
                                 }
                                 this.refreshStatus();
+                                this.scheduleEditorTocRefresh();
                         };
                         window.addEventListener('post-editor:inline-ai', this.handleInlineAIRequest);
                         window.addEventListener('post-editor:publication', this.handlePublicationUpdate);
@@ -694,7 +1169,11 @@ document.addEventListener('alpine:init', () => {
                         this.tryAttachController();
                         this.refreshStatus();
                         this.statusTimer = window.setInterval(() => this.refreshStatus(), 3000);
+                        this.setupEditorToc();
+                        this.scheduleEditorTocRefresh();
+                        this.$nextTick(() => this.scheduleEditorTocRefresh());
                         this.cleanup = () => {
+                                this.destroyEditorToc();
                                 if (this.statusTimer) {
                                         window.clearInterval(this.statusTimer);
                                         this.statusTimer = null;
@@ -1334,6 +1813,7 @@ document.addEventListener('alpine:init', () => {
                                 }
                                 this.closeInlineAI();
                                 toast({ message: '已应用 AI 改写内容', type: 'success' });
+                                this.scheduleEditorTocRefresh();
                         } catch (error) {
                                 const message = sanitizeString(error?.message || '应用改写内容失败，请稍后重试');
                                 toast({ message, type: 'error' });
@@ -1608,6 +2088,7 @@ document.addEventListener('alpine:init', () => {
                         } else {
                                 toast({ message: '已替换为优化后的正文', type: 'success' });
                         }
+                        this.scheduleEditorTocRefresh();
                         this.closeOptimizationModal();
                 },
                 async generateSummary() {
