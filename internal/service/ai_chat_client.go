@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type chatMessage struct {
@@ -173,6 +175,9 @@ func (c *aiChatClient) callWithSettings(ctx context.Context, settings SystemSett
 	}
 
 	endpoint := strings.TrimRight(base, "/") + "/chat/completions"
+
+	log.Printf("[AI] provider=%s model=%s maxTokens=%d promptLen=%d promptPreview=%q", label, payload.Model, payload.MaxTokens, utf8.RuneCountInString(payload.Messages[1].Content), truncateForAILog(payload.Messages[1].Content))
+
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return aiChatResponse{}, fmt.Errorf("创建 %s 请求失败: %w", label, err)
@@ -214,9 +219,23 @@ func (c *aiChatClient) callWithSettings(ctx context.Context, settings SystemSett
 	}
 
 	content := strings.TrimSpace(completion.Choices[0].Message.Content)
+	log.Printf("[AI] provider=%s model=%s outputLen=%d outputPreview=%q", label, payload.Model, utf8.RuneCountInString(content), truncateForAILog(content))
 	return aiChatResponse{
 		Content:          content,
 		PromptTokens:     completion.Usage.PromptTokens,
 		CompletionTokens: completion.Usage.CompletionTokens,
 	}, nil
+}
+
+// truncateForAILog 控制日志中的内容长度，避免输出过长。
+func truncateForAILog(input string) string {
+	const limit = 1200
+	if input == "" {
+		return ""
+	}
+	runes := []rune(input)
+	if len(runes) <= limit {
+		return input
+	}
+	return string(runes[:limit]) + fmt.Sprintf("…(len=%d)", len(runes))
 }

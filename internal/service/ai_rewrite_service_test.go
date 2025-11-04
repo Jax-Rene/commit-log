@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -118,6 +119,178 @@ func TestAIRewriteServiceOptimizeContent(t *testing.T) {
 	}
 	if result.PromptTokens != 512 || result.CompletionTokens != 1024 {
 		t.Fatalf("unexpected usage: %+v", result)
+	}
+}
+
+func TestAIRewriteServiceOptimizeContentWithImages(t *testing.T) {
+	cleanup := setupAIRewriteTestDB(t)
+	defer cleanup()
+
+	system := NewSystemSettingService(db.DB)
+	if _, err := system.UpdateSettings(SystemSettingsInput{
+		AIProvider:      AIProviderOpenAI,
+		OpenAIAPIKey:    "sk-images",
+		AIRewritePrompt: "图片优化提示",
+	}); err != nil {
+		t.Fatalf("failed to seed settings: %v", err)
+	}
+
+	longURL := "https://assets.example.com/path/to/very/long/image/name/with/query.png?foo=bar&hello=world"
+	var capturedPrompt string
+
+	svc := NewAIRewriteService(system)
+	svc.SetOpenAIBaseURL("https://openai.images/v1")
+	svc.SetHTTPClient(fakeHTTPClient{handler: func(r *http.Request) (*http.Response, error) {
+		var payload chatCompletionRequest
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("failed to read request body: %v", err)
+		}
+		if err := json.Unmarshal(body, &payload); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+		if len(payload.Messages) != 2 {
+			t.Fatalf("expected 2 messages, got %d", len(payload.Messages))
+		}
+
+		capturedPrompt = payload.Messages[1].Content
+
+		if !strings.Contains(capturedPrompt, "image://asset-1") {
+			t.Fatalf("prompt should contain placeholder, got %q", capturedPrompt)
+		}
+		if strings.Contains(capturedPrompt, longURL) {
+			t.Fatalf("prompt should not expose original url: %q", capturedPrompt)
+		}
+
+		response := chatCompletionResponse{
+			Choices: []struct {
+				Message chatMessage `json:"message"`
+			}{
+				{Message: chatMessage{Role: "assistant", Content: "```markdown\n![图示](image://asset-1 \"示意图\")\n```"}},
+			},
+			Usage: struct {
+				PromptTokens     int `json:"prompt_tokens"`
+				CompletionTokens int `json:"completion_tokens"`
+			}{PromptTokens: 321, CompletionTokens: 654},
+		}
+		buf, _ := json.Marshal(response)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewReader(buf)),
+			Header:     make(http.Header),
+		}, nil
+	}})
+
+	result, err := svc.OptimizeContent(context.Background(), ContentOptimizationInput{
+		Content: "![图示](" + longURL + " \"示意图\")\n\n正文段落。",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Content == "" {
+		t.Fatal("expected non-empty content")
+	}
+	if strings.Contains(result.Content, "image://asset-1") {
+		t.Fatalf("optimized content should restore original url: %q", result.Content)
+	}
+	if !strings.Contains(result.Content, longURL) {
+		t.Fatalf("optimized content should contain original url: %q", result.Content)
+	}
+	if result.PromptTokens != 321 || result.CompletionTokens != 654 {
+		t.Fatalf("unexpected usage: %+v", result)
+	}
+}
+
+func TestAIRewriteServiceOptimizeContentSplitsLongInput(t *testing.T) {
+	cleanup := setupAIRewriteTestDB(t)
+	defer cleanup()
+
+	system := NewSystemSettingService(db.DB)
+	if _, err := system.UpdateSettings(SystemSettingsInput{
+		AIProvider:      AIProviderOpenAI,
+		OpenAIAPIKey:    "sk-split",
+		AIRewritePrompt: "分段提示",
+	}); err != nil {
+		t.Fatalf("failed to seed settings: %v", err)
+	}
+
+	var callCount int
+	var prompts []string
+
+	svc := NewAIRewriteService(system)
+	svc.SetOpenAIBaseURL("https://openai.split/v1")
+	svc.SetHTTPClient(fakeHTTPClient{handler: func(r *http.Request) (*http.Response, error) {
+		var payload chatCompletionRequest
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("failed to read request body: %v", err)
+		}
+		if err := json.Unmarshal(body, &payload); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+		if len(payload.Messages) != 2 {
+			t.Fatalf("expected 2 messages, got %d", len(payload.Messages))
+		}
+
+		callCount++
+		prompts = append(prompts, payload.Messages[1].Content)
+
+		content := fmt.Sprintf("```markdown\n优化片段-%d\n```", callCount)
+		response := chatCompletionResponse{
+			Choices: []struct {
+				Message chatMessage `json:"message"`
+			}{
+				{Message: chatMessage{Role: "assistant", Content: content}},
+			},
+			Usage: struct {
+				PromptTokens     int `json:"prompt_tokens"`
+				CompletionTokens int `json:"completion_tokens"`
+			}{PromptTokens: 10 * callCount, CompletionTokens: 20 * callCount},
+		}
+		buf, _ := json.Marshal(response)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewReader(buf)),
+			Header:     make(http.Header),
+		}, nil
+	}})
+
+	longContent := strings.Repeat("这是一段需要优化的文本。\n", (maxOptimizationContentRuneCount/10)+50)
+	result, err := svc.OptimizeContent(context.Background(), ContentOptimizationInput{
+		Content: longContent,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if callCount < 2 {
+		t.Fatalf("expected multiple API calls, got %d", callCount)
+	}
+
+	totalSegments := callCount
+	for idx, prompt := range prompts {
+		flag := fmt.Sprintf("%d/%d", idx+1, totalSegments)
+		if !strings.Contains(prompt, flag) {
+			t.Fatalf("prompt %d should include segment flag %s: %q", idx+1, flag, prompt)
+		}
+	}
+
+	for i := 1; i <= callCount; i++ {
+		segmentLabel := fmt.Sprintf("优化片段-%d", i)
+		if !strings.Contains(result.Content, segmentLabel) {
+			t.Fatalf("result should include %s, got %q", segmentLabel, result.Content)
+		}
+	}
+
+	expectedPromptTokens := 0
+	expectedCompletionTokens := 0
+	for i := 1; i <= callCount; i++ {
+		expectedPromptTokens += 10 * i
+		expectedCompletionTokens += 20 * i
+	}
+	if result.PromptTokens != expectedPromptTokens || result.CompletionTokens != expectedCompletionTokens {
+		t.Fatalf("unexpected usage: %+v (calls=%d)", result, callCount)
 	}
 }
 

@@ -111,8 +111,8 @@ func (s *AIRewriteService) OptimizeContent(ctx context.Context, input ContentOpt
 		maxTokens = defaultOptimizationMaxTokens
 	}
 
-	contentSnippet := truncateRunes(content, maxOptimizationContentRuneCount)
-	userPrompt := buildOptimizationPrompt(contentSnippet)
+	sanitizedContent, placeholders := compressMarkdownImageURLs(content)
+	segments := splitMarkdownSegments(sanitizedContent, maxOptimizationContentRuneCount)
 
 	settings, err := s.client.settings.GetSettings()
 	if err != nil {
@@ -124,25 +124,47 @@ func (s *AIRewriteService) OptimizeContent(ctx context.Context, input ContentOpt
 		systemPrompt = defaultRewriteSystemPrompt
 	}
 
-	result, err := s.client.callWithSettings(ctx, settings, aiChatRequest{
-		SystemPrompt: systemPrompt,
-		UserPrompt:   userPrompt,
-		MaxTokens:    maxTokens,
-		Temperature:  defaultOptimizationTemperature,
-	})
-	if err != nil {
-		return ContentOptimizationResult{}, err
-	}
-
-	optimized := normalizeAIContent(result.Content)
-	if optimized == "" {
+	totalSegments := len(segments)
+	if totalSegments == 0 {
 		return ContentOptimizationResult{}, ErrOptimizationEmpty
 	}
 
+	var optimizedParts []string
+	var promptTokensSum, completionTokensSum int
+
+	for idx, segment := range segments {
+		userPrompt := buildOptimizationPrompt(segment, placeholders.Count() > 0, idx+1, totalSegments)
+		label := fmt.Sprintf("OPTIMIZE-%d/%d", idx+1, totalSegments)
+		logAIExchange(label, "prompt", userPrompt)
+
+		result, err := s.client.callWithSettings(ctx, settings, aiChatRequest{
+			SystemPrompt: systemPrompt,
+			UserPrompt:   userPrompt,
+			MaxTokens:    maxTokens,
+			Temperature:  defaultOptimizationTemperature,
+		})
+		if err != nil {
+			return ContentOptimizationResult{}, err
+		}
+
+		optimized := normalizeAIContent(result.Content)
+		if optimized == "" {
+			return ContentOptimizationResult{}, ErrOptimizationEmpty
+		}
+		logAIExchange(label, "response", optimized)
+
+		optimizedParts = append(optimizedParts, optimized)
+		promptTokensSum += result.PromptTokens
+		completionTokensSum += result.CompletionTokens
+	}
+
+	combined := strings.Join(optimizedParts, "\n\n")
+	combined = placeholders.Restore(combined)
+
 	return ContentOptimizationResult{
-		Content:          optimized,
-		PromptTokens:     result.PromptTokens,
-		CompletionTokens: result.CompletionTokens,
+		Content:          combined,
+		PromptTokens:     promptTokensSum,
+		CompletionTokens: completionTokensSum,
 	}, nil
 }
 
@@ -170,6 +192,7 @@ func (s *AIRewriteService) RewriteSnippet(ctx context.Context, input SnippetRewr
 	}
 
 	userPrompt := buildSnippetRewritePrompt(trimmedSelection, instruction, context)
+	logAIExchange("SNIPPET", "prompt", userPrompt)
 
 	settings, err := s.client.settings.GetSettings()
 	if err != nil {
@@ -195,6 +218,7 @@ func (s *AIRewriteService) RewriteSnippet(ctx context.Context, input SnippetRewr
 	if rewritten == "" {
 		return SnippetRewriteResult{}, ErrSnippetRewriteEmpty
 	}
+	logAIExchange("SNIPPET", "response", rewritten)
 
 	return SnippetRewriteResult{
 		Content:          rewritten,
@@ -203,9 +227,59 @@ func (s *AIRewriteService) RewriteSnippet(ctx context.Context, input SnippetRewr
 	}, nil
 }
 
-func buildOptimizationPrompt(content string) string {
+func splitMarkdownSegments(content string, limit int) []string {
+	trimmed := strings.TrimSpace(content)
+	if trimmed == "" {
+		return nil
+	}
+	if limit <= 0 {
+		return []string{trimmed}
+	}
+
+	runes := []rune(content)
+	if len(runes) <= limit {
+		return []string{content}
+	}
+
+	var segments []string
+	start := 0
+	for start < len(runes) {
+		end := start + limit
+		if end >= len(runes) {
+			segments = append(segments, string(runes[start:]))
+			break
+		}
+
+		split := end
+		for i := end; i > start; i-- {
+			if runes[i-1] == '\n' {
+				split = i
+				break
+			}
+		}
+		if split == start {
+			split = end
+		}
+
+		segment := string(runes[start:split])
+		if strings.TrimSpace(segment) != "" {
+			segments = append(segments, segment)
+		}
+		start = split
+	}
+
+	return segments
+}
+
+func buildOptimizationPrompt(content string, hasImagePlaceholder bool, segmentIndex, totalSegments int) string {
 	var builder strings.Builder
 	builder.WriteString("文章正文（Markdown）：\n")
+	if totalSegments > 1 {
+		builder.WriteString(fmt.Sprintf("当前为第 %d/%d 段，请保持与全文一致的语气，仅润色该段内容。\n\n", segmentIndex, totalSegments))
+	}
+	if hasImagePlaceholder {
+		builder.WriteString("注意：文中 image://asset-* 链接为图片占位符，请保持原始占位符不变。\n\n")
+	}
 	builder.WriteString(strings.TrimSpace(content))
 	return builder.String()
 }

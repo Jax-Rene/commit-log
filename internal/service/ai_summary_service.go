@@ -88,8 +88,10 @@ func (s *AISummaryService) GenerateSummary(ctx context.Context, input SummaryInp
 		maxTokens = defaultSummaryMaxTokens
 	}
 
-	contentSnippet := truncateRunes(input.Content, maxSummaryContentRuneCount)
-	userPrompt := buildSummaryPrompt(input.Title, contentSnippet)
+	sanitizedContent, placeholders := compressMarkdownImageURLs(input.Content)
+	contentSnippet := truncateRunes(sanitizedContent, maxSummaryContentRuneCount)
+	userPrompt := buildSummaryPrompt(input.Title, contentSnippet, placeholders.Count() > 0)
+	logAIExchange("SUMMARY", "prompt", userPrompt)
 
 	settings, err := s.client.settings.GetSettings()
 	if err != nil {
@@ -112,6 +114,8 @@ func (s *AISummaryService) GenerateSummary(ctx context.Context, input SummaryInp
 	}
 
 	summary := strings.TrimSpace(result.Content)
+	logAIExchange("SUMMARY", "response", summary)
+
 	return SummaryResult{
 		Summary:          summary,
 		PromptTokens:     result.PromptTokens,
@@ -119,7 +123,7 @@ func (s *AISummaryService) GenerateSummary(ctx context.Context, input SummaryInp
 	}, nil
 }
 
-func buildSummaryPrompt(title, content string) string {
+func buildSummaryPrompt(title, content string, hasImagePlaceholder bool) string {
 	title = strings.TrimSpace(title)
 	content = strings.TrimSpace(content)
 	var builder strings.Builder
@@ -129,6 +133,9 @@ func buildSummaryPrompt(title, content string) string {
 		builder.WriteString("\n")
 	}
 	if content != "" {
+		if hasImagePlaceholder {
+			builder.WriteString("注意：正文中的 image://asset-* 链接代表原始图片，请保持这些占位符不变。\n\n")
+		}
 		builder.WriteString("正文：\n")
 		builder.WriteString(content)
 	}
