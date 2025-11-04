@@ -94,17 +94,7 @@ func (a *API) CreatePost(c *gin.Context) {
 		return
 	}
 
-	notices, warnings := a.maybeGenerateSummary(c, post)
-
-	response := gin.H{"message": "文章创建成功", "post": post}
-	if len(notices) > 0 {
-		response["notices"] = notices
-	}
-	if len(warnings) > 0 {
-		response["warnings"] = warnings
-	}
-
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, gin.H{"message": "文章创建成功", "post": post})
 }
 
 // UpdatePost 更新文章
@@ -137,16 +127,7 @@ func (a *API) UpdatePost(c *gin.Context) {
 		return
 	}
 
-	notices, warnings := a.maybeGenerateSummary(c, post)
-	response := gin.H{"message": "草稿更新成功", "post": post}
-	if len(notices) > 0 {
-		response["notices"] = notices
-	}
-	if len(warnings) > 0 {
-		response["warnings"] = warnings
-	}
-
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, gin.H{"message": "草稿更新成功", "post": post})
 }
 
 // PublishPost 发布文章并生成快照
@@ -184,8 +165,6 @@ func (a *API) PublishPost(c *gin.Context) {
 		return
 	}
 
-	notices, warnings := a.maybeGenerateSummary(c, post)
-
 	if refreshed, refreshErr := a.posts.LatestPublication(id); refreshErr == nil {
 		publication = refreshed
 	} else {
@@ -197,13 +176,6 @@ func (a *API) PublishPost(c *gin.Context) {
 		"publication": publication,
 		"post":        post,
 	}
-	if len(notices) > 0 {
-		response["notices"] = notices
-	}
-	if len(warnings) > 0 {
-		response["warnings"] = warnings
-	}
-
 	c.JSON(http.StatusOK, response)
 }
 
@@ -391,41 +363,6 @@ func (a *API) RewritePostSelection(c *gin.Context) {
 	})
 }
 
-func (a *API) maybeGenerateSummary(c *gin.Context, post *db.Post) (notices, warnings []string) {
-	if post == nil {
-		return nil, nil
-	}
-	if strings.TrimSpace(post.Summary) != "" {
-		return nil, nil
-	}
-	if !strings.EqualFold(strings.TrimSpace(post.Status), "published") {
-		return nil, nil
-	}
-	if a.summaries == nil {
-		return nil, []string{"未配置 AI 摘要服务，无法自动生成摘要"}
-	}
-	result, err := a.summaries.GenerateSummary(c.Request.Context(), service.SummaryInput{
-		Title:   post.Title,
-		Content: post.Content,
-	})
-	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("自动摘要生成失败：%v", err))
-		return nil, warnings
-	}
-	summary := strings.TrimSpace(result.Summary)
-	if summary == "" {
-		warnings = append(warnings, "自动摘要生成失败：模型未返回内容")
-		return nil, warnings
-	}
-	if err := a.posts.UpdateSummary(post.ID, summary); err != nil {
-		warnings = append(warnings, "自动摘要保存失败，请稍后重试")
-		return nil, warnings
-	}
-	post.Summary = summary
-	notices = append(notices, "已自动生成文章摘要，可根据需要调整内容")
-	return notices, nil
-}
-
 // ShowPostList 渲染文章管理列表页面
 func (a *API) ShowPostList(c *gin.Context) {
 	page := 1
@@ -556,23 +493,23 @@ func (a *API) ShowPostList(c *gin.Context) {
 }
 
 func (a *API) postEditPageData(c *gin.Context) gin.H {
-        data := gin.H{
-                "title":    "创建文章",
-                "allTags":  []db.Tag{},
-                "tagError": "",
-        }
+	data := gin.H{
+		"title":    "创建文章",
+		"allTags":  []db.Tag{},
+		"tagError": "",
+	}
 
-        if tags, err := a.tags.List(); err == nil {
-                data["allTags"] = tags
-        } else {
-                c.Error(err)
-                data["tagError"] = "加载标签失败，请稍后重试"
-        }
+	if tags, err := a.tags.List(); err == nil {
+		data["allTags"] = tags
+	} else {
+		c.Error(err)
+		data["tagError"] = "加载标签失败，请稍后重试"
+	}
 
-        if idParam := c.Param("id"); idParam != "" {
-                if id, err := strconv.ParseUint(idParam, 10, 32); err == nil {
-                        post, err := a.posts.Get(uint(id))
-                        if err == nil {
+	if idParam := c.Param("id"); idParam != "" {
+		if id, err := strconv.ParseUint(idParam, 10, 32); err == nil {
+			post, err := a.posts.Get(uint(id))
+			if err == nil {
 				data["title"] = "编辑文章"
 				data["post"] = post
 				if publication, pubErr := a.posts.LatestPublication(post.ID); pubErr == nil {

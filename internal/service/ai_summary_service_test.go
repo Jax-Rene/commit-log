@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/commitlog/internal/db"
@@ -191,5 +193,62 @@ func TestAISummaryServiceMissingAPIKey(t *testing.T) {
 	}
 	if err != ErrAIAPIKeyMissing {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestAISummaryServiceCompressesImageURLs(t *testing.T) {
+	cleanup := setupAISummaryTestDB(t)
+	defer cleanup()
+
+	system := NewSystemSettingService(db.DB)
+	if _, err := system.UpdateSettings(SystemSettingsInput{
+		AIProvider:      AIProviderOpenAI,
+		OpenAIAPIKey:    "sk-image",
+		AISummaryPrompt: "压缩测试",
+	}); err != nil {
+		t.Fatalf("failed to seed settings: %v", err)
+	}
+
+	var capturedPrompt string
+
+	svc := NewAISummaryService(system)
+	svc.SetBaseURL("https://openai.images/v1")
+	svc.SetHTTPClient(fakeHTTPClient{handler: func(r *http.Request) (*http.Response, error) {
+		var payload chatCompletionRequest
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+		if len(payload.Messages) != 2 {
+			t.Fatalf("expected 2 messages, got %d", len(payload.Messages))
+		}
+		capturedPrompt = payload.Messages[1].Content
+
+		response := chatCompletionResponse{
+			Choices: []struct {
+				Message chatMessage "json:\"message\""
+			}{{Message: chatMessage{Role: "assistant", Content: "摘要"}}},
+		}
+		buf, _ := json.Marshal(response)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(bytes.NewReader(buf)),
+			Header:     make(http.Header),
+		}, nil
+	}})
+
+	longURL := "https://cdn.example.com/assets/very-long-image-name/with/really/long/path/index.png?query=foo&bar=baz"
+	_, err := svc.GenerateSummary(context.Background(), SummaryInput{
+		Title:   "含有图片的文章",
+		Content: fmt.Sprintf("![示例图片](%s)\n\n正文内容。", longURL),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(capturedPrompt, "image://asset-1") {
+		t.Fatalf("prompt should contain placeholder: %s", capturedPrompt)
+	}
+	if strings.Contains(capturedPrompt, longURL) {
+		t.Fatalf("prompt should not include original long url: %s", capturedPrompt)
 	}
 }
