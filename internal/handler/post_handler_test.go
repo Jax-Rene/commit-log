@@ -193,7 +193,7 @@ func TestCreatePostRejectsUnknownTags(t *testing.T) {
 	}
 }
 
-func TestCreatePostAutoSummary(t *testing.T) {
+func TestPublishPostDoesNotAutoGenerateSummary(t *testing.T) {
 	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
@@ -250,8 +250,8 @@ func TestCreatePostAutoSummary(t *testing.T) {
 		t.Fatalf("expected publish status 200, got %d", w.Code)
 	}
 
-	if stub.calls != 1 {
-		t.Fatalf("expected summary generator to run on publish, got %d", stub.calls)
+	if stub.calls != 0 {
+		t.Fatalf("expected summary generator not to run automatically, got %d", stub.calls)
 	}
 
 	var publishResp map[string]any
@@ -266,8 +266,8 @@ func TestCreatePostAutoSummary(t *testing.T) {
 	if created.Status != "published" {
 		t.Fatalf("expected post status published, got %s", created.Status)
 	}
-	if created.Summary != "AI 生成的摘要" {
-		t.Fatalf("expected summary to be updated, got %q", created.Summary)
+	if created.Summary != "" {
+		t.Fatalf("expected summary to stay empty, got %q", created.Summary)
 	}
 	if created.LatestPublicationID == nil {
 		t.Fatalf("expected latest publication id to be stored")
@@ -277,17 +277,12 @@ func TestCreatePostAutoSummary(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected publish response to include publication")
 	}
-	if summary, _ := publicationData["Summary"].(string); summary != "AI 生成的摘要" {
-		t.Fatalf("expected publication summary to be updated, got %q", summary)
-	}
-
-	notices, _ := publishResp["notices"].([]any)
-	if len(notices) == 0 {
-		t.Fatalf("expected notices to include AI summary hint")
+	if summary, _ := publicationData["Summary"].(string); summary != "" {
+		t.Fatalf("expected publication summary to stay empty, got %q", summary)
 	}
 }
 
-func TestCreatePostAutoSummaryFailure(t *testing.T) {
+func TestPublishPostDoesNotAutoGenerateSummaryWhenFailed(t *testing.T) {
 	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
@@ -344,17 +339,8 @@ func TestCreatePostAutoSummaryFailure(t *testing.T) {
 		t.Fatalf("expected publish status 200, got %d", w.Code)
 	}
 
-	if stub.calls != 1 {
-		t.Fatalf("expected summary generator to run once on publish, got %d", stub.calls)
-	}
-
-	var publishResp map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &publishResp); err != nil {
-		t.Fatalf("failed to decode publish response: %v", err)
-	}
-	warnings, _ := publishResp["warnings"].([]any)
-	if len(warnings) == 0 {
-		t.Fatalf("expected warnings when summary generation fails")
+	if stub.calls != 0 {
+		t.Fatalf("expected summary generator not to run automatically, got %d", stub.calls)
 	}
 
 	var created db.Post
