@@ -219,3 +219,52 @@ test('TOC 超出锁定容差后允许重新激活最后标题', () => {
         controller.destroy();
         cleanup();
 });
+
+test('TOC 点击时记录滚动位置并在容差内保持锁定', () => {
+        const cleanup = createDomEnvironment();
+        const { list } = buildEditorDom();
+        const controller = setupPostEditorToc();
+        controller.refresh();
+
+        mockScrollEnvironment({ scrollHeight: 2000, innerHeight: 800, scrollY: 620 });
+        dispatchScroll();
+
+        const links = list.querySelectorAll('.toc-link');
+        assert.ok(links.length >= 3, '至少包含 3 个目录链接');
+        const targetIndex = 2;
+        const targetLink = links[targetIndex];
+        targetLink.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+        const tocState = window.__TEST_TOC_STATE__;
+        assert.ok(tocState, '需要可观测 TOC 内部状态');
+        assert.strictEqual(
+                tocState.getLockedId(),
+                targetLink.dataset.tocTarget,
+                '点击后应锁定对应的标题',
+        );
+        assert.strictEqual(tocState.getLockOffset(), 620, '锁定时应记录当前滚动位置');
+
+        mockScrollEnvironment({ scrollHeight: 2000, innerHeight: 800, scrollY: 760 });
+        dispatchScroll();
+        tocState.runUpdate?.();
+
+        let items = list.querySelectorAll('.toc-item');
+        assert.ok(
+                items[targetIndex].classList.contains('is-active'),
+                '滚动距离不足容差时仍应保持锁定标题',
+        );
+
+        mockScrollEnvironment({ scrollHeight: 2000, innerHeight: 800, scrollY: 900 });
+        dispatchScroll();
+        tocState.runUpdate?.();
+
+        items = list.querySelectorAll('.toc-item');
+        assert.strictEqual(tocState.getLockedId(), null, '超过容差后应释放锁定');
+        assert.ok(
+                !items[targetIndex].classList.contains('is-active'),
+                '释放锁定后点击的标题不应继续保持激活状态',
+        );
+
+        controller.destroy();
+        cleanup();
+});
