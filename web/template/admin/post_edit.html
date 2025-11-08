@@ -628,7 +628,22 @@ function setupPostEditorToc() {
         const card = document.querySelector('[data-editor-toc-card]');
         const list = card?.querySelector('[data-toc-list]');
         const contentHost = document.querySelector('[data-editor-toc-content]');
-        const scrollContainer = document.querySelector('[data-editor-scroll]');
+        const scrollContainer = (() => {
+                // 只在容器真的可滚动时才将其视为滚动根，避免错误的基准计算
+                const candidate = document.querySelector('[data-editor-scroll]');
+                if (!candidate) {
+                        return null;
+                }
+                const style = window.getComputedStyle(candidate);
+                const overflowY = style.overflowY || '';
+                const overflow = style.overflow || '';
+                const mayScroll = /auto|scroll/i.test(`${overflowY} ${overflow}`);
+                const hasScrollableContent = candidate.scrollHeight - candidate.clientHeight > 1;
+                if (!mayScroll || !hasScrollableContent) {
+                        return null;
+                }
+                return candidate;
+        })();
         if (!card || !list || !contentHost) {
                 return null;
         }
@@ -636,6 +651,33 @@ function setupPostEditorToc() {
         const slugCounts = new Map();
         const itemsMap = new Map();
         const scrollRoot = scrollContainer || window;
+        const getScrollMetrics = () => {
+                // 统一提取滚动范围和当前位置，确保窗口/自定义容器都能正确判断"接近底部"
+                if (scrollContainer) {
+                        return {
+                                max: scrollContainer.scrollHeight,
+                                current: scrollContainer.scrollTop + scrollContainer.clientHeight,
+                                threshold: Math.max(32, scrollContainer.clientHeight * 0.05),
+                        };
+                }
+                const doc = document.scrollingElement || document.documentElement || document.body;
+                return {
+                        max: doc.scrollHeight,
+                        current: window.scrollY + window.innerHeight,
+                        threshold: Math.max(32, window.innerHeight * 0.05),
+                };
+        };
+        const isNearScrollEnd = () => {
+                const { max, current, threshold } = getScrollMetrics();
+                return max - current <= threshold;
+        };
+        const getScrollOffset = () => {
+                if (scrollContainer) {
+                        return scrollContainer.scrollTop;
+                }
+                const doc = document.scrollingElement || document.documentElement || document.body;
+                return typeof window.scrollY === 'number' ? window.scrollY : doc.scrollTop;
+        };
         const mq = typeof window.matchMedia === 'function' ? window.matchMedia('(min-width: 1280px)') : null;
 
         let headingsData = [];
@@ -645,6 +687,8 @@ function setupPostEditorToc() {
         let rebuildFrame = null;
         let updateFrame = null;
         let suppressAutoUpdateUntil = 0;
+        let lockedTargetId = null; // 记录用户点击的标题，避免自动激活越界
+        let lockScrollOffset = null;
 
         const isLargeScreen = () => !mq || mq.matches;
         const ensureContentRoot = () => contentHost.querySelector('.ProseMirror') || contentHost;
@@ -714,6 +758,30 @@ function setupPostEditorToc() {
                 next.link.setAttribute('aria-current', 'true');
                 activeId = id;
         };
+        const releaseLockIfNeeded = () => {
+                // 当用户滚动偏离点击时的滚动位置较远，或者目标元素不存在时释放锁
+                if (!lockedTargetId || !itemsMap.has(lockedTargetId)) {
+                        lockedTargetId = null;
+                        lockScrollOffset = null;
+                        return;
+                }
+                const lockedHeading = itemsMap.get(lockedTargetId)?.heading;
+                if (!lockedHeading || !lockedHeading.isConnected) {
+                        lockedTargetId = null;
+                        lockScrollOffset = null;
+                        return;
+                }
+                if (lockScrollOffset == null) {
+                        lockScrollOffset = getScrollOffset();
+                        return;
+                }
+                const delta = Math.abs(getScrollOffset() - lockScrollOffset);
+                const tolerance = 240;
+                if (delta > tolerance) {
+                        lockedTargetId = null;
+                        lockScrollOffset = null;
+                }
+        };
         const updateActive = () => {
                 if (!headingsData.length) {
                         resetActive();
@@ -721,6 +789,12 @@ function setupPostEditorToc() {
                 }
                 const containerRect = scrollContainer ? scrollContainer.getBoundingClientRect() : null;
                 const baseline = (containerRect ? containerRect.top : 0) + 120;
+                releaseLockIfNeeded();
+                if (lockedTargetId && itemsMap.has(lockedTargetId)) {
+                        setActive(lockedTargetId);
+                        return;
+                }
+                const nearScrollEnd = isNearScrollEnd();
                 let before = null;
                 let after = null;
                 for (const item of headingsData) {
@@ -736,8 +810,12 @@ function setupPostEditorToc() {
                                 break;
                         }
                 }
+                const lastItem = headingsData[headingsData.length - 1];
+                const forceLast = nearScrollEnd && (!lockedTargetId || lockedTargetId === lastItem.id);
                 let finalCandidate = null;
-                if (before && after) {
+                if (forceLast) {
+                        finalCandidate = lastItem;
+                } else if (before && after) {
                         finalCandidate = before.distance <= after.distance ? before.item : after.item;
                 } else if (before) {
                         finalCandidate = before.item;
@@ -855,6 +933,8 @@ function setupPostEditorToc() {
                         return;
                 }
                 const heading = entry.heading;
+                lockedTargetId = targetId;
+                lockScrollOffset = getScrollOffset();
                 try {
                         heading.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
                 } catch (error) {
@@ -930,6 +1010,8 @@ function setupPostEditorToc() {
                         list.innerHTML = '';
                         headingsData = [];
                         itemsMap.clear();
+                        lockedTargetId = null;
+                        lockScrollOffset = null;
                         resetActive();
                 },
         };
