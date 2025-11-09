@@ -5,6 +5,7 @@ import { Mandarin } from 'flatpickr/dist/l10n/zh.js';
 import EasyMDE from 'easymde';
 import Cropper from 'cropperjs';
 import hljs from 'highlight.js/lib/common';
+import { createEditorTocController } from './toc_controller.js';
 
 import 'flatpickr/dist/flatpickr.min.css';
 import 'flatpickr/dist/themes/airbnb.css';
@@ -24,3 +25,7 @@ globalThis.hljs = hljs;
 flatpickr.localize(Mandarin);
 
 Alpine.start();
+
+globalThis.CommitLog = globalThis.CommitLog || {};
+globalThis.CommitLog.toc = globalThis.CommitLog.toc || {};
+globalThis.CommitLog.toc.createEditorController = createEditorTocController;
