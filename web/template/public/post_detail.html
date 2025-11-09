@@ -6,7 +6,13 @@
 		background-color: var(--surface-soft-light) !important;
 	}
 
-	[data-toc-card] nav::before {
+        [data-toc-content] h1,
+        [data-toc-content] h2,
+        [data-toc-content] h3 {
+                scroll-margin-top: 6.5rem;
+        }
+
+        [data-toc-card] nav::before {
 		content: "";
 		position: absolute;
 		top: 0.5rem;
