@@ -6,52 +6,172 @@
 		background-color: var(--surface-soft-light) !important;
 	}
 
+        [data-toc-content] h1,
+        [data-toc-content] h2,
+        [data-toc-content] h3 {
+                scroll-margin-top: 6.5rem;
+        }
+
+        [data-toc-card] nav::before {
+		content: "";
+		position: absolute;
+		top: 0.5rem;
+		bottom: 0.75rem;
+		left: 0.75rem;
+		width: 1px;
+	}
+
+	[data-toc-card] ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	[data-toc-card] .toc-item {
+		position: relative;
+	}
+
+	[data-toc-card] .toc-link {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		font-size: 0.875rem;
+		line-height: 1.4;
+		color: rgb(100, 116, 139);
+		text-decoration: none;
+	}
+
+	[data-toc-card] .toc-link:focus-visible {
+		outline: 2px solid rgba(59, 130, 246, 0.4);
+		outline-offset: 4px;
+		border-radius: 12px;
+	}
+
+	[data-toc-card] .toc-tick {
+		height: 2px;
+		width: 14px;
+		border-radius: 9999px;
+		background-color: rgba(148, 163, 184, 0.5);
+		transition: background-color 0.2s ease, width 0.2s ease;
+	}
+
+	[data-toc-card] .toc-text {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		max-width: 100%;
+	}
+
+	[data-toc-card] .toc-item[data-level="2"] .toc-text {
+		margin-left: 0.75rem;
+	}
+
+	[data-toc-card] .toc-item[data-level="3"] .toc-text {
+		margin-left: 1.5rem;
+	}
+
+	[data-toc-card] .toc-item.is-active .toc-link {
+		color: rgb(30, 64, 175);
+		font-weight: 600;
+	}
+
+	[data-toc-card] .toc-item.is-active .toc-tick {
+		width: 18px;
+		background-color: rgb(59, 130, 246);
+	}
+
 	@media (prefers-color-scheme: dark) {
 		body.bg-white {
 			background-color: var(--surface-soft-dark) !important;
 		}
+
+		[data-toc-card] {
+			background-color: transparent;
+			border-color: transparent;
+			box-shadow: none;
+		}
+
+		[data-toc-card] .toc-link:focus-visible {
+			outline-color: rgba(148, 197, 255, 0.55);
+		}
+
+		[data-toc-card] nav::before {
+			background: linear-gradient(180deg, rgba(71, 85, 105, 0.55), rgba(71, 85, 105, 0.15));
+		}
+
+		[data-toc-card] .toc-link {
+			color: rgba(148, 163, 184, 0.9);
+		}
+
+		[data-toc-card] .toc-tick {
+			background-color: rgba(148, 163, 184, 0.35);
+		}
+
+		[data-toc-card] .toc-item.is-active .toc-link {
+			color: rgba(191, 219, 254, 0.95);
+		}
+
+		[data-toc-card] .toc-item.is-active .toc-tick {
+			background-color: rgba(191, 219, 254, 0.95);
+		}
 	}
 </style>
-<article class="mx-auto mt-10 w-full space-y-10 px-6">
-	<header class="space-y-6">
-		<h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">{{.post.Title}}</h1>
-		<div class="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
-			{{if gt .post.ReadingTime 0}}
-			<span class="flex items-center">{{.post.ReadingTime}} 分钟阅读</span>
-			{{end}}
-			<span class="flex items-center">{{.pageViews}} 次浏览</span>
-			<span class="flex items-center">{{formatDate .post.PublishedAt}}</span>
-			{{range .post.Tags}}
-			<span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800/80 dark:text-slate-300">{{.Name}}</span>
-			{{end}}
-		</div>
-		<!-- {{if .post.CoverURL}}
-		<div class="relative w-full overflow-hidden rounded-3xl shadow-md shadow-slate-200/60 dark:shadow-slate-900/80" style="padding-top: {{aspectPadding .post.CoverWidth .post.CoverHeight}};">
-			<img src="{{.post.CoverURL}}" alt="{{.post.Title}} 封面" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
-		</div>
-		{{else}}
-		<div
-			class="flex h-72 w-full items-center justify-center rounded-3xl bg-gradient-to-br {{accent .post.Title}} text-5xl font-semibold text-white shadow-md">
-			{{initials .post.Title}}
-		</div>
-		{{end}} -->
-	</header>
+<article class="mx-auto mt-10 w-full max-w-6xl px-6 xl:px-8">
+	<div class="grid gap-12 xl:grid-cols-[minmax(0,1fr)_292px]">
+		<div class="space-y-10">
+			<header class="space-y-6">
+				<h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">{{.post.Title}}</h1>
+				<div class="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
+					{{if gt .post.ReadingTime 0}}
+					<span class="flex items-center">{{.post.ReadingTime}} 分钟阅读</span>
+					{{end}}
+					<span class="flex items-center">{{.pageViews}} 次浏览</span>
+					<span class="flex items-center">{{formatDate .post.PublishedAt}}</span>
+					{{range .post.Tags}}
+					<span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600 dark:bg-slate-800/80 dark:text-slate-300">{{.Name}}</span>
+					{{end}}
+				</div>
+				<!-- {{if .post.CoverURL}}
+				<div class="relative w-full overflow-hidden rounded-3xl shadow-md shadow-slate-200/60 dark:shadow-slate-900/80" style="padding-top: {{aspectPadding .post.CoverWidth .post.CoverHeight}};">
+					<img src="{{.post.CoverURL}}" alt="{{.post.Title}} 封面" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+				</div>
+				{{else}}
+				<div
+					class="flex h-72 w-full items-center justify-center rounded-3xl bg-gradient-to-br {{accent .post.Title}} text-5xl font-semibold text-white shadow-md">
+					{{initials .post.Title}}
+				</div>
+				{{end}} -->
+			</header>
 
-	<section class="post-content">
-		{{- if .post.Summary }}
-		<aside class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-left shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10">
-			<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300">全文总结</div>
-			<p class="whitespace-pre-line text-base leading-relaxed text-amber-900 dark:text-amber-100/90">{{.post.Summary}}</p>
+			<section class="post-content space-y-8">
+				{{- if .post.Summary }}
+				<aside class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-left shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+					<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300">全文总结</div>
+					<p class="whitespace-pre-line text-base leading-relaxed text-amber-900 dark:text-amber-100/90">{{.post.Summary}}</p>
+				</aside>
+				{{- end }}
+				<div id="post-milkdown-viewer" class="milkdown-preview hidden" data-milkdown-viewer data-toc-content></div>
+				<div id="post-html-fallback" data-post-fallback data-toc-content>
+					{{.content}}
+				</div>
+			</section>
+
+			<script type="application/json" id="post-markdown-data">{{- toJSON .post.Content -}}</script>
+
+			{{template "contact_links.html" (dict "Contacts" .contacts "Heading" "联系作者" "Subtitle" "在这些平台找到我。")}}
+		</div>
+
+		<aside class="hidden xl:block">
+			<div class="sticky top-28">
+				<div data-toc-card hidden
+					class="overflow-hidden rounded-3xl bg-transparent p-6 transition-transform duration-200">
+					<div class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">CONTENTS</div>
+					<nav class="relative mt-5" aria-label="Table of contents">
+						<ul class="space-y-3" data-toc-list></ul>
+					</nav>
+				</div>
+			</div>
 		</aside>
-		{{- end }}
-		<div id="post-milkdown-viewer" class="milkdown-preview hidden" data-milkdown-viewer></div>
-		<div id="post-html-fallback" data-post-fallback>
-			{{.content}}
-		</div>
-	</section>
-
-	<script type="application/json" id="post-markdown-data">{{- toJSON .post.Content -}}</script>
-
-	{{template "contact_links.html" (dict "Contacts" .contacts "Heading" "联系作者" "Subtitle" "在这些平台找到我。")}}
+	</div>
 </article>
 {{end}}

@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +16,7 @@
   "type": "commonjs",
   "devDependencies": {
     "autoprefixer": "^10.4.21",
+    "jsdom": "^27.1.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "vite": "^6.0.2"

@@ -37,26 +37,25 @@
                 min-height: 100vh;
         }
 
-        .milkdown-immersive-shell {
-                position: relative;
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-                overflow: hidden;
-        }
+	.milkdown-immersive-shell {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		overflow: visible;
+	}
 
         .milkdown-immersive-wrapper {
                 flex: 1 1 auto;
-                display: flex;
-                overflow-x: hidden;
-                overflow-y: auto;
+                display: block;
+                overflow: visible;
                 min-height: 0;
         }
 
         .milkdown-immersive-container {
                 flex: 1 1 auto;
-                display: flex;
-                flex-direction: column;
+                display: grid;
+                align-items: stretch;
                 min-height: 100%;
         }
 
@@ -79,11 +78,88 @@
                 padding: 0;
         }
 
-        @media (prefers-color-scheme: dark) {
-                body {
-                        background-color: #020617;
-                        color: #f1f5f9; /* 匹配 dark:text-slate-100 */
-                }
+        [data-editor-toc-content] h1,
+        [data-editor-toc-content] h2,
+        [data-editor-toc-content] h3 {
+                scroll-margin-top: 6.5rem;
+        }
+
+        [data-editor-toc-card] nav::before {
+                content: '';
+                position: absolute;
+                top: 0.75rem;
+                bottom: 0.75rem;
+                left: 0.75rem;
+                width: 1px;
+                background: linear-gradient(180deg, rgba(148, 163, 184, 0.28), rgba(148, 163, 184, 0.08));
+        }
+
+        [data-editor-toc-card] ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+        }
+
+        [data-editor-toc-card] .toc-item {
+                position: relative;
+        }
+
+        [data-editor-toc-card] .toc-link {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-size: 0.875rem;
+                line-height: 1.45;
+                color: rgba(71, 85, 105, 0.95);
+                text-decoration: none;
+                transition: color 0.2s ease;
+        }
+
+[data-editor-toc-card] .toc-link:focus-visible {
+        outline: 2px solid rgba(59, 130, 246, 0.4);
+        outline-offset: 4px;
+        border-radius: 12px;
+}
+
+[data-editor-toc-card] .toc-tick {
+        height: 2px;
+        width: 14px;
+        border-radius: 9999px;
+        background-color: rgba(148, 163, 184, 0.5);
+        transition: background-color 0.2s ease, width 0.2s ease;
+}
+
+[data-editor-toc-card] .toc-text {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        color: rgba(30, 41, 59, 0.82);
+}
+
+[data-editor-toc-card] .toc-item[data-level='2'] .toc-text {
+        margin-left: 0.75rem;
+}
+
+[data-editor-toc-card] .toc-item[data-level='3'] .toc-text {
+        margin-left: 1.5rem;
+}
+
+[data-editor-toc-card] .toc-item.is-active .toc-link {
+        color: rgb(30, 64, 175);
+        font-weight: 600;
+}
+
+[data-editor-toc-card] .toc-item.is-active .toc-tick {
+        width: 18px;
+        background-color: rgb(59, 130, 246);
+}
+
+@media (prefers-color-scheme: dark) {
+        body {
+                background-color: #020617;
+                color: #f1f5f9; /* 匹配 dark:text-slate-100 */
+        }
 
                 body.milkdown-immersive {
                         background-color: #020617;
@@ -95,18 +171,57 @@
                         color: #f1f5f9; /* 深色模式下提升文字可读性 */
                 }
 
-                .milkdown-preview .milkdown {
-                        background-color: transparent;
-                }
+        .milkdown-preview .milkdown {
+                background-color: transparent;
         }
+
+        [data-editor-toc-card] nav::before {
+                background: linear-gradient(180deg, rgba(71, 85, 105, 0.55), rgba(71, 85, 105, 0.18));
+        }
+
+        [data-editor-toc-card] .toc-link {
+                color: rgba(148, 163, 184, 0.92);
+        }
+
+        [data-editor-toc-card] .toc-text {
+                color: rgba(226, 232, 240, 0.86);
+        }
+
+        [data-editor-toc-card] .toc-link:focus-visible {
+                outline-color: rgba(148, 197, 255, 0.55);
+        }
+
+        [data-editor-toc-card] .toc-tick {
+                background-color: rgba(148, 163, 184, 0.38);
+        }
+
+        [data-editor-toc-card] .toc-item.is-active .toc-link {
+                color: rgba(191, 219, 254, 0.95);
+        }
+
+        [data-editor-toc-card] .toc-item.is-active .toc-tick {
+                background-color: rgba(191, 219, 254, 0.95);
+        }
+}
 </style>
 
-<div class="milkdown-immersive-shell" x-data="postEditorShell()" x-init="init()" x-cloak>
-        <div class="milkdown-immersive-wrapper">
-                <div class="milkdown-immersive-container mx-auto flex w-full max-w-screen-xl flex-col px-6 pt-10 pb-10 md:px-12 md:pb-24 lg:px-16 xl:px-20 2xl:max-w-screen-2xl 2xl:px-24">
-                        <div id="milkdown-app" class="milkdown"></div>
-                </div>
-        </div>
+	<div class="milkdown-immersive-shell" x-data="postEditorShell()" x-init="init()" x-cloak>
+		<div class="milkdown-immersive-wrapper" data-editor-scroll>
+			<div
+				class="milkdown-immersive-container mx-auto grid w-full max-w-screen-xl grid-cols-1 gap-10 px-6 pt-10 pb-10 md:px-12 md:pb-24 lg:px-16 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-stretch xl:gap-16 xl:px-20 2xl:max-w-screen-2xl 2xl:px-24">
+				<div class="flex min-h-full flex-col">
+					<div id="milkdown-app" class="milkdown" data-editor-toc-content></div>
+				</div>
+				<aside class="hidden xl:flex xl:flex-col">
+					<div data-editor-toc-card class="sticky top-24 hidden w-full max-w-[18rem] rounded-3xl bg-transparent p-5">
+						<div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">CONTENTS</div>
+						<nav class="relative mt-5" aria-label="Table of contents">
+							<ul class="space-y-3" data-toc-list></ul>
+						</nav>
+					</div>
+				</aside>
+			</div>
+		</div>
 
         <div class="pointer-events-none fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
                 <div class="pointer-events-auto flex flex-col items-end gap-3" @mouseenter="handleQuickActionsMouseEnter()" @mouseleave="handleQuickActionsMouseLeave()" @focusin="handleQuickActionsMouseEnter()" @focusout="handleQuickActionsFocusOut($event)" @click.outside="handleQuickActionsOutside()">
@@ -501,6 +616,14 @@ window.addEventListener('pagehide', milkdownCleanup, { once: true });
 window.addEventListener('beforeunload', milkdownCleanup, { once: true });
 </script>
 <script>
+function setupPostEditorToc() {
+        const factory = window.CommitLog?.toc?.createEditorController;
+        if (typeof factory !== 'function') {
+                return null;
+        }
+        return factory();
+}
+
 document.addEventListener('alpine:init', () => {
         const sanitizeString = value => (typeof value === 'string' ? value : '');
         const sanitizeNumber = value => {
@@ -593,10 +716,56 @@ document.addEventListener('alpine:init', () => {
                         loading: false,
                         error: '',
                 },
+                editorToc: null,
+                editorTocRefreshTimer: null,
                 statusTimer: null,
                 handleInlineAIRequest: null,
                 latestPublication: null,
                 publishing: false,
+                setupEditorToc() {
+                        if (this.editorToc) {
+                                return;
+                        }
+                        if (typeof setupPostEditorToc !== 'function') {
+                                return;
+                        }
+                        const instance = setupPostEditorToc();
+                        if (instance) {
+                                this.editorToc = instance;
+                        } else {
+                                window.setTimeout(() => {
+                                        if (!this.editorToc) {
+                                                this.setupEditorToc();
+                                        }
+                                }, 400);
+                        }
+                },
+                scheduleEditorTocRefresh() {
+                        if (!this.editorToc) {
+                                this.setupEditorToc();
+                        }
+                        if (this.editorTocRefreshTimer) {
+                                window.clearTimeout(this.editorTocRefreshTimer);
+                        }
+                        this.editorTocRefreshTimer = window.setTimeout(() => {
+                                this.editorTocRefreshTimer = null;
+                                if (this.editorToc && typeof this.editorToc.refresh === 'function') {
+                                        this.editorToc.refresh();
+                                } else if (!this.editorToc) {
+                                        this.setupEditorToc();
+                                }
+                        }, 180);
+                },
+                destroyEditorToc() {
+                        if (this.editorTocRefreshTimer) {
+                                window.clearTimeout(this.editorTocRefreshTimer);
+                                this.editorTocRefreshTimer = null;
+                        }
+                        if (this.editorToc && typeof this.editorToc.destroy === 'function') {
+                                this.editorToc.destroy();
+                        }
+                        this.editorToc = null;
+                },
                 init() {
                         this.availableTags = this.normalizeTags(window.__MILKDOWN_V2__?.allTags || []);
                         this.tagError = sanitizeString(window.__MILKDOWN_V2__?.tagError || '');
@@ -612,6 +781,7 @@ document.addEventListener('alpine:init', () => {
                                 } else if (detail.controller?.contentMetrics) {
                                         this.applyContentMetrics(detail.controller.contentMetrics);
                                 }
+                                this.scheduleEditorTocRefresh();
                         };
                         this.handleInlineAIRequest = event => {
                                 const selection = event?.detail?.selection || {};
@@ -666,6 +836,7 @@ document.addEventListener('alpine:init', () => {
                                         this.syncPost(event.detail.post);
                                 }
                                 this.refreshStatus();
+                                this.scheduleEditorTocRefresh();
                         };
                         this.handlePostUpdate = event => {
                                 if (event?.detail?.controller) {
@@ -675,6 +846,7 @@ document.addEventListener('alpine:init', () => {
                                         this.syncPost(event.detail.post);
                                 }
                                 this.refreshStatus();
+                                this.scheduleEditorTocRefresh();
                         };
                         window.addEventListener('post-editor:inline-ai', this.handleInlineAIRequest);
                         window.addEventListener('post-editor:publication', this.handlePublicationUpdate);
@@ -685,7 +857,11 @@ document.addEventListener('alpine:init', () => {
                         this.tryAttachController();
                         this.refreshStatus();
                         this.statusTimer = window.setInterval(() => this.refreshStatus(), 3000);
+                        this.setupEditorToc();
+                        this.scheduleEditorTocRefresh();
+                        this.$nextTick(() => this.scheduleEditorTocRefresh());
                         this.cleanup = () => {
+                                this.destroyEditorToc();
                                 if (this.statusTimer) {
                                         window.clearInterval(this.statusTimer);
                                         this.statusTimer = null;
@@ -1330,6 +1506,7 @@ document.addEventListener('alpine:init', () => {
                                 }
                                 this.closeInlineAI();
                                 toast({ message: '已应用 AI 改写内容', type: 'success' });
+                                this.scheduleEditorTocRefresh();
                         } catch (error) {
                                 const message = sanitizeString(error?.message || '应用改写内容失败，请稍后重试');
                                 toast({ message, type: 'error' });
@@ -1609,6 +1786,7 @@ document.addEventListener('alpine:init', () => {
                         } else {
                                 toast({ message: '已替换为优化后的正文', type: 'success' });
                         }
+                        this.scheduleEditorTocRefresh();
                         this.closeOptimizationModal();
                 },
                 async generateSummary() {

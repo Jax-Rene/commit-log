@@ -129,16 +129,16 @@ func urlSafe(input string) string {
 }
 
 func TestShowHomeExcludesDrafts(t *testing.T) {
-	cleanup := setupPublicTestDB(t)
-	defer cleanup()
+        cleanup := setupPublicTestDB(t)
+        defer cleanup()
 
-	published := seedPublishedPost(t, "Published Post", "内容")
-	draft := seedDraftPost(t, "Draft Post")
+        published := seedPublishedPost(t, "Published Post", "内容")
+        draft := seedDraftPost(t, "Draft Post")
 
-	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.ServeHTTP(w, req)
+        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+        w := httptest.NewRecorder()
+        req := httptest.NewRequest(http.MethodGet, "/", nil)
+        r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", w.Code)
@@ -150,7 +150,26 @@ func TestShowHomeExcludesDrafts(t *testing.T) {
 	}
 	if strings.Contains(body, draft.Title) {
 		t.Fatalf("draft post should not be rendered on public home")
-	}
+        }
+}
+
+func TestHomeCanonicalUsesConfiguredBaseURL(t *testing.T) {
+        cleanup := setupPublicTestDB(t)
+        defer cleanup()
+
+        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "https://blog.jaxrene.dev")
+        w := httptest.NewRecorder()
+        req := httptest.NewRequest(http.MethodGet, "/", nil)
+        r.ServeHTTP(w, req)
+
+        if w.Code != http.StatusOK {
+                t.Fatalf("expected status 200, got %d", w.Code)
+        }
+
+        expected := `<link rel="canonical" href="https://blog.jaxrene.dev/">`
+        if !strings.Contains(w.Body.String(), expected) {
+                t.Fatalf("expected canonical link %s", expected)
+        }
 }
 
 func TestLoadMorePostsHandlesPagination(t *testing.T) {
@@ -163,7 +182,7 @@ func TestLoadMorePostsHandlesPagination(t *testing.T) {
 		seedPublishedPostAt(t, title, "内容", now.Add(-time.Duration(i)*time.Minute))
 	}
 
-	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
+        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/posts/more?page=2", nil)
 	req.Header.Set("HX-Request", "true")
@@ -188,7 +207,7 @@ func TestShowPostDetailRejectsDraft(t *testing.T) {
 
 	draft := seedDraftPost(t, "Drafted")
 
-	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
+        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(draft.ID)), nil)
 	r.ServeHTTP(w, req)
@@ -202,7 +221,7 @@ func TestShowAboutFallback(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
+        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/about", nil)
 	r.ServeHTTP(w, req)
@@ -233,7 +252,7 @@ func TestShowAboutDisplaysContacts(t *testing.T) {
 		t.Fatalf("failed to seed contacts: %v", err)
 	}
 
-	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
+        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/about", nil)
 	r.ServeHTTP(w, req)
@@ -265,7 +284,7 @@ func TestShowPostDetailDisplaysContacts(t *testing.T) {
 		t.Fatalf("failed to seed contact: %v", err)
 	}
 
-	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
+        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(post.ID)), nil)
 	r.ServeHTTP(w, req)
@@ -290,7 +309,7 @@ func TestShowPostDetailStripsLeadingTitleFromContent(t *testing.T) {
 	content := "# 公开文章\n\n正文段落"
 	post := seedPublishedPost(t, "公开文章", content)
 
-	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads")
+        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(post.ID)), nil)
 	r.ServeHTTP(w, req)

@@ -9,6 +9,7 @@ dev:
 # 测试模式，运行单元测试
 test:
 	go test -v ./...
+	pnpm test
 
 # 生成测试数据
 generate-test-data:

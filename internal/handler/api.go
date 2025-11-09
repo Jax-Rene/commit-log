@@ -14,18 +14,19 @@ import (
 
 // API bundles shared dependencies for HTTP handlers.
 type API struct {
-	db              *gorm.DB
-	posts           *service.PostService
-	tags            *service.TagService
-	pages           *service.PageService
-	profiles        *service.ProfileService
-	analytics       *service.AnalyticsService
-	system          *service.SystemSettingService
-	summaries       service.SummaryGenerator
-	optimizer       service.ContentOptimizer
-	snippetRewriter service.SnippetRewriter
-	uploadDir       string
-	uploadURL       string
+        db              *gorm.DB
+        posts           *service.PostService
+        tags            *service.TagService
+        pages           *service.PageService
+        profiles        *service.ProfileService
+        analytics       *service.AnalyticsService
+        system          *service.SystemSettingService
+        summaries       service.SummaryGenerator
+        optimizer       service.ContentOptimizer
+        snippetRewriter service.SnippetRewriter
+        uploadDir       string
+        uploadURL       string
+        baseURL         string
 }
 
 type siteViewModel struct {
@@ -42,12 +43,12 @@ type siteViewModel struct {
 const siteSettingsContextKey = "__site_settings"
 
 // NewAPI constructs a handler set with shared services.
-func NewAPI(db *gorm.DB, uploadDir, uploadURL string) *API {
-	systemService := service.NewSystemSettingService(db)
-	summaryService := service.NewAISummaryService(systemService)
-	rewriteService := service.NewAIRewriteService(systemService)
+func NewAPI(db *gorm.DB, uploadDir, uploadURL, baseURL string) *API {
+        systemService := service.NewSystemSettingService(db)
+        summaryService := service.NewAISummaryService(systemService)
+        rewriteService := service.NewAIRewriteService(systemService)
 
-	return &API{
+        return &API{
 		db:              db,
 		posts:           service.NewPostService(db),
 		tags:            service.NewTagService(db),
@@ -55,12 +56,13 @@ func NewAPI(db *gorm.DB, uploadDir, uploadURL string) *API {
 		profiles:        service.NewProfileService(db),
 		analytics:       service.NewAnalyticsService(db),
 		system:          systemService,
-		summaries:       summaryService,
-		optimizer:       rewriteService,
-		snippetRewriter: rewriteService,
-		uploadDir:       uploadDir,
-		uploadURL:       uploadURL,
-	}
+                summaries:       summaryService,
+                optimizer:       rewriteService,
+                snippetRewriter: rewriteService,
+                uploadDir:       uploadDir,
+                uploadURL:       uploadURL,
+                baseURL:         normalizeBaseURL(baseURL),
+        }
 }
 
 // DB exposes the underlying gorm instance for legacy paths.
@@ -496,10 +498,10 @@ func (a *API) RenderHTML(c *gin.Context, status int, template string, data gin.H
 }
 
 func (a *API) detectScheme(c *gin.Context) string {
-	candidates := []string{
-		c.GetHeader("X-Forwarded-Proto"),
-		c.GetHeader("X-Forwarded-Protocol"),
-		c.GetHeader("X-Forwarded-Scheme"),
+        candidates := []string{
+                c.GetHeader("X-Forwarded-Proto"),
+                c.GetHeader("X-Forwarded-Protocol"),
+                c.GetHeader("X-Forwarded-Scheme"),
 	}
 	for _, header := range candidates {
 		if header == "" {
@@ -522,15 +524,18 @@ func (a *API) detectScheme(c *gin.Context) string {
 	if strings.HasPrefix(strings.ToLower(c.Request.Proto), "https") {
 		return "https"
 	}
-	return "http"
+        return "http"
 }
 
 func (a *API) siteBaseURL(c *gin.Context) string {
-	hostHeader := c.GetHeader("X-Forwarded-Host")
-	host := strings.TrimSpace(strings.Split(hostHeader, ",")[0])
-	if host == "" {
-		host = strings.TrimSpace(c.Request.Host)
-	}
+        if a.baseURL != "" {
+                return a.baseURL
+        }
+        hostHeader := c.GetHeader("X-Forwarded-Host")
+        host := strings.TrimSpace(strings.Split(hostHeader, ",")[0])
+        if host == "" {
+                host = strings.TrimSpace(c.Request.Host)
+        }
 	if host == "" {
 		return ""
 	}
@@ -561,8 +566,20 @@ func (a *API) absoluteURL(c *gin.Context, path string) string {
 	if base == "" {
 		return trimmed
 	}
-	if !strings.HasPrefix(trimmed, "/") {
-		trimmed = "/" + trimmed
-	}
-	return base + trimmed
+        if !strings.HasPrefix(trimmed, "/") {
+                trimmed = "/" + trimmed
+        }
+        return base + trimmed
+}
+
+func normalizeBaseURL(raw string) string {
+        trimmed := strings.TrimSpace(raw)
+        if trimmed == "" {
+                return ""
+        }
+        trimmed = strings.TrimRight(trimmed, "/")
+        if strings.HasPrefix(trimmed, "http://") || strings.HasPrefix(trimmed, "https://") {
+                return trimmed
+        }
+        return "https://" + trimmed
 }

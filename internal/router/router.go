@@ -237,10 +237,10 @@ func (r *templateRegistry) Instance(name string, data interface{}) render.Render
 }
 
 // SetupRouter 配置 Gin 引擎和路由
-func SetupRouter(sessionSecret, uploadDir, uploadURLPath string) *gin.Engine {
+func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *gin.Engine {
 	r := gin.New()
 
-	handlers := handler.NewAPI(db.DB, uploadDir, uploadURLPath)
+        handlers := handler.NewAPI(db.DB, uploadDir, uploadURLPath, siteBaseURL)
 
 	r.Use(gin.Logger())
 	r.Use(recoveryWithHandler(handlers))

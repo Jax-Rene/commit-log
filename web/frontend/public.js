@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs';
 import htmx from 'htmx.org';
+import { createViewerTocController } from './toc_controller.js';
 
 import '../static/css/input.css';
 
@@ -8,10 +9,27 @@ globalThis.Alpine = Alpine;
 
 Alpine.start();
 
+let postTocController = null;
+
+function ensurePostToc() {
+        if (!document.querySelector('[data-toc-card]')) {
+                return;
+        }
+        if (postTocController) {
+                postTocController.refresh();
+                return;
+        }
+        const controller = createViewerTocController();
+        if (controller) {
+                postTocController = controller;
+        }
+}
+
 function initMilkdownViewer() {
         const markdownNode = document.getElementById('post-markdown-data');
         const mount = document.querySelector('[data-milkdown-viewer]');
         if (!markdownNode || !mount) {
+                ensurePostToc();
                 return;
         }
 
@@ -41,6 +59,7 @@ function initMilkdownViewer() {
                 })
                 .then(result => {
                         if (!result) {
+                                ensurePostToc();
                                 return;
                         }
                         mount.classList.remove('hidden');
@@ -48,14 +67,29 @@ function initMilkdownViewer() {
                         if (fallback) {
                                 fallback.classList.add('hidden');
                         }
+                        ensurePostToc();
                 })
                 .catch(error => {
                         console.error('[milkdown] 加载阅读器失败', error);
+                        ensurePostToc();
                 });
 }
 
-if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initMilkdownViewer, { once: true });
-} else {
+function bootPublic() {
+        // 构建只读渲染与目录浮框
         initMilkdownViewer();
+        ensurePostToc();
 }
+
+if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootPublic, { once: true });
+} else {
+        bootPublic();
+}
+
+window.addEventListener('pagehide', () => {
+        if (postTocController) {
+                postTocController.destroy();
+                postTocController = null;
+        }
+}, { once: true });
