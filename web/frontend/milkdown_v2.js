@@ -1,11 +1,12 @@
 import { Crepe } from '@milkdown/crepe';
-import { editorViewCtx, editorViewOptionsCtx } from '@milkdown/kit/core';
+import { commandsCtx, editorViewCtx, editorViewOptionsCtx } from '@milkdown/kit/core';
 import { listenerCtx } from '@milkdown/kit/plugin/listener';
 import { cursor } from '@milkdown/plugin-cursor';
 import { upload, uploadConfig } from '@milkdown/plugin-upload';
 import { replaceAll } from '@milkdown/kit/utils';
 import commonStyleUrl from '@milkdown/crepe/theme/common/style.css?url';
 import nordStyleUrl from '@milkdown/crepe/theme/nord.css?url';
+import { toggleLinkCommand } from '@milkdown/kit/component/link-tooltip';
 
 const styleUrls = [commonStyleUrl, nordStyleUrl];
 
@@ -1243,24 +1244,68 @@ class PostDraftController {
                 }
         }
 
+        toggleLinkToolbar() {
+                if (!this.editor || typeof this.editor.action !== 'function') {
+                        return false;
+                }
+                let toggled = false;
+                try {
+                        this.editor.action(ctx => {
+                                const view = ctx.get(editorViewCtx);
+                                if (!view) {
+                                        return;
+                                }
+                                const isFocused = typeof view.hasFocus === 'function'
+                                        ? view.hasFocus()
+                                        : !!(view.dom instanceof Element && view.dom.contains(document.activeElement));
+                                if (!isFocused) {
+                                        return;
+                                }
+                                const state = view.state;
+                                if (!state || state.selection?.empty) {
+                                        return;
+                                }
+                                const { from, to } = state.selection;
+                                if (typeof from !== 'number' || typeof to !== 'number' || from === to) {
+                                        return;
+                                }
+                                const commands = ctx.get(commandsCtx);
+                                if (!commands || typeof commands.call !== 'function') {
+                                        return;
+                                }
+                                commands.call(toggleLinkCommand.key);
+                                toggled = true;
+                        });
+                } catch (error) {
+                        console.warn('[milkdown] 链接工具栏切换失败', error);
+                }
+                return toggled;
+        }
+
         handleKeydown(event) {
                 if (!event || !(event.ctrlKey || event.metaKey)) {
                         return;
                 }
                 const key = typeof event.key === 'string' ? event.key.toLowerCase() : '';
-                if (key !== 's') {
+                if (key === 's') {
+                        event.preventDefault();
+                        if (this.loading || this.autoSaving) {
+                                return;
+                        }
+                        void this.saveDraft({
+                                redirectOnCreate: false,
+                                silent: false,
+                                notifyOnSilent: true,
+                                useLoadingState: false,
+                        });
                         return;
                 }
-                event.preventDefault();
-                if (this.loading || this.autoSaving) {
-                        return;
+                if (key === 'k') {
+                        const toggled = this.toggleLinkToolbar();
+                        if (toggled) {
+                                event.preventDefault();
+                        }
                 }
-                void this.saveDraft({
-                        redirectOnCreate: false,
-                        silent: false,
-                        notifyOnSilent: true,
-                        useLoadingState: false,
-                });
         }
 
         initAutoSaveLifecycle() {
