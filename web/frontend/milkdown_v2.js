@@ -1837,6 +1837,20 @@ async function initialize() {
 
                 const toolbarKey = Crepe?.Feature?.Toolbar ?? 'toolbar';
                 const blockEditKey = Crepe?.Feature?.BlockEdit ?? 'block-edit';
+                const imageBlockKey = Crepe?.Feature?.ImageBlock ?? 'image-block';
+                const imageUploader = async file => {
+                        if (!file) {
+                                toast({ message: '请选择要上传的图片', type: 'warning' });
+                                throw new Error('请选择要上传的图片');
+                        }
+                        try {
+                                return await uploadImageViaAPI(file);
+                        } catch (error) {
+                                const message = error?.message || '图片上传失败';
+                                toast({ message, type: 'error' });
+                                throw error;
+                        }
+                };
                 const featureConfigs = {
                         [toolbarKey]: {
                                 buildToolbar(builder) {
@@ -1876,6 +1890,11 @@ async function initialize() {
                                                 console.warn('[milkdown] 注册 Emoji 菜单失败', error);
                                         }
                                 },
+                        },
+                        [imageBlockKey]: {
+                                onUpload: imageUploader,
+                                inlineOnUpload: imageUploader,
+                                blockOnUpload: imageUploader,
                         },
                 };
 

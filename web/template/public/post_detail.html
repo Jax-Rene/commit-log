@@ -31,15 +31,16 @@
 		position: relative;
 	}
 
-	[data-toc-card] .toc-link {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		font-size: 0.875rem;
-		line-height: 1.4;
-		color: rgb(100, 116, 139);
-		text-decoration: none;
-	}
+        [data-toc-card] .toc-link {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                min-width: 0;
+                font-size: 0.875rem;
+                line-height: 1.4;
+                color: rgb(100, 116, 139);
+                text-decoration: none;
+        }
 
 	[data-toc-card] .toc-link:focus-visible {
 		outline: 2px solid rgba(59, 130, 246, 0.4);
@@ -47,20 +48,24 @@
 		border-radius: 12px;
 	}
 
-	[data-toc-card] .toc-tick {
-		height: 2px;
-		width: 14px;
-		border-radius: 9999px;
-		background-color: rgba(148, 163, 184, 0.5);
-		transition: background-color 0.2s ease, width 0.2s ease;
-	}
+        [data-toc-card] .toc-tick {
+                height: 2px;
+                width: 14px;
+                border-radius: 9999px;
+                flex-shrink: 0;
+                background-color: rgba(148, 163, 184, 0.5);
+                transition: background-color 0.2s ease, width 0.2s ease;
+        }
 
-	[data-toc-card] .toc-text {
-		overflow: hidden;
-		white-space: nowrap;
-		text-overflow: ellipsis;
-		max-width: 100%;
-	}
+        [data-toc-card] .toc-text {
+                display: block;
+                flex: 1 1 auto;
+                min-width: 0;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                max-width: 100%;
+        }
 
 	[data-toc-card] .toc-item[data-level="2"] .toc-text {
 		margin-left: 0.75rem;
