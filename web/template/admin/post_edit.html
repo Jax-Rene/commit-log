@@ -78,6 +78,16 @@
                 padding: 0;
         }
 
+        #milkdown-app > div > .ProseMirror {
+                padding: 1rem 1rem 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+                #milkdown-app > div > .ProseMirror {
+                        padding: 1rem 1.25rem 1.75rem;
+                }
+        }
+
         [data-editor-toc-content] h1,
         [data-editor-toc-content] h2,
         [data-editor-toc-content] h3 {
@@ -214,7 +224,7 @@
 	<div class="milkdown-immersive-shell" x-data="postEditorShell()" x-init="init()" x-cloak>
 		<div class="milkdown-immersive-wrapper" data-editor-scroll>
 			<div
-				class="milkdown-immersive-container mx-auto grid w-full max-w-screen-xl grid-cols-1 gap-10 px-6 pt-10 pb-10 md:px-12 md:pb-24 lg:px-16 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-stretch xl:gap-16 xl:px-20 2xl:max-w-screen-2xl 2xl:px-24">
+				class="milkdown-immersive-container mx-auto grid w-full max-w-screen-xl grid-cols-1 gap-10 px-3 pt-6 pb-8 sm:px-5 sm:pt-8 sm:pb-10 md:px-12 md:pt-10 md:pb-24 lg:px-16 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-stretch xl:gap-16 xl:px-20 2xl:max-w-screen-2xl 2xl:px-24">
 				<div class="flex min-h-full flex-col">
 					<div id="milkdown-app" class="milkdown" data-editor-toc-content></div>
 				</div>
