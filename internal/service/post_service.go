@@ -366,7 +366,7 @@ func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, 
 	dataQuery = s.applyPublicationFilters(dataQuery, filter)
 
 	if err := dataQuery.
-		Order("post_publications.published_at desc, post_publications.id desc").
+		Order("posts.created_at desc, posts.id desc").
 		Limit(result.PerPage).
 		Offset(offset).
 		Find(&publications).Error; err != nil {
@@ -393,7 +393,7 @@ func (s *PostService) ListAllPublished() ([]db.PostPublication, error) {
 	if err := s.db.Preload("Tags").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.status = ?", "published").
-		Order("post_publications.published_at desc, post_publications.id desc").
+		Order("posts.created_at desc, posts.id desc").
 		Find(&publications).Error; err != nil {
 		return nil, err
 	}
