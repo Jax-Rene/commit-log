@@ -193,10 +193,10 @@ func TestLoadMorePostsHandlesPagination(t *testing.T) {
 	}
 
 	body := w.Body.String()
-	if !strings.Contains(body, "Post 7") {
-		t.Fatalf("expected paginated response to include remaining posts")
+	if !strings.Contains(body, "Post 1") {
+		t.Fatalf("expected paginated response to include oldest post")
 	}
-	if strings.Contains(body, "Post 1") {
+	if strings.Contains(body, "Post 7") {
 		t.Fatalf("expected second page to exclude first page items")
 	}
 }

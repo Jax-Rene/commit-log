@@ -172,6 +172,77 @@ func TestPostService_PublishFlow(t *testing.T) {
 	}
 }
 
+func TestPostService_ListPublishedOrderedByCreationTime(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "order-tester"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	tag := db.Tag{Name: "General"}
+	if err := gdb.Create(&tag).Error; err != nil {
+		t.Fatalf("create tag: %v", err)
+	}
+
+	input := PostInput{
+		Title:       "Post",
+		Content:     "第一篇文章",
+		Summary:     "摘要",
+		TagIDs:      []uint{tag.ID},
+		UserID:      user.ID,
+		CoverURL:    "https://example.com/cover.jpg",
+		CoverWidth:  800,
+		CoverHeight: 600,
+	}
+
+	first, err := svc.Create(input)
+	if err != nil {
+		t.Fatalf("create first post: %v", err)
+	}
+	if _, err := svc.Publish(first.ID, user.ID); err != nil {
+		t.Fatalf("publish first post: %v", err)
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	secondInput := input
+	secondInput.Content = "第二篇文章"
+	second, err := svc.Create(secondInput)
+	if err != nil {
+		t.Fatalf("create second post: %v", err)
+	}
+	if _, err := svc.Publish(second.ID, user.ID); err != nil {
+		t.Fatalf("publish second post: %v", err)
+	}
+
+	list, err := svc.ListPublished(PostFilter{Page: 1, PerPage: 10})
+	if err != nil {
+		t.Fatalf("list published: %v", err)
+	}
+	if len(list.Publications) != 2 {
+		t.Fatalf("expected 2 publications, got %d", len(list.Publications))
+	}
+	if list.Publications[0].PostID != second.ID {
+		t.Fatalf("expected second created post first, got %d", list.Publications[0].PostID)
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	if _, err := svc.Publish(first.ID, user.ID); err != nil {
+		t.Fatalf("republish first post: %v", err)
+	}
+
+	list, err = svc.ListPublished(PostFilter{Page: 1, PerPage: 10})
+	if err != nil {
+		t.Fatalf("list published after republish: %v", err)
+	}
+	if list.Publications[0].PostID != second.ID {
+		t.Fatalf("expected ordering by creation time to keep second first, got %d", list.Publications[0].PostID)
+	}
+}
+
 func TestPostService_CreateAndUpdateWithoutCover(t *testing.T) {
 	gdb := setupPostServiceTestDB(t)
 	svc := NewPostService(gdb)
