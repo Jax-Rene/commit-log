@@ -207,7 +207,12 @@ func (s *PostService) List(filter PostFilter) (*PostListResult, error) {
 		Preload("User")
 	dataQuery = s.applyFilters(dataQuery, filter, true)
 
-	if err := dataQuery.Order("posts.created_at desc").Limit(result.PerPage).Offset(offset).Find(&posts).Error; err != nil {
+	orderBy := "posts.created_at desc"
+	if strings.EqualFold(filter.Status, "published") {
+		orderBy = "posts.published_at desc, posts.id desc"
+	}
+
+	if err := dataQuery.Order(orderBy).Limit(result.PerPage).Offset(offset).Find(&posts).Error; err != nil {
 		return nil, err
 	}
 
@@ -240,7 +245,7 @@ func (s *PostService) List(filter PostFilter) (*PostListResult, error) {
 }
 
 // Publish 创建文章发布快照，并更新文章发布状态
-func (s *PostService) Publish(postID, userID uint) (*db.PostPublication, error) {
+func (s *PostService) Publish(postID, userID uint, publishedAt *time.Time) (*db.PostPublication, error) {
 	var post db.Post
 	if err := s.db.Preload("Tags").First(&post, postID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -265,8 +270,12 @@ func (s *PostService) Publish(postID, userID uint) (*db.PostPublication, error) 
 	}
 
 	readingTime := calculateReadingTime(post.Content)
-	now := time.Now()
 	version := post.PublicationCount + 1
+
+	publishTime := time.Now()
+	if publishedAt != nil && !publishedAt.IsZero() {
+		publishTime = *publishedAt
+	}
 
 	publication := db.PostPublication{
 		PostID:      post.ID,
@@ -277,7 +286,7 @@ func (s *PostService) Publish(postID, userID uint) (*db.PostPublication, error) 
 		CoverWidth:  post.CoverWidth,
 		CoverHeight: post.CoverHeight,
 		UserID:      userID,
-		PublishedAt: now,
+		PublishedAt: publishTime,
 		Version:     version,
 	}
 
@@ -295,7 +304,7 @@ func (s *PostService) Publish(postID, userID uint) (*db.PostPublication, error) 
 		updates := map[string]interface{}{
 			"status":                "published",
 			"reading_time":          readingTime,
-			"published_at":          now,
+			"published_at":          publishTime,
 			"publication_count":     version,
 			"latest_publication_id": publication.ID,
 		}
@@ -366,7 +375,7 @@ func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, 
 	dataQuery = s.applyPublicationFilters(dataQuery, filter)
 
 	if err := dataQuery.
-		Order("posts.created_at desc, posts.id desc").
+		Order("post_publications.published_at desc, post_publications.id desc").
 		Limit(result.PerPage).
 		Offset(offset).
 		Find(&publications).Error; err != nil {
@@ -393,7 +402,7 @@ func (s *PostService) ListAllPublished() ([]db.PostPublication, error) {
 	if err := s.db.Preload("Tags").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.status = ?", "published").
-		Order("posts.created_at desc, posts.id desc").
+		Order("post_publications.published_at desc, post_publications.id desc").
 		Find(&publications).Error; err != nil {
 		return nil, err
 	}

@@ -1580,7 +1580,7 @@ class PostDraftController {
         }
 
         async publish(options = {}) {
-                const { silent = false } = options;
+                const { silent = false, publishedAt = '' } = options;
                 if (this.publishing) {
                         return false;
                 }
@@ -1608,11 +1608,20 @@ class PostDraftController {
                         return false;
                 }
 
+                const payload = {};
+                const normalizedPublishedAt = coerceString(publishedAt, '').trim();
+                if (normalizedPublishedAt) {
+                        payload.published_at = normalizedPublishedAt;
+                }
+
                 this.publishing = true;
                 try {
-                        const response = await fetch(`/admin/api/posts/${this.postId}/publish`, {
-                                method: 'POST',
-                        });
+                        const requestInit = { method: 'POST' };
+                        if (Object.keys(payload).length > 0) {
+                                requestInit.headers = { 'Content-Type': 'application/json' };
+                                requestInit.body = JSON.stringify(payload);
+                        }
+                        const response = await fetch(`/admin/api/posts/${this.postId}/publish`, requestInit);
                         let data = {};
                         try {
                                 data = await response.json();

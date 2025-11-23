@@ -61,7 +61,7 @@ func TestPostService_PublishFlow(t *testing.T) {
 		t.Fatalf("expected draft status after create, got %s", post.Status)
 	}
 
-	publication, err := svc.Publish(post.ID, user.ID)
+	publication, err := svc.Publish(post.ID, user.ID, nil)
 	if err != nil {
 		t.Fatalf("publish post: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestPostService_PublishFlow(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	publication2, err := svc.Publish(post.ID, user.ID)
+	publication2, err := svc.Publish(post.ID, user.ID, nil)
 	if err != nil {
 		t.Fatalf("publish second version: %v", err)
 	}
@@ -172,7 +172,7 @@ func TestPostService_PublishFlow(t *testing.T) {
 	}
 }
 
-func TestPostService_ListPublishedOrderedByCreationTime(t *testing.T) {
+func TestPostService_ListPublishedOrderedByPublishTime(t *testing.T) {
 	gdb := setupPostServiceTestDB(t)
 	svc := NewPostService(gdb)
 
@@ -201,7 +201,7 @@ func TestPostService_ListPublishedOrderedByCreationTime(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create first post: %v", err)
 	}
-	if _, err := svc.Publish(first.ID, user.ID); err != nil {
+	if _, err := svc.Publish(first.ID, user.ID, nil); err != nil {
 		t.Fatalf("publish first post: %v", err)
 	}
 
@@ -213,7 +213,7 @@ func TestPostService_ListPublishedOrderedByCreationTime(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create second post: %v", err)
 	}
-	if _, err := svc.Publish(second.ID, user.ID); err != nil {
+	if _, err := svc.Publish(second.ID, user.ID, nil); err != nil {
 		t.Fatalf("publish second post: %v", err)
 	}
 
@@ -230,7 +230,7 @@ func TestPostService_ListPublishedOrderedByCreationTime(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	if _, err := svc.Publish(first.ID, user.ID); err != nil {
+	if _, err := svc.Publish(first.ID, user.ID, nil); err != nil {
 		t.Fatalf("republish first post: %v", err)
 	}
 
@@ -238,8 +238,41 @@ func TestPostService_ListPublishedOrderedByCreationTime(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list published after republish: %v", err)
 	}
-	if list.Publications[0].PostID != second.ID {
-		t.Fatalf("expected ordering by creation time to keep second first, got %d", list.Publications[0].PostID)
+	if list.Publications[0].PostID != first.ID {
+		t.Fatalf("expected republished post to move to top by published_at, got %d", list.Publications[0].PostID)
+	}
+}
+
+func TestPostService_PublishWithCustomPublishedAt(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "custom-publish"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	post, err := svc.Create(PostInput{Content: "内容", Summary: "摘要", UserID: user.ID, CoverURL: "https://example.com/c.jpg", CoverWidth: 600, CoverHeight: 400})
+	if err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+
+	customPublishedAt := time.Date(2023, 8, 15, 12, 30, 0, 0, time.UTC)
+	publication, err := svc.Publish(post.ID, user.ID, &customPublishedAt)
+	if err != nil {
+		t.Fatalf("publish with custom time: %v", err)
+	}
+
+	if !publication.PublishedAt.Equal(customPublishedAt) {
+		t.Fatalf("expected publication published_at %v, got %v", customPublishedAt, publication.PublishedAt)
+	}
+
+	refreshed, err := svc.Get(post.ID)
+	if err != nil {
+		t.Fatalf("reload post: %v", err)
+	}
+	if !refreshed.PublishedAt.Equal(customPublishedAt) {
+		t.Fatalf("expected post published_at %v, got %v", customPublishedAt, refreshed.PublishedAt)
 	}
 }
 
@@ -306,7 +339,7 @@ func TestPostService_PublishRequiresCover(t *testing.T) {
 		t.Fatalf("create draft without cover: %v", err)
 	}
 
-	if _, err := svc.Publish(post.ID, user.ID); !errors.Is(err, ErrCoverRequired) {
+	if _, err := svc.Publish(post.ID, user.ID, nil); !errors.Is(err, ErrCoverRequired) {
 		t.Fatalf("expected ErrCoverRequired when publishing without cover, got %v", err)
 	}
 }
