@@ -1144,11 +1144,15 @@ document.addEventListener('alpine:init', () => {
                         }
                         const pad = num => String(num).padStart(2, '0');
                         const year = date.getFullYear();
+                        if (year < 1000) {
+                                return '';
+                        }
+                        const paddedYear = String(year).padStart(4, '0');
                         const month = pad(date.getMonth() + 1);
                         const day = pad(date.getDate());
                         const hour = pad(date.getHours());
                         const minute = pad(date.getMinutes());
-                        return `${year}-${month}-${day}T${hour}:${minute}`;
+                        return `${paddedYear}-${month}-${day}T${hour}:${minute}`;
                 },
                 latestPublicationTimestamp() {
                         const publication = this.latestPublication;
