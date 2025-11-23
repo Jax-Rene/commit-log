@@ -428,6 +428,36 @@
                                 <section class="space-y-3">
                                         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                 <div>
+                                                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">发布时间</h3>
+                                                        <p class="text-xs text-slate-500 dark:text-slate-400">留空则发布时使用当前时间，已发布文章会默认沿用最近的发布时间。</p>
+                                                </div>
+                                                <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                                        <button type="button" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="setPublishTimeToNow()">
+                                                                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4" d="M10 4.167v6.111l4.444 2.223M10 18.333A8.333 8.333 0 1 0 10 1.667a8.333 8.333 0 0 0 0 16.666Z"></path>
+                                                                </svg>
+                                                                <span>设为当前时间</span>
+                                                        </button>
+                                                        <button type="button" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="clearPublishTime()">
+                                                                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4" d="M5.5 5.5l9 9m0-9l-9 9"></path>
+                                                                </svg>
+                                                                <span>清空</span>
+                                                        </button>
+                                                </div>
+                                        </div>
+                                        <div class="space-y-2">
+                                                <input type="datetime-local" x-model="publishAtInput" @input="handlePublishAtInput($event.target.value)" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30">
+                                                <template x-if="publishAtError">
+                                                        <p class="text-xs text-rose-600 dark:text-rose-300" x-text="publishAtError"></p>
+                                                </template>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400" x-text="publishTimeHelpText()"></p>
+                                        </div>
+                                </section>
+
+                                <section class="space-y-3">
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                                <div>
                                                         <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">文章封面<span class="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800/70 dark:text-slate-400">发布前必填</span></h3>
                                                         <p class="text-xs text-slate-500 dark:text-slate-400">建议尺寸 ≥ 1200px，可裁剪为 16:9 或 3:4。</p>
                                                 </div>
@@ -738,6 +768,9 @@ document.addEventListener('alpine:init', () => {
                 handleInlineAIRequest: null,
                 latestPublication: null,
                 publishing: false,
+                publishAtInput: '',
+                publishAtManual: false,
+                publishAtError: '',
                 setupEditorToc() {
                         if (this.editorToc) {
                                 return;
@@ -790,6 +823,7 @@ document.addEventListener('alpine:init', () => {
                         }
                         this.numberFormatter = new Intl.NumberFormat('zh-CN');
                         this.latestPublication = window.__MILKDOWN_V2__?.latestPublication || null;
+                        this.updatePublishAtFromSource(this.latestPublication || window.__MILKDOWN_V2__?.post);
                         this.handleMetricsUpdate = event => {
                                 const detail = event?.detail || {};
                                 if (detail.metrics) {
@@ -842,6 +876,7 @@ document.addEventListener('alpine:init', () => {
                                 const publication = event?.detail?.publication;
                                 if (publication && typeof publication === 'object') {
                                         this.latestPublication = publication;
+                                        this.updatePublishAtFromSource(publication, { force: true });
                                 }
                         };
                         this.handleReady = event => {
@@ -985,15 +1020,20 @@ document.addEventListener('alpine:init', () => {
                         if (this.publishing || this.savingDraft) {
                                 return;
                         }
+                        const publishOptions = this.buildPublishOptions();
+                        if (publishOptions === null) {
+                                return;
+                        }
                         this.publishing = true;
                         try {
-                                const success = await controller.publish({ silent: false });
+                                const success = await controller.publish(publishOptions);
                                 if (success) {
                                         if (typeof controller.getLatestPublication === 'function') {
                                                 this.latestPublication = controller.getLatestPublication() || null;
                                         } else {
                                                 this.latestPublication = controller.latestPublication || null;
                                         }
+                                        this.updatePublishAtFromSource(this.latestPublication, { force: true });
                                         this.refreshStatus();
                                 } else {
                                         this.refreshStatus();
@@ -1031,6 +1071,84 @@ document.addEventListener('alpine:init', () => {
                                 return `最近发布于 ${timestamp}`;
                         }
                         return '发布后文章会立即同步至线上站点。';
+                },
+                buildPublishOptions() {
+                        const value = sanitizeString(this.publishAtInput || '');
+                        if (!value) {
+                                this.publishAtError = '';
+                                return { silent: false };
+                        }
+                        const parsed = toDate(value);
+                        if (!parsed) {
+                                this.publishAtError = '发布时间格式无效，请重新选择日期和时间。';
+                                return null;
+                        }
+                        this.publishAtError = '';
+                        return { silent: false, publishedAt: parsed.toISOString() };
+                },
+                handlePublishAtInput(value) {
+                        this.publishAtManual = true;
+                        this.publishAtInput = sanitizeString(value || '');
+                        if (!this.publishAtInput) {
+                                this.publishAtError = '';
+                        }
+                },
+                setPublishTimeToNow() {
+                        this.publishAtInput = this.formatLocalDateTimeInput(new Date());
+                        this.publishAtManual = true;
+                        this.publishAtError = '';
+                },
+                clearPublishTime() {
+                        this.publishAtInput = '';
+                        this.publishAtManual = true;
+                        this.publishAtError = '';
+                },
+                publishTimeHelpText() {
+                        if (this.publishAtInput) {
+                                const formatted = this.formatDateTime(this.publishAtInput);
+                                if (formatted) {
+                                        return `下次发布将使用 ${formatted}（本地时间）作为发布时间。`;
+                                }
+                        }
+                        const latest = this.latestPublicationTimestamp();
+                        if (latest) {
+                                return `未填写时将沿用最近的发布时间：${latest}。`;
+                        }
+                        return '未填写时将默认使用当前时间。';
+                },
+                updatePublishAtFromSource(source, { force = false } = {}) {
+                        const raw = this.resolvePublishedAt(source);
+                        const formatted = this.formatLocalDateTimeInput(raw);
+                        if (!formatted) {
+                                return;
+                        }
+                        if (!force && this.publishAtManual && this.publishAtInput) {
+                                return;
+                        }
+                        this.publishAtInput = formatted;
+                        if (force) {
+                                this.publishAtManual = false;
+                                this.publishAtError = '';
+                        }
+                },
+                resolvePublishedAt(source) {
+                        if (!source || typeof source !== 'object') {
+                                return '';
+                        }
+                        return sanitizeString(source.PublishedAt ?? source.published_at ?? source.publishedAt ?? '');
+                },
+                formatLocalDateTimeInput(value) {
+                        const date = toDate(value);
+                        if (!date) {
+                                return '';
+                        }
+                        const pad = num => String(num).padStart(2, '0');
+                        const year = date.getFullYear();
+                        const month = pad(date.getMonth() + 1);
+                        const day = pad(date.getDate());
+                        const hour = pad(date.getHours());
+                        const minute = pad(date.getMinutes());
+                        return `${year}-${month}-${day}T${hour}:${minute}`;
                 },
                 latestPublicationTimestamp() {
                         const publication = this.latestPublication;
@@ -1093,6 +1211,7 @@ document.addEventListener('alpine:init', () => {
                         this.applyContentMetrics(controller.contentMetrics);
                         this.updatePostTimestamps(controller.postData);
                         this.syncTagsFromController(controller.postData);
+                        this.updatePublishAtFromSource(this.latestPublication || controller.postData);
                 },
                 syncPost(post) {
                         if (!post || typeof post !== 'object') {
@@ -1105,6 +1224,7 @@ document.addEventListener('alpine:init', () => {
                         this.metadata.cover = { url: coverUrl, width: coverWidth, height: coverHeight };
                         this.syncTagsFromController(post);
                         this.updatePostTimestamps(post);
+                        this.updatePublishAtFromSource(this.latestPublication || post);
                 },
                 updatePostTimestamps(post) {
                         if (!post || typeof post !== 'object') {
@@ -1138,6 +1258,7 @@ document.addEventListener('alpine:init', () => {
                         this.applyContentMetrics(controller.contentMetrics);
                         this.updatePostTimestamps(controller.postData);
                         this.syncTagsFromController(controller.postData);
+                        this.updatePublishAtFromSource(this.latestPublication || controller.postData);
                 },
                 applyContentMetrics(metrics) {
                         this.contentMetrics = this.normalizeContentMetrics(metrics);
