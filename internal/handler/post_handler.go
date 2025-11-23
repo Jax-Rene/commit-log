@@ -138,7 +138,41 @@ func (a *API) PublishPost(c *gin.Context) {
 		return
 	}
 
-	publication, err := a.posts.Publish(id, a.currentUserID(c))
+	var payload struct {
+		PublishedAt    string `json:"published_at" form:"published_at"`
+		PublishedAtAlt string `json:"publishedAt" form:"publishedAt"`
+	}
+	if bindErr := c.ShouldBind(&payload); bindErr != nil && !errors.Is(bindErr, http.ErrNotMultipart) {
+		respondError(c, http.StatusBadRequest, "请求数据格式错误")
+		return
+	}
+
+	parsePublishedAt := func(raw string) (*time.Time, error) {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" {
+			return nil, nil
+		}
+		parsed, parseErr := time.Parse(time.RFC3339, trimmed)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		return &parsed, nil
+	}
+
+	desiredPublishedAt, parseErr := parsePublishedAt(payload.PublishedAt)
+	if parseErr != nil {
+		respondError(c, http.StatusBadRequest, "发布时间格式错误，请使用 RFC3339 格式")
+		return
+	}
+	if desiredPublishedAt == nil {
+		desiredPublishedAt, parseErr = parsePublishedAt(payload.PublishedAtAlt)
+		if parseErr != nil {
+			respondError(c, http.StatusBadRequest, "发布时间格式错误，请使用 RFC3339 格式")
+			return
+		}
+	}
+
+	publication, err := a.posts.Publish(id, a.currentUserID(c), desiredPublishedAt)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrPostNotFound):
