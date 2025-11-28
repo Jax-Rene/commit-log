@@ -28,6 +28,53 @@ func setupPostServiceTestDB(t *testing.T) *gorm.DB {
 	return gdb
 }
 
+func TestPostService_ListCountsDrafts(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "counter-tester"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	if _, err := svc.Create(PostInput{
+		Content: "# 草稿标题\n草稿正文",
+		Summary: "草稿摘要",
+		UserID:  user.ID,
+	}); err != nil {
+		t.Fatalf("create draft: %v", err)
+	}
+
+	published, err := svc.Create(PostInput{
+		Content:     "# 已发布标题\n发布内容",
+		Summary:     "发布摘要",
+		UserID:      user.ID,
+		CoverURL:    "https://example.com/cover.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+	})
+	if err != nil {
+		t.Fatalf("create publishable post: %v", err)
+	}
+	if _, err := svc.Publish(published.ID, user.ID, nil); err != nil {
+		t.Fatalf("publish post: %v", err)
+	}
+
+	list, err := svc.List(PostFilter{Page: 1, PerPage: 10})
+	if err != nil {
+		t.Fatalf("list posts: %v", err)
+	}
+	if list.Total != 2 {
+		t.Fatalf("expected total 2, got %d", list.Total)
+	}
+	if list.PublishedCount != 1 {
+		t.Fatalf("expected published count 1, got %d", list.PublishedCount)
+	}
+	if list.DraftCount != 1 {
+		t.Fatalf("expected draft count 1, got %d", list.DraftCount)
+	}
+}
+
 func TestPostService_PublishFlow(t *testing.T) {
 	gdb := setupPostServiceTestDB(t)
 	svc := NewPostService(gdb)
