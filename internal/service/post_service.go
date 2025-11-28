@@ -223,14 +223,17 @@ func (s *PostService) List(filter PostFilter) (*PostListResult, error) {
 	filterWithoutStatus := filter
 	filterWithoutStatus.Status = ""
 
-	baseCounter := s.db.Model(&db.Post{})
-	baseCounter = s.applyFilters(baseCounter, filterWithoutStatus, false)
+	counterBuilder := func() *gorm.DB {
+		base := s.db.Model(&db.Post{})
+		return s.applyFilters(base, filterWithoutStatus, false)
+	}
 
-	if err := baseCounter.Where("posts.status = ?", "published").Count(&result.PublishedCount).Error; err != nil {
+	// 独立查询已发布与草稿数量，避免状态条件被重复叠加
+	if err := counterBuilder().Where("posts.status = ?", "published").Count(&result.PublishedCount).Error; err != nil {
 		return nil, err
 	}
 
-	if err := baseCounter.Where("posts.status = ?", "draft").Count(&result.DraftCount).Error; err != nil {
+	if err := counterBuilder().Where("posts.status = ?", "draft").Count(&result.DraftCount).Error; err != nil {
 		return nil, err
 	}
 
