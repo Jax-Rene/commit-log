@@ -14,19 +14,31 @@ importers:
       '@milkdown/crepe':
         specifier: ^7.17.1
         version: 7.17.1(prosemirror-model@1.25.3)(prosemirror-state@1.4.3)(prosemirror-view@1.41.3)
+      '@milkdown/ctx':
+        specifier: ^7.17.1
+        version: 7.17.1
       '@milkdown/kit':
         specifier: ^7.17.1
         version: 7.17.1(@codemirror/language@6.11.3)(@codemirror/state@6.5.2)(@codemirror/view@6.38.6)
       '@milkdown/plugin-cursor':
         specifier: ^7.17.1
         version: 7.17.1
+      '@milkdown/plugin-math':
+        specifier: 7.5.9
+        version: 7.5.9(@milkdown/core@7.17.1)(@milkdown/ctx@7.17.1)(@milkdown/prose@7.17.1)(@milkdown/transformer@7.17.1)
       '@milkdown/plugin-upload':
         specifier: ^7.17.1
         version: 7.17.1
       '@milkdown/preset-commonmark':
         specifier: ^7.17.1
         version: 7.17.1
+      '@milkdown/prose':
+        specifier: ^7.17.1
+        version: 7.17.1
       '@milkdown/theme-nord':
+        specifier: ^7.17.1
+        version: 7.17.1
+      '@milkdown/transformer':
         specifier: ^7.17.1
         version: 7.17.1
       alpinejs:
@@ -47,6 +59,9 @@ importers:
       htmx.org:
         specifier: ^2.0.6
         version: 2.0.7
+      katex:
+        specifier: ^0.16.25
+        version: 0.16.25
     devDependencies:
       autoprefixer:
         specifier: ^10.4.21
@@ -476,6 +491,9 @@ packages:
   '@milkdown/exception@7.17.1':
     resolution: {integrity: sha512-JbIWyfQXKuDfLGTQDXM9asYTtiLF2qMf9oRGtMb0PuQrs7I1Z2zhwx/ee112ZZMxHtCXWDYnFrTi8LXhE1ZqGg==}
 
+  '@milkdown/exception@7.5.9':
+    resolution: {integrity: sha512-9g+WpiRjgLsVlHt7DotlUmKK9oT6Lsr5TgxE0NdDvtr81CC43mgNtoekI6rg/PatEBBXifDK1GJJ4LKnRSseVQ==}
+
   '@milkdown/kit@7.17.1':
     resolution: {integrity: sha512-1XWwNaufwyzQSX8Ky5ghl7Wy1lBaHQVqrcjqYzSIVpY1fSq+W1hBoVcwF/LqZk/idjqKLtTxDfsEofsxsLy8zQ==}
 
@@ -496,6 +514,14 @@ packages:
 
   '@milkdown/plugin-listener@7.17.1':
     resolution: {integrity: sha512-v0ga+efth4D2Cr+ffCvM7BHSoqOQX+ySy/gzRH2yiBH0dLnLHgJP5V5O6U4Z4r8UH/Wx0BgZ0FIRngUEhh/Aqw==}
+
+  '@milkdown/plugin-math@7.5.9':
+    resolution: {integrity: sha512-LzFZKNc7zm3uOTs9mEN/12/X+UdGoyQRp5Gt9GE7lPJ96jOZaGJD0vMtX0mTauTOmUxDQoQS0I7NW1g9UhC6qQ==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+    peerDependencies:
+      '@milkdown/core': ^7.2.0
+      '@milkdown/ctx': ^7.2.0
+      '@milkdown/prose': ^7.2.0
 
   '@milkdown/plugin-slash@7.17.1':
     resolution: {integrity: sha512-gJ4uD7Q1pM91nZXFBjJdAp7U35gw1Ejfl9BtxE1OnqMjGlDvSdSamOb2WsdGS/xlAJgG9RhE0ZK6y3ymIoIp1w==}
@@ -526,6 +552,14 @@ packages:
 
   '@milkdown/utils@7.17.1':
     resolution: {integrity: sha512-QTjbaxv+ZOB4a1BaQULkeJExyIvMnQw69UKf9QoM/E8iY2q1c8kppnN6i6ZeN9ZkCh4lXu+r7w/LH6zSFXrsdA==}
+
+  '@milkdown/utils@7.5.9':
+    resolution: {integrity: sha512-udxaIdKm6pOiNACIKR7+NQ7Vj+QivhA5jcRqksEuQOfDFQBFcGaAhGEEiU1cKwE7fmP2ayigfD0IZ01rjLS2fA==}
+    peerDependencies:
+      '@milkdown/core': ^7.2.0
+      '@milkdown/ctx': ^7.2.0
+      '@milkdown/prose': ^7.2.0
+      '@milkdown/transformer': ^7.2.0
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -1585,6 +1619,9 @@ packages:
   ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
 
+  tslib@2.8.1:
+    resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
+
   typo-js@1.3.1:
     resolution: {integrity: sha512-elJkpCL6Z77Ghw0Lv0lGnhBAjSTOQ5FhiVOCfOuxhaoTT2xtLVbqikYItK5HHchzPbHEUFAcjOH669T2ZzeCbg==}
 
@@ -2308,6 +2345,10 @@ snapshots:
 
   '@milkdown/exception@7.17.1': {}
 
+  '@milkdown/exception@7.5.9':
+    dependencies:
+      tslib: 2.8.1
+
   '@milkdown/kit@7.17.1(@codemirror/language@6.11.3)(@codemirror/state@6.5.2)(@codemirror/view@6.38.6)':
     dependencies:
       '@milkdown/components': 7.17.1(@codemirror/language@6.11.3)(@codemirror/state@6.5.2)(@codemirror/view@6.38.6)
@@ -2390,6 +2431,21 @@ snapshots:
       '@types/lodash-es': 4.17.12
       lodash-es: 4.17.21
     transitivePeerDependencies:
+      - supports-color
+
+  '@milkdown/plugin-math@7.5.9(@milkdown/core@7.17.1)(@milkdown/ctx@7.17.1)(@milkdown/prose@7.17.1)(@milkdown/transformer@7.17.1)':
+    dependencies:
+      '@milkdown/core': 7.17.1
+      '@milkdown/ctx': 7.17.1
+      '@milkdown/exception': 7.5.9
+      '@milkdown/prose': 7.17.1
+      '@milkdown/utils': 7.5.9(@milkdown/core@7.17.1)(@milkdown/ctx@7.17.1)(@milkdown/prose@7.17.1)(@milkdown/transformer@7.17.1)
+      '@types/katex': 0.16.7
+      katex: 0.16.25
+      remark-math: 6.0.0
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - '@milkdown/transformer'
       - supports-color
 
   '@milkdown/plugin-slash@7.17.1':
@@ -2505,6 +2561,16 @@ snapshots:
       nanoid: 5.1.6
     transitivePeerDependencies:
       - supports-color
+
+  '@milkdown/utils@7.5.9(@milkdown/core@7.17.1)(@milkdown/ctx@7.17.1)(@milkdown/prose@7.17.1)(@milkdown/transformer@7.17.1)':
+    dependencies:
+      '@milkdown/core': 7.17.1
+      '@milkdown/ctx': 7.17.1
+      '@milkdown/exception': 7.5.9
+      '@milkdown/prose': 7.17.1
+      '@milkdown/transformer': 7.17.1
+      nanoid: 5.1.6
+      tslib: 2.8.1
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -3808,6 +3874,8 @@ snapshots:
   trough@2.2.0: {}
 
   ts-interface-checker@0.1.13: {}
+
+  tslib@2.8.1: {}
 
   typo-js@1.3.1: {}
 

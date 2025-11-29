@@ -2,13 +2,19 @@ import { Crepe } from '@milkdown/crepe';
 import { commandsCtx, editorViewCtx, editorViewOptionsCtx } from '@milkdown/kit/core';
 import { listenerCtx } from '@milkdown/kit/plugin/listener';
 import { cursor } from '@milkdown/plugin-cursor';
+import { math } from '@milkdown/plugin-math';
 import { upload, uploadConfig } from '@milkdown/plugin-upload';
 import { replaceAll } from '@milkdown/kit/utils';
 import commonStyleUrl from '@milkdown/crepe/theme/common/style.css?url';
 import nordStyleUrl from '@milkdown/crepe/theme/nord.css?url';
+import katexStyleUrl from 'katex/dist/katex.min.css?url';
 import { toggleLinkCommand } from '@milkdown/kit/component/link-tooltip';
 
-const styleUrls = [commonStyleUrl, nordStyleUrl];
+const styleUrls = [
+        commonStyleUrl,
+        nordStyleUrl,
+        typeof katexStyleUrl === 'undefined' ? null : katexStyleUrl,
+].filter(Boolean);
 
 const INLINE_AI_CHAT_ICON = `
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -106,6 +112,7 @@ async function createReadOnlyViewer({ mount, markdown = '', features, featureCon
                 features: normalizePreviewFeatures(features),
                 featureConfigs,
         });
+        usePlugins(preview.editor, [math]);
         ensureSetMarkdown(preview, { flush: true, silent: true });
         if (typeof preview.setReadonly === 'function') {
                 preview.setReadonly(true);
@@ -934,6 +941,104 @@ function applyMilkdownPlugins(editor, toast) {
                 return;
         }
 
+        const reAlignSlashMenu = menu => {
+                try {
+                        if (!menu || !editor || typeof editor.action !== 'function') {
+                                return;
+                        }
+                        editor.action(ctx => {
+                                const view = ctx.get(editorViewCtx);
+                                if (!view) {
+                                        return;
+                                }
+                                const { selection } = view.state;
+                                const pos = typeof selection?.to === 'number' ? selection.to : 0;
+                                const coords = view.coordsAtPos(Math.max(pos, 0));
+                                const parent = menu.offsetParent || menu.parentElement || document.body;
+                                const parentRect = parent.getBoundingClientRect();
+                                const scrollLeft =
+                                        typeof parent.scrollLeft === 'number' ? parent.scrollLeft : window.scrollX;
+                                const scrollTop =
+                                        typeof parent.scrollTop === 'number' ? parent.scrollTop : window.scrollY;
+                                const top = (coords?.bottom ?? 0) - parentRect.top + scrollTop + 10;
+                                const left = (coords?.left ?? 0) - parentRect.left + scrollLeft;
+                                menu.style.top = `${top}px`;
+                                menu.style.bottom = 'auto';
+                                menu.style.left = `${left}px`;
+                        });
+                } catch (error) {
+                        console.warn('[milkdown] Slash 菜单定位失败', error);
+                }
+        };
+
+        const ensureSlashMenuPlacement = () => {
+                const loopState = {
+                        id: null,
+                        observer: null,
+                };
+
+                const stopLoop = () => {
+                        if (loopState.id) {
+                                cancelAnimationFrame(loopState.id);
+                                loopState.id = null;
+                        }
+                };
+
+                const watchMenu = menu => {
+                        if (!menu) {
+                                return;
+                        }
+                        // data-show 为 true 时重复执行对齐，避免浮动库自动翻转
+                        const tick = () => {
+                                if (!menu || menu.dataset.show === 'false') {
+                                        stopLoop();
+                                        return;
+                                }
+                                reAlignSlashMenu(menu);
+                                loopState.id = requestAnimationFrame(tick);
+                        };
+                        stopLoop();
+                        loopState.id = requestAnimationFrame(tick);
+
+                        if (loopState.observer) {
+                                loopState.observer.disconnect();
+                        }
+                        loopState.observer = new MutationObserver(mutations => {
+                                for (const mutation of mutations) {
+                                        if (mutation.type === 'attributes' && mutation.attributeName === 'data-show') {
+                                                if (menu.dataset.show !== 'false') {
+                                                        stopLoop();
+                                                        loopState.id = requestAnimationFrame(tick);
+                                                } else {
+                                                        stopLoop();
+                                                }
+                                        }
+                                }
+                        });
+                        loopState.observer.observe(menu, { attributes: true, attributeFilter: ['data-show'] });
+                };
+
+                const attachWhenReady = () => {
+                        const menu = document.querySelector('.milkdown-slash-menu');
+                        if (menu) {
+                                watchMenu(menu);
+                                return true;
+                        }
+                        return false;
+                };
+
+                if (attachWhenReady()) {
+                        return;
+                }
+
+                const finder = setInterval(() => {
+                        if (attachWhenReady()) {
+                                clearInterval(finder);
+                        }
+                }, 200);
+                setTimeout(() => clearInterval(finder), 4000);
+        };
+
         editor.config(ctx => {
                 ctx.update(uploadConfig.key, prev => {
                         const fallbackUploader =
@@ -1002,6 +1107,10 @@ function applyMilkdownPlugins(editor, toast) {
         });
 
         usePlugins(editor, [upload, cursor]);
+        usePlugins(editor, [math]);
+        if (typeof window !== 'undefined') {
+                ensureSlashMenuPlacement();
+        }
 }
 
 class PostDraftController {
