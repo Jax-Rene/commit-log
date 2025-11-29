@@ -23,17 +23,22 @@
   },
   "dependencies": {
     "@milkdown/core": "^7.17.1",
+    "@milkdown/ctx": "^7.17.1",
     "@milkdown/crepe": "^7.17.1",
     "@milkdown/kit": "^7.17.1",
+    "@milkdown/prose": "^7.17.1",
     "@milkdown/plugin-cursor": "^7.17.1",
+    "@milkdown/plugin-math": "7.5.9",
     "@milkdown/plugin-upload": "^7.17.1",
     "@milkdown/preset-commonmark": "^7.17.1",
+    "@milkdown/transformer": "^7.17.1",
     "@milkdown/theme-nord": "^7.17.1",
     "alpinejs": "^3.15.0",
     "cropperjs": "^1.6.2",
     "easymde": "^2.20.0",
     "flatpickr": "^4.6.13",
     "highlight.js": "^11.10.0",
-    "htmx.org": "^2.0.6"
+    "htmx.org": "^2.0.6",
+    "katex": "^0.16.25"
   }
 }

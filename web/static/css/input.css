@@ -9,16 +9,40 @@
         --surface-soft-dark: #020617;
         --surface-soft-foreground-light: #0f172a;
         --surface-soft-foreground-dark: #ffffff;
+        --font-heading: "Rubik", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        --font-body: "Inter", "Noto Sans SC", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
     body {
-        font-family:
-            "Inter",
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            Roboto,
-            sans-serif;
+        font-family: var(--font-body);
+        line-height: 1.65;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: var(--font-heading);
+        font-weight: 700;
+    }
+
+    p,
+    li,
+    code,
+    pre {
+        font-family: var(--font-body);
+        line-height: 1.65;
+    }
+
+    nav,
+    .nav,
+    .sidebar,
+    footer,
+    .footer {
+        font-family: var(--font-ui);
     }
 }
 
@@ -46,24 +70,12 @@
 @layer components {
     .post-content {
         @apply space-y-6 text-base leading-relaxed text-slate-900 dark:text-slate-100;
-        font-family:
-            "Inter",
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            Roboto,
-            sans-serif;
+        font-family: var(--font-body);
     }
 
     .page-title {
         @apply text-slate-900 dark:text-slate-100;
-        font-family:
-            "Inter",
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            Roboto,
-            sans-serif;
+        font-family: var(--font-heading);
         font-size: 1.75rem;
         line-height: 1.5rem;
         font-weight: 900;
@@ -109,10 +121,12 @@
 
     .post-content code {
         @apply rounded bg-slate-100 px-1.5 py-0.5 text-sm font-mono text-slate-700 dark:bg-slate-800 dark:text-slate-100;
+        font-family: var(--font-body);
     }
 
     .post-content pre {
         @apply overflow-x-auto rounded-xl bg-slate-900 p-4 text-sm text-slate-100 dark:bg-slate-900/90;
+        font-family: var(--font-body);
     }
 
     .post-content img {
@@ -130,24 +144,12 @@
     .post-content [data-milkdown-viewer] .milkdown {
         @apply bg-transparent p-0 text-base leading-relaxed text-slate-900 shadow-none dark:text-slate-100;
         box-shadow: none;
-        font-family:
-            "Inter",
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            Roboto,
-            sans-serif;
+        font-family: var(--font-body);
     }
 
     .post-content [data-milkdown-viewer] .milkdown .ProseMirror {
         @apply bg-transparent p-0 text-base leading-relaxed text-slate-900 dark:text-slate-100;
-        font-family:
-            "Inter",
-            -apple-system,
-            BlinkMacSystemFont,
-            "Segoe UI",
-            Roboto,
-            sans-serif;
+        font-family: var(--font-body);
     }
 }
 

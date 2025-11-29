@@ -129,16 +129,16 @@ func urlSafe(input string) string {
 }
 
 func TestShowHomeExcludesDrafts(t *testing.T) {
-        cleanup := setupPublicTestDB(t)
-        defer cleanup()
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
 
-        published := seedPublishedPost(t, "Published Post", "内容")
-        draft := seedDraftPost(t, "Draft Post")
+	published := seedPublishedPost(t, "Published Post", "内容")
+	draft := seedDraftPost(t, "Draft Post")
 
-        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
-        w := httptest.NewRecorder()
-        req := httptest.NewRequest(http.MethodGet, "/", nil)
-        r.ServeHTTP(w, req)
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", w.Code)
@@ -150,26 +150,26 @@ func TestShowHomeExcludesDrafts(t *testing.T) {
 	}
 	if strings.Contains(body, draft.Title) {
 		t.Fatalf("draft post should not be rendered on public home")
-        }
+	}
 }
 
 func TestHomeCanonicalUsesConfiguredBaseURL(t *testing.T) {
-        cleanup := setupPublicTestDB(t)
-        defer cleanup()
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
 
-        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "https://blog.jaxrene.dev")
-        w := httptest.NewRecorder()
-        req := httptest.NewRequest(http.MethodGet, "/", nil)
-        r.ServeHTTP(w, req)
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "https://blog.jaxrene.dev")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.ServeHTTP(w, req)
 
-        if w.Code != http.StatusOK {
-                t.Fatalf("expected status 200, got %d", w.Code)
-        }
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
 
-        expected := `<link rel="canonical" href="https://blog.jaxrene.dev/">`
-        if !strings.Contains(w.Body.String(), expected) {
-                t.Fatalf("expected canonical link %s", expected)
-        }
+	expected := `<link rel="canonical" href="https://blog.jaxrene.dev/">`
+	if !strings.Contains(w.Body.String(), expected) {
+		t.Fatalf("expected canonical link %s", expected)
+	}
 }
 
 func TestLoadMorePostsHandlesPagination(t *testing.T) {
@@ -182,7 +182,7 @@ func TestLoadMorePostsHandlesPagination(t *testing.T) {
 		seedPublishedPostAt(t, title, "内容", now.Add(-time.Duration(i)*time.Minute))
 	}
 
-        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/posts/more?page=2", nil)
 	req.Header.Set("HX-Request", "true")
@@ -193,12 +193,12 @@ func TestLoadMorePostsHandlesPagination(t *testing.T) {
 	}
 
 	body := w.Body.String()
-        if !strings.Contains(body, "Post 7") {
-                t.Fatalf("expected paginated response to include oldest post")
-        }
-        if strings.Contains(body, "Post 1") {
-                t.Fatalf("expected second page to exclude first page items")
-        }
+	if !strings.Contains(body, "Post 7") {
+		t.Fatalf("expected paginated response to include oldest post")
+	}
+	if strings.Contains(body, "Post 1") {
+		t.Fatalf("expected second page to exclude first page items")
+	}
 }
 
 func TestShowPostDetailRejectsDraft(t *testing.T) {
@@ -207,7 +207,7 @@ func TestShowPostDetailRejectsDraft(t *testing.T) {
 
 	draft := seedDraftPost(t, "Drafted")
 
-        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(draft.ID)), nil)
 	r.ServeHTTP(w, req)
@@ -221,7 +221,7 @@ func TestShowAboutFallback(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/about", nil)
 	r.ServeHTTP(w, req)
@@ -252,7 +252,7 @@ func TestShowAboutDisplaysContacts(t *testing.T) {
 		t.Fatalf("failed to seed contacts: %v", err)
 	}
 
-        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/about", nil)
 	r.ServeHTTP(w, req)
@@ -273,6 +273,58 @@ func TestShowAboutDisplaysContacts(t *testing.T) {
 	}
 }
 
+func TestShowAboutHidesSummary(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	aboutPage := db.Page{Slug: "about", Title: "关于我", Content: "# 你好", Summary: "不应显示摘要"}
+	if err := db.DB.Create(&aboutPage).Error; err != nil {
+		t.Fatalf("failed to seed about page: %v", err)
+	}
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/about", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	bodyStart := strings.Index(body, "<body")
+	if bodyStart == -1 {
+		t.Fatalf("expected body tag in response")
+	}
+	if strings.Contains(body[bodyStart:], "不应显示摘要") {
+		t.Fatalf("expected about page to hide summary in visible content")
+	}
+}
+
+func TestShowAboutUsesSummaryForMeta(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	aboutPage := db.Page{Slug: "about", Title: "关于我", Content: "# 正文内容", Summary: "自定义关于页摘要"}
+	if err := db.DB.Create(&aboutPage).Error; err != nil {
+		t.Fatalf("failed to seed about page: %v", err)
+	}
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/about", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, `<meta name="description" content="自定义关于页摘要">`) {
+		t.Fatalf("expected meta description to prefer page summary, body=%s", body)
+	}
+}
+
 func TestShowPostDetailDisplaysContacts(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
@@ -284,7 +336,7 @@ func TestShowPostDetailDisplaysContacts(t *testing.T) {
 		t.Fatalf("failed to seed contact: %v", err)
 	}
 
-        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(post.ID)), nil)
 	r.ServeHTTP(w, req)
@@ -309,7 +361,7 @@ func TestShowPostDetailStripsLeadingTitleFromContent(t *testing.T) {
 	content := "# 公开文章\n\n正文段落"
 	post := seedPublishedPost(t, "公开文章", content)
 
-        r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(post.ID)), nil)
 	r.ServeHTTP(w, req)

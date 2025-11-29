@@ -10,7 +10,10 @@
 {{$initial := dict "content" $content "post" .post "latestPublication" .latestPublication "allTags" .allTags "tagError" .tagError}}
 
 <style>
+        html,
+        
         body {
+                min-height: 100%;
                 background-color: #fdfcff;
                 color:#0f172a; /* 确保正文采用 text-slate-900 色值 */
         }
@@ -37,11 +40,27 @@
                 min-height: 100vh;
         }
 
+        /* 全局隐藏滚动条但保留滚动功能 */
+        html,
+        body,
+        main,
+        .milkdown-immersive-wrapper,
+        .milkdown-immersive-shell .milkdown {
+                scrollbar-width: none;
+        }
+        html::-webkit-scrollbar,
+        body::-webkit-scrollbar,
+        main::-webkit-scrollbar,
+        .milkdown-immersive-wrapper::-webkit-scrollbar,
+        .milkdown-immersive-shell .milkdown::-webkit-scrollbar {
+                display: none;
+        }
+
 	.milkdown-immersive-shell {
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		height: 100%;
+		min-height: 100vh;
 		overflow: visible;
 	}
 
@@ -49,19 +68,19 @@
                 flex: 1 1 auto;
                 display: block;
                 overflow: visible;
-                min-height: 0;
+                min-height: 100vh;
         }
 
         .milkdown-immersive-container {
                 flex: 1 1 auto;
                 display: grid;
                 align-items: stretch;
-                min-height: 100%;
+                min-height: 100vh;
         }
 
         .milkdown-immersive-shell .milkdown {
                 flex: 1 1 auto;
-                min-height: 0;
+                min-height: 100vh;
                 overflow-x: hidden;
                 overflow-y: auto;
                 --crepe-color-background: #fdfcff;
@@ -112,6 +131,14 @@
 
         [data-editor-toc-card] .toc-item {
                 position: relative;
+        }
+
+        /* 隐藏 Slash 菜单内部滚动条，保持可滚动 */
+        .milkdown-slash-menu .menu-groups {
+                scrollbar-width: none; /* Firefox */
+        }
+        .milkdown-slash-menu .menu-groups::-webkit-scrollbar {
+                display: none; /* Chrome/Safari */
         }
 
 [data-editor-toc-card] .toc-link {

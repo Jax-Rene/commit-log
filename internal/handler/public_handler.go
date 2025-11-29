@@ -329,17 +329,17 @@ func (a *API) ShowAbout(c *gin.Context) {
 
 	page, err := a.pages.GetBySlug("about")
 	if err != nil {
-		summary := "保持好奇心，持续输出价值。"
+		fallbackContent := "暂无简介，稍后再来看看。"
+		description := truncateRunes(markdownToPlainText(fallbackContent), 160)
 		a.renderHTML(c, http.StatusOK, "about.html", gin.H{
 			"title": "关于",
 			"page": gin.H{
-				"Title":   "关于我",
-				"Summary": summary,
+				"Title": "关于我",
 			},
 			"content":         template.HTML("<p class=\"text-sm text-slate-600\">暂无简介，稍后再来看看。</p>"),
 			"year":            now.Year(),
 			"contacts":        contacts,
-			"metaDescription": summary,
+			"metaDescription": description,
 			"metaKeywords":    []string{"关于", "个人简介"},
 			"metaType":        "profile",
 			"canonical":       canonical,
@@ -567,6 +567,17 @@ func truncateRunes(text string, limit int) string {
 	return strings.TrimSpace(string(runes[:limit])) + "…"
 }
 
+func buildPageDescription(page *db.Page) string {
+	if page == nil {
+		return ""
+	}
+	if summary := strings.TrimSpace(page.Summary); summary != "" {
+		// 优先使用自定义摘要来充当 SEO 描述，避免直接截断正文导致片段不准确。
+		return truncateRunes(summary, 160)
+	}
+	return truncateRunes(markdownToPlainText(page.Content), 160)
+}
+
 func buildPublicationDescription(publication *db.PostPublication) string {
 	if publication == nil {
 		return ""
@@ -575,16 +586,6 @@ func buildPublicationDescription(publication *db.PostPublication) string {
 		return truncateRunes(summary, 160)
 	}
 	return truncateRunes(markdownToPlainText(publication.Content), 160)
-}
-
-func buildPageDescription(page *db.Page) string {
-	if page == nil {
-		return ""
-	}
-	if summary := strings.TrimSpace(page.Summary); summary != "" {
-		return truncateRunes(summary, 160)
-	}
-	return truncateRunes(markdownToPlainText(page.Content), 160)
 }
 
 func collectTagNames(tags []db.Tag) []string {
