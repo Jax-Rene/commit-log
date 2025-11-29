@@ -352,7 +352,7 @@ func (a *API) ShowAbout(c *gin.Context) {
 		htmlContent = template.HTML("<p class=\"text-sm text-slate-600\">内容暂时无法展示。</p>")
 	}
 
-	description := truncateRunes(markdownToPlainText(page.Content), 160)
+	description := buildPageDescription(page)
 	keywords := []string{"关于", strings.TrimSpace(page.Title)}
 
 	payload := gin.H{
@@ -565,6 +565,17 @@ func truncateRunes(text string, limit int) string {
 		return trimmed
 	}
 	return strings.TrimSpace(string(runes[:limit])) + "…"
+}
+
+func buildPageDescription(page *db.Page) string {
+	if page == nil {
+		return ""
+	}
+	if summary := strings.TrimSpace(page.Summary); summary != "" {
+		// 优先使用自定义摘要来充当 SEO 描述，避免直接截断正文导致片段不准确。
+		return truncateRunes(summary, 160)
+	}
+	return truncateRunes(markdownToPlainText(page.Content), 160)
 }
 
 func buildPublicationDescription(publication *db.PostPublication) string {

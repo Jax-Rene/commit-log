@@ -291,8 +291,37 @@ func TestShowAboutHidesSummary(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	if strings.Contains(w.Body.String(), "不应显示摘要") {
-		t.Fatalf("expected about page to hide summary")
+	body := w.Body.String()
+	bodyStart := strings.Index(body, "<body")
+	if bodyStart == -1 {
+		t.Fatalf("expected body tag in response")
+	}
+	if strings.Contains(body[bodyStart:], "不应显示摘要") {
+		t.Fatalf("expected about page to hide summary in visible content")
+	}
+}
+
+func TestShowAboutUsesSummaryForMeta(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	aboutPage := db.Page{Slug: "about", Title: "关于我", Content: "# 正文内容", Summary: "自定义关于页摘要"}
+	if err := db.DB.Create(&aboutPage).Error; err != nil {
+		t.Fatalf("failed to seed about page: %v", err)
+	}
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/about", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, `<meta name="description" content="自定义关于页摘要">`) {
+		t.Fatalf("expected meta description to prefer page summary, body=%s", body)
 	}
 }
 
