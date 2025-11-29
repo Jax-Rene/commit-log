@@ -1,20 +1,17 @@
-{{template "base" .}}
-
-{{define "content"}}
+{{template "base" .}} {{define "content"}}
 <section class="mx-auto max-w-3xl space-y-8">
-	<header class="space-y-3 text-center">
-		<p class="text-sm font-medium text-blue-600 dark:text-blue-400">About Me</p>
-		<h1 class="text-4xl font-semibold text-slate-900 dark:text-slate-100">{{.page.Title}}</h1>
-		{{if .page.Summary}}
-		<p class="text-sm text-slate-600 dark:text-slate-400">{{.page.Summary}}</p>
-		{{end}}
-	</header>
+    <header class="space-y-3 text-center">
+        <p class="text-sm font-medium text-blue-600 dark:text-blue-400">
+            About Me
+        </p>
+        <h1 class="text-4xl font-semibold text-slate-900 dark:text-slate-100">
+            {{.page.Title}}
+        </h1>
+    </header>
 
-	<section class="post-content">
-		{{.content}}
-	</section>
+    <section class="post-content">{{.content}}</section>
 
-	{{template "contact_links.html" (dict "Contacts" .contacts "Heading" "联系我" "Subtitle" "喜欢的话记得打个招呼，互相交流。")}}
-
+    {{template "contact_links.html" (dict "Contacts" .contacts "Heading"
+    "联系我" "Subtitle" "喜欢的话记得打个招呼，互相交流。")}}
 </section>
 {{end}}
