@@ -43,7 +43,7 @@
         <div
             id="post-grid"
             class="grid grid-cols-1 items-start gap-x-6 sm:grid-cols-2 xl:grid-cols-3"
-            style="grid-auto-rows: 1px; row-gap: calc(1.5rem - 1px);"
+            style="row-gap: calc(1.5rem);"
         >
             {{if $hasPosts}} {{range .posts}} {{template "post_card" (dict
             "Post" .)}} {{end}} {{end}}
@@ -86,6 +86,7 @@
 
         // 通过动态 span 模拟瀑布流，确保垂直间距一致
         const applyMasonry = () => {
+            grid.style.gridAutoRows = "1px";
             const styles = window.getComputedStyle(grid);
             const rowGap = parseFloat(styles.getPropertyValue("row-gap")) || 0;
             const rowHeight =
