@@ -2,10 +2,25 @@ export function createMasonryGridController({
         containerSelector = '#post-grid',
         cardSelector = '[data-post-card]',
 } = {}) {
+        const DEFAULT_ROW_HEIGHT = 8;
         let rafId = null;
         let resizeTimer = null;
 
         const resolveContainer = () => document.querySelector(containerSelector);
+
+        const resolveSizing = container => {
+                const styles = window.getComputedStyle(container);
+                const parsedRowHeight = Number.parseFloat(styles.gridAutoRows);
+                const rowHeightIsValid = Number.isFinite(parsedRowHeight) && parsedRowHeight > 0;
+                const rowHeight = rowHeightIsValid ? parsedRowHeight : DEFAULT_ROW_HEIGHT;
+                if (!rowHeightIsValid) {
+                        // 防止未设置网格行高时内容重叠，兜底指定一个像素行高
+                        container.style.gridAutoRows = `${rowHeight}px`;
+                }
+                const parsedRowGap = Number.parseFloat(styles.rowGap);
+                const rowGap = Number.isFinite(parsedRowGap) && parsedRowGap >= 0 ? parsedRowGap : 0;
+                return { rowHeight, rowGap };
+        };
 
         const measure = () => {
                 const container = resolveContainer();
@@ -14,9 +29,7 @@ export function createMasonryGridController({
                 const cards = Array.from(container.querySelectorAll(cardSelector));
                 if (!cards.length) return;
 
-                const styles = window.getComputedStyle(container);
-                const rowHeight = parseFloat(styles.gridAutoRows) || 8;
-                const rowGap = parseFloat(styles.rowGap) || 0;
+                const { rowHeight, rowGap } = resolveSizing(container);
 
                 cards.forEach(card => {
                         const rect = card.getBoundingClientRect?.() || {};

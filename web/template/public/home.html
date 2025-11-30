@@ -42,8 +42,7 @@
     <div id="post-content" class="space-y-6">
         <div
             id="post-grid"
-            class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3"
-            style="grid-auto-rows: 8px; align-items: start"
+            class="grid grid-cols-1 items-start gap-6 sm:grid-cols-2 xl:grid-cols-3"
         >
             {{if $hasPosts}} {{range .posts}} {{template "post_card" (dict
             "Post" .)}} {{end}} {{end}}
