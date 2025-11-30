@@ -240,7 +240,7 @@ func (r *templateRegistry) Instance(name string, data interface{}) render.Render
 func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *gin.Engine {
 	r := gin.New()
 
-        handlers := handler.NewAPI(db.DB, uploadDir, uploadURLPath, siteBaseURL)
+	handlers := handler.NewAPI(db.DB, uploadDir, uploadURLPath, siteBaseURL)
 
 	r.Use(gin.Logger())
 	r.Use(recoveryWithHandler(handlers))
@@ -268,8 +268,13 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 	if !strings.HasPrefix(trimmedUploadPath, "/") {
 		trimmedUploadPath = "/" + trimmedUploadPath
 	}
-	if strings.TrimSpace(uploadDir) != "" && !strings.HasPrefix(trimmedUploadPath, "/static") {
-		r.Static(trimmedUploadPath, uploadDir)
+	if strings.TrimSpace(uploadDir) != "" {
+		if !strings.HasPrefix(trimmedUploadPath, "/static") {
+			r.Static(trimmedUploadPath, uploadDir)
+		}
+		if trimmedUploadPath != "/uploads" { // 兼容旧版固定路径
+			r.Static("/uploads", uploadDir)
+		}
 	}
 
 	r.GET("/robots.txt", handlers.ShowRobots)
