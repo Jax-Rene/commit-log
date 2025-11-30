@@ -52,4 +52,3 @@ fly-sync-product-data: # 同步线上数据到本地开发使用
 	mv commitlog.db.backup commitlog.db
 	fly ssh sftp -a commitlog get -R /data/uploads
 	mv uploads/* ./web/static/uploads
-	rm -rf commitlog.db uploads

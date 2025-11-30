@@ -42,7 +42,8 @@
     <div id="post-content" class="space-y-6">
         <div
             id="post-grid"
-            class="grid grid-cols-1 items-start gap-6 sm:grid-cols-2 xl:grid-cols-3"
+            class="grid grid-cols-1 items-start gap-x-6 sm:grid-cols-2 xl:grid-cols-3"
+            style="grid-auto-rows: 1px; row-gap: calc(1.5rem - 1px);"
         >
             {{if $hasPosts}} {{range .posts}} {{template "post_card" (dict
             "Post" .)}} {{end}} {{end}}
@@ -77,4 +78,43 @@
         {{end}} {{end}}
     </div>
 </section>
+
+<script>
+    (() => {
+        const grid = document.getElementById("post-grid");
+        if (!grid) return;
+
+        // 通过动态 span 模拟瀑布流，确保垂直间距一致
+        const applyMasonry = () => {
+            const styles = window.getComputedStyle(grid);
+            const rowGap = parseFloat(styles.getPropertyValue("row-gap")) || 0;
+            const rowHeight =
+                parseFloat(styles.getPropertyValue("grid-auto-rows")) || 1;
+
+            grid.querySelectorAll("[data-post-card]").forEach((card) => {
+                const cardHeight = card.getBoundingClientRect().height;
+                const span = Math.max(
+                    1,
+                    Math.ceil((cardHeight + rowGap) / (rowHeight + rowGap))
+                );
+                card.style.gridRowEnd = `span ${span}`;
+            });
+        };
+
+        const rafApply = () => window.requestAnimationFrame(applyMasonry);
+        rafApply();
+
+        grid.querySelectorAll("img").forEach((img) => {
+            if (img.complete) {
+                rafApply();
+                return;
+            }
+            img.addEventListener("load", rafApply);
+            img.addEventListener("error", rafApply);
+        });
+
+        window.addEventListener("resize", rafApply);
+        document.addEventListener("htmx:afterSwap", rafApply);
+    })();
+</script>
 {{end}}
