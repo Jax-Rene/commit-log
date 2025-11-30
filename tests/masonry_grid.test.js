@@ -16,9 +16,9 @@ function createDom() {
                 return 1;
         };
         window.cancelAnimationFrame = () => {};
-        window.getComputedStyle = () => ({
-                gridAutoRows: '10',
-                rowGap: '0',
+        window.getComputedStyle = element => ({
+                gridAutoRows: element?.style?.gridAutoRows || '',
+                rowGap: element?.style?.rowGap || '',
         });
         global.requestAnimationFrame = window.requestAnimationFrame;
         global.cancelAnimationFrame = window.cancelAnimationFrame;
@@ -33,13 +33,17 @@ function createDom() {
         };
 }
 
-function buildPostContent(heights) {
+function buildPostContent(heights, { rowHeight, rowGap } = {}) {
         const host = document.createElement('div');
         host.id = 'post-content';
         const container = document.createElement('div');
         container.id = 'post-grid';
-        container.style.gridAutoRows = '10';
-        container.style.rowGap = '0';
+        if (rowHeight !== undefined) {
+                container.style.gridAutoRows = rowHeight;
+        }
+        if (rowGap !== undefined) {
+                container.style.rowGap = rowGap;
+        }
         host.appendChild(container);
 
         heights.forEach((height, index) => {
@@ -65,7 +69,7 @@ test('masonry recalculates rows after HTMX swaps', async () => {
         try {
                 const { createMasonryGridController } = await import('../web/frontend/masonry_grid.js');
 
-                const initial = buildPostContent([120, 200]);
+                const initial = buildPostContent([120, 200], { rowHeight: '10px', rowGap: '0px' });
                 document.body.appendChild(initial.host);
 
                 const controller = createMasonryGridController();
@@ -81,8 +85,29 @@ test('masonry recalculates rows after HTMX swaps', async () => {
                 document.dispatchEvent(new window.CustomEvent('htmx:afterSwap'));
 
                 cards = swapped.container.querySelectorAll('[data-post-card]');
-                assert.equal(cards[0].style.gridRowEnd, 'span 8');
-                assert.equal(cards[1].style.gridRowEnd, 'span 16');
+                assert.equal(cards[0].style.gridRowEnd, 'span 10');
+                assert.equal(cards[1].style.gridRowEnd, 'span 20');
+
+                controller.destroy();
+        } finally {
+                cleanup();
+        }
+});
+
+test('masonry sets default row height when missing', async () => {
+        const cleanup = createDom();
+        try {
+                const { createMasonryGridController } = await import('../web/frontend/masonry_grid.js');
+
+                const initial = buildPostContent([160]);
+                document.body.appendChild(initial.host);
+
+                const controller = createMasonryGridController();
+                controller.refresh();
+
+                const card = initial.container.querySelector('[data-post-card]');
+                assert.equal(initial.container.style.gridAutoRows, '8px');
+                assert.equal(card.style.gridRowEnd, 'span 20');
 
                 controller.destroy();
         } finally {
