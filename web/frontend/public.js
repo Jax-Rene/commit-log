@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import htmx from 'htmx.org';
 import { createViewerTocController } from './toc_controller.js';
+import { createMasonryGridController } from './masonry_grid.js';
 
 import '../static/css/input.css';
 
@@ -10,6 +11,7 @@ globalThis.Alpine = Alpine;
 Alpine.start();
 
 let postTocController = null;
+let masonryController = null;
 
 function ensurePostToc() {
         if (!document.querySelector('[data-toc-card]')) {
@@ -75,10 +77,22 @@ function initMilkdownViewer() {
                 });
 }
 
+function ensureMasonryGrid() {
+        if (!document.getElementById('post-grid')) {
+                return;
+        }
+        if (masonryController) {
+                masonryController.refresh();
+                return;
+        }
+        masonryController = createMasonryGridController();
+}
+
 function bootPublic() {
         // 构建只读渲染与目录浮框
         initMilkdownViewer();
         ensurePostToc();
+        ensureMasonryGrid();
 }
 
 if (document.readyState === 'loading') {
@@ -87,9 +101,15 @@ if (document.readyState === 'loading') {
         bootPublic();
 }
 
+document.addEventListener('htmx:afterSwap', ensureMasonryGrid);
+
 window.addEventListener('pagehide', () => {
         if (postTocController) {
                 postTocController.destroy();
                 postTocController = null;
+        }
+        if (masonryController) {
+                masonryController.destroy();
+                masonryController = null;
         }
 }, { once: true });
