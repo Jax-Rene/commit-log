@@ -13,6 +13,8 @@ import (
 	"unicode/utf8"
 )
 
+const defaultAIChatTimeout = 15 * time.Minute
+
 type chatMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
@@ -65,7 +67,7 @@ type aiChatClient struct {
 func newAIChatClient(settings *SystemSettingService, defaultOpenAIModel, defaultDeepSeekModel string) *aiChatClient {
 	return &aiChatClient{
 		settings:             settings,
-		http:                 &http.Client{Timeout: 180 * time.Second},
+		http:                 &http.Client{Timeout: defaultAIChatTimeout},
 		openAIBaseURL:        "https://api.openai.com/v1",
 		openAIModel:          strings.TrimSpace(defaultOpenAIModel),
 		deepSeekBaseURL:      "https://api.deepseek.com/v1",
@@ -77,7 +79,7 @@ func newAIChatClient(settings *SystemSettingService, defaultOpenAIModel, default
 
 func (c *aiChatClient) SetHTTPClient(client httpDoer) {
 	if client == nil {
-		c.http = &http.Client{Timeout: 20 * time.Second}
+		c.http = &http.Client{Timeout: defaultAIChatTimeout}
 		return
 	}
 	c.http = client
