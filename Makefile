@@ -45,3 +45,11 @@ fly-logs: # 查看 fly.io 日志
 
 fly-ssh: # 通过 ssh 连接到 fly.io 实例
 	fly ssh console
+
+fly-sync-product-data: # 同步线上数据到本地开发使用
+	rm -rf commitlog.db.backup uploads
+	fly ssh sftp -a commitlog get /data/commitlog.db.backup 
+	mv commitlog.db.backup commitlog.db
+	fly ssh sftp -a commitlog get -R /data/uploads
+	mv uploads/* ./web/static/uploads
+	rm -rf commitlog.db uploads

@@ -8,16 +8,16 @@ import (
 
 // AppConfig 汇总运行服务所需的基础配置。
 type AppConfig struct {
-        ListenAddr        string
-        Port              string
-        DatabasePath      string
-        SessionSecret     string
-        GinMode           string
-        UploadDir         string
-        UploadURLPath     string
-        SuperRootUserName string
-        SuperRootPassword string
-        SiteBaseURL       string
+	ListenAddr        string
+	Port              string
+	DatabasePath      string
+	SessionSecret     string
+	GinMode           string
+	UploadDir         string
+	UploadURLPath     string
+	SuperRootUserName string
+	SuperRootPassword string
+	SiteBaseURL       string
 }
 
 // Load 从环境变量读取应用配置，并为缺失项提供安全的默认值。
@@ -52,29 +52,29 @@ func Load() AppConfig {
 		uploadDir = "web/static/uploads"
 	}
 
-        uploadURLPath := strings.TrimSpace(os.Getenv("UPLOAD_URL_PATH"))
-        if uploadURLPath == "" {
-                uploadURLPath = "/static/uploads"
-        }
+	uploadURLPath := strings.TrimSpace(os.Getenv("UPLOAD_URL_PATH"))
+	if uploadURLPath == "" {
+		uploadURLPath = "/static/uploads"
+	}
 
-        siteBaseURL := strings.TrimSpace(os.Getenv("SITE_BASE_URL"))
-        if siteBaseURL == "" {
-                siteBaseURL = "https://blog.jaxrene.dev"
-        }
+	siteBaseURL := strings.TrimSpace(os.Getenv("SITE_BASE_URL"))
+	if siteBaseURL == "" {
+		siteBaseURL = "https://blog.jaxrene.dev"
+	}
 
-        superRootUserName := strings.TrimSpace(os.Getenv("SUPER_ROOT_USER_NAME"))
-        superRootPassword := strings.TrimSpace(os.Getenv("SUPER_ROOT_PASSWORD"))
+	superRootUserName := strings.TrimSpace(os.Getenv("SUPER_ROOT_USER_NAME"))
+	superRootPassword := strings.TrimSpace(os.Getenv("SUPER_ROOT_PASSWORD"))
 
-        return AppConfig{
-                ListenAddr:        listenAddr,
+	return AppConfig{
+		ListenAddr:        listenAddr,
 		Port:              port,
 		DatabasePath:      databasePath,
 		SessionSecret:     sessionSecret,
-                GinMode:           ginMode,
-                UploadDir:         uploadDir,
-                UploadURLPath:     uploadURLPath,
-                SuperRootUserName: superRootUserName,
-                SuperRootPassword: superRootPassword,
-                SiteBaseURL:       siteBaseURL,
-        }
+		GinMode:           ginMode,
+		UploadDir:         uploadDir,
+		UploadURLPath:     uploadURLPath,
+		SuperRootUserName: superRootUserName,
+		SuperRootPassword: superRootPassword,
+		SiteBaseURL:       siteBaseURL,
+	}
 }
