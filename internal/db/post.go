@@ -7,6 +7,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// markdownEmphasisReplacer 用于去除 Markdown 斜体和粗体标记。
+var markdownEmphasisReplacer = strings.NewReplacer("**", "", "*", "")
+
 // Post 定义了文章模型
 type Post struct {
 	gorm.Model
@@ -92,10 +95,15 @@ func DeriveTitleFromContent(content string) string {
 		trimmed = strings.TrimSpace(trimmed)
 		trimmed = strings.TrimRight(trimmed, "#")
 		trimmed = strings.TrimSpace(trimmed)
-		if trimmed != "" {
-			return trimmed
-		}
 	}
 
+	trimmed = stripMarkdownEmphasis(trimmed)
+	trimmed = strings.TrimSpace(trimmed)
+
 	return trimmed
+}
+
+// stripMarkdownEmphasis 去除 Markdown 斜体和粗体标记。
+func stripMarkdownEmphasis(text string) string {
+	return markdownEmphasisReplacer.Replace(text)
 }
