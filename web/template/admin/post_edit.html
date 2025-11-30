@@ -200,18 +200,74 @@
 @media (prefers-color-scheme: dark) {
         body {
                 background-color: #020617;
-                color: #f1f5f9; /* 匹配 dark:text-slate-100 */
+                color: #e2e8f0; /* 匹配 dark:text-slate-100 */
         }
 
-                body.milkdown-immersive {
-                        background-color: #020617;
-                }
+        body.milkdown-immersive {
+                background-color: #020617;
+        }
 
-                .milkdown-immersive-shell .milkdown {
-                        --crepe-color-background: #020617;
-                        background-color: #020617;
-                        color: #f1f5f9; /* 深色模式下提升文字可读性 */
-                }
+        .milkdown-immersive-shell .milkdown {
+                --crepe-color-background: #020617;
+                --crepe-color-on-background: #e2e8f0;
+                --crepe-color-surface: #0f172a;
+                --crepe-color-surface-low: #0b1629;
+                --crepe-color-on-surface: #e2e8f0;
+                --crepe-color-on-surface-variant: #cbd5e1;
+                --crepe-color-outline: #1f2f46;
+                --crepe-color-primary: #7dd3fc;
+                --crepe-color-secondary: #13203c;
+                --crepe-color-on-secondary: #e0f2fe;
+                --crepe-color-inverse: #e2e8f0;
+                --crepe-color-on-inverse: #020617;
+                --crepe-color-inline-code: #fbbf24;
+                --crepe-color-error: #fda4af;
+                --crepe-color-hover: rgba(255, 255, 255, 0.06);
+                --crepe-color-selected: rgba(125, 211, 252, 0.22);
+                --crepe-color-inline-area: #11233f;
+                --crepe-shadow-1: 0 18px 48px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.35);
+                --crepe-shadow-2: 0 24px 64px rgba(0, 0, 0, 0.55), 0 12px 24px rgba(0, 0, 0, 0.35);
+                background-color: #020617;
+                color: #e2e8f0; /* 深色模式下提升文字可读性 */
+        }
+
+        .milkdown-immersive-shell .milkdown .ProseMirror pre {
+                border: 1px solid #1f2f46;
+        }
+
+        .milkdown-immersive-shell .milkdown .milkdown-code-block {
+                border: 1px solid #1f2f46;
+                box-shadow: none;
+        }
+
+        .milkdown-immersive-shell .milkdown .milkdown-code-block .cm-editor,
+        .milkdown-immersive-shell .milkdown .milkdown-code-block .cm-scroller,
+        .milkdown-immersive-shell .milkdown .milkdown-code-block .cm-content,
+        .milkdown-immersive-shell .milkdown .milkdown-code-block .cm-line {
+                color: #e2e8f0;
+        }
+
+        .milkdown-immersive-shell .milkdown .milkdown-code-block .cm-gutters {
+                color: #94a3b8;
+                border-right-color: #1f2f46;
+        }
+
+        .milkdown-immersive-shell .milkdown .milkdown-code-block .cm-activeLineGutter,
+        .milkdown-immersive-shell .milkdown .milkdown-code-block .cm-activeLine {
+                background-color: rgba(125, 211, 252, 0.12);
+        }
+
+        .milkdown-immersive-shell .milkdown .milkdown-code-block .cm-selectionBackground {
+                background-color: rgba(125, 211, 252, 0.2) !important;
+        }
+
+        .milkdown-immersive-shell .milkdown .milkdown-code-block .cm-cursor {
+                border-left-color: #7dd3fc;
+        }
+
+        .milkdown-immersive-shell .milkdown .katex {
+                color: #e2e8f0;
+        }
 
         .milkdown-preview .milkdown {
                 background-color: transparent;
