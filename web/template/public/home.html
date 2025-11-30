@@ -1,52 +1,143 @@
-{{template "base" .}}
-
-{{define "content"}}
+{{template "base" .}} {{define "content"}}
 <section class="space-y-10">
-	<header class="space-y-2">
-		<form method="GET" action="/" class="space-y-4"
-			hx-get="/" hx-trigger="change" hx-target="#post-content" hx-select="#post-content" hx-swap="outerHTML"
-			hx-push-url="true">
-			<input type="hidden" name="search" value="{{.search}}">
-			{{if .tagOptions}}
-			<div class="flex flex-wrap gap-2 text-xs">
-				{{range $tag := .tagOptions}}
-				<label class="tag-filter inline-flex items-center cursor-pointer">
-					<input type="checkbox" name="tags" value="{{$tag.Name}}" class="tag-filter-input sr-only" {{range
-						$.tags}}{{if eq . $tag.Name}}checked{{end}}{{end}}>
-					<span class="tag-filter-pill">{{$tag.Name}}</span>
-				</label>
-				{{end}}
-			</div>
-			{{end}}
-		</form>
-	</header>
+    <header class="space-y-2">
+        <form
+            method="GET"
+            action="/"
+            class="space-y-4"
+            hx-get="/"
+            hx-trigger="change"
+            hx-target="#post-content"
+            hx-select="#post-content"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+        >
+            <input type="hidden" name="search" value="{{.search}}" />
+            {{if .tagOptions}}
+            <div class="flex flex-wrap gap-2 text-xs">
+                {{range $tag := .tagOptions}}
+                <label
+                    class="tag-filter inline-flex items-center cursor-pointer"
+                >
+                    <input
+                        type="checkbox"
+                        name="tags"
+                        value="{{$tag.Name}}"
+                        class="tag-filter-input sr-only"
+                        {{range
+                        $.tags}}{{if
+                        eq
+                        .
+                        $tag.Name}}checked{{end}}{{end}}
+                    />
+                    <span class="tag-filter-pill">{{$tag.Name}}</span>
+                </label>
+                {{end}}
+            </div>
+            {{end}}
+        </form>
+    </header>
 
-	{{ $hasPosts := gt (len .posts) 0 }}
-	<div id="post-content" class="space-y-6">
-		<div id="post-grid" class="columns-1 gap-6 space-y-6 sm:columns-2 xl:columns-3">
-			{{if $hasPosts}}
-			{{range .posts}}
-			{{template "post_card" (dict "Post" .)}}
-			{{end}}
-			{{end}}
-		</div>
+    {{ $hasPosts := gt (len .posts) 0 }}
+    <div id="post-content" class="space-y-6">
+        <div
+            id="post-grid"
+            class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3"
+            style="grid-auto-rows: 8px; align-items: start"
+        >
+            {{if $hasPosts}} {{range .posts}} {{template "post_card" (dict
+            "Post" .)}} {{end}} {{end}}
+        </div>
 
-		{{if not $hasPosts}}
-		<div class="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-12 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-400">
-			暂时没有符合条件的文章，换个关键词试试吧。
-		</div>
-		{{end}}
-
-		{{if $hasPosts}}
-		{{if .hasMore}}
-		<div id="load-more" hx-get="/posts/more?page={{add .page 1}}{{.queryParams}}" hx-trigger="revealed"
-			hx-target="#load-more" hx-swap="outerHTML">
-			<div class="flex justify-center py-8 text-sm text-slate-500 dark:text-slate-400">加载中…</div>
-		</div>
-		{{else}}
-		<div class="py-8 text-center text-sm text-slate-400 dark:text-slate-500">已经到底啦 ✨</div>
-		{{end}}
-		{{end}}
-	</div>
+        {{if not $hasPosts}}
+        <div
+            class="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-12 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-400"
+        >
+            暂时没有符合条件的文章，换个关键词试试吧。
+        </div>
+        {{end}} {{if $hasPosts}} {{if .hasMore}}
+        <div
+            id="load-more"
+            hx-get="/posts/more?page={{add .page 1}}{{.queryParams}}"
+            hx-trigger="revealed"
+            hx-target="#load-more"
+            hx-swap="outerHTML"
+        >
+            <div
+                class="flex justify-center py-8 text-sm text-slate-500 dark:text-slate-400"
+            >
+                加载中…
+            </div>
+        </div>
+        {{else}}
+        <div
+            class="py-8 text-center text-sm text-slate-400 dark:text-slate-500"
+        >
+            已经到底啦 ✨
+        </div>
+        {{end}} {{end}}
+    </div>
 </section>
+<script>
+    (() => {
+        const container = document.getElementById("post-grid");
+        if (!container) return;
+
+        const cardSelector = "[data-post-card]";
+        let resizeTimer;
+        let rafId;
+
+        const measure = () => {
+            const cards = Array.from(container.querySelectorAll(cardSelector));
+            if (!cards.length) {
+                return;
+            }
+            const styles = window.getComputedStyle(container);
+            const rowHeight = parseFloat(styles.gridAutoRows) || 8;
+            const rowGap = parseFloat(styles.rowGap) || 0;
+            cards.forEach((card) => {
+                const height = card.getBoundingClientRect().height;
+                const span = Math.max(
+                    1,
+                    Math.ceil((height + rowGap) / (rowHeight + rowGap)),
+                );
+                card.style.gridRowEnd = `span ${span}`;
+                card.style.gridColumn = "";
+            });
+
+            cards.forEach((card) => {
+                card.querySelectorAll("img").forEach((img) => {
+                    if (img.dataset.masonryBound) return;
+                    img.dataset.masonryBound = "true";
+                    if (!img.complete) {
+                        img.addEventListener("load", schedule);
+                        img.addEventListener("error", schedule);
+                    }
+                });
+            });
+        };
+
+        const schedule = () => {
+            if (rafId) {
+                cancelAnimationFrame(rafId);
+            }
+            rafId = requestAnimationFrame(measure);
+        };
+
+        schedule();
+
+        window.addEventListener("resize", () => {
+            if (resizeTimer) {
+                clearTimeout(resizeTimer);
+            }
+            resizeTimer = setTimeout(() => {
+                schedule();
+            }, 120);
+        });
+
+        document.addEventListener("htmx:afterSwap", () => {
+            schedule();
+        });
+    })();
+</script>
 {{end}}
