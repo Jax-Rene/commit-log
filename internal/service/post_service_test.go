@@ -434,3 +434,41 @@ func TestPostService_DeriveTitleFromContent(t *testing.T) {
 		t.Fatalf("expected title to fall back to first line, got %q", preserved.Title)
 	}
 }
+
+func TestCalculateReadingTimeIgnoresLinks(t *testing.T) {
+	tests := []struct {
+		name     string
+		content  string
+		expected int
+	}{
+		{
+			name:     "hyperlink text preserved url removed",
+			content:  "这是一个包含链接的内容，[点击这里](https://example.com/very/long/path?with=query)。",
+			expected: 1,
+		},
+		{
+			name:     "image link removed",
+			content:  "前言 ![示例图片](https://example.com/image.png) 结尾",
+			expected: 1,
+		},
+		{
+			name:     "bare url removed",
+			content:  "请访问 https://example.com/path 了解详情",
+			expected: 1,
+		},
+		{
+			name:     "only url returns zero",
+			content:  "https://example.com/path",
+			expected: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := calculateReadingTime(tt.content)
+			if got != tt.expected {
+				t.Fatalf("expected %d, got %d", tt.expected, got)
+			}
+		})
+	}
+}
