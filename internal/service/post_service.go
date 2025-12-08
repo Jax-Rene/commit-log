@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -16,6 +17,9 @@ var (
 	ErrCoverInvalid        = errors.New("cover dimensions are invalid")
 	ErrPublicationNotFound = errors.New("post publication not found")
 	ErrInvalidPublishState = errors.New("post is missing required fields for publishing")
+	linkPattern            = regexp.MustCompile(`\[[^\]]+\]\([^\)]+\)`)
+	imagePattern           = regexp.MustCompile(`!\[[^\]]*\]\([^\)]+\)`)
+	bareURLPattern         = regexp.MustCompile(`https?://\S+`)
 )
 
 // PostService wraps post related database operations.
@@ -527,7 +531,22 @@ func calculateReadingTime(content string) int {
 		return 0
 	}
 
-	runes := []rune(trimmed)
+	sanitized := imagePattern.ReplaceAllString(trimmed, "")
+	sanitized = linkPattern.ReplaceAllStringFunc(sanitized, func(match string) string {
+		open := strings.Index(match, "[")
+		close := strings.Index(match, "]")
+		if open >= 0 && close > open {
+			return match[open+1 : close]
+		}
+		return ""
+	})
+	sanitized = bareURLPattern.ReplaceAllString(sanitized, "")
+	sanitized = strings.TrimSpace(sanitized)
+	if sanitized == "" {
+		return 0
+	}
+
+	runes := []rune(sanitized)
 	if len(runes) == 0 {
 		return 0
 	}
