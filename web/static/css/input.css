@@ -104,7 +104,7 @@
     }
 
     .post-content a {
-        @apply text-blue-600 underline-offset-4 transition-colors hover:underline dark:text-blue-400;
+        @apply text-blue-600 no-underline underline-offset-4 transition-colors hover:underline dark:text-blue-400;
     }
 
     .post-content ul {
