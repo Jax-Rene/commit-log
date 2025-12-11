@@ -9,9 +9,14 @@
         --surface-soft-dark: #020617;
         --surface-soft-foreground-light: #0f172a;
         --surface-soft-foreground-dark: #ffffff;
-        --font-heading: "Rubik", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-        --font-body: "Inter", "Noto Sans SC", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-        --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        --font-heading:
+            "Rubik", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        --font-body:
+            "Inter", "Noto Sans SC", "Segoe UI", "Helvetica Neue", Arial,
+            sans-serif;
+        --font-ui:
+            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            "Helvetica Neue", Arial, sans-serif;
     }
 
     body {
@@ -105,6 +110,17 @@
 
     .post-content a {
         @apply text-blue-600 no-underline underline-offset-4 transition-colors hover:underline dark:text-blue-400;
+    }
+    /* 覆盖 Milkdown 注入的默认链接下划线，默认无下划线，悬停时才展示 */
+    .post-content a,
+    .post-content [data-milkdown-viewer] .milkdown .ProseMirror a {
+        text-decoration: none !important;
+    }
+
+    .post-content a:hover,
+    .post-content [data-milkdown-viewer] .milkdown .ProseMirror a:hover {
+        text-decoration: underline !important;
+        text-underline-offset: 3px;
     }
 
     .post-content ul {
