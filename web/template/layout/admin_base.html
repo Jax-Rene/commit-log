@@ -1,365 +1,609 @@
 {{define "base"}}
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN" class="scroll-smooth">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="color-scheme" content="light dark" />
+        <title>{{.title}} - {{.site.name}}</title>
+        <meta name="description" content="{{.site.name}} 管理后台" />
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css"
+        />
+        <link rel="stylesheet" href="/static/dist/assets/input.css" />
+        <link rel="stylesheet" href="/static/dist/assets/admin.css" />
+        <script type="module" src="/static/dist/assets/admin.js"></script>
+        <style>
+            body {
+                font-family: var(--font-body);
+            }
+            [x-cloak] {
+                display: none !important;
+            }
+            .editor-preview pre {
+                background-color: #f5f5f5;
+                border-radius: 0.5rem;
+                padding: 1rem;
+                overflow-x: auto;
+            }
+            .editor-preview code {
+                font-family: var(--font-body);
+                font-size: 0.9em;
+            }
+            @media (prefers-color-scheme: dark) {
+                .editor-preview pre {
+                    background-color: rgba(15, 23, 42, 0.65);
+                }
+            }
+        </style>
+    </head>
 
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="color-scheme" content="light dark">
-	<title>{{.title}} - {{.site.name}}</title>
-	<meta name="description" content="{{.site.name}} 管理后台">
-	<link rel="preconnect" href="https://fonts.googleapis.com">
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Rubik:wght@500;700&display=swap" rel="stylesheet">
-                <link rel="stylesheet" href="/static/dist/assets/input.css">
-                <link rel="stylesheet" href="/static/dist/assets/admin.css">
-                <script type="module" src="/static/dist/assets/admin.js"></script>
-                <style>
-                        body {
-                                font-family: var(--font-body);
-                        }
-                        [x-cloak] {
-                                display: none !important;
-                        }
-                        .editor-preview pre {
-			background-color: #f5f5f5;
-			border-radius: 0.5rem;
-                                padding: 1rem;
-                                overflow-x: auto;
-                        }
-                        .editor-preview code {
-                                font-family: var(--font-body);
-                                font-size: 0.9em;
-                        }
-		@media (prefers-color-scheme: dark) {
-			.editor-preview pre {
-				background-color: rgba(15, 23, 42, 0.65);
-			}
-		}
-	</style>
-</head>
-
-<body class="bg-slate-50 text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-950 dark:text-slate-100">
-	<header class="fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur supports-backdrop-blur:bg-white/60 dark:border-slate-800 dark:bg-slate-950/70">
-		<nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-			<a href="/admin/dashboard" class="flex items-center gap-3">
-				{{if or .site.logoUrlLight .site.logoUrlDark}}
-				<div class="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl">
-					{{if .site.logoUrlLight}}
-					<img src="{{.site.logoUrlLight}}" alt="{{.site.name}} Logo" class="h-10 w-10 border-0 object-contain dark:hidden" />
-					{{end}}
-					{{if .site.logoUrlDark}}
-					<img src="{{.site.logoUrlDark}}" alt="{{.site.name}} Logo" class="hidden h-10 w-10 border-0 object-contain dark:block" />
-					{{end}}
-				</div>
-				{{else}}
-				<div class="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
-					<span class="text-lg font-semibold">{{initials .site.name}}</span>
-				</div>
-				{{end}}
-				<span class="flex flex-col">
-					<span class="text-base font-semibold text-slate-900 dark:text-slate-100">{{.site.name}}</span>
-					<span class="text-xs text-slate-500 dark:text-slate-400">管理后台系统</span>
-				</span>
-			</a>
-			<ul class="hidden items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-400 md:flex">
-				<li><a href="/admin/dashboard" class="transition-colors hover:text-slate-900 dark:hover:text-slate-200">仪表盘</a></li>
-				<li><a href="/admin/system/settings" class="transition-colors hover:text-slate-900 dark:hover:text-slate-200">系统设置</a></li>
-				<li><a href="/" class="transition-colors hover:text-slate-900 dark:hover:text-slate-200" target="_blank">查看网站</a></li>
-			</ul>
-			<div class="flex items-center gap-3 text-sm">
-				<a href="/admin/logout" class="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">退出登录</a>
-			</div>
-		</nav>
-	</header>
+    <body
+        class="bg-slate-50 text-slate-900 antialiased transition-colors duration-200 dark:bg-slate-950 dark:text-slate-100"
+    >
+        <header
+            class="fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur supports-backdrop-blur:bg-white/60 dark:border-slate-800 dark:bg-slate-950/70"
+        >
+            <nav
+                class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4"
+            >
+                <a href="/admin/dashboard" class="flex items-center gap-3">
+                    {{if or .site.logoUrlLight .site.logoUrlDark}}
+                    <div
+                        class="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl"
+                    >
+                        {{if .site.logoUrlLight}}
+                        <img
+                            src="{{.site.logoUrlLight}}"
+                            alt="{{.site.name}} Logo"
+                            class="h-10 w-10 border-0 object-contain dark:hidden"
+                        />
+                        {{end}} {{if .site.logoUrlDark}}
+                        <img
+                            src="{{.site.logoUrlDark}}"
+                            alt="{{.site.name}} Logo"
+                            class="hidden h-10 w-10 border-0 object-contain dark:block"
+                        />
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <div
+                        class="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white"
+                    >
+                        <span class="text-lg font-semibold"
+                            >{{initials .site.name}}</span
+                        >
+                    </div>
+                    {{end}}
+                    <span class="flex flex-col">
+                        <span
+                            class="text-base font-semibold text-slate-900 dark:text-slate-100"
+                            >{{.site.name}}</span
+                        >
+                        <span class="text-xs text-slate-500 dark:text-slate-400"
+                            >管理后台系统</span
+                        >
+                    </span>
+                </a>
+                <ul
+                    class="hidden items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-400 md:flex"
+                >
+                    <li>
+                        <a
+                            href="/admin/dashboard"
+                            class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
+                            >仪表盘</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="/admin/system/settings"
+                            class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
+                            >系统设置</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="/"
+                            class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
+                            target="_blank"
+                            >查看网站</a
+                        >
+                    </li>
+                </ul>
+                <div class="flex items-center gap-3 text-sm">
+                    <a
+                        href="/admin/logout"
+                        class="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                        >退出登录</a
+                    >
+                </div>
+            </nav>
+        </header>
 
         <main class="mx-auto min-h-screen w-full max-w-6xl px-4 pb-16 pt-24">
-                {{block "content" .}}{{end}}
+            {{block "content" .}}{{end}}
         </main>
 
-        <div x-data="commitLogToastLayer()" x-cloak class="pointer-events-none fixed inset-0 z-50 flex flex-col items-end gap-3 p-4 sm:p-6">
-                <template x-for="toast in toasts" :key="toast.id">
-                        <div x-show="toast.visible" x-transition:enter="transform ease-out duration-200" x-transition:enter-start="translate-y-2 opacity-0 scale-95" x-transition:enter-end="translate-y-0 opacity-100 scale-100" x-transition:leave="transform ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-xl backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/90">
-                                <div class="flex items-start gap-3 p-4">
-                                        <div class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full" :class="iconClass(toast.type)">
-                                                <template x-if="toast.type === 'success'">
-                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
-                                                                <circle cx="12" cy="12" r="8.25" stroke-width="1.5"></circle>
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8.75 12.25l2.25 2.25L15.25 10"></path>
-                                                        </svg>
-                                                </template>
-                                                <template x-if="toast.type === 'error'">
-                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
-                                                                <circle cx="12" cy="12" r="8.25" stroke-width="1.5"></circle>
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M9 9l6 6m0-6l-6 6"></path>
-                                                        </svg>
-                                                </template>
-                                                <template x-if="toast.type === 'warning'">
-                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
-                                                                <path stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"></path>
-                                                                <path stroke-width="1.5" stroke-linejoin="round" d="M10.28 4.5l-6.16 10.67A1.5 1.5 0 005.39 17.5h13.22a1.5 1.5 0 001.27-2.33L13.72 4.5a1.5 1.5 0 00-2.44 0z"></path>
-                                                        </svg>
-                                                </template>
-                                                <template x-if="toast.type === 'info'">
-                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
-                                                                <circle cx="12" cy="12" r="8.25" stroke-width="1.5"></circle>
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M12 10.5v5"></path>
-                                                                <circle cx="12" cy="8" r="0.75" fill="currentColor"></circle>
-                                                        </svg>
-                                                </template>
-                                        </div>
-                                        <div class="flex-1">
-                                                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100" x-text="toast.title || defaultTitle(toast.type)"></h3>
-                                                <p class="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300" x-text="toast.message"></p>
-                                        </div>
-                                        <button type="button" class="rounded-full p-1 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:text-slate-500 dark:hover:text-slate-200 dark:focus:ring-slate-700/60" @click="dismiss(toast.id)" aria-label="关闭提示">
-                                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" class="h-4 w-4">
-                                                        <path stroke-linecap="round" stroke-width="1.6" d="M5.5 5.5l9 9m0-9l-9 9"></path>
-                                                </svg>
-                                        </button>
-                                </div>
-                        </div>
-                </template>
-        </div>
-
-        <div x-data="commitLogDialogLayer()" x-show="dialog.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6" x-transition.opacity @keydown.escape.window="cancel()">
-                <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" x-transition.opacity @click="cancel()"></div>
-                <div x-show="dialog.open" x-transition class="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-2xl transition-colors dark:border-slate-700/70 dark:bg-slate-900/90">
-                        <button type="button" class="absolute right-4 top-4 rounded-full p-1 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:text-slate-500 dark:hover:text-slate-200 dark:focus:ring-slate-700/60" @click="cancel()" aria-label="关闭弹窗">
-                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" class="h-4 w-4">
-                                        <path stroke-linecap="round" stroke-width="1.6" d="M5.5 5.5l9 9m0-9l-9 9"></path>
+        <div
+            x-data="commitLogToastLayer()"
+            x-cloak
+            class="pointer-events-none fixed inset-0 z-50 flex flex-col items-end gap-3 p-4 sm:p-6"
+        >
+            <template x-for="toast in toasts" :key="toast.id">
+                <div
+                    x-show="toast.visible"
+                    x-transition:enter="transform ease-out duration-200"
+                    x-transition:enter-start="translate-y-2 opacity-0 scale-95"
+                    x-transition:enter-end="translate-y-0 opacity-100 scale-100"
+                    x-transition:leave="transform ease-in duration-200"
+                    x-transition:leave-start="opacity-100 scale-100"
+                    x-transition:leave-end="opacity-0 scale-95"
+                    class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-xl backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/90"
+                >
+                    <div class="flex items-start gap-3 p-4">
+                        <div
+                            class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full"
+                            :class="iconClass(toast.type)"
+                        >
+                            <template x-if="toast.type === 'success'">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    class="h-5 w-5"
+                                >
+                                    <circle
+                                        cx="12"
+                                        cy="12"
+                                        r="8.25"
+                                        stroke-width="1.5"
+                                    ></circle>
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.8"
+                                        d="M8.75 12.25l2.25 2.25L15.25 10"
+                                    ></path>
                                 </svg>
-                        </button>
-                        <div class="space-y-5 px-6 pb-6 pt-7">
-                                <div class="space-y-2">
-                                        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100" x-text="dialog.title || '提示'"></h3>
-                                        <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-300" x-text="dialog.message"></p>
-                                        <template x-if="dialog.description">
-                                                <p class="text-xs leading-relaxed text-slate-400 dark:text-slate-500" x-text="dialog.description"></p>
-                                        </template>
-                                </div>
-                                <div class="flex justify-end gap-3">
-                                        <button type="button" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100 dark:focus:ring-slate-700/60" @click="cancel()" x-text="dialog.cancelText || '取消'"></button>
-                                        <button type="button" class="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2" :class="confirmClass(dialog.tone)" @click="confirm()" x-text="dialog.confirmText || '确认'"></button>
-                                </div>
+                            </template>
+                            <template x-if="toast.type === 'error'">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    class="h-5 w-5"
+                                >
+                                    <circle
+                                        cx="12"
+                                        cy="12"
+                                        r="8.25"
+                                        stroke-width="1.5"
+                                    ></circle>
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.6"
+                                        d="M9 9l6 6m0-6l-6 6"
+                                    ></path>
+                                </svg>
+                            </template>
+                            <template x-if="toast.type === 'warning'">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    class="h-5 w-5"
+                                >
+                                    <path
+                                        stroke-width="1.6"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M12 8v4m0 4h.01"
+                                    ></path>
+                                    <path
+                                        stroke-width="1.5"
+                                        stroke-linejoin="round"
+                                        d="M10.28 4.5l-6.16 10.67A1.5 1.5 0 005.39 17.5h13.22a1.5 1.5 0 001.27-2.33L13.72 4.5a1.5 1.5 0 00-2.44 0z"
+                                    ></path>
+                                </svg>
+                            </template>
+                            <template x-if="toast.type === 'info'">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    class="h-5 w-5"
+                                >
+                                    <circle
+                                        cx="12"
+                                        cy="12"
+                                        r="8.25"
+                                        stroke-width="1.5"
+                                    ></circle>
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="1.6"
+                                        d="M12 10.5v5"
+                                    ></path>
+                                    <circle
+                                        cx="12"
+                                        cy="8"
+                                        r="0.75"
+                                        fill="currentColor"
+                                    ></circle>
+                                </svg>
+                            </template>
                         </div>
+                        <div class="flex-1">
+                            <h3
+                                class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                                x-text="toast.title || defaultTitle(toast.type)"
+                            ></h3>
+                            <p
+                                class="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300"
+                                x-text="toast.message"
+                            ></p>
+                        </div>
+                        <button
+                            type="button"
+                            class="rounded-full p-1 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:text-slate-500 dark:hover:text-slate-200 dark:focus:ring-slate-700/60"
+                            @click="dismiss(toast.id)"
+                            aria-label="关闭提示"
+                        >
+                            <svg
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                stroke="currentColor"
+                                class="h-4 w-4"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-width="1.6"
+                                    d="M5.5 5.5l9 9m0-9l-9 9"
+                                ></path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
+            </template>
         </div>
 
-        <footer class="border-slate-200 bg-white/80 backdrop-blur supports-backdrop-blur:bg-white/60 dark:border-slate-800 dark:bg-slate-950/70">
-                <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-                        <span>© {{.site.name}}</span>
-			{{if .site.adminFooter}}
-			<span>{{.site.adminFooter}}</span>
-			{{end}}
-		</div>
+        <div
+            x-data="commitLogDialogLayer()"
+            x-show="dialog.open"
+            x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+            x-transition.opacity
+            @keydown.escape.window="cancel()"
+        >
+            <div
+                class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+                x-transition.opacity
+                @click="cancel()"
+            ></div>
+            <div
+                x-show="dialog.open"
+                x-transition
+                class="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-2xl transition-colors dark:border-slate-700/70 dark:bg-slate-900/90"
+            >
+                <button
+                    type="button"
+                    class="absolute right-4 top-4 rounded-full p-1 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:text-slate-500 dark:hover:text-slate-200 dark:focus:ring-slate-700/60"
+                    @click="cancel()"
+                    aria-label="关闭弹窗"
+                >
+                    <svg
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        stroke="currentColor"
+                        class="h-4 w-4"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-width="1.6"
+                            d="M5.5 5.5l9 9m0-9l-9 9"
+                        ></path>
+                    </svg>
+                </button>
+                <div class="space-y-5 px-6 pb-6 pt-7">
+                    <div class="space-y-2">
+                        <h3
+                            class="text-lg font-semibold text-slate-900 dark:text-slate-100"
+                            x-text="dialog.title || '提示'"
+                        ></h3>
+                        <p
+                            class="text-sm leading-relaxed text-slate-600 dark:text-slate-300"
+                            x-text="dialog.message"
+                        ></p>
+                        <template x-if="dialog.description">
+                            <p
+                                class="text-xs leading-relaxed text-slate-400 dark:text-slate-500"
+                                x-text="dialog.description"
+                            ></p>
+                        </template>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100 dark:focus:ring-slate-700/60"
+                            @click="cancel()"
+                            x-text="dialog.cancelText || '取消'"
+                        ></button>
+                        <button
+                            type="button"
+                            class="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2"
+                            :class="confirmClass(dialog.tone)"
+                            @click="confirm()"
+                            x-text="dialog.confirmText || '确认'"
+                        ></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer
+            class="border-slate-200 bg-white/80 backdrop-blur supports-backdrop-blur:bg-white/60 dark:border-slate-800 dark:bg-slate-950/70"
+        >
+            <div
+                class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <span>© {{.site.name}}</span>
+                {{if .site.adminFooter}}
+                <span>{{.site.adminFooter}}</span>
+                {{end}}
+            </div>
         </footer>
 
         <script>
-                window.AdminUI = window.AdminUI || {};
-                window.AdminUI.__toastQueue = window.AdminUI.__toastQueue || [];
-                window.AdminUI.__dialogQueue = window.AdminUI.__dialogQueue || [];
-                window.AdminUI.toast = window.AdminUI.toast || function (options) {
-                        const payload = typeof options === 'string' ? { message: options } : options;
-                        if (!payload || !payload.message) {
-                                return;
-                        }
-                        window.AdminUI.__toastQueue.push(payload);
+            window.AdminUI = window.AdminUI || {};
+            window.AdminUI.__toastQueue = window.AdminUI.__toastQueue || [];
+            window.AdminUI.__dialogQueue = window.AdminUI.__dialogQueue || [];
+            window.AdminUI.toast =
+                window.AdminUI.toast ||
+                function (options) {
+                    const payload =
+                        typeof options === "string"
+                            ? { message: options }
+                            : options;
+                    if (!payload || !payload.message) {
+                        return;
+                    }
+                    window.AdminUI.__toastQueue.push(payload);
                 };
+            window.AdminUI.confirm = function (options = {}) {
+                const payload =
+                    typeof options === "string"
+                        ? { message: options }
+                        : options;
+                return new Promise((resolve) => {
+                    window.AdminUI.__dialogQueue.push({ payload, resolve });
+                });
+            };
+
+            document.addEventListener("alpine:init", () => {
+                Alpine.data("commitLogToastLayer", () => ({
+                    get toasts() {
+                        const store = Alpine.store("toast");
+                        return store ? store.items : [];
+                    },
+                    dismiss(id) {
+                        const store = Alpine.store("toast");
+                        if (store) {
+                            store.dismiss(id);
+                        }
+                    },
+                    iconClass(type) {
+                        switch (type) {
+                            case "success":
+                                return "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300";
+                            case "error":
+                                return "bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300";
+                            case "warning":
+                                return "bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300";
+                            default:
+                                return "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300";
+                        }
+                    },
+                    defaultTitle(type) {
+                        switch (type) {
+                            case "success":
+                                return "操作成功";
+                            case "error":
+                                return "发生错误";
+                            case "warning":
+                                return "温馨提示";
+                            default:
+                                return "提示";
+                        }
+                    },
+                }));
+
+                Alpine.data("commitLogDialogLayer", () => ({
+                    get dialog() {
+                        return Alpine.store("dialog") || { open: false };
+                    },
+                    cancel() {
+                        const store = Alpine.store("dialog");
+                        if (store) {
+                            store.cancel();
+                        }
+                    },
+                    confirm() {
+                        const store = Alpine.store("dialog");
+                        if (store) {
+                            store.confirm();
+                        }
+                    },
+                    confirmClass(tone) {
+                        return tone === "danger"
+                            ? "bg-rose-600 hover:bg-rose-500 dark:hover:bg-rose-500/90 focus:ring-rose-200 dark:focus:ring-rose-500/30"
+                            : "bg-blue-600 hover:bg-blue-500 dark:hover:bg-blue-500/90 focus:ring-blue-200 dark:focus:ring-blue-500/30";
+                    },
+                }));
+
+                const toastStore = {
+                    items: [],
+                    counter: 0,
+                    notify(options = {}) {
+                        const payload =
+                            typeof options === "string"
+                                ? { message: options }
+                                : options;
+                        const type = payload.type || "info";
+                        const duration =
+                            typeof payload.duration === "number"
+                                ? payload.duration
+                                : 3600;
+                        const id = ++this.counter;
+                        const toast = {
+                            id,
+                            title: payload.title || "",
+                            message: payload.message || "",
+                            type,
+                            duration,
+                            visible: true,
+                        };
+                        if (duration > 0) {
+                            toast.timeout = setTimeout(
+                                () => this.dismiss(id),
+                                duration,
+                            );
+                        }
+                        this.items.push(toast);
+                        return id;
+                    },
+                    dismiss(id) {
+                        const toast = this.items.find((item) => item.id === id);
+                        if (!toast) {
+                            return;
+                        }
+                        toast.visible = false;
+                        if (toast.timeout) {
+                            clearTimeout(toast.timeout);
+                        }
+                        setTimeout(() => {
+                            this.items = this.items.filter(
+                                (item) => item.id !== id,
+                            );
+                        }, 220);
+                    },
+                };
+
+                const dialogStore = {
+                    open: false,
+                    title: "",
+                    message: "",
+                    description: "",
+                    confirmText: "",
+                    cancelText: "",
+                    tone: "primary",
+                    resolver: null,
+                    show(options = {}) {
+                        if (this.open) {
+                            this.cancel();
+                        }
+                        return new Promise((resolve) => {
+                            this.title = options.title || "";
+                            this.message = options.message || "";
+                            this.description = options.description || "";
+                            this.confirmText = options.confirmText || "";
+                            this.cancelText = options.cancelText || "";
+                            this.tone = options.tone || "primary";
+                            this.resolver = resolve;
+                            this.open = true;
+                        });
+                    },
+                    confirm() {
+                        if (this.resolver) {
+                            this.resolver(true);
+                        }
+                        this.close();
+                    },
+                    cancel() {
+                        if (this.resolver) {
+                            this.resolver(false);
+                        }
+                        this.close();
+                    },
+                    close() {
+                        this.open = false;
+                        setTimeout(() => {
+                            this.title = "";
+                            this.message = "";
+                            this.description = "";
+                            this.confirmText = "";
+                            this.cancelText = "";
+                            this.tone = "primary";
+                            this.resolver = null;
+                        }, 220);
+                    },
+                };
+
+                Alpine.store("toast", toastStore);
+                Alpine.store("dialog", dialogStore);
+
+                window.AdminUI.toast = function (options = {}) {
+                    const payload =
+                        typeof options === "string"
+                            ? { message: options }
+                            : options;
+                    if (!payload || !payload.message) {
+                        return;
+                    }
+                    Alpine.store("toast").notify(payload);
+                };
+
                 window.AdminUI.confirm = function (options = {}) {
-                        const payload = typeof options === 'string' ? { message: options } : options;
-                        return new Promise(resolve => {
-                                window.AdminUI.__dialogQueue.push({ payload, resolve });
+                    const payload =
+                        typeof options === "string"
+                            ? { message: options }
+                            : options;
+                    return Alpine.store("dialog")
+                        .show(payload)
+                        .then((confirmed) => {
+                            if (
+                                confirmed &&
+                                typeof payload.onConfirm === "function"
+                            ) {
+                                payload.onConfirm();
+                            }
+                            if (
+                                !confirmed &&
+                                typeof payload.onCancel === "function"
+                            ) {
+                                payload.onCancel();
+                            }
+                            return confirmed;
                         });
                 };
 
-                document.addEventListener('alpine:init', () => {
-                        Alpine.data('commitLogToastLayer', () => ({
-                                get toasts() {
-                                        const store = Alpine.store('toast');
-                                        return store ? store.items : [];
-                                },
-                                dismiss(id) {
-                                        const store = Alpine.store('toast');
-                                        if (store) {
-                                                store.dismiss(id);
-                                        }
-                                },
-                                iconClass(type) {
-                                        switch (type) {
-                                        case 'success':
-                                                return 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300';
-                                        case 'error':
-                                                return 'bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300';
-                                        case 'warning':
-                                                return 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300';
-                                        default:
-                                                return 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300';
-                                        }
-                                },
-                                defaultTitle(type) {
-                                        switch (type) {
-                                        case 'success':
-                                                return '操作成功';
-                                        case 'error':
-                                                return '发生错误';
-                                        case 'warning':
-                                                return '温馨提示';
-                                        default:
-                                                return '提示';
-                                        }
-                                }
-                        }));
-
-                        Alpine.data('commitLogDialogLayer', () => ({
-                                get dialog() {
-                                        return Alpine.store('dialog') || { open: false };
-                                },
-                                cancel() {
-                                        const store = Alpine.store('dialog');
-                                        if (store) {
-                                                store.cancel();
-                                        }
-                                },
-                                confirm() {
-                                        const store = Alpine.store('dialog');
-                                        if (store) {
-                                                store.confirm();
-                                        }
-                                },
-                                confirmClass(tone) {
-                                        return tone === 'danger'
-                                                ? 'bg-rose-600 hover:bg-rose-500 dark:hover:bg-rose-500/90 focus:ring-rose-200 dark:focus:ring-rose-500/30'
-                                                : 'bg-blue-600 hover:bg-blue-500 dark:hover:bg-blue-500/90 focus:ring-blue-200 dark:focus:ring-blue-500/30';
-                                }
-                        }));
-
-                        const toastStore = {
-                                items: [],
-                                counter: 0,
-                                notify(options = {}) {
-                                        const payload = typeof options === 'string' ? { message: options } : options;
-                                        const type = payload.type || 'info';
-                                        const duration = typeof payload.duration === 'number' ? payload.duration : 3600;
-                                        const id = ++this.counter;
-                                        const toast = {
-                                                id,
-                                                title: payload.title || '',
-                                                message: payload.message || '',
-                                                type,
-                                                duration,
-                                                visible: true,
-                                        };
-                                        if (duration > 0) {
-                                                toast.timeout = setTimeout(() => this.dismiss(id), duration);
-                                        }
-                                        this.items.push(toast);
-                                        return id;
-                                },
-                                dismiss(id) {
-                                        const toast = this.items.find(item => item.id === id);
-                                        if (!toast) {
-                                                return;
-                                        }
-                                        toast.visible = false;
-                                        if (toast.timeout) {
-                                                clearTimeout(toast.timeout);
-                                        }
-                                        setTimeout(() => {
-                                                this.items = this.items.filter(item => item.id !== id);
-                                        }, 220);
-                                }
-                        };
-
-                        const dialogStore = {
-                                open: false,
-                                title: '',
-                                message: '',
-                                description: '',
-                                confirmText: '',
-                                cancelText: '',
-                                tone: 'primary',
-                                resolver: null,
-                                show(options = {}) {
-                                        if (this.open) {
-                                                this.cancel();
-                                        }
-                                        return new Promise(resolve => {
-                                                this.title = options.title || '';
-                                                this.message = options.message || '';
-                                                this.description = options.description || '';
-                                                this.confirmText = options.confirmText || '';
-                                                this.cancelText = options.cancelText || '';
-                                                this.tone = options.tone || 'primary';
-                                                this.resolver = resolve;
-                                                this.open = true;
-                                        });
-                                },
-                                confirm() {
-                                        if (this.resolver) {
-                                                this.resolver(true);
-                                        }
-                                        this.close();
-                                },
-                                cancel() {
-                                        if (this.resolver) {
-                                                this.resolver(false);
-                                        }
-                                        this.close();
-                                },
-                                close() {
-                                        this.open = false;
-                                        setTimeout(() => {
-                                                this.title = '';
-                                                this.message = '';
-                                                this.description = '';
-                                                this.confirmText = '';
-                                                this.cancelText = '';
-                                                this.tone = 'primary';
-                                                this.resolver = null;
-                                        }, 220);
-                                }
-                        };
-
-                        Alpine.store('toast', toastStore);
-                        Alpine.store('dialog', dialogStore);
-
-                        window.AdminUI.toast = function (options = {}) {
-                                const payload = typeof options === 'string' ? { message: options } : options;
-                                if (!payload || !payload.message) {
-                                        return;
-                                }
-                                Alpine.store('toast').notify(payload);
-                        };
-
-                        window.AdminUI.confirm = function (options = {}) {
-                                const payload = typeof options === 'string' ? { message: options } : options;
-                                return Alpine.store('dialog').show(payload).then(confirmed => {
-                                        if (confirmed && typeof payload.onConfirm === 'function') {
-                                                payload.onConfirm();
-                                        }
-                                        if (!confirmed && typeof payload.onCancel === 'function') {
-                                                payload.onCancel();
-                                        }
-                                        return confirmed;
-                                });
-                        };
-
-                        if (Array.isArray(window.AdminUI.__toastQueue) && window.AdminUI.__toastQueue.length > 0) {
-                                window.AdminUI.__toastQueue.forEach(payload => Alpine.store('toast').notify(payload));
-                                window.AdminUI.__toastQueue = [];
-                        }
-                        if (Array.isArray(window.AdminUI.__dialogQueue) && window.AdminUI.__dialogQueue.length > 0) {
-                                const pendingDialogs = window.AdminUI.__dialogQueue.splice(0);
-                                pendingDialogs.forEach(entry => {
-                                        window.AdminUI.confirm(entry.payload).then(result => {
-                                                entry.resolve(result);
-                                        });
-                                });
-                        }
-                });
+                if (
+                    Array.isArray(window.AdminUI.__toastQueue) &&
+                    window.AdminUI.__toastQueue.length > 0
+                ) {
+                    window.AdminUI.__toastQueue.forEach((payload) =>
+                        Alpine.store("toast").notify(payload),
+                    );
+                    window.AdminUI.__toastQueue = [];
+                }
+                if (
+                    Array.isArray(window.AdminUI.__dialogQueue) &&
+                    window.AdminUI.__dialogQueue.length > 0
+                ) {
+                    const pendingDialogs =
+                        window.AdminUI.__dialogQueue.splice(0);
+                    pendingDialogs.forEach((entry) => {
+                        window.AdminUI.confirm(entry.payload).then((result) => {
+                            entry.resolve(result);
+                        });
+                    });
+                }
+            });
         </script>
-</body>
-
+    </body>
 </html>
 {{end}}

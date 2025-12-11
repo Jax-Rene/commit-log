@@ -9,14 +9,13 @@
         --surface-soft-dark: #020617;
         --surface-soft-foreground-light: #0f172a;
         --surface-soft-foreground-dark: #ffffff;
-        --font-heading:
-            "Rubik", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-        --font-body:
-            "Inter", "Noto Sans SC", "Segoe UI", "Helvetica Neue", Arial,
-            sans-serif;
-        --font-ui:
-            -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-            "Helvetica Neue", Arial, sans-serif;
+        --font-base:
+            "lxgw wenkai", "Noto Sans SC", "Roboto", "Helvetica Neue",
+            Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+            "Segoe UI Symbol";
+        --font-heading: var(--font-base);
+        --font-body: var(--font-base);
+        --font-ui: var(--font-base);
     }
 
     body {
@@ -132,7 +131,8 @@
     }
 
     .post-content blockquote {
-        @apply border-l-4 border-blue-200 bg-blue-50/60 px-4 py-3 italic text-slate-700 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-slate-200;
+        margin: 0px 0 !important;
+        padding-left: 20px !important;
     }
 
     .post-content code {
@@ -167,6 +167,11 @@
         @apply bg-transparent p-0 text-base leading-relaxed text-slate-900 dark:text-slate-100;
         font-family: var(--font-body);
     }
+
+    .post-content [data-milkdown-viewer] .milkdown .ProseMirror blockquote {
+        margin: 0px 0 !important;
+        padding-left: 20px !important;
+    }
 }
 
 @layer components {
@@ -176,6 +181,7 @@
         font-size: 1.75rem !important;
         line-height: 1.5rem !important;
         font-weight: 900 !important;
+        font-family: var(--font-heading) !important;
     }
 
     .milkdown .ProseMirror h2 {
@@ -183,6 +189,7 @@
         font-size: 1.5rem !important;
         line-height: 1.5rem !important;
         font-weight: 900 !important;
+        font-family: var(--font-heading) !important;
     }
 
     .milkdown .ProseMirror h3 {
@@ -190,6 +197,7 @@
         font-size: 1.25rem !important;
         line-height: 1.5rem !important;
         font-weight: 900 !important;
+        font-family: var(--font-heading) !important;
     }
 }
 
