@@ -94,6 +94,13 @@
         padding: 1rem 1rem 1.5rem;
     }
 
+    /* 调整编辑器与预览内 blockquote 左侧内边距 */
+    .milkdown-immersive-shell .milkdown blockquote,
+    .milkdown-preview .milkdown blockquote,
+    #milkdown-app > div > .ProseMirror blockquote {
+        padding-left: 20px !important;
+    }
+
     @media (min-width: 768px) {
         #milkdown-app > div > .ProseMirror {
             padding: 1rem 1.25rem 1.75rem;
