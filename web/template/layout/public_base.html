@@ -13,13 +13,13 @@
             $site.name}}{{$site.name}}{{else}}CommitLog{{end}}
         </title>
         {{with $seo.description}}
-        <meta name="description" content="{{.}}" />
+        <meta name="description" content="{{.}}">
         {{end}} {{with $seo.keywords}}
         <meta name="keywords" content="{{.}}" />
         {{end}} {{with $seo.robots}}
         <meta name="robots" content="{{.}}" />
         {{end}} {{with $seo.canonical}}
-        <link rel="canonical" href="{{.}}" />
+        <link rel="canonical" href="{{.}}">
         {{end}} {{if $site.name}}
         <meta property="og:site_name" content="{{$site.name}}" />
         {{end}} {{with $seo.ogTitle}}
