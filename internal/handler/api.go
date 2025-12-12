@@ -14,25 +14,26 @@ import (
 
 // API bundles shared dependencies for HTTP handlers.
 type API struct {
-        db              *gorm.DB
-        posts           *service.PostService
-        tags            *service.TagService
-        pages           *service.PageService
-        profiles        *service.ProfileService
-        analytics       *service.AnalyticsService
-        system          *service.SystemSettingService
-        summaries       service.SummaryGenerator
-        optimizer       service.ContentOptimizer
-        snippetRewriter service.SnippetRewriter
-        uploadDir       string
-        uploadURL       string
-        baseURL         string
+	db              *gorm.DB
+	posts           *service.PostService
+	tags            *service.TagService
+	pages           *service.PageService
+	profiles        *service.ProfileService
+	analytics       *service.AnalyticsService
+	system          *service.SystemSettingService
+	summaries       service.SummaryGenerator
+	optimizer       service.ContentOptimizer
+	snippetRewriter service.SnippetRewriter
+	uploadDir       string
+	uploadURL       string
+	baseURL         string
 }
 
 type siteViewModel struct {
 	Name         string
 	LogoLight    string
 	LogoDark     string
+	Avatar       string
 	AdminFooter  string
 	PublicFooter string
 	Description  string
@@ -44,11 +45,11 @@ const siteSettingsContextKey = "__site_settings"
 
 // NewAPI constructs a handler set with shared services.
 func NewAPI(db *gorm.DB, uploadDir, uploadURL, baseURL string) *API {
-        systemService := service.NewSystemSettingService(db)
-        summaryService := service.NewAISummaryService(systemService)
-        rewriteService := service.NewAIRewriteService(systemService)
+	systemService := service.NewSystemSettingService(db)
+	summaryService := service.NewAISummaryService(systemService)
+	rewriteService := service.NewAIRewriteService(systemService)
 
-        return &API{
+	return &API{
 		db:              db,
 		posts:           service.NewPostService(db),
 		tags:            service.NewTagService(db),
@@ -56,13 +57,13 @@ func NewAPI(db *gorm.DB, uploadDir, uploadURL, baseURL string) *API {
 		profiles:        service.NewProfileService(db),
 		analytics:       service.NewAnalyticsService(db),
 		system:          systemService,
-                summaries:       summaryService,
-                optimizer:       rewriteService,
-                snippetRewriter: rewriteService,
-                uploadDir:       uploadDir,
-                uploadURL:       uploadURL,
-                baseURL:         normalizeBaseURL(baseURL),
-        }
+		summaries:       summaryService,
+		optimizer:       rewriteService,
+		snippetRewriter: rewriteService,
+		uploadDir:       uploadDir,
+		uploadURL:       uploadURL,
+		baseURL:         normalizeBaseURL(baseURL),
+	}
 }
 
 // DB exposes the underlying gorm instance for legacy paths.
@@ -105,6 +106,12 @@ func (a *API) siteSettings(c *gin.Context) siteViewModel {
 	if view.LogoDark == "" {
 		view.LogoDark = view.LogoLight
 	}
+	if view.Avatar == "" {
+		view.Avatar = view.LogoLight
+	}
+	if view.Avatar == "" {
+		view.Avatar = view.LogoDark
+	}
 	if view.AdminFooter == "" {
 		view.AdminFooter = "日拱一卒，功不唐捐"
 	}
@@ -140,6 +147,7 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 		"logoUrl":      view.LogoLight,
 		"logoUrlLight": view.LogoLight,
 		"logoUrlDark":  view.LogoDark,
+		"avatar":       view.Avatar,
 		"adminFooter":  view.AdminFooter,
 		"publicFooter": view.PublicFooter,
 		"description":  view.Description,
@@ -185,6 +193,9 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 	}
 	if _, exists := payload["siteLogoUrlDark"]; !exists {
 		payload["siteLogoUrlDark"] = view.LogoDark
+	}
+	if _, exists := payload["siteAvatar"]; !exists {
+		payload["siteAvatar"] = view.Avatar
 	}
 	if _, exists := payload["siteAdminFooter"]; !exists {
 		payload["siteAdminFooter"] = view.AdminFooter
@@ -498,10 +509,10 @@ func (a *API) RenderHTML(c *gin.Context, status int, template string, data gin.H
 }
 
 func (a *API) detectScheme(c *gin.Context) string {
-        candidates := []string{
-                c.GetHeader("X-Forwarded-Proto"),
-                c.GetHeader("X-Forwarded-Protocol"),
-                c.GetHeader("X-Forwarded-Scheme"),
+	candidates := []string{
+		c.GetHeader("X-Forwarded-Proto"),
+		c.GetHeader("X-Forwarded-Protocol"),
+		c.GetHeader("X-Forwarded-Scheme"),
 	}
 	for _, header := range candidates {
 		if header == "" {
@@ -524,18 +535,18 @@ func (a *API) detectScheme(c *gin.Context) string {
 	if strings.HasPrefix(strings.ToLower(c.Request.Proto), "https") {
 		return "https"
 	}
-        return "http"
+	return "http"
 }
 
 func (a *API) siteBaseURL(c *gin.Context) string {
-        if a.baseURL != "" {
-                return a.baseURL
-        }
-        hostHeader := c.GetHeader("X-Forwarded-Host")
-        host := strings.TrimSpace(strings.Split(hostHeader, ",")[0])
-        if host == "" {
-                host = strings.TrimSpace(c.Request.Host)
-        }
+	if a.baseURL != "" {
+		return a.baseURL
+	}
+	hostHeader := c.GetHeader("X-Forwarded-Host")
+	host := strings.TrimSpace(strings.Split(hostHeader, ",")[0])
+	if host == "" {
+		host = strings.TrimSpace(c.Request.Host)
+	}
 	if host == "" {
 		return ""
 	}
@@ -566,20 +577,20 @@ func (a *API) absoluteURL(c *gin.Context, path string) string {
 	if base == "" {
 		return trimmed
 	}
-        if !strings.HasPrefix(trimmed, "/") {
-                trimmed = "/" + trimmed
-        }
-        return base + trimmed
+	if !strings.HasPrefix(trimmed, "/") {
+		trimmed = "/" + trimmed
+	}
+	return base + trimmed
 }
 
 func normalizeBaseURL(raw string) string {
-        trimmed := strings.TrimSpace(raw)
-        if trimmed == "" {
-                return ""
-        }
-        trimmed = strings.TrimRight(trimmed, "/")
-        if strings.HasPrefix(trimmed, "http://") || strings.HasPrefix(trimmed, "https://") {
-                return trimmed
-        }
-        return "https://" + trimmed
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	trimmed = strings.TrimRight(trimmed, "/")
+	if strings.HasPrefix(trimmed, "http://") || strings.HasPrefix(trimmed, "https://") {
+		return trimmed
+	}
+	return "https://" + trimmed
 }
