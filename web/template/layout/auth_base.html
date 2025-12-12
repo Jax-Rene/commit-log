@@ -6,6 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{{.title}} - {{.site.name}}</title>
         <meta name="description" content="{{.site.name}} 管理登录" />
+        {{if .site.avatar}}
+        <link rel="icon" href="{{.site.avatar}}" />
+        {{end}}
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
         <link
             rel="stylesheet"

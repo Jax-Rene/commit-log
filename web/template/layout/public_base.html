@@ -18,6 +18,8 @@
         <meta name="keywords" content="{{.}}" />
         {{end}} {{with $seo.robots}}
         <meta name="robots" content="{{.}}" />
+        {{end}} {{if $site.avatar}}
+        <link rel="icon" href="{{$site.avatar}}" />
         {{end}} {{with $seo.canonical}}
         <link rel="canonical" href="{{.}}">
         {{end}} {{if $site.name}}
