@@ -88,25 +88,25 @@
                     <a href="/" class="flex items-center gap-3">
                         {{if or .site.logoUrlLight .site.logoUrlDark}}
                         <div
-                            class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl"
+                            class="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl"
                         >
                             {{if .site.logoUrlLight}}
                             <img
                                 src="{{.site.logoUrlLight}}"
                                 alt="{{.site.name}} Logo"
-                                class="h-11 w-11 border-0 object-contain dark:hidden"
+                                class="h-14 w-14 border-0 object-contain dark:hidden"
                             />
                             {{end}} {{if .site.logoUrlDark}}
                             <img
                                 src="{{.site.logoUrlDark}}"
                                 alt="{{.site.name}} Logo"
-                                class="hidden h-11 w-11 border-0 object-contain dark:block"
+                                class="hidden h-14 w-14 border-0 object-contain dark:block"
                             />
                             {{end}}
                         </div>
                         {{else}}
                         <div
-                            class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white"
+                            class="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white"
                         >
                             <span class="text-lg font-semibold"
                                 >{{initials .site.name}}</span
