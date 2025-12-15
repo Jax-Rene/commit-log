@@ -117,7 +117,7 @@
 			<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">文章列表</h2>
 			<span class="text-xs font-medium text-slate-500 dark:text-slate-400">共 {{.total}} 篇</span>
 		</div>
-		<div class="divide-y divide-slate-200 dark:divide-slate-800">
+		<div class="divide-y divide-slate-200 dark:divide-slate-800" data-post-list data-current-page="{{.page}}" data-total-pages="{{.totalPages}}" data-query="{{.queryParams}}">
 			{{if .error}}
 			<div class="px-6 py-20 text-center text-sm text-rose-500 dark:text-rose-300">{{.error}}</div>
 			{{else if gt (len .posts) 0}}
@@ -172,10 +172,12 @@
 			<div class="px-6 py-20 text-center text-sm text-slate-500 dark:text-slate-400">暂无文章，请调整筛选条件或新建文章。</div>
 			{{end}}
 		</div>
+		<div class="px-6 py-3 text-center text-xs text-slate-400 dark:text-slate-500 hidden" data-preload-status aria-live="polite"></div>
+		<div data-preload-sentinel class="h-1" aria-hidden="true"></div>
 	</section>
 
 	{{if gt .totalPages 1}}
-	<nav class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300">
+	<nav class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300" data-post-pagination>
 		<a href="?page={{sub .page 1}}{{.queryParams}}" class="rounded-lg px-3 py-1.5 transition-colors {{if gt .page 1}}hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100{{else}}pointer-events-none text-slate-300 dark:text-slate-600{{end}}">上一页</a>
 		<div class="flex items-center gap-2">
 			{{range .pages}}
@@ -244,5 +246,133 @@
                                 window.AdminUI.toast({ message: '删除失败，请稍后重试', type: 'error' });
                         });
         }
+
+        (function setupPostPreload() {
+                const listEl = document.querySelector('[data-post-list]');
+                const sentinel = document.querySelector('[data-preload-sentinel]');
+                const statusEl = document.querySelector('[data-preload-status]');
+                const paginationEl = document.querySelector('[data-post-pagination]');
+
+                if (!listEl || !sentinel || !('IntersectionObserver' in window)) {
+                        return;
+                }
+
+                const totalPages = parseInt(listEl.dataset.totalPages || '1', 10);
+                const query = listEl.dataset.query || '';
+                let currentPage = parseInt(listEl.dataset.currentPage || '1', 10);
+                let loading = false;
+
+                if (!Number.isFinite(totalPages) || totalPages <= 1) {
+                        sentinel.remove();
+                        return;
+                }
+
+                const setStatus = (text) => {
+                        if (!statusEl) {
+                                return;
+                        }
+                        statusEl.textContent = text || '';
+                        statusEl.classList.toggle('hidden', !text);
+                };
+
+                const buildPageUrl = (page) => {
+                        return `${window.location.pathname}?page=${page}${query}`;
+                };
+
+                const updatePagination = (doc) => {
+                        if (!paginationEl) return;
+                        const nextNav = doc.querySelector('[data-post-pagination]');
+                        if (nextNav) {
+                                paginationEl.innerHTML = nextNav.innerHTML;
+                        }
+                };
+
+                const preloadNextPage = async () => {
+                        if (loading) return;
+                        const nextPage = currentPage + 1;
+                        if (nextPage > totalPages) {
+                                observer.disconnect();
+                                sentinel.remove();
+                                setStatus('');
+                                return;
+                        }
+
+                        loading = true;
+                        setStatus('预加载下一页中…');
+                        try {
+                                const response = await fetch(buildPageUrl(nextPage), {
+                                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                                });
+                                if (!response.ok) {
+                                        throw new Error(`failed with status ${response.status}`);
+                                }
+
+                                const html = await response.text();
+                                const parser = new DOMParser();
+                                const doc = parser.parseFromString(html, 'text/html');
+                                const nextList = doc.querySelector('[data-post-list]');
+                                if (!nextList) {
+                                        throw new Error('missing list');
+                                }
+
+                                const articles = nextList.querySelectorAll('article');
+                                articles.forEach((article) => {
+                                        listEl.appendChild(article);
+                                });
+
+                                currentPage = nextPage;
+                                listEl.dataset.currentPage = String(currentPage);
+                                updatePagination(doc);
+
+                                if (currentPage >= totalPages) {
+                                        observer.disconnect();
+                                        sentinel.remove();
+                                        setStatus('');
+                                } else {
+                                        setStatus('');
+                                }
+                        } catch (error) {
+                                console.error('预加载文章失败:', error);
+                                if (window.AdminUI && typeof window.AdminUI.toast === 'function') {
+                                        window.AdminUI.toast({ message: '预加载下一页失败，请稍后重试', type: 'warning' });
+                                }
+                                setStatus('');
+                        } finally {
+                                loading = false;
+                        }
+                };
+
+                const observer = new IntersectionObserver(
+                        (entries) => {
+                                entries.forEach((entry) => {
+                                        if (entry.isIntersecting) {
+                                                preloadNextPage();
+                                        }
+                                });
+                        },
+                        { rootMargin: '1200px 0px' },
+                );
+
+                observer.observe(sentinel);
+                const triggerIfClose = () => {
+                        const rect = sentinel.getBoundingClientRect();
+                        if (rect.top - window.innerHeight < 1200) {
+                                preloadNextPage();
+                        }
+                };
+                triggerIfClose();
+                window.addEventListener('resize', triggerIfClose, { passive: true });
+                window.addEventListener('orientationchange', triggerIfClose, { passive: true });
+                const warmup = () => {
+                        if (loading || currentPage >= totalPages) return;
+                        preloadNextPage();
+                };
+                if ('requestIdleCallback' in window) {
+                        window.requestIdleCallback(warmup, { timeout: 300 });
+                } else {
+                        setTimeout(warmup, 220);
+                }
+                setStatus('向下滚动时将自动预加载下一页');
+        })();
 </script>
 {{end}}
