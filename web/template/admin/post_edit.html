@@ -156,6 +156,11 @@
         display: none; /* Chrome/Safari */
     }
 
+    .milkdown-immersive-shell .milkdown .milkdown-slash-menu {
+        max-height: min(420px, calc(100vh - 5rem));
+        overflow: auto;
+    }
+
     [data-editor-toc-card] .toc-link {
         display: flex;
         align-items: center;
@@ -295,6 +300,24 @@
 
         .milkdown-immersive-shell .milkdown .katex {
             color: #e2e8f0;
+        }
+
+        .milkdown-immersive-shell
+            .milkdown
+            .milkdown-toolbar
+            .toolbar-item
+            svg {
+            color: rgba(226, 232, 240, 0.92);
+            fill: rgba(226, 232, 240, 0.92);
+        }
+
+        .milkdown-immersive-shell
+            .milkdown
+            .milkdown-toolbar
+            .toolbar-item.active
+            svg {
+            color: #7dd3fc;
+            fill: #7dd3fc;
         }
 
         .milkdown-preview .milkdown {
