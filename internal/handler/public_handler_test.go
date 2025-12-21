@@ -378,3 +378,60 @@ func TestShowPostDetailStripsLeadingTitleFromContent(t *testing.T) {
 		t.Fatalf("expected rendered content to retain body text")
 	}
 }
+
+func TestRSSFeedIncludesPublishedPosts(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	published := seedPublishedPostAt(t, "RSS 测试", "# RSS 测试\n\n正文", time.Date(2024, 11, 23, 10, 0, 0, 0, time.UTC))
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/rss.xml", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	contentType := w.Header().Get("Content-Type")
+	if !strings.Contains(contentType, "application/rss+xml") {
+		t.Fatalf("expected RSS content type, got %s", contentType)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "<rss version=\"2.0\"") {
+		t.Fatalf("expected RSS root element, body=%s", body)
+	}
+	if !strings.Contains(body, "<title>RSS 测试</title>") {
+		t.Fatalf("expected feed to include post title, body=%s", body)
+	}
+	if !strings.Contains(body, fmt.Sprintf("/posts/%d", published.ID)) {
+		t.Fatalf("expected feed to include post URL")
+	}
+	if !strings.Contains(body, fmt.Sprintf("<description>%s 摘要</description>", "RSS 测试")) {
+		t.Fatalf("expected feed to include summary description, body=%s", body)
+	}
+}
+
+func TestHomeDisplaysRSSLink(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, `href="/rss.xml"`) {
+		t.Fatalf("expected home page to include RSS link, body=%s", body)
+	}
+	if !strings.Contains(body, "RSS 订阅") {
+		t.Fatalf("expected RSS link text to render, body=%s", body)
+	}
+}
