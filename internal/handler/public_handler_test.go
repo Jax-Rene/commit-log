@@ -431,7 +431,7 @@ func TestHomeDisplaysRSSLink(t *testing.T) {
 	if !strings.Contains(body, `href="/rss.xml"`) {
 		t.Fatalf("expected home page to include RSS link, body=%s", body)
 	}
-	if !strings.Contains(body, "RSS 订阅") {
-		t.Fatalf("expected RSS link text to render, body=%s", body)
+	if !strings.Contains(body, ">RSS<") {
+		t.Fatalf("expected RSS label to render, body=%s", body)
 	}
 }
