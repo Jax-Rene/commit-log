@@ -460,6 +460,63 @@ func (a *API) ShowSitemap(c *gin.Context) {
 	c.String(http.StatusOK, builder.String())
 }
 
+// ShowRSS exposes a simple RSS feed for published posts.
+func (a *API) ShowRSS(c *gin.Context) {
+	publications, err := a.posts.ListAllPublished()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "")
+		return
+	}
+
+	site := a.siteSettings(c)
+	title := strings.TrimSpace(site.Name)
+	if title == "" {
+		title = "CommitLog"
+	}
+	description := strings.TrimSpace(site.Description)
+	if description == "" {
+		description = "最新文章订阅"
+	}
+	homeURL := a.absoluteURL(c, "/")
+	lastBuildDate := time.Now().UTC().Format(time.RFC1123Z)
+
+	var builder strings.Builder
+	builder.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
+	builder.WriteString(`<rss version="2.0">` + "\n")
+	builder.WriteString("<channel>\n")
+	builder.WriteString(fmt.Sprintf("  <title>%s</title>\n", htmlstd.EscapeString(title)))
+	builder.WriteString(fmt.Sprintf("  <link>%s</link>\n", htmlstd.EscapeString(homeURL)))
+	builder.WriteString(fmt.Sprintf("  <description>%s</description>\n", htmlstd.EscapeString(description)))
+	builder.WriteString("  <language>zh-CN</language>\n")
+	builder.WriteString(fmt.Sprintf("  <lastBuildDate>%s</lastBuildDate>\n", lastBuildDate))
+	builder.WriteString("  <generator>CommitLog</generator>\n")
+
+	for _, publication := range publications {
+		itemLink := a.absoluteURL(c, fmt.Sprintf("/posts/%d", publication.PostID))
+		summary := buildPublicationDescription(&publication)
+		pubDate := publication.PublishedAt
+		if pubDate.IsZero() {
+			pubDate = publication.CreatedAt
+		}
+		builder.WriteString("  <item>\n")
+		builder.WriteString(fmt.Sprintf("    <title>%s</title>\n", htmlstd.EscapeString(strings.TrimSpace(publication.Title))))
+		builder.WriteString(fmt.Sprintf("    <link>%s</link>\n", htmlstd.EscapeString(itemLink)))
+		builder.WriteString(fmt.Sprintf("    <guid>%s</guid>\n", htmlstd.EscapeString(itemLink)))
+		if summary != "" {
+			builder.WriteString(fmt.Sprintf("    <description>%s</description>\n", htmlstd.EscapeString(summary)))
+		}
+		if !pubDate.IsZero() {
+			builder.WriteString(fmt.Sprintf("    <pubDate>%s</pubDate>\n", pubDate.UTC().Format(time.RFC1123Z)))
+		}
+		builder.WriteString("  </item>\n")
+	}
+
+	builder.WriteString("</channel>\n</rss>")
+
+	c.Header("Content-Type", "application/rss+xml; charset=utf-8")
+	c.String(http.StatusOK, builder.String())
+}
+
 func clonePublicationForView(publication *db.PostPublication) *db.PostPublication {
 	if publication == nil {
 		return nil

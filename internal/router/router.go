@@ -279,6 +279,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 
 	r.GET("/robots.txt", handlers.ShowRobots)
 	r.GET("/sitemap.xml", handlers.ShowSitemap)
+	r.GET("/rss.xml", handlers.ShowRSS)
 	// 公共站点路由
 	r.GET("/", handlers.ShowHome)
 	r.GET("/posts/more", handlers.LoadMorePosts)
