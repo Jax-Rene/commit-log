@@ -482,7 +482,7 @@ func (a *API) ShowRSS(c *gin.Context) {
 
 	var builder strings.Builder
 	builder.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
-	builder.WriteString(`<rss version="2.0">` + "\n")
+	builder.WriteString(`<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">` + "\n")
 	builder.WriteString("<channel>\n")
 	builder.WriteString(fmt.Sprintf("  <title>%s</title>\n", htmlstd.EscapeString(title)))
 	builder.WriteString(fmt.Sprintf("  <link>%s</link>\n", htmlstd.EscapeString(homeURL)))
@@ -504,6 +504,18 @@ func (a *API) ShowRSS(c *gin.Context) {
 		builder.WriteString(fmt.Sprintf("    <guid>%s</guid>\n", htmlstd.EscapeString(itemLink)))
 		if summary != "" {
 			builder.WriteString(fmt.Sprintf("    <description>%s</description>\n", htmlstd.EscapeString(summary)))
+		}
+		contentEncoded := ""
+		if htmlContent, err := renderMarkdown(publication.Content); err == nil {
+			contentEncoded = strings.TrimSpace(string(htmlContent))
+		}
+		if contentEncoded == "" {
+			contentEncoded = htmlstd.EscapeString(publication.Content)
+		}
+		if strings.TrimSpace(contentEncoded) != "" {
+			builder.WriteString("    <content:encoded><![CDATA[")
+			builder.WriteString(contentEncoded)
+			builder.WriteString("]]></content:encoded>\n")
 		}
 		if !pubDate.IsZero() {
 			builder.WriteString(fmt.Sprintf("    <pubDate>%s</pubDate>\n", pubDate.UTC().Format(time.RFC1123Z)))

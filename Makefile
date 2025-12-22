@@ -52,3 +52,7 @@ fly-sync-product-data: # 同步线上数据到本地开发使用
 	mv commitlog.db.backup commitlog.db
 	fly ssh sftp -a commitlog get -R /data/uploads
 	mv uploads/* ./web/static/uploads
+
+# 利用 GitHub CLI 自动创建 Pull Request
+create-pr:
+	gh pr create --fill
