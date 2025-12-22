@@ -412,6 +412,12 @@ func TestRSSFeedIncludesPublishedPosts(t *testing.T) {
 	if !strings.Contains(body, fmt.Sprintf("<description>%s 摘要</description>", "RSS 测试")) {
 		t.Fatalf("expected feed to include summary description, body=%s", body)
 	}
+	if !strings.Contains(body, "<content:encoded><![CDATA[") {
+		t.Fatalf("expected feed to include full content payload, body=%s", body)
+	}
+	if !strings.Contains(body, "<p>正文</p>") {
+		t.Fatalf("expected feed content to include rendered HTML body, body=%s", body)
+	}
 }
 
 func TestHomeDisplaysRSSLink(t *testing.T) {
