@@ -282,6 +282,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 	r.GET("/rss.xml", handlers.ShowRSS)
 	// 公共站点路由
 	r.GET("/", handlers.ShowHome)
+	r.GET("/search/suggestions", handlers.SearchSuggestions)
 	r.GET("/posts/more", handlers.LoadMorePosts)
 	r.GET("/posts/:id", handlers.ShowPostDetail)
 	r.GET("/tags", handlers.ShowTagArchive)

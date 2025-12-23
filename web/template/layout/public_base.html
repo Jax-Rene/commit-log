@@ -121,13 +121,19 @@
                 </div>
 
                 <div class="w-full sm:flex-1 sm:px-4">
-                    <form method="GET" action="/" class="w-full sm:max-w-md">
+                    <form method="GET" action="/" class="relative w-full sm:max-w-md">
                         <label class="relative block">
                             <input
                                 type="search"
                                 name="search"
                                 value="{{.search}}"
                                 placeholder="搜索文章"
+                                autocomplete="off"
+                                data-search-suggest-input
+                                hx-get="/search/suggestions"
+                                hx-trigger="keyup changed delay:250ms, search"
+                                hx-target="#search-suggestions"
+                                hx-swap="innerHTML"
                                 class="w-full rounded-full bg-slate-100 px-4 py-2 pr-10 text-sm text-slate-900 placeholder-slate-400 shadow-sm transition-colors focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/50 dark:focus:ring-blue-500/30"
                             />
                             <span
@@ -148,6 +154,24 @@
                                 </svg>
                             </span>
                         </label>
+                        <div
+                            id="search-suggestions"
+                            class="absolute left-0 right-0 top-full z-50 mt-2"
+                        ></div>
+                        <template id="search-suggestions-loading">
+                            <div
+                                class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-500 shadow-lg dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400"
+                            >
+                                搜索中…
+                            </div>
+                        </template>
+                        <template id="search-suggestions-error">
+                            <div
+                                class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-600 shadow-lg dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+                            >
+                                搜索失败，请稍后重试。
+                            </div>
+                        </template>
                     </form>
                 </div>
 

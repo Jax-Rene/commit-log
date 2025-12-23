@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
@@ -41,6 +42,12 @@ const (
 type tagStat struct {
 	Name  string
 	Count int
+}
+
+type searchSuggestion struct {
+	Title   template.HTML
+	Snippet template.HTML
+	URL     string
 }
 
 // ShowHome renders the public home page with filters and masonry layout.
@@ -122,6 +129,43 @@ func (a *API) ShowHome(c *gin.Context) {
 	}
 
 	a.renderHTML(c, http.StatusOK, "home.html", payload)
+}
+
+// SearchSuggestions returns search suggestions with highlighted matches.
+func (a *API) SearchSuggestions(c *gin.Context) {
+	search := strings.TrimSpace(c.Query("search"))
+	if search == "" {
+		c.String(http.StatusOK, "")
+		return
+	}
+
+	filter := service.PostFilter{
+		Search:  search,
+		Page:    1,
+		PerPage: 5,
+	}
+
+	publications, err := a.posts.ListPublished(filter)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "")
+		return
+	}
+
+	suggestions := make([]searchSuggestion, 0, len(publications.Publications))
+	for _, publication := range publications.Publications {
+		snippet := buildSearchSnippet(&publication, search, 120)
+		suggestions = append(suggestions, searchSuggestion{
+			Title:   highlightMatches(publication.Title, search),
+			Snippet: highlightMatches(snippet, search),
+			URL:     fmt.Sprintf("/posts/%d", publication.PostID),
+		})
+	}
+
+	a.renderHTML(c, http.StatusOK, "search_suggestions.html", gin.H{
+		"search":  search,
+		"results": suggestions,
+		"total":   publications.Total,
+	})
 }
 
 // LoadMorePosts returns masonry post items for infinite scroll via HTMX.
@@ -613,6 +657,85 @@ func (a *API) buildTagStats() []tagStat {
 	return stats
 }
 
+func buildSearchSnippet(publication *db.PostPublication, keyword string, limit int) string {
+	if publication == nil {
+		return ""
+	}
+
+	content := markdownToPlainText(publication.Content)
+	if content != "" {
+		if snippet := snippetAroundKeyword(content, keyword, limit); snippet != "" {
+			return snippet
+		}
+	}
+
+	summary := strings.TrimSpace(publication.Summary)
+	if summary == "" {
+		return ""
+	}
+	return truncateRunes(summary, limit)
+}
+
+func snippetAroundKeyword(text, keyword string, limit int) string {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return ""
+	}
+	if keyword == "" {
+		return truncateRunes(trimmed, limit)
+	}
+
+	lowerText := strings.ToLower(trimmed)
+	lowerKeyword := strings.ToLower(keyword)
+	byteIndex := strings.Index(lowerText, lowerKeyword)
+	if byteIndex < 0 {
+		return truncateRunes(trimmed, limit)
+	}
+
+	startIndex := utf8.RuneCountInString(lowerText[:byteIndex])
+	runes := []rune(trimmed)
+	total := len(runes)
+	if total == 0 {
+		return ""
+	}
+
+	if limit <= 0 || limit > total {
+		limit = total
+	}
+
+	context := limit / 2
+	start := startIndex - context
+	if start < 0 {
+		start = 0
+	}
+	end := start + limit
+	if end > total {
+		end = total
+	}
+	if end-start < limit && start > 0 {
+		start = end - limit
+		if start < 0 {
+			start = 0
+		}
+	}
+
+	snippet := strings.TrimSpace(string(runes[start:end]))
+	if snippet == "" {
+		return ""
+	}
+
+	prefix := ""
+	suffix := ""
+	if start > 0 {
+		prefix = "…"
+	}
+	if end < total {
+		suffix = "…"
+	}
+
+	return prefix + snippet + suffix
+}
+
 func markdownToPlainText(content string) string {
 	var buf bytes.Buffer
 	if err := markdownEngine.Convert([]byte(content), &buf); err != nil {
@@ -622,6 +745,24 @@ func markdownToPlainText(content string) string {
 	stripped := htmlTagPattern.ReplaceAllString(safe, " ")
 	unescaped := htmlstd.UnescapeString(stripped)
 	return strings.Join(strings.Fields(unescaped), " ")
+}
+
+func highlightMatches(text, keyword string) template.HTML {
+	escaped := htmlstd.EscapeString(text)
+	trimmedKeyword := strings.TrimSpace(keyword)
+	if trimmedKeyword == "" {
+		return template.HTML(escaped)
+	}
+
+	pattern, err := regexp.Compile("(?i)" + regexp.QuoteMeta(trimmedKeyword))
+	if err != nil {
+		return template.HTML(escaped)
+	}
+
+	highlighted := pattern.ReplaceAllStringFunc(escaped, func(match string) string {
+		return `<mark class="rounded bg-amber-200/80 px-1 text-slate-900 dark:bg-amber-400/30 dark:text-amber-100">` + match + `</mark>`
+	})
+	return template.HTML(highlighted)
 }
 
 func truncateRunes(text string, limit int) string {
