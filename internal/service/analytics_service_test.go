@@ -18,7 +18,7 @@ func setupAnalyticsTestDB(t *testing.T) func() {
 		t.Fatalf("failed to open test db: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.Post{}, &db.PostStatistic{}, &db.PostVisit{}); err != nil {
+	if err := gdb.AutoMigrate(&db.Post{}, &db.PostStatistic{}, &db.PostVisit{}, &db.SiteHourlySnapshot{}, &db.SiteHourlyVisitor{}); err != nil {
 		t.Fatalf("failed to migrate test db: %v", err)
 	}
 
@@ -188,5 +188,50 @@ func TestOverview(t *testing.T) {
 
 	if overview.TopPosts[0].PageViews < overview.TopPosts[1].PageViews {
 		t.Fatal("expected top posts ordered by PV desc")
+	}
+}
+
+func TestHourlyTrafficTrend(t *testing.T) {
+	cleanup := setupAnalyticsTestDB(t)
+	defer cleanup()
+
+	post := db.Post{Content: "# Trend\n内容", Status: "published"}
+	if err := db.DB.Create(&post).Error; err != nil {
+		t.Fatalf("failed to create post: %v", err)
+	}
+
+	svc := NewAnalyticsService(db.DB)
+	base := time.Date(2024, 7, 10, 8, 15, 0, 0, time.UTC)
+
+	if _, err := svc.RecordPostView(post.ID, "visitor-1", base); err != nil {
+		t.Fatalf("record view failed: %v", err)
+	}
+	if _, err := svc.RecordPostView(post.ID, "visitor-1", base.Add(10*time.Minute)); err != nil {
+		t.Fatalf("record view failed: %v", err)
+	}
+	if _, err := svc.RecordPostView(post.ID, "visitor-2", base.Add(time.Hour)); err != nil {
+		t.Fatalf("record view failed: %v", err)
+	}
+	if _, err := svc.RecordPostView(post.ID, "visitor-1", base.Add(2*time.Hour)); err != nil {
+		t.Fatalf("record view failed: %v", err)
+	}
+
+	trend, err := svc.HourlyTrafficTrend(base.Add(2*time.Hour), 3)
+	if err != nil {
+		t.Fatalf("HourlyTrafficTrend returned error: %v", err)
+	}
+
+	if len(trend) != 3 {
+		t.Fatalf("expected 3 trend points, got %d", len(trend))
+	}
+
+	if trend[0].PageViews != 2 || trend[0].UniqueVisitors != 1 {
+		t.Fatalf("unexpected hour 1 stats: %+v", trend[0])
+	}
+	if trend[1].PageViews != 1 || trend[1].UniqueVisitors != 1 {
+		t.Fatalf("unexpected hour 2 stats: %+v", trend[1])
+	}
+	if trend[2].PageViews != 1 || trend[2].UniqueVisitors != 1 {
+		t.Fatalf("unexpected hour 3 stats: %+v", trend[2])
 	}
 }
