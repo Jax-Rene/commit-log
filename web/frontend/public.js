@@ -88,11 +88,48 @@ function ensureMasonryGrid() {
         masonryController = createMasonryGridController();
 }
 
+function setupSearchSuggestions() {
+        const input = document.querySelector('[data-search-suggest-input]');
+        const panel = document.getElementById('search-suggestions');
+        const loadingTemplate = document.getElementById('search-suggestions-loading');
+        const errorTemplate = document.getElementById('search-suggestions-error');
+
+        if (!input || !panel || !loadingTemplate || !errorTemplate) {
+                return;
+        }
+
+        const renderTemplate = templateNode => {
+                panel.innerHTML = templateNode?.innerHTML ?? '';
+        };
+
+        input.addEventListener('htmx:beforeRequest', () => {
+                if (!input.value.trim()) {
+                        panel.innerHTML = '';
+                        return;
+                }
+                renderTemplate(loadingTemplate);
+        });
+
+        input.addEventListener('htmx:responseError', () => {
+                renderTemplate(errorTemplate);
+        });
+
+        const clearIfEmpty = () => {
+                if (!input.value.trim()) {
+                        panel.innerHTML = '';
+                }
+        };
+
+        input.addEventListener('input', clearIfEmpty);
+        input.addEventListener('search', clearIfEmpty);
+}
+
 function bootPublic() {
         // 构建只读渲染与目录浮框
         initMilkdownViewer();
         ensurePostToc();
         ensureMasonryGrid();
+        setupSearchSuggestions();
 }
 
 if (document.readyState === 'loading') {
