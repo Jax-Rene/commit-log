@@ -663,15 +663,18 @@ func buildSearchSnippet(publication *db.PostPublication, keyword string, limit i
 		return ""
 	}
 
-	summary := strings.TrimSpace(publication.Summary)
-	if summary != "" {
-		if snippet := snippetAroundKeyword(summary, keyword, limit); snippet != "" {
+	content := markdownToPlainText(publication.Content)
+	if content != "" {
+		if snippet := snippetAroundKeyword(content, keyword, limit); snippet != "" {
 			return snippet
 		}
 	}
 
-	content := markdownToPlainText(publication.Content)
-	return snippetAroundKeyword(content, keyword, limit)
+	summary := strings.TrimSpace(publication.Summary)
+	if summary == "" {
+		return ""
+	}
+	return truncateRunes(summary, limit)
 }
 
 func snippetAroundKeyword(text, keyword string, limit int) string {
