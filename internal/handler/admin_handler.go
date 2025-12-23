@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
@@ -84,9 +85,15 @@ func (a *API) ShowDashboard(c *gin.Context) {
 	a.db.Model(&db.Tag{}).Count(&tagCount)
 
 	var overview service.SiteOverview
+	var hourlyTrend []service.HourlyTrafficPoint
 	if a.analytics != nil {
 		if ov, err := a.analytics.Overview(5); err == nil {
 			overview = ov
+		} else {
+			c.Error(err)
+		}
+		if trend, err := a.analytics.HourlyTrafficTrend(time.Now().UTC(), 24); err == nil {
+			hourlyTrend = trend
 		} else {
 			c.Error(err)
 		}
@@ -98,6 +105,7 @@ func (a *API) ShowDashboard(c *gin.Context) {
 		"postCount": postCount,
 		"tagCount":  tagCount,
 		"overview":  overview,
+		"trend":     hourlyTrend,
 	})
 }
 

@@ -39,6 +39,7 @@ func (s *AnalyticsService) RecordPostView(postID uint, visitorID string, now tim
 	}
 
 	var stats db.PostStatistic
+	hourBucket := now.UTC().Truncate(time.Hour)
 
 	if err := s.db.Transaction(func(tx *gorm.DB) error {
 		visit := db.PostVisit{
@@ -93,6 +94,39 @@ func (s *AnalyticsService) RecordPostView(postID uint, visitorID string, now tim
 			return err
 		}
 
+		hourlyVisit := db.SiteHourlyVisitor{
+			Hour:      hourBucket,
+			VisitorID: visitorID,
+		}
+		hourlyInsert := tx.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "hour"}, {Name: "visitor_id"}},
+			DoNothing: true,
+		}).Create(&hourlyVisit)
+		if hourlyInsert.Error != nil {
+			return hourlyInsert.Error
+		}
+
+		uniqueIncrement := uint64(0)
+		if hourlyInsert.RowsAffected == 1 {
+			uniqueIncrement = 1
+		}
+
+		hourlySnapshot := db.SiteHourlySnapshot{
+			Hour:           hourBucket,
+			PageViews:      1,
+			UniqueVisitors: uniqueIncrement,
+		}
+		if err := tx.Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "hour"}},
+			DoUpdates: clause.Assignments(map[string]interface{}{
+				"page_views":      gorm.Expr("page_views + ?", 1),
+				"unique_visitors": gorm.Expr("unique_visitors + ?", uniqueIncrement),
+				"updated_at":      now,
+			}),
+		}).Create(&hourlySnapshot).Error; err != nil {
+			return err
+		}
+
 		return nil
 	}); err != nil {
 		return nil, err
@@ -134,6 +168,13 @@ type SiteOverview struct {
 type TopPostStat struct {
 	PostID         uint
 	Title          string
+	PageViews      uint64
+	UniqueVisitors uint64
+}
+
+// HourlyTrafficPoint 描述站点每小时的 PV/UV 变化。
+type HourlyTrafficPoint struct {
+	Hour           time.Time
 	PageViews      uint64
 	UniqueVisitors uint64
 }
@@ -181,4 +222,44 @@ func (s *AnalyticsService) Overview(limit int) (SiteOverview, error) {
 
 	overview.TopPosts = topPosts
 	return overview, nil
+}
+
+// HourlyTrafficTrend 返回最近指定小时数的站点流量趋势。
+func (s *AnalyticsService) HourlyTrafficTrend(now time.Time, hours int) ([]HourlyTrafficPoint, error) {
+	if hours <= 0 {
+		hours = 24
+	}
+
+	end := now.UTC().Truncate(time.Hour)
+	start := end.Add(-time.Duration(hours-1) * time.Hour)
+
+	var snapshots []db.SiteHourlySnapshot
+	if err := s.db.Where("hour >= ? AND hour <= ?", start, end).Find(&snapshots).Error; err != nil {
+		return nil, err
+	}
+
+	snapshotMap := make(map[time.Time]db.SiteHourlySnapshot, len(snapshots))
+	for _, snapshot := range snapshots {
+		snapshotMap[snapshot.Hour.UTC().Truncate(time.Hour)] = snapshot
+	}
+
+	points := make([]HourlyTrafficPoint, 0, hours)
+	for cursor := start; !cursor.After(end); cursor = cursor.Add(time.Hour) {
+		snapshot, ok := snapshotMap[cursor]
+		if !ok {
+			points = append(points, HourlyTrafficPoint{
+				Hour:           cursor,
+				PageViews:      0,
+				UniqueVisitors: 0,
+			})
+			continue
+		}
+		points = append(points, HourlyTrafficPoint{
+			Hour:           cursor,
+			PageViews:      snapshot.PageViews,
+			UniqueVisitors: snapshot.UniqueVisitors,
+		})
+	}
+
+	return points, nil
 }
