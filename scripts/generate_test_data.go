@@ -32,6 +32,9 @@ func main() {
 	// 创建测试文章
 	createTestPosts()
 
+	// 创建流量趋势快照
+	createTrafficSnapshots()
+
 	fmt.Println("测试数据生成完成！")
 	fmt.Println("用户: admin (密码: admin123)")
 	fmt.Println("文章: 5篇测试文章")
@@ -461,4 +464,29 @@ func createTestPosts() {
 	}
 
 	fmt.Println("✅ 测试文章创建完成")
+}
+
+func createTrafficSnapshots() {
+	db.DB.Exec("DELETE FROM site_hourly_snapshots")
+	db.DB.Exec("DELETE FROM site_hourly_visitors")
+
+	now := time.Now().UTC().Truncate(time.Hour)
+	for i := 23; i >= 0; i-- {
+		hour := now.Add(-time.Duration(i) * time.Hour)
+		base := uint64(40 + (23-i)*5)
+		variance := uint64((i % 5) * 6)
+		pageViews := base + variance
+		uniqueVisitors := pageViews/2 + uint64(i%3)
+
+		snapshot := db.SiteHourlySnapshot{
+			Hour:           hour,
+			PageViews:      pageViews,
+			UniqueVisitors: uniqueVisitors,
+		}
+		if err := db.DB.Create(&snapshot).Error; err != nil {
+			log.Printf("创建流量快照失败: %v", err)
+		}
+	}
+
+	fmt.Println("✅ 流量趋势快照创建完成")
 }

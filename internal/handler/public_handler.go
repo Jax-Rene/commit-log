@@ -549,12 +549,13 @@ func (a *API) ShowRSS(c *gin.Context) {
 		if summary != "" {
 			builder.WriteString(fmt.Sprintf("    <description>%s</description>\n", htmlstd.EscapeString(summary)))
 		}
+		contentSource := stripLeadingTitle(publication.Title, publication.Content)
 		contentEncoded := ""
-		if htmlContent, err := renderMarkdown(publication.Content); err == nil {
+		if htmlContent, err := renderMarkdown(contentSource); err == nil {
 			contentEncoded = strings.TrimSpace(string(htmlContent))
 		}
 		if contentEncoded == "" {
-			contentEncoded = htmlstd.EscapeString(publication.Content)
+			contentEncoded = htmlstd.EscapeString(contentSource)
 		}
 		if strings.TrimSpace(contentEncoded) != "" {
 			builder.WriteString("    <content:encoded><![CDATA[")

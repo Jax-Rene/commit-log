@@ -154,6 +154,80 @@
                 </div>
         </section>
 
+        <section
+                class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
+                x-data="trafficTrend({{toJSON .trend}})"
+                x-init="init()"
+                x-cloak
+        >
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="space-y-1">
+                                <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                                        <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                                        <span>流量趋势 · 过去 24 小时</span>
+                                </div>
+                                <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">PV / UV 小时级快照</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">掌握流量峰谷，及时调整内容节奏与推广策略。</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-300">
+                                <div class="flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                                        <span class="font-medium text-slate-700 dark:text-slate-200">PV</span>
+                                        <span class="text-base font-semibold text-slate-900 dark:text-slate-100" x-text="latest.pageViews">0</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                        <span class="font-medium text-slate-700 dark:text-slate-200">UV</span>
+                                        <span class="text-base font-semibold text-slate-900 dark:text-slate-100" x-text="latest.uniqueVisitors">0</span>
+                                </div>
+                                <div class="text-xs text-slate-400 dark:text-slate-500" x-text="latestLabel"></div>
+                        </div>
+                </div>
+
+                <div class="mt-6 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+                        <template x-if="hasData">
+                                <div class="space-y-4">
+                                        <div class="relative h-48 w-full">
+                                                <svg viewBox="0 0 640 200" class="h-full w-full">
+                                                        <defs>
+                                                                <linearGradient id="pvGradient" x1="0" y1="0" x2="0" y2="1">
+                                                                        <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"></stop>
+                                                                        <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"></stop>
+                                                                </linearGradient>
+                                                                <linearGradient id="uvGradient" x1="0" y1="0" x2="0" y2="1">
+                                                                        <stop offset="0%" stop-color="#10b981" stop-opacity="0.2"></stop>
+                                                                        <stop offset="100%" stop-color="#10b981" stop-opacity="0"></stop>
+                                                                </linearGradient>
+                                                        </defs>
+                                                        <path :d="areaPath(pv)" fill="url(#pvGradient)"></path>
+                                                        <path :d="areaPath(uv)" fill="url(#uvGradient)"></path>
+                                                        <polyline :points="linePoints(pv)" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                                                        <polyline :points="linePoints(uv)" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                                                </svg>
+                                        </div>
+                                        <div class="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
+                                                <span x-text="startLabel"></span>
+                                                <span x-text="endLabel"></span>
+                                        </div>
+                                </div>
+                        </template>
+                        <template x-if="!hasData">
+                                <div class="flex flex-col items-center justify-center gap-3 py-10 text-center">
+                                        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm dark:bg-slate-900">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
+                                                        <path d="M5 13.5C6.667 11 8.333 9.75 10 9.5c2.5-.5 3 2 5.5 1.5 1.167-.233 2.333-1.066 3.5-2.5" stroke-width="1.5" stroke-linecap="round"></path>
+                                                        <path d="M4 4h16v16H4z" stroke-width="1.5" stroke-linejoin="round"></path>
+                                                </svg>
+                                        </div>
+                                        <div class="space-y-1">
+                                                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">暂无趋势数据</p>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400">开始有访问后，将自动生成小时级趋势图。</p>
+                                        </div>
+                                </div>
+                        </template>
+                </div>
+        </section>
+
         <section class="grid gap-6 lg:grid-cols-3">
                 <div class="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 lg:col-span-2">
                         <div class="flex items-center justify-between">
@@ -236,4 +310,93 @@
                 </div>
         </section>
 </div>
+<script>
+        function trafficTrend(points) {
+                const entries = Array.isArray(points) ? points : [];
+                return {
+                        points: entries,
+                        labels: [],
+                        pv: [],
+                        uv: [],
+                        maxValue: 1,
+                        hasData: false,
+                        latest: { pageViews: 0, uniqueVisitors: 0, hour: null },
+                        init() {
+                                const normalized = this.points.map((point) => ({
+                                        hour: point.Hour ? new Date(point.Hour) : null,
+                                        pageViews: Number(point.PageViews || 0),
+                                        uniqueVisitors: Number(point.UniqueVisitors || 0),
+                                }));
+                                this.labels = normalized.map((point) =>
+                                        point.hour ? this.formatHour(point.hour) : ""
+                                );
+                                this.pv = normalized.map((point) => point.pageViews);
+                                this.uv = normalized.map((point) => point.uniqueVisitors);
+                                this.maxValue = Math.max(1, ...this.pv, ...this.uv);
+                                this.hasData = normalized.length > 0;
+                                this.latest = normalized[normalized.length - 1] || this.latest;
+                        },
+                        get startLabel() {
+                                return this.labels[0] || "";
+                        },
+                        get endLabel() {
+                                return this.labels[this.labels.length - 1] || "";
+                        },
+                        get latestLabel() {
+                                if (!this.latest.hour) {
+                                        return "";
+                                }
+                                return `${this.formatDate(this.latest.hour)} ${this.formatHour(
+                                        this.latest.hour
+                                )}`;
+                        },
+                        formatHour(date) {
+                                return date.toLocaleTimeString("zh-CN", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                });
+                        },
+                        formatDate(date) {
+                                return date.toLocaleDateString("zh-CN", {
+                                        month: "2-digit",
+                                        day: "2-digit",
+                                });
+                        },
+                        linePoints(series) {
+                                return this.buildPoints(series, false);
+                        },
+                        areaPath(series) {
+                                return this.buildPoints(series, true);
+                        },
+                        buildPoints(series, closed) {
+                                const width = 640;
+                                const height = 200;
+                                const padding = 20;
+                                if (!series.length) {
+                                        return "";
+                                }
+                                const step = series.length > 1 ? (width - padding * 2) / (series.length - 1) : 0;
+                                const points = series.map((value, index) => {
+                                        const x = padding + step * index;
+                                        const y =
+                                                height -
+                                                padding -
+                                                ((height - padding * 2) * value) / this.maxValue;
+                                        return [x, y];
+                                });
+                                if (!closed) {
+                                        return points.map((point) => point.join(",")).join(" ");
+                                }
+                                const first = points[0];
+                                const last = points[points.length - 1];
+                                const path = [`M ${first[0]} ${height - padding}`];
+                                points.forEach((point) => {
+                                        path.push(`L ${point[0]} ${point[1]}`);
+                                });
+                                path.push(`L ${last[0]} ${height - padding}`, "Z");
+                                return path.join(" ");
+                        },
+                };
+        }
+</script>
 {{end}}

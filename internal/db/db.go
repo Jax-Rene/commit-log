@@ -32,7 +32,19 @@ func Init(databasePath string) error {
 	}
 
 	// 自动迁移模式，为核心模型创建表
-	if err = DB.AutoMigrate(&User{}, &Post{}, &PostPublication{}, &Tag{}, &Page{}, &ProfileContact{}, &PostStatistic{}, &PostVisit{}, &SystemSetting{}); err != nil {
+	if err = DB.AutoMigrate(
+		&User{},
+		&Post{},
+		&PostPublication{},
+		&Tag{},
+		&Page{},
+		&ProfileContact{},
+		&PostStatistic{},
+		&PostVisit{},
+		&SiteHourlySnapshot{},
+		&SiteHourlyVisitor{},
+		&SystemSetting{},
+	); err != nil {
 		return err
 	}
 

@@ -415,6 +415,9 @@ func TestRSSFeedIncludesPublishedPosts(t *testing.T) {
 	if !strings.Contains(body, "<content:encoded><![CDATA[") {
 		t.Fatalf("expected feed to include full content payload, body=%s", body)
 	}
+	if strings.Contains(body, "<h1>RSS 测试</h1>") {
+		t.Fatalf("expected feed content to exclude leading title heading, body=%s", body)
+	}
 	if !strings.Contains(body, "<p>正文</p>") {
 		t.Fatalf("expected feed content to include rendered HTML body, body=%s", body)
 	}
