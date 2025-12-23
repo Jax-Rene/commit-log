@@ -1,0 +1,45 @@
+<div
+    class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-950"
+>
+    <div
+        class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400"
+    >
+        <span>
+            共 {{.total}} 条搜索结果
+            <span class="font-medium text-slate-700 dark:text-slate-200"
+                >“{{.search}}”</span
+            >
+        </span>
+        <span class="text-slate-400 dark:text-slate-500">回车查看全部</span>
+    </div>
+
+    {{if gt (len .results) 0}}
+    <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+        {{range .results}}
+        <li>
+            <a
+                href="{{.URL}}"
+                class="group block px-4 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/60"
+            >
+                <p
+                    class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                >
+                    {{.Title}}
+                </p>
+                {{if .Snippet}}
+                <p
+                    class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400"
+                >
+                    {{.Snippet}}
+                </p>
+                {{end}}
+            </a>
+        </li>
+        {{end}}
+    </ul>
+    {{else}}
+    <div class="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">
+        暂无匹配内容，试试其他关键词吧。
+    </div>
+    {{end}}
+</div>
