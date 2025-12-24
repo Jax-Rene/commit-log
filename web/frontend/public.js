@@ -93,13 +93,24 @@ function setupSearchSuggestions() {
         const panel = document.getElementById('search-suggestions');
         const loadingTemplate = document.getElementById('search-suggestions-loading');
         const errorTemplate = document.getElementById('search-suggestions-error');
+        const container = input?.closest('form');
 
-        if (!input || !panel || !loadingTemplate || !errorTemplate) {
+        if (!input || !panel || !loadingTemplate || !errorTemplate || !container) {
                 return;
         }
 
         const renderTemplate = templateNode => {
                 panel.innerHTML = templateNode?.innerHTML ?? '';
+        };
+
+        const clearSearch = () => {
+                if (!input.value.trim() && !panel.innerHTML) {
+                        return;
+                }
+                input.value = '';
+                panel.innerHTML = '';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('search', { bubbles: true }));
         };
 
         input.addEventListener('htmx:beforeRequest', () => {
@@ -122,6 +133,11 @@ function setupSearchSuggestions() {
 
         input.addEventListener('input', clearIfEmpty);
         input.addEventListener('search', clearIfEmpty);
+        document.addEventListener('click', event => {
+                if (!container.contains(event.target)) {
+                        clearSearch();
+                }
+        });
 }
 
 function bootPublic() {
