@@ -663,7 +663,7 @@ func buildSearchSnippet(publication *db.PostPublication, keyword string, limit i
 		return ""
 	}
 
-	content := markdownToPlainText(publication.Content)
+	content := markdownToPlainText(stripLeadingTitle(publication.Title, publication.Content))
 	if content != "" {
 		if snippet := snippetAroundKeyword(content, keyword, limit); snippet != "" {
 			return snippet
