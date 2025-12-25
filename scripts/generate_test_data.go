@@ -119,6 +119,8 @@ func createTestPosts() {
 	db.DB.Exec("DELETE FROM post_publication_tags")
 	db.DB.Exec("DELETE FROM post_publications")
 	db.DB.Exec("DELETE FROM post_tags")
+	db.DB.Exec("DELETE FROM post_statistics")
+	db.DB.Exec("DELETE FROM post_visits")
 	db.DB.Exec("DELETE FROM posts")
 
 	// 获取管理员用户
@@ -460,6 +462,21 @@ func createTestPosts() {
 			"reading_time":          post.ReadingTime,
 		}).Error; err != nil {
 			log.Printf("更新文章发布信息失败: %v", err)
+		}
+
+		pageViews := uint64(520 - idx*18)
+		if pageViews < 40 {
+			pageViews = uint64(40 + idx*3)
+		}
+		uniqueVisitors := pageViews/2 + uint64(idx%5)
+		stat := db.PostStatistic{
+			PostID:         post.ID,
+			PageViews:      pageViews,
+			UniqueVisitors: uniqueVisitors,
+			LastViewedAt:   time.Now().Add(-time.Duration(idx) * 5 * time.Hour),
+		}
+		if err := db.DB.Create(&stat).Error; err != nil {
+			log.Printf("创建文章统计失败: %v", err)
 		}
 	}
 

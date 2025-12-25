@@ -11,9 +11,9 @@
                                 </div>
                                 <div class="space-y-2">
                                         <p class="text-sm text-slate-200">欢迎回来，{{if .username}}{{.username}}{{else}}管理员{{end}}</p>
-                                        <h1 class="text-3xl font-semibold leading-tight">用更现代的后台掌控创作与数据</h1>
+                                        <h1 class="text-3xl font-semibold leading-tight">用更现代的后台聚焦文章管理</h1>
                                         <p class="max-w-2xl text-sm text-slate-200/80">
-                                                在这里快速查看站点表现、热门内容与核心入口，让每一次发布都更有把握。
+                                                在这里集中整理内容状态、发布节奏与关键入口，让每一次发布都更有把握。
                                         </p>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-3">
@@ -48,28 +48,22 @@
                                 </div>
                                 <div class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-white shadow-lg shadow-slate-900/10">
                                         <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-200/80">
-                                                <span>标签</span>
-                                                <span class="rounded-full bg-white/15 px-2 py-0.5 text-[11px]">结构</span>
+                                                <span>已发布</span>
+                                                <span class="rounded-full bg-white/15 px-2 py-0.5 text-[11px]">公开</span>
                                         </div>
                                         <div class="flex items-end justify-between">
-                                                <p class="text-3xl font-semibold">{{.tagCount}}</p>
-                                                <span class="text-xs text-slate-200/80">主题脉络</span>
+                                                <p class="text-3xl font-semibold">{{.publishedCount}}</p>
+                                                <span class="text-xs text-slate-200/80">稳定曝光</span>
                                         </div>
                                 </div>
                                 <div class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-white shadow-lg shadow-slate-900/10 md:col-span-1">
                                         <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-200/80">
-                                                <span>流量</span>
-                                                <span class="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[11px] text-emerald-100">实时</span>
+                                                <span>草稿</span>
+                                                <span class="rounded-full bg-amber-300/20 px-2 py-0.5 text-[11px] text-amber-100">待完善</span>
                                         </div>
-                                        <div class="space-y-1 text-sm">
-                                                <div class="flex items-center justify-between text-slate-200">
-                                                        <span>PV</span>
-                                                        <span class="font-semibold">{{.overview.TotalPageViews}}</span>
-                                                </div>
-                                                <div class="flex items-center justify-between text-slate-200">
-                                                        <span>UV</span>
-                                                        <span class="font-semibold">{{.overview.TotalUniqueVisitors}}</span>
-                                                </div>
+                                        <div class="flex items-end justify-between">
+                                                <p class="text-3xl font-semibold">{{.draftCount}}</p>
+                                                <span class="text-xs text-slate-200/80">持续打磨</span>
                                         </div>
                                 </div>
                         </div>
@@ -106,13 +100,13 @@
                                                 </svg>
                                         </span>
                                         <div>
-                                                <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">标签总数</p>
-                                                <p class="text-2xl font-semibold text-slate-900 dark:text-slate-100">{{.tagCount}}</p>
+                                                <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">已发布文章</p>
+                                                <p class="text-2xl font-semibold text-slate-900 dark:text-slate-100">{{.publishedCount}}</p>
                                         </div>
                                 </div>
-                                <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-200">结构清晰</span>
+                                <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-200">公开可读</span>
                         </div>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">用标签梳理主题，帮助读者快速抵达需要的信息。</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">保持内容稳定输出，让读者持续获得价值。</p>
                 </div>
 
                 <div class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-transform duration-150 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/80">
@@ -125,13 +119,13 @@
                                                 </svg>
                                         </span>
                                         <div>
-                                                <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">全站浏览 (PV)</p>
-                                                <p class="text-2xl font-semibold text-slate-900 dark:text-slate-100">{{.overview.TotalPageViews}}</p>
+                                                <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">草稿文章</p>
+                                                <p class="text-2xl font-semibold text-slate-900 dark:text-slate-100">{{.draftCount}}</p>
                                         </div>
                                 </div>
-                                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-200">曝光</span>
+                                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-200">待发布</span>
                         </div>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">监测页面访问热度，及时调整推广与选题策略。</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">安排发布节奏，持续打磨内容质量。</p>
                 </div>
 
                 <div class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-transform duration-150 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/80">
@@ -144,139 +138,18 @@
                                                 </svg>
                                         </span>
                                         <div>
-                                                <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">独立访客 (UV)</p>
-                                                <p class="text-2xl font-semibold text-slate-900 dark:text-slate-100">{{.overview.TotalUniqueVisitors}}</p>
+                                                <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">标签总数</p>
+                                                <p class="text-2xl font-semibold text-slate-900 dark:text-slate-100">{{.tagCount}}</p>
                                         </div>
                                 </div>
-                                <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-600 dark:bg-amber-500/15 dark:text-amber-200">覆盖</span>
+                                <span class="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-600 dark:bg-amber-500/15 dark:text-amber-200">体系化</span>
                         </div>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">关注真实访客规模，评估传播效率与渠道价值。</p>
-                </div>
-        </section>
-
-        <section
-                class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
-                x-data="trafficTrend({{toJSON .trend}})"
-                x-init="init()"
-                x-cloak
-        >
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div class="space-y-1">
-                                <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-200">
-                                        <span class="h-2 w-2 rounded-full bg-blue-500"></span>
-                                        <span>流量趋势 · 过去 24 小时</span>
-                                </div>
-                                <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">PV / UV 小时级快照</h2>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">掌握流量峰谷，及时调整内容节奏与推广策略。</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-300">
-                                <div class="flex items-center gap-2">
-                                        <span class="h-2 w-2 rounded-full bg-blue-500"></span>
-                                        <span class="font-medium text-slate-700 dark:text-slate-200">PV</span>
-                                        <span class="text-base font-semibold text-slate-900 dark:text-slate-100" x-text="latest.pageViews">0</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                        <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                                        <span class="font-medium text-slate-700 dark:text-slate-200">UV</span>
-                                        <span class="text-base font-semibold text-slate-900 dark:text-slate-100" x-text="latest.uniqueVisitors">0</span>
-                                </div>
-                                <div class="text-xs text-slate-400 dark:text-slate-500" x-text="latestLabel"></div>
-                        </div>
-                </div>
-
-                <div class="mt-6 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/40">
-                        <template x-if="hasData">
-                                <div class="space-y-4">
-                                        <div class="relative h-48 w-full">
-                                                <svg viewBox="0 0 640 200" class="h-full w-full">
-                                                        <defs>
-                                                                <linearGradient id="pvGradient" x1="0" y1="0" x2="0" y2="1">
-                                                                        <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"></stop>
-                                                                        <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"></stop>
-                                                                </linearGradient>
-                                                                <linearGradient id="uvGradient" x1="0" y1="0" x2="0" y2="1">
-                                                                        <stop offset="0%" stop-color="#10b981" stop-opacity="0.2"></stop>
-                                                                        <stop offset="100%" stop-color="#10b981" stop-opacity="0"></stop>
-                                                                </linearGradient>
-                                                        </defs>
-                                                        <path :d="areaPath(pv)" fill="url(#pvGradient)"></path>
-                                                        <path :d="areaPath(uv)" fill="url(#uvGradient)"></path>
-                                                        <polyline :points="linePoints(pv)" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                                                        <polyline :points="linePoints(uv)" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
-                                                </svg>
-                                        </div>
-                                        <div class="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
-                                                <span x-text="startLabel"></span>
-                                                <span x-text="endLabel"></span>
-                                        </div>
-                                </div>
-                        </template>
-                        <template x-if="!hasData">
-                                <div class="flex flex-col items-center justify-center gap-3 py-10 text-center">
-                                        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm dark:bg-slate-900">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
-                                                        <path d="M5 13.5C6.667 11 8.333 9.75 10 9.5c2.5-.5 3 2 5.5 1.5 1.167-.233 2.333-1.066 3.5-2.5" stroke-width="1.5" stroke-linecap="round"></path>
-                                                        <path d="M4 4h16v16H4z" stroke-width="1.5" stroke-linejoin="round"></path>
-                                                </svg>
-                                        </div>
-                                        <div class="space-y-1">
-                                                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">暂无趋势数据</p>
-                                                <p class="text-xs text-slate-500 dark:text-slate-400">开始有访问后，将自动生成小时级趋势图。</p>
-                                        </div>
-                                </div>
-                        </template>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">用标签组织内容结构，方便检索与复用。</p>
                 </div>
         </section>
 
         <section class="grid gap-6 lg:grid-cols-3">
-                <div class="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 lg:col-span-2">
-                        <div class="flex items-center justify-between">
-                                <div class="space-y-1">
-                                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">热门文章</h2>
-                                        <p class="text-sm text-slate-500 dark:text-slate-400">查看最近表现最好的内容，复用成功经验。</p>
-                                </div>
-                                <a href="/admin/posts" class="text-sm font-medium text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200">查看全部</a>
-                        </div>
-                        <div class="divide-y divide-slate-100 dark:divide-slate-800">
-                                {{if gt (len .overview.TopPosts) 0}}
-                                {{range .overview.TopPosts}}
-                                <div class="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
-                                        <div class="space-y-1">
-                                                <p class="text-sm font-medium text-slate-900 dark:text-slate-100">{{.Title}}</p>
-                                                <p class="text-xs text-slate-500 dark:text-slate-400">PV {{.PageViews}} · UV {{.UniqueVisitors}}</p>
-                                        </div>
-                                        <a href="/admin/posts/{{.PostID}}/edit" class="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200">
-                                                编辑
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
-                                                        <path d="M9 6h9" stroke-width="1.5" stroke-linecap="round"></path>
-                                                        <path d="M6 12h12" stroke-width="1.5" stroke-linecap="round"></path>
-                                                        <path d="M11 18h7" stroke-width="1.5" stroke-linecap="round"></path>
-                                                </svg>
-                                        </a>
-                                </div>
-                                {{end}}
-                                {{else}}
-                                <div class="flex flex-col items-center justify-center gap-3 py-10 text-center">
-                                        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
-                                                        <path d="M5 12.5C6.667 10 8.333 8.75 10 8.5c2.5-.5 3 2 5.5 1.5 1.167-.233 2.333-1.066 3.5-2.5" stroke-width="1.5" stroke-linecap="round"></path>
-                                                        <path d="M4 4h16v16H4z" stroke-width="1.5" stroke-linejoin="round"></path>
-                                                </svg>
-                                        </div>
-                                        <div class="space-y-1">
-                                                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">暂无热门文章数据</p>
-                                                <p class="text-xs text-slate-500 dark:text-slate-400">发布并积累访问后，会自动出现在这里。</p>
-                                        </div>
-                                        <a href="/admin/posts/new" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90">
-                                                立即创作
-                                                <span aria-hidden="true">→</span>
-                                        </a>
-                                </div>
-                                {{end}}
-                        </div>
-                </div>
-
-                <div class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+                <div class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 lg:col-span-3">
                         <div class="space-y-1">
                                 <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">快捷入口</h2>
                                 <p class="text-sm text-slate-500 dark:text-slate-400">常用操作集中在此，减少翻找成本。</p>
@@ -310,93 +183,4 @@
                 </div>
         </section>
 </div>
-<script>
-        function trafficTrend(points) {
-                const entries = Array.isArray(points) ? points : [];
-                return {
-                        points: entries,
-                        labels: [],
-                        pv: [],
-                        uv: [],
-                        maxValue: 1,
-                        hasData: false,
-                        latest: { pageViews: 0, uniqueVisitors: 0, hour: null },
-                        init() {
-                                const normalized = this.points.map((point) => ({
-                                        hour: point.Hour ? new Date(point.Hour) : null,
-                                        pageViews: Number(point.PageViews || 0),
-                                        uniqueVisitors: Number(point.UniqueVisitors || 0),
-                                }));
-                                this.labels = normalized.map((point) =>
-                                        point.hour ? this.formatHour(point.hour) : ""
-                                );
-                                this.pv = normalized.map((point) => point.pageViews);
-                                this.uv = normalized.map((point) => point.uniqueVisitors);
-                                this.maxValue = Math.max(1, ...this.pv, ...this.uv);
-                                this.hasData = normalized.length > 0;
-                                this.latest = normalized[normalized.length - 1] || this.latest;
-                        },
-                        get startLabel() {
-                                return this.labels[0] || "";
-                        },
-                        get endLabel() {
-                                return this.labels[this.labels.length - 1] || "";
-                        },
-                        get latestLabel() {
-                                if (!this.latest.hour) {
-                                        return "";
-                                }
-                                return `${this.formatDate(this.latest.hour)} ${this.formatHour(
-                                        this.latest.hour
-                                )}`;
-                        },
-                        formatHour(date) {
-                                return date.toLocaleTimeString("zh-CN", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                });
-                        },
-                        formatDate(date) {
-                                return date.toLocaleDateString("zh-CN", {
-                                        month: "2-digit",
-                                        day: "2-digit",
-                                });
-                        },
-                        linePoints(series) {
-                                return this.buildPoints(series, false);
-                        },
-                        areaPath(series) {
-                                return this.buildPoints(series, true);
-                        },
-                        buildPoints(series, closed) {
-                                const width = 640;
-                                const height = 200;
-                                const padding = 20;
-                                if (!series.length) {
-                                        return "";
-                                }
-                                const step = series.length > 1 ? (width - padding * 2) / (series.length - 1) : 0;
-                                const points = series.map((value, index) => {
-                                        const x = padding + step * index;
-                                        const y =
-                                                height -
-                                                padding -
-                                                ((height - padding * 2) * value) / this.maxValue;
-                                        return [x, y];
-                                });
-                                if (!closed) {
-                                        return points.map((point) => point.join(",")).join(" ");
-                                }
-                                const first = points[0];
-                                const last = points[points.length - 1];
-                                const path = [`M ${first[0]} ${height - padding}`];
-                                points.forEach((point) => {
-                                        path.push(`L ${point[0]} ${point[1]}`);
-                                });
-                                path.push(`L ${last[0]} ${height - padding}`, "Z");
-                                return path.join(" ");
-                        },
-                };
-        }
-</script>
 {{end}}

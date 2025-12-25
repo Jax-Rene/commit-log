@@ -407,6 +407,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 	perPage := 10
 	search := c.Query("search")
 	status := c.Query("status")
+	sort := c.Query("sort")
 	tagNames := c.QueryArray("tags")
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
@@ -430,6 +431,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 		TagNames:  tagNames,
 		StartDate: startPtr,
 		EndDate:   endPtr,
+		Sort:      sort,
 		Page:      page,
 		PerPage:   perPage,
 	}
@@ -444,7 +446,6 @@ func (a *API) ShowPostList(c *gin.Context) {
 	}
 
 	statsMap := make(map[uint]*db.PostStatistic)
-	var overview service.SiteOverview
 	if len(list.Posts) > 0 && a.analytics != nil {
 		postIDs := make([]uint, 0, len(list.Posts))
 		for _, post := range list.Posts {
@@ -457,14 +458,6 @@ func (a *API) ShowPostList(c *gin.Context) {
 			}
 		} else {
 			c.Error(statErr)
-		}
-	}
-
-	if a.analytics != nil {
-		if ov, ovErr := a.analytics.Overview(5); ovErr == nil {
-			overview = ov
-		} else {
-			c.Error(ovErr)
 		}
 	}
 
@@ -495,6 +488,9 @@ func (a *API) ShowPostList(c *gin.Context) {
 	if endDate != "" {
 		params.Set("end_date", endDate)
 	}
+	if sort != "" {
+		params.Set("sort", sort)
+	}
 	for _, tag := range tagNames {
 		params.Add("tags", tag)
 	}
@@ -510,6 +506,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 		"allTags":        tags,
 		"search":         search,
 		"status":         status,
+		"sort":           sort,
 		"tags":           tagNames,
 		"startDate":      startDate,
 		"endDate":        endDate,
@@ -522,7 +519,6 @@ func (a *API) ShowPostList(c *gin.Context) {
 		"pages":          pages,
 		"queryParams":    queryParams,
 		"postStats":      statsMap,
-		"overview":       overview,
 	})
 }
 
