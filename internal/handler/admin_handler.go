@@ -2,10 +2,8 @@ package handler
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/commitlog/internal/db"
-	"github.com/commitlog/internal/service"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -84,28 +82,18 @@ func (a *API) ShowDashboard(c *gin.Context) {
 	var tagCount int64
 	a.db.Model(&db.Tag{}).Count(&tagCount)
 
-	var overview service.SiteOverview
-	var hourlyTrend []service.HourlyTrafficPoint
-	if a.analytics != nil {
-		if ov, err := a.analytics.Overview(5); err == nil {
-			overview = ov
-		} else {
-			c.Error(err)
-		}
-		if trend, err := a.analytics.HourlyTrafficTrend(time.Now().UTC(), 24); err == nil {
-			hourlyTrend = trend
-		} else {
-			c.Error(err)
-		}
-	}
+	var publishedCount int64
+	var draftCount int64
+	a.db.Model(&db.Post{}).Where("status = ?", "published").Count(&publishedCount)
+	a.db.Model(&db.Post{}).Where("status = ?", "draft").Count(&draftCount)
 
 	a.renderHTML(c, http.StatusOK, "dashboard.html", gin.H{
-		"title":     "管理面板",
-		"username":  username,
-		"postCount": postCount,
-		"tagCount":  tagCount,
-		"overview":  overview,
-		"trend":     hourlyTrend,
+		"title":          "管理面板",
+		"username":       username,
+		"postCount":      postCount,
+		"tagCount":       tagCount,
+		"publishedCount": publishedCount,
+		"draftCount":     draftCount,
 	})
 }
 

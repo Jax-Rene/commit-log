@@ -34,6 +34,7 @@ type PostFilter struct {
 	TagNames  []string
 	StartDate *time.Time
 	EndDate   *time.Time
+	Sort      string
 	Page      int
 	PerPage   int
 }
@@ -212,8 +213,19 @@ func (s *PostService) List(filter PostFilter) (*PostListResult, error) {
 	dataQuery = s.applyFilters(dataQuery, filter, true)
 
 	orderBy := "posts.created_at desc"
-	if strings.EqualFold(filter.Status, "published") {
-		orderBy = "posts.published_at desc, posts.id desc"
+	sortKey := strings.ToLower(strings.TrimSpace(filter.Sort))
+	switch sortKey {
+	case "hot":
+		dataQuery = dataQuery.Joins("LEFT JOIN post_statistics ON post_statistics.post_id = posts.id")
+		orderBy = "post_statistics.page_views desc, posts.updated_at desc, posts.id desc"
+	case "updated":
+		orderBy = "posts.updated_at desc, posts.id desc"
+	case "created":
+		orderBy = "posts.created_at desc, posts.id desc"
+	default:
+		if strings.EqualFold(filter.Status, "published") {
+			orderBy = "posts.published_at desc, posts.id desc"
+		}
 	}
 
 	if err := dataQuery.Order(orderBy).Limit(result.PerPage).Offset(offset).Find(&posts).Error; err != nil {

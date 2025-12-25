@@ -63,59 +63,81 @@
 	</section>
 
 	<section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-			<p class="text-sm text-slate-500 dark:text-slate-400">总文章</p>
-			<p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{.total}}</p>
+		<div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+			<span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-200">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
+					<path d="M6 7h12" stroke-width="1.5" stroke-linecap="round"></path>
+					<path d="M6 12h12" stroke-width="1.5" stroke-linecap="round"></path>
+					<path d="M6 17h7" stroke-width="1.5" stroke-linecap="round"></path>
+				</svg>
+			</span>
+			<div>
+				<p class="text-sm text-slate-500 dark:text-slate-400">总文章</p>
+				<p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{.total}}</p>
+			</div>
 		</div>
-		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-			<p class="text-sm text-slate-500 dark:text-slate-400">已发布</p>
-			<p class="mt-2 text-3xl font-semibold text-emerald-600 dark:text-emerald-400">{{.publishedCount}}</p>
+		<div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+			<span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-200">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
+					<path d="M6 12l4 4 8-8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+				</svg>
+			</span>
+			<div>
+				<p class="text-sm text-slate-500 dark:text-slate-400">已发布</p>
+				<p class="mt-2 text-3xl font-semibold text-emerald-600 dark:text-emerald-400">{{.publishedCount}}</p>
+			</div>
 		</div>
-		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-			<p class="text-sm text-slate-500 dark:text-slate-400">草稿</p>
-			<p class="mt-2 text-3xl font-semibold text-amber-600 dark:text-amber-400">{{.draftCount}}</p>
+		<div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+			<span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-200">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
+					<path d="M8 6h8" stroke-width="1.5" stroke-linecap="round"></path>
+					<path d="M8 12h8" stroke-width="1.5" stroke-linecap="round"></path>
+					<path d="M8 18h5" stroke-width="1.5" stroke-linecap="round"></path>
+				</svg>
+			</span>
+			<div>
+				<p class="text-sm text-slate-500 dark:text-slate-400">草稿</p>
+				<p class="mt-2 text-3xl font-semibold text-amber-600 dark:text-amber-400">{{.draftCount}}</p>
+			</div>
 		</div>
-		<div class="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-			<p class="text-sm text-slate-500 dark:text-slate-400">标签数</p>
-			<p class="mt-2 text-3xl font-semibold text-purple-600 dark:text-purple-400">{{len .allTags}}</p>
-		</div>
-	</section>
-
-	<section class="grid gap-4 lg:grid-cols-3">
-		<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-			<p class="text-sm text-slate-500 dark:text-slate-400">全站浏览 (PV)</p>
-			<p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{.overview.TotalPageViews}}</p>
-			<p class="mt-3 text-xs text-slate-400 dark:text-slate-500">汇总所有文章的有效浏览次数</p>
-		</div>
-		<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-			<p class="text-sm text-slate-500 dark:text-slate-400">独立访客 (UV)</p>
-			<p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{{.overview.TotalUniqueVisitors}}</p>
-			<p class="mt-3 text-xs text-slate-400 dark:text-slate-500">以访客 ID 去重，短时间重复访问不计入</p>
-		</div>
-		<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-			<p class="mb-4 text-sm font-medium text-slate-500 dark:text-slate-400">热门文章</p>
-			{{if gt (len .overview.TopPosts) 0}}
-			<ul class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-				{{range .overview.TopPosts}}
-				<li class="flex items-center justify-between gap-3">
-					<div class="truncate" title="{{.Title}}">{{.Title}}</div>
-					<div class="flex flex-col text-right text-xs text-slate-400 dark:text-slate-500">
-						<span><span class="font-semibold text-slate-900 dark:text-slate-100">{{.PageViews}}</span> PV</span>
-						<span><span class="font-semibold text-slate-900 dark:text-slate-100">{{.UniqueVisitors}}</span> UV</span>
-					</div>
-				</li>
-				{{end}}
-			</ul>
-			{{else}}
-			<p class="text-xs text-slate-400 dark:text-slate-500">暂无浏览数据</p>
-			{{end}}
+		<div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
+			<span class="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-200">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
+					<path d="M5 7h6l2 3h6v7H5z" stroke-width="1.5" stroke-linejoin="round"></path>
+					<path d="M5 7v10" stroke-width="1.5" stroke-linecap="round"></path>
+				</svg>
+			</span>
+			<div>
+				<p class="text-sm text-slate-500 dark:text-slate-400">标签数</p>
+				<p class="mt-2 text-3xl font-semibold text-purple-600 dark:text-purple-400">{{len .allTags}}</p>
+			</div>
 		</div>
 	</section>
 
 	<section class="rounded-2xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 		<div class="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
 			<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">文章列表</h2>
-			<span class="text-xs font-medium text-slate-500 dark:text-slate-400">共 {{.total}} 篇</span>
+			<div class="flex items-center gap-4">
+				<form method="GET" action="/admin/posts" class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+					<input type="hidden" name="search" value="{{.search}}">
+					<input type="hidden" name="status" value="{{.status}}">
+					<input type="hidden" name="start_date" value="{{.startDate}}">
+					<input type="hidden" name="end_date" value="{{.endDate}}">
+					{{range $tag := .tags}}
+					<input type="hidden" name="tags" value="{{$tag}}">
+					{{end}}
+					<label class="flex items-center gap-2">
+						<span>排序方式</span>
+						<select name="sort" class="form-select" onchange="this.form.submit()">
+							<option value="" {{if eq .sort ""}}selected{{end}}>默认排序</option>
+							<option value="hot" {{if eq .sort "hot"}}selected{{end}}>热度优先</option>
+							<option value="created" {{if eq .sort "created"}}selected{{end}}>创建时间</option>
+							<option value="updated" {{if eq .sort "updated"}}selected{{end}}>修改时间</option>
+						</select>
+					</label>
+				</form>
+				<span class="text-xs font-medium text-slate-500 dark:text-slate-400">共 {{.total}} 篇</span>
+			</div>
 		</div>
 		<div class="divide-y divide-slate-200 dark:divide-slate-800">
 			{{if .error}}
