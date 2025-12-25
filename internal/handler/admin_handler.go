@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/commitlog/internal/db"
@@ -76,6 +77,32 @@ func (a *API) ShowDashboard(c *gin.Context) {
 	session := sessions.Default(c)
 	username := session.Get("username")
 
+	trendHours := 24
+	trendRangeType := "hours"
+	trendRangeValue := 24
+	trendRangeLabel := "24 小时"
+	if daysParam := c.Query("days"); daysParam != "" {
+		if days, err := strconv.Atoi(daysParam); err == nil {
+			switch days {
+			case 1, 3, 7, 14, 30:
+				trendHours = days * 24
+				trendRangeType = "days"
+				trendRangeValue = days
+				trendRangeLabel = strconv.Itoa(days) + " 天"
+			}
+		}
+	} else if hoursParam := c.Query("hours"); hoursParam != "" {
+		if hours, err := strconv.Atoi(hoursParam); err == nil {
+			switch hours {
+			case 6, 12, 24, 48, 72:
+				trendHours = hours
+				trendRangeType = "hours"
+				trendRangeValue = hours
+				trendRangeLabel = strconv.Itoa(hours) + " 小时"
+			}
+		}
+	}
+
 	// 获取文章总数
 	var postCount int64
 	a.db.Model(&db.Post{}).Count(&postCount)
@@ -92,7 +119,7 @@ func (a *API) ShowDashboard(c *gin.Context) {
 		} else {
 			c.Error(err)
 		}
-		if trend, err := a.analytics.HourlyTrafficTrend(time.Now().UTC(), 24); err == nil {
+		if trend, err := a.analytics.HourlyTrafficTrend(time.Now().UTC(), trendHours); err == nil {
 			hourlyTrend = trend
 		} else {
 			c.Error(err)
@@ -100,12 +127,16 @@ func (a *API) ShowDashboard(c *gin.Context) {
 	}
 
 	a.renderHTML(c, http.StatusOK, "dashboard.html", gin.H{
-		"title":     "管理面板",
-		"username":  username,
-		"postCount": postCount,
-		"tagCount":  tagCount,
-		"overview":  overview,
-		"trend":     hourlyTrend,
+		"title":           "管理面板",
+		"username":        username,
+		"postCount":       postCount,
+		"tagCount":        tagCount,
+		"overview":        overview,
+		"trend":           hourlyTrend,
+		"trendHours":      trendHours,
+		"trendRangeType":  trendRangeType,
+		"trendRangeValue": trendRangeValue,
+		"trendRangeLabel": trendRangeLabel,
 	})
 }
 
