@@ -471,12 +471,12 @@ func createTrafficSnapshots() {
 	db.DB.Exec("DELETE FROM site_hourly_visitors")
 
 	now := time.Now().UTC().Truncate(time.Hour)
-	for i := 23; i >= 0; i-- {
+	for i := 71; i >= 0; i-- {
 		hour := now.Add(-time.Duration(i) * time.Hour)
-		base := uint64(40 + (23-i)*5)
-		variance := uint64((i % 5) * 6)
-		pageViews := base + variance
-		uniqueVisitors := pageViews/2 + uint64(i%3)
+		base := uint64(60 + (71-i)*3)
+		variance := uint64((i % 7) * 5)
+		pageViews := base + variance + uint64((i%3)*4)
+		uniqueVisitors := pageViews/2 + uint64(i%4)
 
 		snapshot := db.SiteHourlySnapshot{
 			Hour:           hour,

@@ -155,8 +155,9 @@
         </section>
 
         <section
+                id="traffic-trend"
                 class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
-                x-data="trafficTrend({{toJSON .trend}})"
+                x-data="trafficTrend({{toJSON .trend}}, { type: '{{.trendRangeType}}', value: {{.trendRangeValue}} })"
                 x-init="init()"
                 x-cloak
         >
@@ -164,12 +165,24 @@
                         <div class="space-y-1">
                                 <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-200">
                                         <span class="h-2 w-2 rounded-full bg-blue-500"></span>
-                                        <span>流量趋势 · 过去 24 小时</span>
+                                        <span>流量趋势 · 过去 {{.trendRangeLabel}}</span>
                                 </div>
                                 <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">PV / UV 小时级快照</h2>
                                 <p class="text-sm text-slate-500 dark:text-slate-400">掌握流量峰谷，及时调整内容节奏与推广策略。</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-300">
+                                <div class="flex items-center gap-2">
+                                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">时间范围</label>
+                                        <select
+                                                class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:border-blue-400 dark:focus:ring-blue-500/30"
+                                                x-model="rangeKey"
+                                                @change="updateRange"
+                                        >
+                                                <template x-for="option in rangeOptions" :key="option.key">
+                                                        <option :value="option.key" x-text="option.label"></option>
+                                                </template>
+                                        </select>
+                                </div>
                                 <div class="flex items-center gap-2">
                                         <span class="h-2 w-2 rounded-full bg-blue-500"></span>
                                         <span class="font-medium text-slate-700 dark:text-slate-200">PV</span>
@@ -187,8 +200,31 @@
                 <div class="mt-6 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/40">
                         <template x-if="hasData">
                                 <div class="space-y-4">
-                                        <div class="relative h-48 w-full">
-                                                <svg viewBox="0 0 640 200" class="h-full w-full">
+                                        <div class="relative h-56 w-full">
+                                                <div
+                                                        class="pointer-events-none absolute left-0 top-0 z-10 rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-xs text-slate-700 shadow-lg shadow-slate-900/10 transition-opacity duration-150 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-100"
+                                                        x-show="hover.active"
+                                                        x-transition.opacity
+                                                        :style="`transform: translate(${hover.x}px, ${hover.y}px);`"
+                                                >
+                                                        <div class="font-semibold text-slate-900 dark:text-slate-100" x-text="hover.label"></div>
+                                                        <div class="mt-1 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                                                                <span class="flex h-2 w-2 rounded-full bg-blue-500"></span>
+                                                                <span>PV</span>
+                                                                <span class="font-semibold text-slate-900 dark:text-slate-100" x-text="hover.pageViews"></span>
+                                                        </div>
+                                                        <div class="mt-1 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                                                                <span class="flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                                                                <span>UV</span>
+                                                                <span class="font-semibold text-slate-900 dark:text-slate-100" x-text="hover.uniqueVisitors"></span>
+                                                        </div>
+                                                </div>
+                                                <svg
+                                                        viewBox="0 0 640 240"
+                                                        class="h-full w-full"
+                                                        @mouseleave="clearHover"
+                                                        @mousemove="updateHover($event)"
+                                                >
                                                         <defs>
                                                                 <linearGradient id="pvGradient" x1="0" y1="0" x2="0" y2="1">
                                                                         <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"></stop>
@@ -199,10 +235,34 @@
                                                                         <stop offset="100%" stop-color="#10b981" stop-opacity="0"></stop>
                                                                 </linearGradient>
                                                         </defs>
+                                                        <g class="text-[10px] text-slate-400 dark:text-slate-500">
+                                                                <template x-for="tick in yTicks" :key="tick.value">
+                                                                        <g>
+                                                                                <line :x1="chart.padding" :x2="chart.width - chart.padding" :y1="tick.y" :y2="tick.y" stroke="#e2e8f0" stroke-dasharray="4 4" class="dark:stroke-slate-700"></line>
+                                                                                <text :x="chart.padding - 10" :y="tick.y + 3" text-anchor="end" fill="currentColor" x-text="tick.label"></text>
+                                                                        </g>
+                                                                </template>
+                                                                <line :x1="chart.padding" :x2="chart.width - chart.padding" :y1="chart.height - chart.padding" :y2="chart.height - chart.padding" stroke="#e2e8f0" class="dark:stroke-slate-700"></line>
+                                                                <line :x1="chart.padding" :x2="chart.padding" :y1="chart.padding" :y2="chart.height - chart.padding" stroke="#e2e8f0" class="dark:stroke-slate-700"></line>
+                                                                <template x-for="tick in xTicks" :key="tick.index">
+                                                                        <text :x="tick.x" :y="chart.height - 4" text-anchor="middle" fill="currentColor" x-text="tick.label"></text>
+                                                                </template>
+                                                        </g>
                                                         <path :d="areaPath(pv)" fill="url(#pvGradient)"></path>
                                                         <path :d="areaPath(uv)" fill="url(#uvGradient)"></path>
                                                         <polyline :points="linePoints(pv)" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
                                                         <polyline :points="linePoints(uv)" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                                                        <line
+                                                                x-show="hover.active"
+                                                                :x1="hover.chartX"
+                                                                :x2="hover.chartX"
+                                                                :y1="chart.padding"
+                                                                :y2="chart.height - chart.padding"
+                                                                stroke="#94a3b8"
+                                                                stroke-dasharray="4 4"
+                                                        ></line>
+                                                        <circle x-show="hover.active" :cx="hover.chartX" :cy="hover.pvY" r="5" fill="#3b82f6" stroke="#ffffff" stroke-width="2"></circle>
+                                                        <circle x-show="hover.active" :cx="hover.chartX" :cy="hover.uvY" r="5" fill="#10b981" stroke="#ffffff" stroke-width="2"></circle>
                                                 </svg>
                                         </div>
                                         <div class="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
@@ -311,22 +371,59 @@
         </section>
 </div>
 <script>
-        function trafficTrend(points) {
+        function trafficTrend(points, rangeConfig) {
                 const entries = Array.isArray(points) ? points : [];
+                const initialRange = rangeConfig || { type: "hours", value: 24 };
                 return {
                         points: entries,
                         labels: [],
+                        normalized: [],
                         pv: [],
                         uv: [],
                         maxValue: 1,
                         hasData: false,
+                        rangeType: initialRange.type || "hours",
+                        rangeValue: Number(initialRange.value) || 24,
+                        rangeKey: "",
+                        rangeOptions: [
+                                { key: "hours:6", label: "近 6 小时" },
+                                { key: "hours:12", label: "近 12 小时" },
+                                { key: "hours:24", label: "近 24 小时" },
+                                { key: "hours:48", label: "近 48 小时" },
+                                { key: "hours:72", label: "近 72 小时" },
+                                { key: "days:1", label: "近 1 天" },
+                                { key: "days:3", label: "近 3 天" },
+                                { key: "days:7", label: "近 7 天" },
+                                { key: "days:14", label: "近 14 天" },
+                                { key: "days:30", label: "近 30 天" },
+                        ],
+                        chart: {
+                                width: 640,
+                                height: 240,
+                                padding: 36,
+                        },
+                        yTicks: [],
+                        xTicks: [],
                         latest: { pageViews: 0, uniqueVisitors: 0, hour: null },
+                        hover: {
+                                active: false,
+                                x: 0,
+                                y: 0,
+                                chartX: 0,
+                                pvY: 0,
+                                uvY: 0,
+                                pageViews: 0,
+                                uniqueVisitors: 0,
+                                label: "",
+                        },
                         init() {
+                                this.rangeKey = `${this.rangeType}:${this.rangeValue}`;
                                 const normalized = this.points.map((point) => ({
                                         hour: point.Hour ? new Date(point.Hour) : null,
                                         pageViews: Number(point.PageViews || 0),
                                         uniqueVisitors: Number(point.UniqueVisitors || 0),
                                 }));
+                                this.normalized = normalized;
                                 this.labels = normalized.map((point) =>
                                         point.hour ? this.formatHour(point.hour) : ""
                                 );
@@ -335,6 +432,8 @@
                                 this.maxValue = Math.max(1, ...this.pv, ...this.uv);
                                 this.hasData = normalized.length > 0;
                                 this.latest = normalized[normalized.length - 1] || this.latest;
+                                this.yTicks = this.buildYTicks();
+                                this.xTicks = this.buildXTicks();
                         },
                         get startLabel() {
                                 return this.labels[0] || "";
@@ -362,26 +461,124 @@
                                         day: "2-digit",
                                 });
                         },
+                        updateRange() {
+                                const url = new URL(window.location.href);
+                                const [type, value] = this.rangeKey.split(":");
+                                url.searchParams.delete("hours");
+                                url.searchParams.delete("days");
+                                if (type === "days") {
+                                        url.searchParams.set("days", value);
+                                } else {
+                                        url.searchParams.set("hours", value);
+                                }
+                                if (window.htmx) {
+                                        window.htmx.ajax("GET", `${url.pathname}${url.search}`, {
+                                                target: "#traffic-trend",
+                                                swap: "outerHTML",
+                                                select: "#traffic-trend",
+                                        });
+                                        window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+                                        return;
+                                }
+                                window.location.href = `${url.pathname}${url.search}`;
+                        },
                         linePoints(series) {
                                 return this.buildPoints(series, false);
                         },
                         areaPath(series) {
                                 return this.buildPoints(series, true);
                         },
+                        buildYTicks() {
+                                const steps = 4;
+                                const ticks = [];
+                                for (let i = 0; i <= steps; i += 1) {
+                                        const value = Math.round((this.maxValue / steps) * i);
+                                        ticks.push({
+                                                value,
+                                                label: value.toString(),
+                                                y: this.valueToY(value),
+                                        });
+                                }
+                                return ticks;
+                        },
+                        buildXTicks() {
+                                if (!this.labels.length) {
+                                        return [];
+                                }
+                                const positions = 4;
+                                const lastIndex = this.labels.length - 1;
+                                const ticks = [];
+                                for (let i = 0; i <= positions; i += 1) {
+                                        const index = Math.round((lastIndex / positions) * i);
+                                        ticks.push({
+                                                index,
+                                                label: this.labels[index],
+                                                x: this.indexToX(index),
+                                        });
+                                }
+                                return ticks;
+                        },
+                        indexToX(index) {
+                                const step =
+                                        this.labels.length > 1
+                                                ? (this.chart.width - this.chart.padding * 2) / (this.labels.length - 1)
+                                                : 0;
+                                return this.chart.padding + step * index;
+                        },
+                        valueToY(value) {
+                                return (
+                                        this.chart.height -
+                                        this.chart.padding -
+                                        ((this.chart.height - this.chart.padding * 2) * value) / this.maxValue
+                                );
+                        },
+                        updateHover(event) {
+                                if (!this.labels.length) {
+                                        return;
+                                }
+                                const rect = event.currentTarget.getBoundingClientRect();
+                                const scaleX = rect.width / this.chart.width;
+                                const scaledPadding = this.chart.padding * scaleX;
+                                const relativeX = Math.min(
+                                        Math.max(event.clientX - rect.left, scaledPadding),
+                                        rect.width - scaledPadding
+                                );
+                                const step =
+                                        this.labels.length > 1
+                                                ? (rect.width - scaledPadding * 2) / (this.labels.length - 1)
+                                                : 0;
+                                const index = step > 0 ? Math.round((relativeX - scaledPadding) / step) : 0;
+                                const clamped = Math.min(Math.max(index, 0), this.labels.length - 1);
+                                const chartX = this.indexToX(clamped);
+                                const chartXPixel = chartX * scaleX;
+                                const pvValue = this.pv[clamped] || 0;
+                                const uvValue = this.uv[clamped] || 0;
+                                const hoverPoint = this.normalized[clamped];
+                                const hoverDate = hoverPoint?.hour ? hoverPoint.hour : null;
+                                this.hover = {
+                                        active: true,
+                                        x: Math.min(Math.max(chartXPixel + 12, 12), rect.width - 160),
+                                        y: 12,
+                                        chartX,
+                                        pvY: this.valueToY(pvValue),
+                                        uvY: this.valueToY(uvValue),
+                                        pageViews: pvValue,
+                                        uniqueVisitors: uvValue,
+                                        label: hoverDate ? `${this.formatDate(hoverDate)} ${this.labels[clamped]}` : this.labels[clamped],
+                                };
+                        },
+                        clearHover() {
+                                this.hover.active = false;
+                        },
                         buildPoints(series, closed) {
-                                const width = 640;
-                                const height = 200;
-                                const padding = 20;
                                 if (!series.length) {
                                         return "";
                                 }
+                                const { width, height, padding } = this.chart;
                                 const step = series.length > 1 ? (width - padding * 2) / (series.length - 1) : 0;
                                 const points = series.map((value, index) => {
                                         const x = padding + step * index;
-                                        const y =
-                                                height -
-                                                padding -
-                                                ((height - padding * 2) * value) / this.maxValue;
+                                        const y = this.valueToY(value);
                                         return [x, y];
                                 });
                                 if (!closed) {
