@@ -13,6 +13,12 @@
         text-underline-offset: 3px;
     }
 
+    .post-content strong,
+    .post-content b {
+        font-weight: 800;
+        color: #16a34a;
+    }
+
     [data-toc-content] h1,
     [data-toc-content] h2,
     [data-toc-content] h3 {
@@ -176,12 +182,12 @@
                     class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-left shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10"
                 >
                     <div
-                        class="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300"
+                        class="text-xs font-extrabold uppercase tracking-wide text-amber-600 dark:text-amber-300"
                     >
-                        全文总结
+                        AI Summary
                     </div>
                     <p
-                        class="whitespace-pre-line text-base leading-relaxed text-amber-900 dark:text-amber-100/90"
+                        class="mt-2 text-base leading-relaxed text-amber-900 dark:text-amber-100/90"
                     >
                         {{.post.Summary}}
                     </p>
