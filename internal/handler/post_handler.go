@@ -410,6 +410,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 	tagNames := c.QueryArray("tags")
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
+	sort := c.Query("sort")
 
 	var startPtr, endPtr *time.Time
 	if startDate != "" {
@@ -430,6 +431,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 		TagNames:  tagNames,
 		StartDate: startPtr,
 		EndDate:   endPtr,
+		Sort:      sort,
 		Page:      page,
 		PerPage:   perPage,
 	}
@@ -495,6 +497,9 @@ func (a *API) ShowPostList(c *gin.Context) {
 	if endDate != "" {
 		params.Set("end_date", endDate)
 	}
+	if sort != "" {
+		params.Set("sort", sort)
+	}
 	for _, tag := range tagNames {
 		params.Add("tags", tag)
 	}
@@ -511,6 +516,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 		"search":         search,
 		"status":         status,
 		"tags":           tagNames,
+		"sort":           sort,
 		"startDate":      startDate,
 		"endDate":        endDate,
 		"page":           list.Page,

@@ -22,7 +22,7 @@ func setupPostServiceTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Tag{}, &db.Post{}, &db.PostPublication{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Tag{}, &db.Post{}, &db.PostPublication{}, &db.PostStatistic{}); err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 	return gdb
@@ -72,6 +72,116 @@ func TestPostService_ListCountsDrafts(t *testing.T) {
 	}
 	if list.DraftCount != 1 {
 		t.Fatalf("expected draft count 1, got %d", list.DraftCount)
+	}
+}
+
+func TestPostService_ListDefaultsToCreatedDesc(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "sort-default"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	input := PostInput{
+		Content:     "# 第一篇\n内容",
+		Summary:     "摘要",
+		UserID:      user.ID,
+		CoverURL:    "https://example.com/cover.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+	}
+
+	first, err := svc.Create(input)
+	if err != nil {
+		t.Fatalf("create first post: %v", err)
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	secondInput := input
+	secondInput.Content = "# 第二篇\n内容"
+	second, err := svc.Create(secondInput)
+	if err != nil {
+		t.Fatalf("create second post: %v", err)
+	}
+
+	publishedAtFirst := time.Date(2024, 1, 2, 10, 0, 0, 0, time.UTC)
+	publishedAtSecond := time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)
+
+	if _, err := svc.Publish(first.ID, user.ID, &publishedAtFirst); err != nil {
+		t.Fatalf("publish first post: %v", err)
+	}
+	if _, err := svc.Publish(second.ID, user.ID, &publishedAtSecond); err != nil {
+		t.Fatalf("publish second post: %v", err)
+	}
+
+	list, err := svc.List(PostFilter{Page: 1, PerPage: 10, Status: "published"})
+	if err != nil {
+		t.Fatalf("list posts: %v", err)
+	}
+	if len(list.Posts) != 2 {
+		t.Fatalf("expected 2 posts, got %d", len(list.Posts))
+	}
+	if list.Posts[0].ID != second.ID {
+		t.Fatalf("expected newest created post first, got %d", list.Posts[0].ID)
+	}
+}
+
+func TestPostService_ListSortsByHot(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "sort-hot"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	hotPost, err := svc.Create(PostInput{
+		Content: "# 热门\n内容",
+		Summary: "摘要",
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("create hot post: %v", err)
+	}
+
+	time.Sleep(10 * time.Millisecond)
+
+	coldPost, err := svc.Create(PostInput{
+		Content: "# 冷门\n内容",
+		Summary: "摘要",
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("create cold post: %v", err)
+	}
+
+	if err := gdb.Create(&db.PostStatistic{
+		PostID:         hotPost.ID,
+		PageViews:      120,
+		UniqueVisitors: 40,
+	}).Error; err != nil {
+		t.Fatalf("create hot stats: %v", err)
+	}
+	if err := gdb.Create(&db.PostStatistic{
+		PostID:         coldPost.ID,
+		PageViews:      5,
+		UniqueVisitors: 2,
+	}).Error; err != nil {
+		t.Fatalf("create cold stats: %v", err)
+	}
+
+	list, err := svc.List(PostFilter{Page: 1, PerPage: 10, Sort: "hot"})
+	if err != nil {
+		t.Fatalf("list hot posts: %v", err)
+	}
+	if len(list.Posts) != 2 {
+		t.Fatalf("expected 2 posts, got %d", len(list.Posts))
+	}
+	if list.Posts[0].ID != hotPost.ID {
+		t.Fatalf("expected hottest post first, got %d", list.Posts[0].ID)
 	}
 }
 
