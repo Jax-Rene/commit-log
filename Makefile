@@ -6,9 +6,11 @@ dev:
 	pnpm run build
 	GIN_MODE=debug go run cmd/server/main.go
 
-# 测试模式，运行单元测试
+GOCACHE ?= $(CURDIR)/.cache/go-build
+
+# 测试模式，运行全部 Go/前端测试
 test:
-	go test -v ./...
+	GOCACHE=$(GOCACHE) go test -v ./...
 	pnpm test
 
 # 生成测试数据
@@ -48,7 +50,7 @@ fly-ssh: # 通过 ssh 连接到 fly.io 实例
 
 fly-sync-product-data: # 同步线上数据到本地开发使用
 	rm -rf commitlog.db.backup uploads
-	fly ssh sftp -a commitlog get /data/commitlog.db.backup 
+	fly ssh sftp -a commitlog get /data/commitlog.db.backup
 	mv commitlog.db.backup commitlog.db
 	fly ssh sftp -a commitlog get -R /data/uploads
 	mv uploads/* ./web/static/uploads
