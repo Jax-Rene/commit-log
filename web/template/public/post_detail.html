@@ -13,6 +13,11 @@
         text-underline-offset: 3px;
     }
 
+    .post-content [data-milkdown-viewer].milkdown .preview-toggle-button,
+    .post-content [data-milkdown-viewer] .preview-toggle-button {
+        display: none !important;
+    }
+
     .post-content strong,
     .post-content b {
         font-weight: 800;
@@ -108,6 +113,71 @@
     @media (prefers-color-scheme: dark) {
         body.bg-white {
             background-color: var(--surface-soft-dark) !important;
+        }
+
+        .post-content .katex,
+        .post-content .katex-display,
+        .post-content .math,
+        .post-content .math-display,
+        .post-content .math-block,
+        .post-content .math-inline {
+            color: #e2e8f0;
+        }
+
+        .post-content .katex-display,
+        .post-content .math-display,
+        .post-content .math-block {
+            background-color: transparent;
+        }
+
+        .post-content [data-milkdown-viewer],
+        .post-content [data-milkdown-viewer].milkdown,
+        .post-content [data-milkdown-viewer] .milkdown {
+            --crepe-color-background: #020617;
+            --crepe-color-on-background: #e2e8f0;
+            --crepe-color-surface: #0f172a;
+            --crepe-color-surface-low: #0b1629;
+            --crepe-color-on-surface: #e2e8f0;
+            --crepe-color-on-surface-variant: #cbd5e1;
+            --crepe-color-outline: #1f2f46;
+            --crepe-color-primary: #7dd3fc;
+            --crepe-color-secondary: #13203c;
+            --crepe-color-on-secondary: #e0f2fe;
+            --crepe-color-inverse: #e2e8f0;
+            --crepe-color-on-inverse: #020617;
+            --crepe-color-inline-code: #fbbf24;
+            --crepe-color-error: #fda4af;
+            --crepe-color-hover: rgba(255, 255, 255, 0.06);
+            --crepe-color-selected: rgba(125, 211, 252, 0.22);
+            --crepe-color-inline-area: #11233f;
+            --crepe-shadow-1:
+                0 18px 48px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.35);
+            --crepe-shadow-2:
+                0 24px 64px rgba(0, 0, 0, 0.55), 0 12px 24px rgba(0, 0, 0, 0.35);
+            background-color: #020617;
+            color: #e2e8f0;
+        }
+
+        .post-content [data-milkdown-viewer].milkdown .milkdown-code-block,
+        .post-content [data-milkdown-viewer] .milkdown-code-block {
+            border: 1px solid #1f2f46;
+            box-shadow: none;
+        }
+
+        .post-content
+            [data-milkdown-viewer].milkdown
+            .milkdown-code-block
+            .preview-panel,
+        .post-content
+            [data-milkdown-viewer]
+            .milkdown-code-block
+            .preview-panel {
+            color: #e2e8f0;
+        }
+
+        .post-content .milkdown-preview.milkdown,
+        .post-content .milkdown-preview .milkdown {
+            background-color: transparent;
         }
 
         [data-toc-card] {
