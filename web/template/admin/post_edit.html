@@ -63,6 +63,123 @@
         color: inherit;
     }
 
+    .milkdown-immersive-shell .milkdown .callout-block,
+    .milkdown-preview .milkdown .callout-block,
+    #milkdown-app > div > .ProseMirror .callout-block {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 1.25rem;
+        padding: 1.5rem 1.75rem;
+        border-radius: 10px;
+        background-color: #f9f9f9;
+        margin: 1.5rem 0;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-emoji-wrapper,
+    .milkdown-preview .milkdown .callout-emoji-wrapper {
+        position: relative;
+        align-self: flex-start;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-emoji-button,
+    .milkdown-preview .milkdown .callout-emoji-button {
+        font-size: 20px;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-emoji-button:hover,
+    .milkdown-preview .milkdown .callout-emoji-button:hover {
+        background-color: #f1f5f9;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-emoji-button:focus-visible,
+    .milkdown-preview .milkdown .callout-emoji-button:focus-visible {
+        outline: 2px solid rgba(59, 130, 246, 0.45);
+        outline-offset: 3px;
+    }
+
+    .milkdown-immersive-shell
+        .milkdown
+        .callout-emoji-button[data-empty="true"],
+    .milkdown-preview .milkdown .callout-emoji-button[data-empty="true"] {
+        color: #94a3b8;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-emoji-panel,
+    .milkdown-preview .milkdown .callout-emoji-panel {
+        position: absolute;
+        top: 48px;
+        left: 0;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 8px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+        display: none;
+        z-index: 20;
+        min-width: 210px;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-emoji-panel[data-open="true"],
+    .milkdown-preview .milkdown .callout-emoji-panel[data-open="true"] {
+        display: block;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-emoji-grid,
+    .milkdown-preview .milkdown .callout-emoji-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-emoji-option,
+    .milkdown-preview .milkdown .callout-emoji-option {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background-color: transparent;
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-emoji-option:hover,
+    .milkdown-preview .milkdown .callout-emoji-option:hover {
+        background-color: #f1f5f9;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-emoji-remove,
+    .milkdown-preview .milkdown .callout-emoji-remove {
+        margin-top: 8px;
+        width: 100%;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: #f8fafc;
+        color: #64748b;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-emoji-remove:hover,
+    .milkdown-preview .milkdown .callout-emoji-remove:hover {
+        background-color: #f1f5f9;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-content > *:first-child,
+    .milkdown-preview .milkdown .callout-content > *:first-child {
+        margin-top: 0;
+    }
+
+    .milkdown-immersive-shell .milkdown .callout-content > * + *,
+    .milkdown-preview .milkdown .callout-content > * + * {
+        margin-top: 0.75rem;
+    }
+
     /* 全局隐藏滚动条但保留滚动功能 */
     html,
     body,
@@ -272,6 +389,48 @@
                 0 24px 64px rgba(0, 0, 0, 0.55), 0 12px 24px rgba(0, 0, 0, 0.35);
             background-color: #020617;
             color: #e2e8f0; /* 深色模式下提升文字可读性 */
+        }
+
+        .milkdown-immersive-shell .milkdown .callout-block,
+        .milkdown-preview .milkdown .callout-block,
+        #milkdown-app > div > .ProseMirror .callout-block {
+            background-color: #101826;
+        }
+
+        .milkdown-immersive-shell .milkdown .callout-emoji-button,
+        .milkdown-preview .milkdown .callout-emoji-button {
+            background-color: #0b1629;
+            border-color: #1f2f46;
+            color: #e2e8f0;
+        }
+
+        .milkdown-immersive-shell .milkdown .callout-emoji-button:hover,
+        .milkdown-preview .milkdown .callout-emoji-button:hover {
+            background-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .milkdown-immersive-shell .milkdown .callout-emoji-panel,
+        .milkdown-preview .milkdown .callout-emoji-panel {
+            background-color: #0b1629;
+            border-color: #1f2f46;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .milkdown-immersive-shell .milkdown .callout-emoji-option:hover,
+        .milkdown-preview .milkdown .callout-emoji-option:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .milkdown-immersive-shell .milkdown .callout-emoji-remove,
+        .milkdown-preview .milkdown .callout-emoji-remove {
+            background-color: #0f172a;
+            border-color: #1f2f46;
+            color: #cbd5e1;
+        }
+
+        .milkdown-immersive-shell .milkdown .callout-emoji-remove:hover,
+        .milkdown-preview .milkdown .callout-emoji-remove:hover {
+            background-color: rgba(255, 255, 255, 0.08);
         }
 
         .milkdown-immersive-shell .milkdown .ProseMirror pre {

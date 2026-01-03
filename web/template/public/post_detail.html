@@ -18,6 +18,14 @@
         display: none !important;
     }
 
+    .post-content
+        [data-milkdown-viewer]
+        .milkdown-code-block
+        .tools-button-group
+        button:last-child {
+        display: none;
+    }
+
     .post-content strong,
     .post-content b {
         font-weight: 800;
@@ -27,6 +35,50 @@
     .post-content :is(h1, h2, h3, h4, h5, h6) strong,
     .post-content :is(h1, h2, h3, h4, h5, h6) b {
         color: inherit;
+    }
+
+    .post-content .callout-block {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 1.25rem;
+        padding: 1.5rem 1.75rem;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        background-color: #f8fafc;
+        margin: 1.5rem 0;
+    }
+
+    .post-content .callout-emoji-wrapper {
+        position: relative;
+        align-self: flex-start;
+    }
+
+    .post-content .callout-emoji-button {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        color: #0f172a;
+        font-size: 20px;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        cursor: default;
+    }
+
+    .post-content .callout-emoji-panel {
+        display: none;
+    }
+
+    .post-content .callout-content > *:first-child {
+        margin-top: 0;
+    }
+
+    .post-content .callout-content > * + * {
+        margin-top: 0.75rem;
     }
 
     [data-toc-content] h1,
@@ -115,6 +167,17 @@
             background-color: var(--surface-soft-dark) !important;
         }
 
+        .post-content .callout-block {
+            background-color: #111827;
+            border-color: #1f2f46;
+        }
+
+        .post-content .callout-emoji-button {
+            background-color: #0b1629;
+            border-color: #1f2f46;
+            color: #e2e8f0;
+        }
+
         .post-content .katex,
         .post-content .katex-display,
         .post-content .math,
@@ -162,6 +225,7 @@
         .post-content [data-milkdown-viewer] .milkdown-code-block {
             border: 1px solid #1f2f46;
             box-shadow: none;
+            background-color: #0f172a;
         }
 
         .post-content
@@ -172,6 +236,21 @@
             [data-milkdown-viewer]
             .milkdown-code-block
             .preview-panel {
+            color: #e2e8f0;
+            background-color: #0f172a;
+        }
+
+        .post-content
+            [data-milkdown-viewer].milkdown
+            .milkdown-code-block
+            .cm-editor,
+        .post-content [data-milkdown-viewer] .milkdown-code-block .cm-editor,
+        .post-content
+            [data-milkdown-viewer].milkdown
+            .milkdown-code-block
+            .cm-gutters,
+        .post-content [data-milkdown-viewer] .milkdown-code-block .cm-gutters {
+            background-color: #0f172a;
             color: #e2e8f0;
         }
 
