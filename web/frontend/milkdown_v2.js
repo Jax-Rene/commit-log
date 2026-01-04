@@ -2893,6 +2893,19 @@ async function initialize() {
 
     await crepe.create();
     ensureSetMarkdown(crepe);
+    if (typeof crepe.setMarkdown === "function") {
+      try {
+        const result = crepe.setMarkdown(initial, {
+          flush: true,
+          silent: true,
+        });
+        if (result && typeof result.then === "function") {
+          await result;
+        }
+      } catch (error) {
+        console.warn("[milkdown] 初始化内容设置失败", error);
+      }
+    }
 
     if (typeof window !== "undefined") {
       const initialData =

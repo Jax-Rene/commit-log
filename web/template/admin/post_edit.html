@@ -1768,7 +1768,15 @@
 <script>
     window.__MILKDOWN_V2__ = {{$initial | toJSON}};
     document.body.classList.add('milkdown-immersive');
-    const milkdownCleanup = () => {
+    let milkdownCleaned = false;
+    const milkdownCleanup = (event) => {
+            if (event && event.persisted) {
+                    return;
+            }
+            if (milkdownCleaned) {
+                    return;
+            }
+            milkdownCleaned = true;
             document.body.classList.remove('milkdown-immersive');
             const controller = window.MilkdownV2?.controller;
             if (controller && typeof controller.dispose === 'function') {
@@ -1783,8 +1791,8 @@
                     void crepe.destroy();
             }
     };
-    window.addEventListener('pagehide', milkdownCleanup, { once: true });
-    window.addEventListener('beforeunload', milkdownCleanup, { once: true });
+    window.addEventListener('pagehide', milkdownCleanup);
+    window.addEventListener('beforeunload', milkdownCleanup);
 </script>
 <script>
     function setupPostEditorToc() {
