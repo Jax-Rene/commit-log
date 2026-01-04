@@ -418,8 +418,14 @@ func TestRSSFeedIncludesPublishedPosts(t *testing.T) {
 	if strings.Contains(body, "<h1>RSS 测试</h1>") {
 		t.Fatalf("expected feed content to exclude leading title heading, body=%s", body)
 	}
+	if !strings.Contains(body, fmt.Sprintf("<img src=\"%s\"", published.CoverURL)) {
+		t.Fatalf("expected feed content to include cover image, body=%s", body)
+	}
 	if !strings.Contains(body, "<p>正文</p>") {
 		t.Fatalf("expected feed content to include rendered HTML body, body=%s", body)
+	}
+	if !strings.Contains(body, fmt.Sprintf("<media:content url=\"%s\"", published.CoverURL)) {
+		t.Fatalf("expected feed to include cover media content, body=%s", body)
 	}
 }
 
