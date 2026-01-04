@@ -526,7 +526,7 @@ func (a *API) ShowRSS(c *gin.Context) {
 
 	var builder strings.Builder
 	builder.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
-	builder.WriteString(`<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">` + "\n")
+	builder.WriteString(`<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/">` + "\n")
 	builder.WriteString("<channel>\n")
 	builder.WriteString(fmt.Sprintf("  <title>%s</title>\n", htmlstd.EscapeString(title)))
 	builder.WriteString(fmt.Sprintf("  <link>%s</link>\n", htmlstd.EscapeString(homeURL)))
@@ -541,6 +541,11 @@ func (a *API) ShowRSS(c *gin.Context) {
 		pubDate := publication.PublishedAt
 		if pubDate.IsZero() {
 			pubDate = publication.CreatedAt
+		}
+		coverURL := strings.TrimSpace(publication.CoverURL)
+		coverAbsolute := ""
+		if coverURL != "" {
+			coverAbsolute = a.absoluteURL(c, coverURL)
 		}
 		builder.WriteString("  <item>\n")
 		builder.WriteString(fmt.Sprintf("    <title>%s</title>\n", htmlstd.EscapeString(strings.TrimSpace(publication.Title))))
@@ -557,10 +562,28 @@ func (a *API) ShowRSS(c *gin.Context) {
 		if contentEncoded == "" {
 			contentEncoded = htmlstd.EscapeString(contentSource)
 		}
+		if coverAbsolute != "" {
+			coverTag := fmt.Sprintf(`<p><img src="%s" alt="%s" loading="lazy" /></p>`, htmlstd.EscapeString(coverAbsolute), htmlstd.EscapeString(strings.TrimSpace(publication.Title)))
+			if contentEncoded != "" {
+				contentEncoded = coverTag + "\n" + contentEncoded
+			} else {
+				contentEncoded = coverTag
+			}
+		}
 		if strings.TrimSpace(contentEncoded) != "" {
 			builder.WriteString("    <content:encoded><![CDATA[")
 			builder.WriteString(contentEncoded)
 			builder.WriteString("]]></content:encoded>\n")
+		}
+		if coverAbsolute != "" {
+			builder.WriteString(fmt.Sprintf("    <media:content url=\"%s\"", htmlstd.EscapeString(coverAbsolute)))
+			if publication.CoverWidth > 0 {
+				builder.WriteString(fmt.Sprintf(" width=\"%d\"", publication.CoverWidth))
+			}
+			if publication.CoverHeight > 0 {
+				builder.WriteString(fmt.Sprintf(" height=\"%d\"", publication.CoverHeight))
+			}
+			builder.WriteString(" medium=\"image\" />\n")
 		}
 		if !pubDate.IsZero() {
 			builder.WriteString(fmt.Sprintf("    <pubDate>%s</pubDate>\n", pubDate.UTC().Format(time.RFC1123Z)))
