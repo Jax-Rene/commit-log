@@ -16,6 +16,7 @@ const (
 	defaultSnippetRewriteMaxTokens  = 1024
 	maxSnippetSelectionRuneCount    = 4000
 	maxSnippetContextRuneCount      = 8000
+	calloutOptimizationHint         = "注意：文中可能包含 Callout 高亮块（以 > [!callout] 开头的引用块），请保留 [!callout] 标记、emoji 与引用结构不变。\n\n"
 )
 
 // ErrOptimizationEmpty 表示模型未返回可用内容。
@@ -280,8 +281,18 @@ func buildOptimizationPrompt(content string, hasImagePlaceholder bool, segmentIn
 	if hasImagePlaceholder {
 		builder.WriteString("注意：文中 image://asset-* 链接为图片占位符，请保持原始占位符不变。\n\n")
 	}
+	if containsCalloutMarker(content) {
+		builder.WriteString(calloutOptimizationHint)
+	}
 	builder.WriteString(strings.TrimSpace(content))
 	return builder.String()
+}
+
+func containsCalloutMarker(content string) bool {
+	if content == "" {
+		return false
+	}
+	return strings.Contains(strings.ToLower(content), "[!callout]")
 }
 
 func buildSnippetRewritePrompt(selection, instruction, context string) string {

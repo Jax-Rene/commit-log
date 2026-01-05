@@ -417,6 +417,21 @@ func TestAIRewriteServiceRewriteSnippetValidation(t *testing.T) {
 	}
 }
 
+func TestBuildOptimizationPromptCalloutHint(t *testing.T) {
+	t.Parallel()
+
+	plainPrompt := buildOptimizationPrompt("普通段落内容", false, 1, 1)
+	if strings.Contains(plainPrompt, calloutOptimizationHint) {
+		t.Fatalf("plain prompt should not include callout hint: %q", plainPrompt)
+	}
+
+	calloutContent := "> [!callout] 💡 Q1 总主题\n> 让人生从“报警状态”回到“可控状态”"
+	calloutPrompt := buildOptimizationPrompt(calloutContent, false, 1, 1)
+	if !strings.Contains(calloutPrompt, calloutOptimizationHint) {
+		t.Fatalf("callout prompt should include callout hint: %q", calloutPrompt)
+	}
+}
+
 func TestNormalizeAIContent(t *testing.T) {
 	t.Parallel()
 	cases := []struct {

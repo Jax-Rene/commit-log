@@ -54,6 +54,17 @@
         font-weight: 800;
     }
 
+    .milkdown-immersive-shell .milkdown :is(h1, h2, h3, h4, h5, h6) strong,
+    .milkdown-immersive-shell .milkdown :is(h1, h2, h3, h4, h5, h6) b,
+    .milkdown-preview .milkdown :is(h1, h2, h3, h4, h5, h6) strong,
+    .milkdown-preview .milkdown :is(h1, h2, h3, h4, h5, h6) b,
+    #milkdown-app > div > .ProseMirror :is(h1, h2, h3, h4, h5, h6) strong,
+    #milkdown-app > div > .ProseMirror :is(h1, h2, h3, h4, h5, h6) b {
+        color: inherit;
+    }
+
+    {{template "milkdown_callout_styles"}}
+
     /* 全局隐藏滚动条但保留滚动功能 */
     html,
     body,
@@ -370,7 +381,7 @@
 </style>
 
 <div
-    class="milkdown-immersive-shell"
+    class="milkdown-immersive-shell callout-scope"
     x-data="postEditorShell()"
     x-init="init()"
     x-cloak
@@ -1600,7 +1611,15 @@
 <script>
     window.__MILKDOWN_V2__ = {{$initial | toJSON}};
     document.body.classList.add('milkdown-immersive');
-    const milkdownCleanup = () => {
+    let milkdownCleaned = false;
+    const milkdownCleanup = (event) => {
+            if (event && event.persisted) {
+                    return;
+            }
+            if (milkdownCleaned) {
+                    return;
+            }
+            milkdownCleaned = true;
             document.body.classList.remove('milkdown-immersive');
             const controller = window.MilkdownV2?.controller;
             if (controller && typeof controller.dispose === 'function') {
@@ -1615,8 +1634,8 @@
                     void crepe.destroy();
             }
     };
-    window.addEventListener('pagehide', milkdownCleanup, { once: true });
-    window.addEventListener('beforeunload', milkdownCleanup, { once: true });
+    window.addEventListener('pagehide', milkdownCleanup);
+    window.addEventListener('beforeunload', milkdownCleanup);
 </script>
 <script>
     function setupPostEditorToc() {

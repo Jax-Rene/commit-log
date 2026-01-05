@@ -103,6 +103,15 @@
         line-height: 1.25rem;
     }
 
+    .post-content h4,
+    .post-content h5,
+    .post-content h6 {
+        font-family: var(--font-body);
+        font-weight: 800;
+        font-size: inherit;
+        line-height: inherit;
+    }
+
     .post-content p {
         @apply text-slate-900 dark:text-slate-100;
     }
@@ -198,6 +207,16 @@
         line-height: 1.5rem !important;
         font-weight: 900 !important;
         font-family: var(--font-heading) !important;
+    }
+
+    .milkdown .ProseMirror h4,
+    .milkdown .ProseMirror h5,
+    .milkdown .ProseMirror h6 {
+        font-size: inherit !important;
+        line-height: inherit !important;
+        font-weight: 800 !important;
+        font-family: var(--font-body) !important;
+        color: inherit !important;
     }
 }
 
