@@ -36,105 +36,7 @@
     .post-content :is(h1, h2, h3, h4, h5, h6) b {
         color: inherit;
     }
-
-    .post-content .callout-block {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 1.25rem;
-        padding: 1.5rem 1.75rem;
-        border-radius: 10px;
-        background-color: #f9f9f9;
-        margin: 1.5rem 0;
-    }
-
-    .post-content .callout-emoji-wrapper {
-        position: relative;
-        align-self: flex-start;
-    }
-
-    .post-content .callout-emoji-button {
-        font-size: 20px;
-    }
-
-    .post-content .callout-emoji-button:hover {
-        background-color: #f1f5f9;
-    }
-
-    .post-content .callout-emoji-button:focus-visible {
-        outline: 2px solid rgba(59, 130, 246, 0.45);
-        outline-offset: 3px;
-    }
-
-    .post-content .callout-emoji-button[data-empty="true"] {
-        color: #94a3b8;
-    }
-
-    .post-content .callout-emoji-panel {
-        position: absolute;
-        top: 48px;
-        left: 0;
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 8px;
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
-        display: none;
-        z-index: 20;
-        min-width: 210px;
-    }
-
-    .post-content .callout-emoji-panel[data-open="true"] {
-        display: block;
-    }
-
-    .post-content .callout-emoji-grid {
-        display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-        gap: 6px;
-    }
-
-    .post-content .callout-emoji-option {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: none;
-        background-color: transparent;
-        cursor: pointer;
-        font-size: 18px;
-        line-height: 1;
-    }
-
-    .post-content .callout-emoji-option:hover {
-        background-color: #f1f5f9;
-    }
-
-    .post-content .callout-emoji-remove {
-        margin-top: 8px;
-        width: 100%;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        background-color: #f8fafc;
-        color: #64748b;
-        padding: 6px 10px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-
-    .post-content .callout-emoji-remove:hover {
-        background-color: #f1f5f9;
-    }
-
-    .post-content .callout-content > *:first-child {
-        margin-top: 0;
-    }
-
-    .post-content .callout-content > * + * {
-        margin-top: 0.75rem;
-    }
+    {{template "milkdown_callout_styles"}}
 
     [data-toc-content] h1,
     [data-toc-content] h2,
@@ -220,40 +122,6 @@
     @media (prefers-color-scheme: dark) {
         body.bg-white {
             background-color: var(--surface-soft-dark) !important;
-        }
-
-        .post-content .callout-block {
-            background-color: #101826;
-        }
-
-        .post-content .callout-emoji-button {
-            background-color: #0b1629;
-            border-color: #1f2f46;
-            color: #e2e8f0;
-        }
-
-        .post-content .callout-emoji-button:hover {
-            background-color: rgba(255, 255, 255, 0.06);
-        }
-
-        .post-content .callout-emoji-panel {
-            background-color: #0b1629;
-            border-color: #1f2f46;
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        .post-content .callout-emoji-option:hover {
-            background-color: rgba(255, 255, 255, 0.08);
-        }
-
-        .post-content .callout-emoji-remove {
-            background-color: #0f172a;
-            border-color: #1f2f46;
-            color: #cbd5e1;
-        }
-
-        .post-content .callout-emoji-remove:hover {
-            background-color: rgba(255, 255, 255, 0.08);
         }
 
         .post-content .katex,
@@ -408,7 +276,7 @@
 				{{end}} -->
             </header>
 
-            <section class="post-content space-y-8">
+            <section class="post-content callout-scope space-y-8">
                 {{- if .post.Summary }}
                 <aside
                     class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-left shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10"
