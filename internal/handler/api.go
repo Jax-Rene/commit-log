@@ -18,6 +18,7 @@ type API struct {
 	posts           *service.PostService
 	tags            *service.TagService
 	pages           *service.PageService
+	galleries       *service.GalleryService
 	profiles        *service.ProfileService
 	analytics       *service.AnalyticsService
 	system          *service.SystemSettingService
@@ -54,6 +55,7 @@ func NewAPI(db *gorm.DB, uploadDir, uploadURL, baseURL string) *API {
 		posts:           service.NewPostService(db),
 		tags:            service.NewTagService(db),
 		pages:           service.NewPageService(db),
+		galleries:       service.NewGalleryService(db),
 		profiles:        service.NewProfileService(db),
 		analytics:       service.NewAnalyticsService(db),
 		system:          systemService,

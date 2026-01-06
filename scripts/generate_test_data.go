@@ -32,6 +32,9 @@ func main() {
 	// 创建测试文章
 	createTestPosts()
 
+	// 创建摄影作品
+	createTestGalleryImages()
+
 	// 创建流量趋势快照
 	createTrafficSnapshots()
 
@@ -39,6 +42,7 @@ func main() {
 	fmt.Println("用户: admin (密码: admin123)")
 	fmt.Println("文章: 5篇测试文章")
 	fmt.Println("标签: 技术、生活、思考、教程、项目")
+	fmt.Println("作品: 6张摄影作品")
 }
 
 // 创建测试用户
@@ -464,6 +468,73 @@ func createTestPosts() {
 	}
 
 	fmt.Println("✅ 测试文章创建完成")
+}
+
+func createTestGalleryImages() {
+	db.DB.Exec("DELETE FROM gallery_images")
+
+	images := []db.GalleryImage{
+		{
+			Title:       "雾中森林",
+			Description: "清晨的薄雾让森林显得格外安静。",
+			ImageURL:    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80",
+			ImageWidth:  1600,
+			ImageHeight: 1067,
+			Status:      "published",
+			SortOrder:   6,
+		},
+		{
+			Title:       "城市夜色",
+			Description: "霓虹灯与车流交织出的城市节奏。",
+			ImageURL:    "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80",
+			ImageWidth:  1600,
+			ImageHeight: 1067,
+			Status:      "published",
+			SortOrder:   5,
+		},
+		{
+			Title:       "沙漠轨迹",
+			Description: "风与时间雕刻的纹理。",
+			ImageURL:    "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=1500&q=80",
+			ImageWidth:  1500,
+			ImageHeight: 1000,
+			Status:      "published",
+			SortOrder:   4,
+		},
+		{
+			Title:       "海岸线",
+			Description: "浪潮与海风在傍晚交汇。",
+			ImageURL:    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80",
+			ImageWidth:  1600,
+			ImageHeight: 1065,
+			Status:      "published",
+			SortOrder:   3,
+		},
+		{
+			Title:       "山谷日出",
+			Description: "晨光照亮了山谷的层次。",
+			ImageURL:    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&q=80",
+			ImageWidth:  1600,
+			ImageHeight: 1067,
+			Status:      "published",
+			SortOrder:   2,
+		},
+		{
+			Title:       "雪原漫步",
+			Description: "雪地里留下的脚印。",
+			ImageURL:    "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1600&q=80",
+			ImageWidth:  1600,
+			ImageHeight: 1067,
+			Status:      "published",
+			SortOrder:   1,
+		},
+	}
+
+	for _, image := range images {
+		db.DB.Create(&image)
+	}
+
+	fmt.Println("✅ 摄影作品创建完成")
 }
 
 func createTrafficSnapshots() {

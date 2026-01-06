@@ -1,0 +1,138 @@
+{{template "base" .}} {{define "content"}}
+<section class="space-y-10">
+    <header class="space-y-3">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Gallery</p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div class="space-y-2">
+                <h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">摄影作品集</h1>
+                <p class="text-sm text-slate-600 dark:text-slate-400">以镜头记录光影与情绪，探索世界的细节。</p>
+            </div>
+            <div class="rounded-full border border-slate-200 bg-white px-4 py-1 text-xs text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                已展示 {{len .items}} 张作品
+            </div>
+        </div>
+    </header>
+
+    <div id="gallery-content" class="space-y-6">
+        <div id="gallery-grid" class="grid grid-cols-1 items-start gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" style="row-gap: 1.5rem;">
+            {{if .items}} {{range .items}}
+            <article data-gallery-card class="group overflow-hidden rounded-3xl bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:bg-slate-900/80">
+                <button type="button" data-gallery-trigger data-full-url="{{.ImageURL}}" data-title="{{.Title}}" data-description="{{.Description}}" class="block w-full text-left">
+                    <div class="relative w-full overflow-hidden rounded-3xl" style="padding-top: {{aspectPadding .ImageWidth .ImageHeight}};">
+                        <img src="{{.ImageURL}}" alt="{{if .Title}}{{.Title}}{{else}}摄影作品{{end}}" loading="lazy" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    </div>
+                </button>
+                <div class="space-y-2 px-4 pb-5 pt-4">
+                    <h3 class="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{{if .Title}}{{.Title}}{{else}}未命名作品{{end}}</h3>
+                    <p class="text-xs leading-5 text-slate-500 dark:text-slate-400">{{if .Description}}{{truncate .Description 80}}{{else}}点击查看大图。{{end}}</p>
+                </div>
+            </article>
+            {{end}} {{else}}
+            <div class="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-12 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-400">
+                暂时没有作品，稍后再来看吧。
+            </div>
+            {{end}}
+        </div>
+
+        {{if .items}}
+            {{if .hasMore}}
+            <div id="load-more" hx-get="/gallery/more?page={{add .page 1}}" hx-trigger="revealed" hx-target="#load-more" hx-swap="outerHTML">
+                <div class="flex justify-center py-8 text-sm text-slate-500 dark:text-slate-400">加载中…</div>
+            </div>
+            {{else}}
+            <div id="load-more" class="py-8 text-center text-sm text-slate-400 dark:text-slate-500">已经到底啦 ✨</div>
+            {{end}}
+        {{end}}
+    </div>
+</section>
+
+<div id="gallery-lightbox" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/80 px-4 py-6 backdrop-blur-sm">
+    <div class="relative w-full max-w-5xl">
+        <button type="button" id="gallery-lightbox-close" class="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-slate-700 shadow-lg transition hover:bg-white">
+            <span class="sr-only">关闭</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
+                <path d="M6 6l12 12M18 6L6 18" stroke-width="1.8" stroke-linecap="round"></path>
+            </svg>
+        </button>
+        <div class="overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
+            <img id="gallery-lightbox-image" src="" alt="" class="max-h-[70vh] w-full object-contain bg-slate-900">
+            <div class="space-y-2 px-6 py-4">
+                <h3 id="gallery-lightbox-title" class="text-base font-semibold text-slate-900 dark:text-slate-100"></h3>
+                <p id="gallery-lightbox-description" class="text-sm text-slate-600 dark:text-slate-400"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (() => {
+        const grid = document.getElementById("gallery-grid");
+        if (!grid) return;
+
+        const applyMasonry = () => {
+            grid.style.gridAutoRows = "1px";
+            const styles = window.getComputedStyle(grid);
+            const rowGap = parseFloat(styles.getPropertyValue("row-gap")) || 0;
+            const rowHeight = parseFloat(styles.getPropertyValue("grid-auto-rows")) || 1;
+
+            grid.querySelectorAll("[data-gallery-card]").forEach((card) => {
+                const cardHeight = card.getBoundingClientRect().height;
+                const span = Math.max(1, Math.ceil((cardHeight + rowGap) / (rowHeight + rowGap)));
+                card.style.gridRowEnd = `span ${span}`;
+            });
+        };
+
+        const rafApply = () => window.requestAnimationFrame(applyMasonry);
+        rafApply();
+
+        grid.querySelectorAll("img").forEach((img) => {
+            if (img.complete) {
+                rafApply();
+                return;
+            }
+            img.addEventListener("load", rafApply);
+            img.addEventListener("error", rafApply);
+        });
+
+        window.addEventListener("resize", rafApply);
+        document.addEventListener("htmx:afterSwap", rafApply);
+
+        const lightbox = document.getElementById("gallery-lightbox");
+        const lightboxImage = document.getElementById("gallery-lightbox-image");
+        const lightboxTitle = document.getElementById("gallery-lightbox-title");
+        const lightboxDescription = document.getElementById("gallery-lightbox-description");
+        const closeButton = document.getElementById("gallery-lightbox-close");
+
+        const closeLightbox = () => {
+            if (!lightbox) return;
+            lightbox.classList.add("hidden");
+            lightboxImage.src = "";
+            lightboxImage.alt = "";
+        };
+
+        grid.addEventListener("click", (event) => {
+            const trigger = event.target.closest("[data-gallery-trigger]");
+            if (!trigger) return;
+            const fullUrl = trigger.getAttribute("data-full-url");
+            if (!fullUrl) return;
+            lightboxImage.src = fullUrl;
+            lightboxImage.alt = trigger.getAttribute("data-title") || "摄影作品";
+            lightboxTitle.textContent = trigger.getAttribute("data-title") || "未命名作品";
+            lightboxDescription.textContent = trigger.getAttribute("data-description") || "点击外部区域可关闭。";
+            lightbox.classList.remove("hidden");
+        });
+
+        closeButton.addEventListener("click", closeLightbox);
+        lightbox.addEventListener("click", (event) => {
+            if (event.target === lightbox) {
+                closeLightbox();
+            }
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeLightbox();
+            }
+        });
+    })();
+</script>
+{{end}}

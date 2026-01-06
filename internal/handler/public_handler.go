@@ -463,6 +463,7 @@ func (a *API) ShowSitemap(c *gin.Context) {
 		{Loc: a.absoluteURL(c, "/"), ChangeFreq: "daily", Priority: "1.0"},
 		{Loc: a.absoluteURL(c, "/tags"), ChangeFreq: "weekly", Priority: "0.5"},
 		{Loc: a.absoluteURL(c, "/about"), ChangeFreq: "yearly", Priority: "0.4"},
+		{Loc: a.absoluteURL(c, "/gallery"), ChangeFreq: "weekly", Priority: "0.6"},
 	}
 
 	for _, publication := range publications {

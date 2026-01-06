@@ -287,6 +287,8 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 	r.GET("/posts/:id", handlers.ShowPostDetail)
 	r.GET("/tags", handlers.ShowTagArchive)
 	r.GET("/about", handlers.ShowAbout)
+	r.GET("/gallery", handlers.ShowGallery)
+	r.GET("/gallery/more", handlers.LoadMoreGallery)
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -310,6 +312,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 			auth.GET("/posts", handlers.ShowPostList)
 			auth.GET("/posts/new", handlers.ShowPostEdit)
 			auth.GET("/posts/:id/edit", handlers.ShowPostEdit)
+			auth.GET("/gallery", handlers.ShowGalleryManagement)
 			auth.GET("/tags", handlers.ShowTagManagement)
 			auth.GET("/about", handlers.ShowAboutEditor)
 			auth.GET("/profile/contacts", handlers.ShowProfileContacts)
@@ -327,6 +330,11 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 				api.POST("/posts/:id/publish", handlers.PublishPost)
 				api.PUT("/posts/:id", handlers.UpdatePost)
 				api.DELETE("/posts/:id", handlers.DeletePost)
+
+				api.GET("/gallery", handlers.ListGalleryImages)
+				api.POST("/gallery", handlers.CreateGalleryImage)
+				api.PUT("/gallery/:id", handlers.UpdateGalleryImage)
+				api.DELETE("/gallery/:id", handlers.DeleteGalleryImage)
 
 				api.GET("/tags", handlers.GetTags)
 				api.POST("/tags", handlers.CreateTag)

@@ -38,6 +38,7 @@ func Init(databasePath string) error {
 		&PostPublication{},
 		&Tag{},
 		&Page{},
+		&GalleryImage{},
 		&ProfileContact{},
 		&PostStatistic{},
 		&PostVisit{},

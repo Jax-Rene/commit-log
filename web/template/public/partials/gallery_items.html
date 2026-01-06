@@ -1,0 +1,23 @@
+{{if gt (len .items) 0}}
+<div hx-swap-oob="beforeend:#gallery-grid" style="display: contents">
+    {{range .items}}
+    <article data-gallery-card class="group overflow-hidden rounded-3xl bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:bg-slate-900/80">
+        <button type="button" data-gallery-trigger data-full-url="{{.ImageURL}}" data-title="{{.Title}}" data-description="{{.Description}}" class="block w-full text-left">
+            <div class="relative w-full overflow-hidden rounded-3xl" style="padding-top: {{aspectPadding .ImageWidth .ImageHeight}};">
+                <img src="{{.ImageURL}}" alt="{{if .Title}}{{.Title}}{{else}}摄影作品{{end}}" loading="lazy" class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+            </div>
+        </button>
+        <div class="space-y-2 px-4 pb-5 pt-4">
+            <h3 class="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{{if .Title}}{{.Title}}{{else}}未命名作品{{end}}</h3>
+            <p class="text-xs leading-5 text-slate-500 dark:text-slate-400">{{if .Description}}{{truncate .Description 80}}{{else}}点击查看大图。{{end}}</p>
+        </div>
+    </article>
+    {{end}}
+</div>
+{{end}} {{if .hasMore}}
+<div id="load-more" hx-get="/gallery/more?page={{.nextPage}}" hx-trigger="revealed" hx-target="#load-more" hx-swap="outerHTML">
+    <div class="flex justify-center py-8 text-sm text-slate-500 dark:text-slate-400">加载中…</div>
+</div>
+{{else}}
+<div id="load-more" class="py-8 text-center text-sm text-slate-400 dark:text-slate-500">已经到底啦 ✨</div>
+{{end}}
