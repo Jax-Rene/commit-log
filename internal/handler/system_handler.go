@@ -57,6 +57,7 @@ type systemSettingsRequest struct {
 	PublicFooterText string `json:"publicFooterText"`
 	AISummaryPrompt  string `json:"aiSummaryPrompt"`
 	AIRewritePrompt  string `json:"aiRewritePrompt"`
+	GalleryEnabled   *bool  `json:"galleryEnabled"`
 }
 
 type aiTestRequest struct {
@@ -110,6 +111,7 @@ func (r systemSettingsRequest) toInput() service.SystemSettingsInput {
 		PublicFooterText: r.PublicFooterText,
 		AISummaryPrompt:  r.AISummaryPrompt,
 		AIRewritePrompt:  r.AIRewritePrompt,
+		GalleryEnabled:   r.GalleryEnabled,
 	}
 }
 
@@ -129,6 +131,7 @@ func systemSettingsPayload(settings service.SystemSettings) gin.H {
 		"publicFooterText": settings.PublicFooterText,
 		"aiSummaryPrompt":  settings.AISummaryPrompt,
 		"aiRewritePrompt":  settings.AIRewritePrompt,
+		"galleryEnabled":   settings.GalleryEnabled,
 	}
 }
 

@@ -42,7 +42,7 @@ func main() {
 	fmt.Println("用户: admin (密码: admin123)")
 	fmt.Println("文章: 5篇测试文章")
 	fmt.Println("标签: 技术、生活、思考、教程、项目")
-	fmt.Println("作品: 6张摄影作品")
+	fmt.Println("作品: 19张摄影作品")
 }
 
 // 创建测试用户
@@ -477,61 +477,160 @@ func createTestGalleryImages() {
 		{
 			Title:       "雾中森林",
 			Description: "清晨的薄雾让森林显得格外安静。",
-			ImageURL:    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80",
+			ImageURL:    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&h=1067&q=80",
 			ImageWidth:  1600,
 			ImageHeight: 1067,
 			Status:      "published",
-			SortOrder:   6,
 		},
 		{
 			Title:       "城市夜色",
 			Description: "霓虹灯与车流交织出的城市节奏。",
-			ImageURL:    "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80",
+			ImageURL:    "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&h=1067&q=80",
 			ImageWidth:  1600,
 			ImageHeight: 1067,
 			Status:      "published",
-			SortOrder:   5,
 		},
 		{
 			Title:       "沙漠轨迹",
 			Description: "风与时间雕刻的纹理。",
-			ImageURL:    "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=1500&q=80",
+			ImageURL:    "https://images.unsplash.com/photo-1452626038306-9aae5e071dd3?auto=format&fit=crop&w=1500&h=1000&q=80",
 			ImageWidth:  1500,
 			ImageHeight: 1000,
 			Status:      "published",
-			SortOrder:   4,
 		},
 		{
 			Title:       "海岸线",
 			Description: "浪潮与海风在傍晚交汇。",
-			ImageURL:    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80",
+			ImageURL:    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&h=1065&q=80",
 			ImageWidth:  1600,
 			ImageHeight: 1065,
 			Status:      "published",
-			SortOrder:   3,
 		},
 		{
 			Title:       "山谷日出",
 			Description: "晨光照亮了山谷的层次。",
-			ImageURL:    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&q=80",
+			ImageURL:    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&h=1067&q=80",
 			ImageWidth:  1600,
 			ImageHeight: 1067,
 			Status:      "published",
-			SortOrder:   2,
 		},
 		{
 			Title:       "雪原漫步",
 			Description: "雪地里留下的脚印。",
-			ImageURL:    "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1600&q=80",
+			ImageURL:    "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1600&h=1067&q=80",
 			ImageWidth:  1600,
 			ImageHeight: 1067,
 			Status:      "published",
-			SortOrder:   1,
+		},
+		{
+			Title:       "旧巷雨后",
+			Description: "潮湿的石板路反射着路灯。",
+			ImageURL:    "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&h=1500&q=80",
+			ImageWidth:  1000,
+			ImageHeight: 1500,
+			Status:      "published",
+		},
+		{
+			Title:       "屋顶几何",
+			Description: "排列有序的线条与光影。",
+			ImageURL:    "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=1200&h=1200&q=80",
+			ImageWidth:  1200,
+			ImageHeight: 1200,
+			Status:      "published",
+		},
+		{
+			Title:       "海港长曝",
+			Description: "海面与灯塔被拉成柔滑的光带。",
+			ImageURL:    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1800&h=900&q=80",
+			ImageWidth:  1800,
+			ImageHeight: 900,
+			Status:      "published",
+		},
+		{
+			Title:       "街角剪影",
+			Description: "午后街角的静止瞬间。",
+			ImageURL:    "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=900&h=1200&q=80",
+			ImageWidth:  900,
+			ImageHeight: 1200,
+			Status:      "published",
+		},
+		{
+			Title:       "暮色桥面",
+			Description: "桥上的光影被拉成了旋律。",
+			ImageURL:    "https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&fit=crop&w=2000&h=1200&q=80",
+			ImageWidth:  2000,
+			ImageHeight: 1200,
+			Status:      "published",
+		},
+		{
+			Title:       "晨光阶梯",
+			Description: "阶梯的纹理在清晨显得更清晰。",
+			ImageURL:    "https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&h=1600&q=80",
+			ImageWidth:  1200,
+			ImageHeight: 1600,
+			Status:      "published",
+		},
+		{
+			Title:       "落日山脊",
+			Description: "落日把山脊染成暖色。",
+			ImageURL:    "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&h=900&q=80",
+			ImageWidth:  1400,
+			ImageHeight: 900,
+			Status:      "published",
+		},
+		{
+			Title:       "风的纹理",
+			Description: "沙丘上的线条延伸到远方。",
+			ImageURL:    "https://images.unsplash.com/photo-1523473827534-86c23bcb06b1?auto=format&fit=crop&w=1300&h=1000&q=80",
+			ImageWidth:  1300,
+			ImageHeight: 1000,
+			Status:      "published",
+		},
+		{
+			Title:       "空旷车站",
+			Description: "远处的列车让空间更显宁静。",
+			ImageURL:    "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1600&h=900&q=80",
+			ImageWidth:  1600,
+			ImageHeight: 900,
+			Status:      "published",
+		},
+		{
+			Title:       "玻璃映像",
+			Description: "玻璃幕墙映出城市的纹理。",
+			ImageURL:    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1500&h=1000&q=80",
+			ImageWidth:  1500,
+			ImageHeight: 1000,
+			Status:      "published",
+		},
+		{
+			Title:       "夜行列车",
+			Description: "列车划过夜色的轨迹。",
+			ImageURL:    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&h=1000&q=80",
+			ImageWidth:  1600,
+			ImageHeight: 1000,
+			Status:      "published",
+		},
+		{
+			Title:       "光影实验",
+			Description: "尝试不同光比的试验作品。",
+			ImageURL:    "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&fit=crop&w=1600&h=1067&q=80",
+			ImageWidth:  1600,
+			ImageHeight: 1067,
+			Status:      "draft",
+		},
+		{
+			Title:       "构图练习",
+			Description: "记录一次构图练习的结果。",
+			ImageURL:    "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1100&h=1500&q=80",
+			ImageWidth:  1100,
+			ImageHeight: 1500,
+			Status:      "draft",
 		},
 	}
 
-	for _, image := range images {
-		db.DB.Create(&image)
+	for idx := range images {
+		images[idx].SortOrder = len(images) - idx
+		db.DB.Create(&images[idx])
 	}
 
 	fmt.Println("✅ 摄影作品创建完成")

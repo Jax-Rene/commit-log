@@ -75,6 +75,9 @@ func TestSystemSettingServiceDefaults(t *testing.T) {
 	if settings.AIRewritePrompt != defaultRewriteSystemPrompt {
 		t.Fatalf("unexpected rewrite prompt default: %q", settings.AIRewritePrompt)
 	}
+	if !settings.GalleryEnabled {
+		t.Fatalf("expected gallery to be enabled by default")
+	}
 }
 
 func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
@@ -95,6 +98,7 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 		AIProvider:       "deepseek",
 		OpenAIAPIKey:     "sk-xxxx",
 		DeepSeekAPIKey:   "ds-12345",
+		GalleryEnabled:   boolPtr(false),
 		AISummaryPrompt:  " 摘要提示 ",
 		AIRewritePrompt:  " 重写提示 ",
 	}
@@ -121,6 +125,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	}
 	if saved.DeepSeekAPIKey != "ds-12345" {
 		t.Fatalf("expected deepseek key to be persisted, got %q", saved.DeepSeekAPIKey)
+	}
+	if saved.GalleryEnabled {
+		t.Fatalf("expected gallery to be disabled, got %v", saved.GalleryEnabled)
 	}
 	if saved.AISummaryPrompt != "摘要提示" {
 		t.Fatalf("expected summary prompt sanitized, got %q", saved.AISummaryPrompt)
@@ -167,6 +174,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if fetched.DeepSeekAPIKey != input.DeepSeekAPIKey {
 		t.Fatalf("expected deepseek api key %q, got %q", input.DeepSeekAPIKey, fetched.DeepSeekAPIKey)
 	}
+	if fetched.GalleryEnabled {
+		t.Fatalf("expected gallery to remain disabled, got %v", fetched.GalleryEnabled)
+	}
 	if fetched.AISummaryPrompt != "摘要提示" {
 		t.Fatalf("expected summary prompt %q, got %q", "摘要提示", fetched.AISummaryPrompt)
 	}
@@ -199,6 +209,9 @@ func TestSystemSettingServiceFallbackSiteName(t *testing.T) {
 	}
 	if saved.AIProvider != AIProviderOpenAI {
 		t.Fatalf("expected provider fallback to openai, got %q", saved.AIProvider)
+	}
+	if !saved.GalleryEnabled {
+		t.Fatalf("expected gallery to stay enabled by default, got %v", saved.GalleryEnabled)
 	}
 	if saved.AISummaryPrompt != defaultSummarySystemPrompt {
 		t.Fatalf("expected summary prompt fallback to default, got %q", saved.AISummaryPrompt)

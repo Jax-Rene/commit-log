@@ -1,454 +1,876 @@
-{{template "base" .}}
-
-{{define "content"}}
+{{template "base" .}} {{define "content"}}
 <div class="space-y-8" x-data="systemSettingsForm()" x-init="init()" x-cloak>
-        <section id="basic" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-                <header class="space-y-1">
-                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">基础信息</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">站点名称与 Logo 将出现在前台和后台导航。</p>
-                </header>
-                <div class="grid grid-cols-1 gap-6">
-                        <label class="flex flex-col gap-2">
-                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">站点名称<span class="ml-1 text-rose-500">*</span></span>
-                                <input type="text" x-model="form.siteName" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="例如：CommitLog" />
-                                <span class="text-xs text-slate-500 dark:text-slate-400">用于浏览器标题、后台导航等位置。</span>
-                        </label>
-                        <label class="flex flex-col gap-2">
-                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">站点描述<span class="ml-1 text-rose-500">*</span></span>
-                                <textarea x-model="form.siteDescription" rows="3" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="简要介绍博客定位与价值主张，建议 80-160 字。"></textarea>
-                                <span class="text-xs text-slate-500 dark:text-slate-400">搜索引擎摘要与社交分享默认文案，会出现在未填写专属描述的页面。</span>
-                        </label>
-                        <label class="flex flex-col gap-2">
-                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">默认关键词</span>
-                                <input type="text" x-model="form.siteKeywords" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="例如：AI, 全栈工程师, 博客" />
-                                <span class="text-xs text-slate-500 dark:text-slate-400">使用逗号、空格或分号分隔，系统会自动去重与规范格式。</span>
-                        </label>
-                        <div class="space-y-2">
-                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">默认分享图</span>
-                                <div class="flex items-center gap-4">
-                                        <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60">
-                                                <template x-if="form.siteSocialImage">
-                                                        <img :src="form.siteSocialImage" alt="分享图预览" class="h-full w-full object-cover" @error="form.siteSocialImage = ''" />
-                                                </template>
-                                                <template x-if="!form.siteSocialImage">
-                                                        <span class="text-xs font-medium text-slate-400 dark:text-slate-500">暂无图片</span>
-                                                </template>
-                                        </div>
-                                        <div class="max-w-sm space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                                                <p>文章未设置封面时用于社交媒体与消息卡片展示，建议尺寸 1200×630px。</p>
-                                                <p x-show="form.siteSocialImage" x-text="form.siteSocialImage" class="truncate text-[11px] text-slate-400 dark:text-slate-500" x-cloak></p>
-                                        </div>
-                                </div>
-                                <input type="url" x-model="form.siteSocialImage" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="https://example.com/og.png" />
-                                <span class="text-xs text-slate-500 dark:text-slate-400">可直接粘贴网络地址或后台上传的图片链接。</span>
-                        </div>
-                        <div class="space-y-6">
-                                <div class="flex flex-col gap-2">
-                                        <span class="inline-flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">站点 Logo<span class="text-rose-500">*</span></span>
-					<p class="text-xs text-slate-500 dark:text-slate-400">请分别上传适用于浅色与深色模式的 Logo，建议使用透明背景 PNG 或 SVG。</p>
-				</div>
-				<div class="grid gap-6 md:grid-cols-2">
-					<div class="flex flex-col gap-3">
-						<span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">浅色模式</span>
-						<div class="rounded-2xl border border-dashed border-slate-200 p-4 transition-colors dark:border-slate-700/80">
-							<div class="flex items-center gap-4">
-								<div class="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-									<template x-if="form.siteLogoUrlLight">
-										<img :src="form.siteLogoUrlLight" alt="浅色 Logo 预览" class="h-full w-full object-cover" @error="form.siteLogoUrlLight = ''" />
-									</template>
-									<template x-if="!form.siteLogoUrlLight">
-										<span class="text-xs font-medium text-slate-400 dark:text-slate-500">暂无 Logo</span>
-									</template>
-								</div>
-								<div class="max-w-xs space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-									<p>浅色模式下用于前台与后台导航的品牌展示。</p>
-									<p x-show="form.siteLogoUrlLight" x-text="form.siteLogoUrlLight" class="truncate text-[11px] text-slate-400 dark:text-slate-500" x-cloak></p>
-								</div>
-							</div>
-							<div class="mt-4 flex flex-wrap items-center gap-2">
-								<input type="file" accept="image/*" class="hidden" x-ref="logoInputLight" @change="handleLogoSelected($event, 'light')" />
-								<button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="triggerLogoUpload('light')" :disabled="logoUploadingLight">
-									<span x-show="!logoUploadingLight">上传图片</span>
-									<span x-show="logoUploadingLight">上传中...</span>
-								</button>
-								<button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300" @click="clearLogo('light')" x-show="form.siteLogoUrlLight" x-cloak>移除 Logo</button>
-							</div>
-						</div>
-					</div>
-					<div class="flex flex-col gap-3">
-						<span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">深色模式</span>
-						<div class="rounded-2xl border border-dashed border-slate-200 p-4 transition-colors dark:border-slate-700/80">
-							<div class="flex items-center gap-4">
-								<div class="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-									<template x-if="form.siteLogoUrlDark">
-										<img :src="form.siteLogoUrlDark" alt="深色 Logo 预览" class="h-full w-full object-cover" @error="form.siteLogoUrlDark = ''" />
-									</template>
-									<template x-if="!form.siteLogoUrlDark">
-										<span class="text-xs font-medium text-slate-400 dark:text-slate-500">暂无 Logo</span>
-									</template>
-								</div>
-								<div class="max-w-xs space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-									<p>深色模式下用于品牌展示的图标，可适当提升亮度对比。</p>
-									<p x-show="form.siteLogoUrlDark" x-text="form.siteLogoUrlDark" class="truncate text-[11px] text-slate-400 dark:text-slate-500" x-cloak></p>
-								</div>
-							</div>
-							<div class="mt-4 flex flex-wrap items-center gap-2">
-								<input type="file" accept="image/*" class="hidden" x-ref="logoInputDark" @change="handleLogoSelected($event, 'dark')" />
-								<button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="triggerLogoUpload('dark')" :disabled="logoUploadingDark">
-									<span x-show="!logoUploadingDark">上传图片</span>
-									<span x-show="logoUploadingDark">上传中...</span>
-								</button>
-								<button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300" @click="clearLogo('dark')" x-show="form.siteLogoUrlDark" x-cloak>移除 Logo</button>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="mt-4">
-					<label class="flex flex-col gap-2">
-						<span class="text-sm font-medium text-slate-700 dark:text-slate-200">后台页脚文案</span>
-						<input type="text" x-model="form.adminFooterText" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="例如：日拱一卒，功不唐捐" />
-						<span class="text-xs text-slate-500 dark:text-slate-400">展示于后台页面底部，可填写团队座右铭或提示语。</span>
-					</label>
-					<label class="flex flex-col gap-2 mt-2">
-						<span class="text-sm font-medium text-slate-700 dark:text-slate-200">前台页脚文案</span>
-						<input type="text" x-model="form.publicFooterText" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="例如：激发创造，延迟满足" />
-						<span class="text-xs text-slate-500 dark:text-slate-400">展示于前台页脚，可用于呈现品牌口号或版权信息。</span>
-					</label>
-				</div>
-			</div>
+    <section
+        id="basic"
+        class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
+    >
+        <header class="space-y-1">
+            <h2
+                class="text-lg font-semibold text-slate-900 dark:text-slate-100"
+            >
+                基础信息
+            </h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                站点名称与 Logo 将出现在前台和后台导航。
+            </p>
+        </header>
+        <div class="grid grid-cols-1 gap-6">
+            <label class="flex flex-col gap-2">
+                <span
+                    class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                    >站点名称<span class="ml-1 text-rose-500">*</span></span
+                >
+                <input
+                    type="text"
+                    x-model="form.siteName"
+                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                    placeholder="例如：CommitLog"
+                />
+                <span class="text-xs text-slate-500 dark:text-slate-400"
+                    >用于浏览器标题、后台导航等位置。</span
+                >
+            </label>
+            <label class="flex flex-col gap-2">
+                <span
+                    class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                    >站点描述<span class="ml-1 text-rose-500">*</span></span
+                >
+                <textarea
+                    x-model="form.siteDescription"
+                    rows="3"
+                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                    placeholder="简要介绍博客定位与价值主张，建议 80-160 字。"
+                ></textarea>
+                <span class="text-xs text-slate-500 dark:text-slate-400"
+                    >搜索引擎摘要与社交分享默认文案，会出现在未填写专属描述的页面。</span
+                >
+            </label>
+            <label class="flex flex-col gap-2">
+                <span
+                    class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                    >默认关键词</span
+                >
+                <input
+                    type="text"
+                    x-model="form.siteKeywords"
+                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                    placeholder="例如：AI, 全栈工程师, 博客"
+                />
+                <span class="text-xs text-slate-500 dark:text-slate-400"
+                    >使用逗号、空格或分号分隔，系统会自动去重与规范格式。</span
+                >
+            </label>
+            <div class="space-y-2">
+                <span
+                    class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                    >默认分享图</span
+                >
+                <div class="flex items-center gap-4">
+                    <div
+                        class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60"
+                    >
+                        <template x-if="form.siteSocialImage">
+                            <img
+                                :src="form.siteSocialImage"
+                                alt="分享图预览"
+                                class="h-full w-full object-cover"
+                                @error="form.siteSocialImage = ''"
+                            />
+                        </template>
+                        <template x-if="!form.siteSocialImage">
+                            <span
+                                class="text-xs font-medium text-slate-400 dark:text-slate-500"
+                                >暂无图片</span
+                            >
+                        </template>
+                    </div>
+                    <div
+                        class="max-w-sm space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400"
+                    >
+                        <p>
+                            文章未设置封面时用于社交媒体与消息卡片展示，建议尺寸
+                            1200×630px。
+                        </p>
+                        <p
+                            x-show="form.siteSocialImage"
+                            x-text="form.siteSocialImage"
+                            class="truncate text-[11px] text-slate-400 dark:text-slate-500"
+                            x-cloak
+                        ></p>
+                    </div>
                 </div>
-        </section>
-
-        <section id="contacts" class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-                {{template "admin_contact_manager" .}}
-        </section>
-
-        <section id="ai" class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-                <header class="space-y-1">
-                        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">AI 服务集成</h2>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">选择用于自动摘要等能力的模型平台，并维护对应的 API Key，可在此处快速测试连通性。</p>
-                </header>
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
-                        <div class="flex-1 space-y-4">
-                                <label class="flex flex-col gap-2">
-                                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">当前 AI 平台<span class="ml-1 text-rose-500">*</span></span>
-                                        <select x-model="form.aiProvider" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20">
-                                                <option value="openai">OpenAI</option>
-                                                <option value="deepseek">DeepSeek</option>
-                                        </select>
-                                        <span class="text-xs text-slate-500 dark:text-slate-400">系统会按照所选平台调用对应接口，请确保 API Key 有效且额度充足。</span>
-                                </label>
-                                <div class="space-y-3">
-                                        <div x-show="form.aiProvider === 'openai'" x-cloak class="space-y-2">
-                                                <label class="flex flex-col gap-2">
-                                                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">OpenAI API Key</span>
-                                                        <div class="flex items-center gap-2">
-                                                                <input :type="showApiKey ? 'text' : 'password'" x-model="form.openaiApiKey" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="sk-..." autocomplete="off" />
-                                                                <button type="button" @click="showApiKey = !showApiKey" class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"><span x-text="showApiKey ? '隐藏' : '显示'"></span></button>
-                                                        </div>
-                                                        <span class="text-xs text-slate-500 dark:text-slate-400">从 OpenAI 控制台复制 Key，系统将以密文方式保存。</span>
-                                                </label>
-                                        </div>
-                                        <div x-show="form.aiProvider === 'deepseek'" x-cloak class="space-y-2">
-                                                <label class="flex flex-col gap-2">
-                                                        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">DeepSeek API Key</span>
-                                                        <div class="flex items-center gap-2">
-                                                                <input :type="showDeepSeekKey ? 'text' : 'password'" x-model="form.deepseekApiKey" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="sk-..." autocomplete="off" />
-                                                                <button type="button" @click="showDeepSeekKey = !showDeepSeekKey" class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"><span x-text="showDeepSeekKey ? '隐藏' : '显示'"></span></button>
-                                                        </div>
-                                                        <span class="text-xs text-slate-500 dark:text-slate-400">请填写从 DeepSeek 开放平台获取的 Key，确保具备调用权限。</span>
-                                                </label>
-                                        </div>
+                <input
+                    type="url"
+                    x-model="form.siteSocialImage"
+                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                    placeholder="https://example.com/og.png"
+                />
+                <span class="text-xs text-slate-500 dark:text-slate-400"
+                    >可直接粘贴网络地址或后台上传的图片链接。</span
+                >
+            </div>
+            <div class="space-y-6">
+                <div class="flex flex-col gap-2">
+                    <span
+                        class="inline-flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200"
+                        >站点 Logo<span class="text-rose-500">*</span></span
+                    >
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        请分别上传适用于浅色与深色模式的 Logo，建议使用透明背景
+                        PNG 或 SVG。
+                    </p>
+                </div>
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div class="flex flex-col gap-3">
+                        <span
+                            class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                            >浅色模式</span
+                        >
+                        <div
+                            class="rounded-2xl border border-dashed border-slate-200 p-4 transition-colors dark:border-slate-700/80"
+                        >
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+                                >
+                                    <template x-if="form.siteLogoUrlLight">
+                                        <img
+                                            :src="form.siteLogoUrlLight"
+                                            alt="浅色 Logo 预览"
+                                            class="h-full w-full object-cover"
+                                            @error="form.siteLogoUrlLight = ''"
+                                        />
+                                    </template>
+                                    <template x-if="!form.siteLogoUrlLight">
+                                        <span
+                                            class="text-xs font-medium text-slate-400 dark:text-slate-500"
+                                            >暂无 Logo</span
+                                        >
+                                    </template>
                                 </div>
-				<div class="space-y-4 pt-2">
-					<label class="flex flex-col gap-2">
-						<span class="text-sm font-medium text-slate-700 dark:text-slate-200">AI 摘要系统提示</span>
-						<textarea x-model="form.aiSummaryPrompt" rows="4" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="用于生成文章摘要的系统提示语，留空将使用默认值。"></textarea>
-						<span class="text-xs text-slate-500 dark:text-slate-400">建议描述摘要风格、字数范围与注意事项，便于快速调整生成效果。</span>
-					</label>
-					<label class="flex flex-col gap-2">
-						<span class="text-sm font-medium text-slate-700 dark:text-slate-200">AI 全文优化系统提示</span>
-						<textarea x-model="form.aiRewritePrompt" rows="5" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" placeholder="用于润色全文的系统提示语，留空将使用默认值。"></textarea>
-						<span class="text-xs text-slate-500 dark:text-slate-400">可明确结构、语气与保留内容等要求，帮助模型输出更贴合预期的 Markdown 文稿。</span>
-					</label>
-				</div>
-                        </div>
-                        <div class="flex gap-2 pt-1 lg:pt-6">
-                                <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="testAI()" :disabled="aiTesting">
-                                        <span x-show="!aiTesting" x-text="`测试${providerMeta().label}连通性`"></span>
-                                        <span x-show="aiTesting">测试中...</span>
+                                <div
+                                    class="max-w-xs space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400"
+                                >
+                                    <p>
+                                        浅色模式下用于前台与后台导航的品牌展示。
+                                    </p>
+                                    <p
+                                        x-show="form.siteLogoUrlLight"
+                                        x-text="form.siteLogoUrlLight"
+                                        class="truncate text-[11px] text-slate-400 dark:text-slate-500"
+                                        x-cloak
+                                    ></p>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex flex-wrap items-center gap-2">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    class="hidden"
+                                    x-ref="logoInputLight"
+                                    @change="handleLogoSelected($event, 'light')"
+                                />
+                                <button
+                                    type="button"
+                                    class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"
+                                    @click="triggerLogoUpload('light')"
+                                    :disabled="logoUploadingLight"
+                                >
+                                    <span x-show="!logoUploadingLight"
+                                        >上传图片</span
+                                    >
+                                    <span x-show="logoUploadingLight"
+                                        >上传中...</span
+                                    >
                                 </button>
-                                <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300" @click="clearCurrentAPIKey()" x-show="currentApiKey()" x-cloak>清空</button>
+                                <button
+                                    type="button"
+                                    class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300"
+                                    @click="clearLogo('light')"
+                                    x-show="form.siteLogoUrlLight"
+                                    x-cloak
+                                >
+                                    移除 Logo
+                                </button>
+                            </div>
                         </div>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <span
+                            class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                            >深色模式</span
+                        >
+                        <div
+                            class="rounded-2xl border border-dashed border-slate-200 p-4 transition-colors dark:border-slate-700/80"
+                        >
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900/40"
+                                >
+                                    <template x-if="form.siteLogoUrlDark">
+                                        <img
+                                            :src="form.siteLogoUrlDark"
+                                            alt="深色 Logo 预览"
+                                            class="h-full w-full object-cover"
+                                            @error="form.siteLogoUrlDark = ''"
+                                        />
+                                    </template>
+                                    <template x-if="!form.siteLogoUrlDark">
+                                        <span
+                                            class="text-xs font-medium text-slate-400 dark:text-slate-500"
+                                            >暂无 Logo</span
+                                        >
+                                    </template>
+                                </div>
+                                <div
+                                    class="max-w-xs space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400"
+                                >
+                                    <p>
+                                        深色模式下用于品牌展示的图标，可适当提升亮度对比。
+                                    </p>
+                                    <p
+                                        x-show="form.siteLogoUrlDark"
+                                        x-text="form.siteLogoUrlDark"
+                                        class="truncate text-[11px] text-slate-400 dark:text-slate-500"
+                                        x-cloak
+                                    ></p>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex flex-wrap items-center gap-2">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    class="hidden"
+                                    x-ref="logoInputDark"
+                                    @change="handleLogoSelected($event, 'dark')"
+                                />
+                                <button
+                                    type="button"
+                                    class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"
+                                    @click="triggerLogoUpload('dark')"
+                                    :disabled="logoUploadingDark"
+                                >
+                                    <span x-show="!logoUploadingDark"
+                                        >上传图片</span
+                                    >
+                                    <span x-show="logoUploadingDark"
+                                        >上传中...</span
+                                    >
+                                </button>
+                                <button
+                                    type="button"
+                                    class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300"
+                                    @click="clearLogo('dark')"
+                                    x-show="form.siteLogoUrlDark"
+                                    x-cloak
+                                >
+                                    移除 Logo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-        </section>
+                <div class="mt-4">
+                    <label class="flex flex-col gap-2">
+                        <span
+                            class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                            >后台页脚文案</span
+                        >
+                        <input
+                            type="text"
+                            x-model="form.adminFooterText"
+                            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                            placeholder="例如：日拱一卒，功不唐捐"
+                        />
+                        <span class="text-xs text-slate-500 dark:text-slate-400"
+                            >展示于后台页面底部，可填写团队座右铭或提示语。</span
+                        >
+                    </label>
+                    <label class="flex flex-col gap-2 mt-2">
+                        <span
+                            class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                            >前台页脚文案</span
+                        >
+                        <input
+                            type="text"
+                            x-model="form.publicFooterText"
+                            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                            placeholder="例如：激发创造，延迟满足"
+                        />
+                        <span class="text-xs text-slate-500 dark:text-slate-400"
+                            >展示于前台页脚，可用于呈现品牌口号或版权信息。</span
+                        >
+                    </label>
+                </div>
+            </div>
+            <div
+                class="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60"
+            >
+                <div class="flex items-start justify-between gap-4">
+                    <div class="space-y-1">
+                        <p
+                            class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                        >
+                            启用 Gallery
+                        </p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            开启后前台导航显示 Gallery 入口。
+                        </p>
+                    </div>
+                    <label
+                        class="relative inline-flex cursor-pointer items-center"
+                    >
+                        <input
+                            type="checkbox"
+                            class="sr-only peer"
+                            x-model="form.galleryEnabled"
+                        />
+                        <span
+                            class="h-6 w-11 rounded-full bg-slate-200 transition peer-checked:bg-blue-600 dark:bg-slate-700 dark:peer-checked:bg-blue-500"
+                        ></span>
+                        <span
+                            class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition peer-checked:translate-x-5"
+                        ></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        <section class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
-                <div class="space-y-1">
-                        <h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">保存设置</h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">点击按钮将当前表单内容写入数据库。</p>
+    <section
+        id="contacts"
+        class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
+    >
+        {{template "admin_contact_manager" .}}
+    </section>
+
+    <section
+        id="ai"
+        class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
+    >
+        <header class="space-y-1">
+            <h2
+                class="text-lg font-semibold text-slate-900 dark:text-slate-100"
+            >
+                AI 服务集成
+            </h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                选择用于自动摘要等能力的模型平台，并维护对应的 API
+                Key，可在此处快速测试连通性。
+            </p>
+        </header>
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
+            <div class="flex-1 space-y-4">
+                <label class="flex flex-col gap-2">
+                    <span
+                        class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                        >当前 AI 平台<span class="ml-1 text-rose-500"
+                            >*</span
+                        ></span
+                    >
+                    <select
+                        x-model="form.aiProvider"
+                        class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                    >
+                        <option value="openai">OpenAI</option>
+                        <option value="deepseek">DeepSeek</option>
+                    </select>
+                    <span class="text-xs text-slate-500 dark:text-slate-400"
+                        >系统会按照所选平台调用对应接口，请确保 API Key
+                        有效且额度充足。</span
+                    >
+                </label>
+                <div class="space-y-3">
+                    <div
+                        x-show="form.aiProvider === 'openai'"
+                        x-cloak
+                        class="space-y-2"
+                    >
+                        <label class="flex flex-col gap-2">
+                            <span
+                                class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                                >OpenAI API Key</span
+                            >
+                            <div class="flex items-center gap-2">
+                                <input
+                                    :type="showApiKey ? 'text' : 'password'"
+                                    x-model="form.openaiApiKey"
+                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                                    placeholder="sk-..."
+                                    autocomplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    @click="showApiKey = !showApiKey"
+                                    class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"
+                                >
+                                    <span
+                                        x-text="showApiKey ? '隐藏' : '显示'"
+                                    ></span>
+                                </button>
+                            </div>
+                            <span
+                                class="text-xs text-slate-500 dark:text-slate-400"
+                                >从 OpenAI 控制台复制
+                                Key，系统将以密文方式保存。</span
+                            >
+                        </label>
+                    </div>
+                    <div
+                        x-show="form.aiProvider === 'deepseek'"
+                        x-cloak
+                        class="space-y-2"
+                    >
+                        <label class="flex flex-col gap-2">
+                            <span
+                                class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                                >DeepSeek API Key</span
+                            >
+                            <div class="flex items-center gap-2">
+                                <input
+                                    :type="showDeepSeekKey ? 'text' : 'password'"
+                                    x-model="form.deepseekApiKey"
+                                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                                    placeholder="sk-..."
+                                    autocomplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    @click="showDeepSeekKey = !showDeepSeekKey"
+                                    class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"
+                                >
+                                    <span
+                                        x-text="showDeepSeekKey ? '隐藏' : '显示'"
+                                    ></span>
+                                </button>
+                            </div>
+                            <span
+                                class="text-xs text-slate-500 dark:text-slate-400"
+                                >请填写从 DeepSeek 开放平台获取的
+                                Key，确保具备调用权限。</span
+                            >
+                        </label>
+                    </div>
                 </div>
-                <button type="button" @click="submit()" :disabled="loading" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/80">
-                        <span x-show="!loading">保存设置</span>
-                        <span x-show="loading">保存中...</span>
+                <div class="space-y-4 pt-2">
+                    <label class="flex flex-col gap-2">
+                        <span
+                            class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                            >AI 摘要系统提示</span
+                        >
+                        <textarea
+                            x-model="form.aiSummaryPrompt"
+                            rows="4"
+                            class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                            placeholder="用于生成文章摘要的系统提示语，留空将使用默认值。"
+                        ></textarea>
+                        <span class="text-xs text-slate-500 dark:text-slate-400"
+                            >建议描述摘要风格、字数范围与注意事项，便于快速调整生成效果。</span
+                        >
+                    </label>
+                    <label class="flex flex-col gap-2">
+                        <span
+                            class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                            >AI 全文优化系统提示</span
+                        >
+                        <textarea
+                            x-model="form.aiRewritePrompt"
+                            rows="5"
+                            class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                            placeholder="用于润色全文的系统提示语，留空将使用默认值。"
+                        ></textarea>
+                        <span class="text-xs text-slate-500 dark:text-slate-400"
+                            >可明确结构、语气与保留内容等要求，帮助模型输出更贴合预期的
+                            Markdown 文稿。</span
+                        >
+                    </label>
+                </div>
+            </div>
+            <div class="flex gap-2 pt-1 lg:pt-6">
+                <button
+                    type="button"
+                    class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"
+                    @click="testAI()"
+                    :disabled="aiTesting"
+                >
+                    <span
+                        x-show="!aiTesting"
+                        x-text="`测试${providerMeta().label}连通性`"
+                    ></span>
+                    <span x-show="aiTesting">测试中...</span>
                 </button>
-        </section>
+                <button
+                    type="button"
+                    class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300"
+                    @click="clearCurrentAPIKey()"
+                    x-show="currentApiKey()"
+                    x-cloak
+                >
+                    清空
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section
+        class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between"
+    >
+        <div class="space-y-1">
+            <h2
+                class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+            >
+                保存设置
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                点击按钮将当前表单内容写入数据库。
+            </p>
+        </div>
+        <button
+            type="button"
+            @click="submit()"
+            :disabled="loading"
+            class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/80"
+        >
+            <span x-show="!loading">保存设置</span>
+            <span x-show="loading">保存中...</span>
+        </button>
+    </section>
 </div>
 
 <script>
-        function systemSettingsForm() {
-                return {
-                        loading: false,
-                        showApiKey: false,
-                        showDeepSeekKey: false,
-                        aiTesting: false,
-				form: {
-					siteName: '',
-					siteLogoUrl: '',
-					siteLogoUrlLight: '',
-					siteLogoUrlDark: '',
-                                        siteDescription: '',
-                                        siteKeywords: '',
-                                        siteSocialImage: '',
-					adminFooterText: '',
-					publicFooterText: '',
-					aiProvider: 'openai',
-					openaiApiKey: '',
-					deepseekApiKey: '',
-					aiSummaryPrompt: '',
-					aiRewritePrompt: '',
-				},
-				logoUploadingLight: false,
-				logoUploadingDark: false,
-                        init() {
-                                this.fetchSettings();
-                                this.scrollToHash();
-                        },
-                        scrollToHash() {
-                                const hash = window.location.hash.replace('#', '');
-                                if (!hash) {
-                                        return;
-                                }
-                                this.$nextTick(() => {
-                                        const target = document.getElementById(hash);
-                                        if (target) {
-                                                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                        }
-                                });
-                        },
-				fetchSettings() {
-					fetch('/admin/api/system/settings')
-						.then(response => response.json())
-						.then(data => {
-							if (data.error) {
-								window.AdminUI.toast({ message: data.error, type: 'error' });
-								return;
-							}
-							if (data.settings) {
-								this.form = Object.assign(this.form, data.settings);
-								this.applyLogoFallbacks();
-								this.normalizeProvider();
-							}
-						})
-                                        .catch(() => {
-                                                window.AdminUI.toast({ message: '加载系统设置失败', type: 'error' });
-                                        });
-                        },
-				normalizeProvider() {
-					const provider = (this.form.aiProvider || '').toLowerCase();
-					if (provider === 'deepseek') {
-						this.form.aiProvider = 'deepseek';
-					} else {
-						this.form.aiProvider = 'openai';
-					}
-				},
-				applyLogoFallbacks() {
-					const light = this.form.siteLogoUrlLight?.trim() || '';
-					const dark = this.form.siteLogoUrlDark?.trim() || '';
-					const legacy = this.form.siteLogoUrl?.trim() || '';
-					if (!light && legacy) {
-						this.form.siteLogoUrlLight = legacy;
-					}
-					if (!this.form.siteLogoUrlDark?.trim()) {
-						this.form.siteLogoUrlDark = this.form.siteLogoUrlLight || legacy || this.form.siteLogoUrlDark;
-					}
-					if (!this.form.siteLogoUrlLight?.trim()) {
-						this.form.siteLogoUrlLight = this.form.siteLogoUrlDark || legacy;
-					}
-					this.form.siteLogoUrl = this.form.siteLogoUrlLight || this.form.siteLogoUrlDark || '';
-				},
-				triggerLogoUpload(mode) {
-					const flag = mode === 'dark' ? 'logoUploadingDark' : 'logoUploadingLight';
-					const refName = mode === 'dark' ? 'logoInputDark' : 'logoInputLight';
-					if (this[flag]) {
-						return;
-					}
-					const input = this.$refs[refName];
-					if (input) {
-						input.click();
-					}
-				},
-				handleLogoSelected(event, mode) {
-					const files = event?.target?.files;
-					if (!files || files.length === 0) {
-						return;
-					}
-					const [file] = files;
-					event.target.value = '';
-					if (!file || !file.type.startsWith('image/')) {
-						window.AdminUI.toast({ message: '请选择图片文件', type: 'warning' });
-						return;
-					}
-					this.uploadLogo(file, mode);
-				},
-				async uploadLogo(file, mode) {
-					const flag = mode === 'dark' ? 'logoUploadingDark' : 'logoUploadingLight';
-					this[flag] = true;
-					const formData = new FormData();
-					formData.append('image', file);
-					try {
-						const response = await fetch('/admin/api/upload/image', {
-							method: 'POST',
-							body: formData,
-						});
-						const data = await response.json().catch(() => ({}));
-						if (!response.ok || data.error || !data.data || !data.data.url) {
-							const message = data && (data.error || data.message) ? (data.error || data.message) : 'Logo 上传失败，请稍后重试';
-							window.AdminUI.toast({ message, type: 'error' });
-							return;
-						}
-						if (mode === 'dark') {
-							this.form.siteLogoUrlDark = data.data.url;
-						} else {
-							this.form.siteLogoUrlLight = data.data.url;
-							this.form.siteLogoUrl = data.data.url;
-						}
-						this.applyLogoFallbacks();
-						window.AdminUI.toast({ message: 'Logo 上传成功', type: 'success' });
-					} catch (error) {
-						const message = error && error.message ? error.message : 'Logo 上传失败，请稍后重试';
-						window.AdminUI.toast({ message, type: 'error' });
-					} finally {
-						this[flag] = false;
-					}
-				},
-				clearLogo(mode) {
-					if (mode === 'dark') {
-						this.form.siteLogoUrlDark = '';
-					} else {
-						this.form.siteLogoUrlLight = '';
-						this.form.siteLogoUrl = '';
-					}
-					this.applyLogoFallbacks();
-				},
-                        providerMeta() {
-                                const mapping = {
-                                        openai: { label: 'OpenAI', keyField: 'openaiApiKey' },
-                                        deepseek: { label: 'DeepSeek', keyField: 'deepseekApiKey' },
-                                };
-                                const provider = (this.form.aiProvider || '').toLowerCase();
-                                return mapping[provider] || mapping.openai;
-                        },
-                        currentApiKey() {
-                                const meta = this.providerMeta();
-                                const key = this.form[meta.keyField] || '';
-                                return key.trim();
-                        },
-                        clearCurrentAPIKey() {
-                                const meta = this.providerMeta();
-                                this.form[meta.keyField] = '';
-                        },
-                        async testAI() {
-                                this.normalizeProvider();
-                                const meta = this.providerMeta();
-                                const provider = (this.form.aiProvider || 'openai').toLowerCase();
-                                const apiKey = this.currentApiKey();
-                                if (!apiKey) {
-                                        window.AdminUI.toast({ message: `请先填写 ${meta.label} API Key`, type: 'warning' });
-                                        return;
-                                }
-                                this.aiTesting = true;
-                                try {
-                                        const response = await fetch('/admin/api/system/settings/ai/test', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ provider, apiKey }),
-                                        });
-                                        const data = await response.json().catch(() => ({}));
-                                        if (!response.ok || data.error) {
-                                                const message = data && data.error ? data.error : '测试失败，请稍后重试';
-                                                window.AdminUI.toast({ message, type: 'error' });
-                                                return;
-                                        }
-                                        window.AdminUI.toast({ message: data.message || `${meta.label} 接口连接正常`, type: 'success' });
-                                } catch (error) {
-                                        const message = error && error.message ? error.message : '测试失败，请稍后重试';
-                                        window.AdminUI.toast({ message, type: 'error' });
-                                } finally {
-                                        this.aiTesting = false;
-                                }
-                        },
-                                submit() {
-                                        if (!this.form.siteName.trim()) {
-                                                window.AdminUI.toast({ message: '请填写站点名称', type: 'warning' });
-                                                return;
-                                        }
-                                        if (!this.form.siteDescription.trim()) {
-                                                window.AdminUI.toast({ message: '请填写站点描述', type: 'warning' });
-                                                return;
-                                        }
-                                        this.applyLogoFallbacks();
-                                        if (!this.form.siteLogoUrlLight?.trim()) {
-                                                window.AdminUI.toast({ message: '请上传浅色模式 Logo', type: 'warning' });
-                                                return;
-                                        }
-					if (!this.form.siteLogoUrlDark?.trim()) {
-						window.AdminUI.toast({ message: '请上传深色模式 Logo', type: 'warning' });
-						return;
-					}
-					this.normalizeProvider();
-					this.loading = true;
-					fetch('/admin/api/system/settings', {
-						method: 'PUT',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({
-                                                        siteName: this.form.siteName,
-                                                        siteLogoUrl: this.form.siteLogoUrlLight,
-                                                        siteLogoUrlLight: this.form.siteLogoUrlLight,
-                                                        siteLogoUrlDark: this.form.siteLogoUrlDark,
-                                                        siteDescription: this.form.siteDescription,
-                                                        siteKeywords: this.form.siteKeywords,
-                                                        siteSocialImage: this.form.siteSocialImage,
-                                                        adminFooterText: this.form.adminFooterText,
-                                                        publicFooterText: this.form.publicFooterText,
-                                                        aiProvider: this.form.aiProvider,
-                                                        openaiApiKey: this.form.openaiApiKey,
-                                                        deepseekApiKey: this.form.deepseekApiKey,
-							aiSummaryPrompt: this.form.aiSummaryPrompt,
-							aiRewritePrompt: this.form.aiRewritePrompt,
-						}),
-					})
-						.then(response => response.json())
-						.then(data => {
-							if (data.error) {
-								window.AdminUI.toast({ message: data.error, type: 'error' });
-								return;
-							}
-							if (data.settings) {
-								this.form = Object.assign(this.form, data.settings);
-								this.applyLogoFallbacks();
-								this.normalizeProvider();
-							}
-                                                window.AdminUI.toast({ message: data.message || '系统设置已保存', type: 'success' });
-                                        })
-                                        .catch(() => {
-                                                window.AdminUI.toast({ message: '保存失败，请稍后重试', type: 'error' });
-                                        })
-                                        .finally(() => {
-                                                this.loading = false;
-                                        });
-                        },
+    function systemSettingsForm() {
+        return {
+            loading: false,
+            showApiKey: false,
+            showDeepSeekKey: false,
+            aiTesting: false,
+            form: {
+                siteName: "",
+                siteLogoUrl: "",
+                siteLogoUrlLight: "",
+                siteLogoUrlDark: "",
+                siteDescription: "",
+                siteKeywords: "",
+                siteSocialImage: "",
+                adminFooterText: "",
+                publicFooterText: "",
+                galleryEnabled: true,
+                aiProvider: "openai",
+                openaiApiKey: "",
+                deepseekApiKey: "",
+                aiSummaryPrompt: "",
+                aiRewritePrompt: "",
+            },
+            logoUploadingLight: false,
+            logoUploadingDark: false,
+            init() {
+                this.fetchSettings();
+                this.scrollToHash();
+            },
+            scrollToHash() {
+                const hash = window.location.hash.replace("#", "");
+                if (!hash) {
+                    return;
+                }
+                this.$nextTick(() => {
+                    const target = document.getElementById(hash);
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                        });
+                    }
+                });
+            },
+            fetchSettings() {
+                fetch("/admin/api/system/settings")
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.error) {
+                            window.AdminUI.toast({
+                                message: data.error,
+                                type: "error",
+                            });
+                            return;
+                        }
+                        if (data.settings) {
+                            this.form = Object.assign(this.form, data.settings);
+                            this.applyLogoFallbacks();
+                            this.normalizeProvider();
+                        }
+                    })
+                    .catch(() => {
+                        window.AdminUI.toast({
+                            message: "加载系统设置失败",
+                            type: "error",
+                        });
+                    });
+            },
+            normalizeProvider() {
+                const provider = (this.form.aiProvider || "").toLowerCase();
+                if (provider === "deepseek") {
+                    this.form.aiProvider = "deepseek";
+                } else {
+                    this.form.aiProvider = "openai";
+                }
+            },
+            applyLogoFallbacks() {
+                const light = this.form.siteLogoUrlLight?.trim() || "";
+                const dark = this.form.siteLogoUrlDark?.trim() || "";
+                const legacy = this.form.siteLogoUrl?.trim() || "";
+                if (!light && legacy) {
+                    this.form.siteLogoUrlLight = legacy;
+                }
+                if (!this.form.siteLogoUrlDark?.trim()) {
+                    this.form.siteLogoUrlDark =
+                        this.form.siteLogoUrlLight ||
+                        legacy ||
+                        this.form.siteLogoUrlDark;
+                }
+                if (!this.form.siteLogoUrlLight?.trim()) {
+                    this.form.siteLogoUrlLight =
+                        this.form.siteLogoUrlDark || legacy;
+                }
+                this.form.siteLogoUrl =
+                    this.form.siteLogoUrlLight ||
+                    this.form.siteLogoUrlDark ||
+                    "";
+            },
+            triggerLogoUpload(mode) {
+                const flag =
+                    mode === "dark"
+                        ? "logoUploadingDark"
+                        : "logoUploadingLight";
+                const refName =
+                    mode === "dark" ? "logoInputDark" : "logoInputLight";
+                if (this[flag]) {
+                    return;
+                }
+                const input = this.$refs[refName];
+                if (input) {
+                    input.click();
+                }
+            },
+            handleLogoSelected(event, mode) {
+                const files = event?.target?.files;
+                if (!files || files.length === 0) {
+                    return;
+                }
+                const [file] = files;
+                event.target.value = "";
+                if (!file || !file.type.startsWith("image/")) {
+                    window.AdminUI.toast({
+                        message: "请选择图片文件",
+                        type: "warning",
+                    });
+                    return;
+                }
+                this.uploadLogo(file, mode);
+            },
+            async uploadLogo(file, mode) {
+                const flag =
+                    mode === "dark"
+                        ? "logoUploadingDark"
+                        : "logoUploadingLight";
+                this[flag] = true;
+                const formData = new FormData();
+                formData.append("image", file);
+                try {
+                    const response = await fetch("/admin/api/upload/image", {
+                        method: "POST",
+                        body: formData,
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (
+                        !response.ok ||
+                        data.error ||
+                        !data.data ||
+                        !data.data.url
+                    ) {
+                        const message =
+                            data && (data.error || data.message)
+                                ? data.error || data.message
+                                : "Logo 上传失败，请稍后重试";
+                        window.AdminUI.toast({ message, type: "error" });
+                        return;
+                    }
+                    if (mode === "dark") {
+                        this.form.siteLogoUrlDark = data.data.url;
+                    } else {
+                        this.form.siteLogoUrlLight = data.data.url;
+                        this.form.siteLogoUrl = data.data.url;
+                    }
+                    this.applyLogoFallbacks();
+                    window.AdminUI.toast({
+                        message: "Logo 上传成功",
+                        type: "success",
+                    });
+                } catch (error) {
+                    const message =
+                        error && error.message
+                            ? error.message
+                            : "Logo 上传失败，请稍后重试";
+                    window.AdminUI.toast({ message, type: "error" });
+                } finally {
+                    this[flag] = false;
+                }
+            },
+            clearLogo(mode) {
+                if (mode === "dark") {
+                    this.form.siteLogoUrlDark = "";
+                } else {
+                    this.form.siteLogoUrlLight = "";
+                    this.form.siteLogoUrl = "";
+                }
+                this.applyLogoFallbacks();
+            },
+            providerMeta() {
+                const mapping = {
+                    openai: { label: "OpenAI", keyField: "openaiApiKey" },
+                    deepseek: { label: "DeepSeek", keyField: "deepseekApiKey" },
                 };
-        }
+                const provider = (this.form.aiProvider || "").toLowerCase();
+                return mapping[provider] || mapping.openai;
+            },
+            currentApiKey() {
+                const meta = this.providerMeta();
+                const key = this.form[meta.keyField] || "";
+                return key.trim();
+            },
+            clearCurrentAPIKey() {
+                const meta = this.providerMeta();
+                this.form[meta.keyField] = "";
+            },
+            async testAI() {
+                this.normalizeProvider();
+                const meta = this.providerMeta();
+                const provider = (
+                    this.form.aiProvider || "openai"
+                ).toLowerCase();
+                const apiKey = this.currentApiKey();
+                if (!apiKey) {
+                    window.AdminUI.toast({
+                        message: `请先填写 ${meta.label} API Key`,
+                        type: "warning",
+                    });
+                    return;
+                }
+                this.aiTesting = true;
+                try {
+                    const response = await fetch(
+                        "/admin/api/system/settings/ai/test",
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ provider, apiKey }),
+                        },
+                    );
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || data.error) {
+                        const message =
+                            data && data.error
+                                ? data.error
+                                : "测试失败，请稍后重试";
+                        window.AdminUI.toast({ message, type: "error" });
+                        return;
+                    }
+                    window.AdminUI.toast({
+                        message: data.message || `${meta.label} 接口连接正常`,
+                        type: "success",
+                    });
+                } catch (error) {
+                    const message =
+                        error && error.message
+                            ? error.message
+                            : "测试失败，请稍后重试";
+                    window.AdminUI.toast({ message, type: "error" });
+                } finally {
+                    this.aiTesting = false;
+                }
+            },
+            submit() {
+                if (!this.form.siteName.trim()) {
+                    window.AdminUI.toast({
+                        message: "请填写站点名称",
+                        type: "warning",
+                    });
+                    return;
+                }
+                if (!this.form.siteDescription.trim()) {
+                    window.AdminUI.toast({
+                        message: "请填写站点描述",
+                        type: "warning",
+                    });
+                    return;
+                }
+                this.applyLogoFallbacks();
+                if (!this.form.siteLogoUrlLight?.trim()) {
+                    window.AdminUI.toast({
+                        message: "请上传浅色模式 Logo",
+                        type: "warning",
+                    });
+                    return;
+                }
+                if (!this.form.siteLogoUrlDark?.trim()) {
+                    window.AdminUI.toast({
+                        message: "请上传深色模式 Logo",
+                        type: "warning",
+                    });
+                    return;
+                }
+                this.normalizeProvider();
+                this.loading = true;
+                fetch("/admin/api/system/settings", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        siteName: this.form.siteName,
+                        siteLogoUrl: this.form.siteLogoUrlLight,
+                        siteLogoUrlLight: this.form.siteLogoUrlLight,
+                        siteLogoUrlDark: this.form.siteLogoUrlDark,
+                        siteDescription: this.form.siteDescription,
+                        siteKeywords: this.form.siteKeywords,
+                        siteSocialImage: this.form.siteSocialImage,
+                        adminFooterText: this.form.adminFooterText,
+                        publicFooterText: this.form.publicFooterText,
+                        galleryEnabled: this.form.galleryEnabled,
+                        aiProvider: this.form.aiProvider,
+                        openaiApiKey: this.form.openaiApiKey,
+                        deepseekApiKey: this.form.deepseekApiKey,
+                        aiSummaryPrompt: this.form.aiSummaryPrompt,
+                        aiRewritePrompt: this.form.aiRewritePrompt,
+                    }),
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.error) {
+                            window.AdminUI.toast({
+                                message: data.error,
+                                type: "error",
+                            });
+                            return;
+                        }
+                        if (data.settings) {
+                            this.form = Object.assign(this.form, data.settings);
+                            this.applyLogoFallbacks();
+                            this.normalizeProvider();
+                        }
+                        window.AdminUI.toast({
+                            message: data.message || "系统设置已保存",
+                            type: "success",
+                        });
+                    })
+                    .catch(() => {
+                        window.AdminUI.toast({
+                            message: "保存失败，请稍后重试",
+                            type: "error",
+                        });
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                    });
+            },
+        };
+    }
 </script>
 {{end}}

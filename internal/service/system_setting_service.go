@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -30,6 +31,7 @@ const (
 	defaultSiteKeywords    = "AI, 全栈工程师, 博客"
 	defaultAdminFooter     = "日拱一卒，功不唐捐"
 	defaultPublicFooter    = "激发创造，延迟满足"
+	defaultGalleryEnabled  = true
 )
 
 // SystemSettings 描述后台可配置的系统信息。
@@ -48,6 +50,7 @@ type SystemSettings struct {
 	PublicFooterText string
 	AISummaryPrompt  string
 	AIRewritePrompt  string
+	GalleryEnabled   bool
 }
 
 // ErrAIAPIKeyMissing 表示未提供必需的 AI 平台 API Key。
@@ -72,6 +75,7 @@ type SystemSettingsInput struct {
 	PublicFooterText string
 	AISummaryPrompt  string
 	AIRewritePrompt  string
+	GalleryEnabled   *bool
 }
 
 // SystemSettingService 提供系统设置的读取与更新能力。
@@ -111,6 +115,7 @@ var settingKeys = []string{
 	db.SettingKeyDeepSeekAPIKey,
 	db.SettingKeyAISummaryPrompt,
 	db.SettingKeyAIRewritePrompt,
+	db.SettingKeyGalleryEnabled,
 }
 
 // GetSettings 读取系统设置，如未设置将返回默认值。
@@ -124,6 +129,7 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 		PublicFooterText: defaultPublicFooter,
 		AISummaryPrompt:  defaultSummarySystemPrompt,
 		AIRewritePrompt:  defaultRewriteSystemPrompt,
+		GalleryEnabled:   defaultGalleryEnabled,
 	}
 
 	var records []db.SystemSetting
@@ -177,6 +183,10 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
 				result.AIRewritePrompt = trimmed
 			}
+		case db.SettingKeyGalleryEnabled:
+			if parsed, err := strconv.ParseBool(strings.TrimSpace(record.Value)); err == nil {
+				result.GalleryEnabled = parsed
+			}
 		}
 	}
 
@@ -218,6 +228,11 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 		provider = AIProviderOpenAI
 	}
 
+	galleryEnabled := defaultGalleryEnabled
+	if input.GalleryEnabled != nil {
+		galleryEnabled = *input.GalleryEnabled
+	}
+
 	sanitized := SystemSettings{
 		SiteName:         strings.TrimSpace(input.SiteName),
 		SiteLogoURL:      strings.TrimSpace(input.SiteLogoURL),
@@ -233,6 +248,7 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 		PublicFooterText: strings.TrimSpace(input.PublicFooterText),
 		AISummaryPrompt:  strings.TrimSpace(input.AISummaryPrompt),
 		AIRewritePrompt:  strings.TrimSpace(input.AIRewritePrompt),
+		GalleryEnabled:   galleryEnabled,
 	}
 
 	if sanitized.SiteName == "" {
@@ -313,6 +329,9 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeyAIRewritePrompt, sanitized.AIRewritePrompt); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeyGalleryEnabled, strconv.FormatBool(sanitized.GalleryEnabled)); err != nil {
 			return err
 		}
 		return nil
