@@ -121,7 +121,11 @@
                 </div>
 
                 <div class="w-full sm:flex-1 sm:px-4">
-                    <form method="GET" action="/" class="relative w-full sm:max-w-md">
+                    <form
+                        method="GET"
+                        action="/"
+                        class="relative w-full sm:max-w-md"
+                    >
                         <label class="relative block">
                             <input
                                 type="search"
@@ -191,6 +195,16 @@
                         class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
                         >RSS</a
                     >
+                    {{if .site.galleryEnabled}}
+                    <span class="mx-3 text-slate-300 dark:text-slate-600"
+                        >/</span
+                    >
+                    <a
+                        href="/gallery"
+                        class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
+                        >Gallery</a
+                    >
+                    {{end}}
                 </div>
             </nav>
         </header>

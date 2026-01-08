@@ -1,0 +1,48 @@
+{{if gt (len .items) 0}}
+<div hx-swap-oob="beforeend:#gallery-grid" style="display: contents">
+    {{range .items}}
+    <article data-gallery-card class="relative">
+        <button
+            type="button"
+            data-gallery-trigger
+            data-full-url="{{.ImageURL}}"
+            class="block w-full"
+            aria-label="{{if .Title}}{{.Title}}{{else}}摄影作品{{end}}"
+        >
+            <div
+                class="relative w-full overflow-hidden"
+                style="padding-top: {{aspectPadding .ImageWidth .ImageHeight}};"
+            >
+                <img
+                    src="{{.ImageURL}}"
+                    alt="{{if .Title}}{{.Title}}{{else}}摄影作品{{end}}"
+                    loading="lazy"
+                    class="absolute inset-0 h-full w-full object-cover"
+                />
+            </div>
+        </button>
+    </article>
+    {{end}}
+</div>
+{{end}} {{if .hasMore}}
+<div
+    id="load-more"
+    hx-get="/gallery/more?page={{.nextPage}}"
+    hx-trigger="revealed"
+    hx-target="#load-more"
+    hx-swap="outerHTML"
+>
+    <div
+        class="flex justify-center py-8 text-sm text-slate-500 dark:text-slate-400"
+    >
+        加载中…
+    </div>
+</div>
+{{else}}
+<div
+    id="load-more"
+    class="py-8 text-center text-sm text-slate-400 dark:text-slate-500"
+>
+    已经到底啦 ✨
+</div>
+{{end}}

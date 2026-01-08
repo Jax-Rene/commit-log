@@ -18,6 +18,7 @@ type API struct {
 	posts           *service.PostService
 	tags            *service.TagService
 	pages           *service.PageService
+	galleries       *service.GalleryService
 	profiles        *service.ProfileService
 	analytics       *service.AnalyticsService
 	system          *service.SystemSettingService
@@ -30,15 +31,16 @@ type API struct {
 }
 
 type siteViewModel struct {
-	Name         string
-	LogoLight    string
-	LogoDark     string
-	Avatar       string
-	AdminFooter  string
-	PublicFooter string
-	Description  string
-	Keywords     string
-	SocialImage  string
+	Name           string
+	LogoLight      string
+	LogoDark       string
+	Avatar         string
+	AdminFooter    string
+	PublicFooter   string
+	Description    string
+	Keywords       string
+	SocialImage    string
+	GalleryEnabled bool
 }
 
 const siteSettingsContextKey = "__site_settings"
@@ -54,6 +56,7 @@ func NewAPI(db *gorm.DB, uploadDir, uploadURL, baseURL string) *API {
 		posts:           service.NewPostService(db),
 		tags:            service.NewTagService(db),
 		pages:           service.NewPageService(db),
+		galleries:       service.NewGalleryService(db),
 		profiles:        service.NewProfileService(db),
 		analytics:       service.NewAnalyticsService(db),
 		system:          systemService,
@@ -84,14 +87,15 @@ func (a *API) siteSettings(c *gin.Context) siteViewModel {
 	}
 
 	view := siteViewModel{
-		Name:         strings.TrimSpace(settings.SiteName),
-		LogoLight:    strings.TrimSpace(settings.SiteLogoURLLight),
-		LogoDark:     strings.TrimSpace(settings.SiteLogoURLDark),
-		AdminFooter:  strings.TrimSpace(settings.AdminFooterText),
-		PublicFooter: strings.TrimSpace(settings.PublicFooterText),
-		Description:  strings.TrimSpace(settings.SiteDescription),
-		Keywords:     strings.TrimSpace(settings.SiteKeywords),
-		SocialImage:  strings.TrimSpace(settings.SiteSocialImage),
+		Name:           strings.TrimSpace(settings.SiteName),
+		LogoLight:      strings.TrimSpace(settings.SiteLogoURLLight),
+		LogoDark:       strings.TrimSpace(settings.SiteLogoURLDark),
+		AdminFooter:    strings.TrimSpace(settings.AdminFooterText),
+		PublicFooter:   strings.TrimSpace(settings.PublicFooterText),
+		Description:    strings.TrimSpace(settings.SiteDescription),
+		Keywords:       strings.TrimSpace(settings.SiteKeywords),
+		SocialImage:    strings.TrimSpace(settings.SiteSocialImage),
+		GalleryEnabled: settings.GalleryEnabled,
 	}
 	if view.Name == "" {
 		view.Name = "CommitLog"
@@ -143,15 +147,16 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 	}
 
 	siteDefaults := map[string]interface{}{
-		"name":         view.Name,
-		"logoUrl":      view.LogoLight,
-		"logoUrlLight": view.LogoLight,
-		"logoUrlDark":  view.LogoDark,
-		"avatar":       view.Avatar,
-		"adminFooter":  view.AdminFooter,
-		"publicFooter": view.PublicFooter,
-		"description":  view.Description,
-		"keywords":     view.Keywords,
+		"name":           view.Name,
+		"logoUrl":        view.LogoLight,
+		"logoUrlLight":   view.LogoLight,
+		"logoUrlDark":    view.LogoDark,
+		"avatar":         view.Avatar,
+		"adminFooter":    view.AdminFooter,
+		"publicFooter":   view.PublicFooter,
+		"description":    view.Description,
+		"keywords":       view.Keywords,
+		"galleryEnabled": view.GalleryEnabled,
 	}
 	if view.SocialImage != "" {
 		siteDefaults["socialImage"] = a.absoluteURL(c, view.SocialImage)
