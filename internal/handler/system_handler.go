@@ -55,6 +55,7 @@ type systemSettingsRequest struct {
 	DeepSeekAPIKey   string `json:"deepseekApiKey"`
 	AdminFooterText  string `json:"adminFooterText"`
 	PublicFooterText string `json:"publicFooterText"`
+	GallerySubtitle  string `json:"gallerySubtitle"`
 	AISummaryPrompt  string `json:"aiSummaryPrompt"`
 	AIRewritePrompt  string `json:"aiRewritePrompt"`
 	GalleryEnabled   *bool  `json:"galleryEnabled"`
@@ -109,6 +110,7 @@ func (r systemSettingsRequest) toInput() service.SystemSettingsInput {
 		DeepSeekAPIKey:   r.DeepSeekAPIKey,
 		AdminFooterText:  r.AdminFooterText,
 		PublicFooterText: r.PublicFooterText,
+		GallerySubtitle:  r.GallerySubtitle,
 		AISummaryPrompt:  r.AISummaryPrompt,
 		AIRewritePrompt:  r.AIRewritePrompt,
 		GalleryEnabled:   r.GalleryEnabled,
@@ -129,6 +131,7 @@ func systemSettingsPayload(settings service.SystemSettings) gin.H {
 		"deepseekApiKey":   settings.DeepSeekAPIKey,
 		"adminFooterText":  settings.AdminFooterText,
 		"publicFooterText": settings.PublicFooterText,
+		"gallerySubtitle":  settings.GallerySubtitle,
 		"aiSummaryPrompt":  settings.AISummaryPrompt,
 		"aiRewritePrompt":  settings.AIRewritePrompt,
 		"galleryEnabled":   settings.GalleryEnabled,

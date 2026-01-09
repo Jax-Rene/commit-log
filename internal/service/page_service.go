@@ -51,7 +51,7 @@ func (s *PageService) SaveAboutPage(content string) (*db.Page, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			page = db.Page{
 				Slug:    "about",
-				Title:   "关于我",
+				Title:   "About Me",
 				Summary: summary,
 				Content: trimmed,
 			}
@@ -66,7 +66,7 @@ func (s *PageService) SaveAboutPage(content string) (*db.Page, error) {
 	page.Content = trimmed
 	page.Summary = summary
 	if strings.TrimSpace(page.Title) == "" {
-		page.Title = "关于我"
+		page.Title = "About Me"
 	}
 
 	if err := s.db.Save(&page).Error; err != nil {

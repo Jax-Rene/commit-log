@@ -26,7 +26,7 @@ func main() {
 	// 创建测试标签
 	createTestTags()
 
-	// 创建关于我页面
+	// 创建About Me页面
 	createAboutPage()
 
 	// 创建测试文章
@@ -93,7 +93,7 @@ func createTestTags() {
 	fmt.Println("✅ 测试标签创建完成")
 }
 
-// 创建关于我页面
+// 创建About Me页面
 func createAboutPage() {
 	var count int64
 	db.DB.Model(&db.Page{}).Where("slug = ?", "about").Count(&count)
@@ -104,7 +104,7 @@ func createAboutPage() {
 
 	page := db.Page{
 		Slug:    "about",
-		Title:   "关于我",
+		Title:   "About Me",
 		Summary: "AI 全栈工程师，专注技术与产品的长期主义者。",
 		Content: "## 你好，我是 CommitLog\n\n- 专注 Go、前端与 AI 协同开发\n- 坚持通过文字记录成长，分享工程实践\n- 相信长期主义与复利思维\n\n### 近期关注\n1. AI 辅助研发流程的落地\n2. 优雅的技术写作与知识管理\n3. 个人品牌与产品化能力",
 	}
@@ -114,7 +114,7 @@ func createAboutPage() {
 		return
 	}
 
-	fmt.Println("✅ 关于我页面创建完成")
+	fmt.Println("✅ About Me页面创建完成")
 }
 
 // 创建测试文章

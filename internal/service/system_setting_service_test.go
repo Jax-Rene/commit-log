@@ -75,6 +75,9 @@ func TestSystemSettingServiceDefaults(t *testing.T) {
 	if settings.AIRewritePrompt != defaultRewriteSystemPrompt {
 		t.Fatalf("unexpected rewrite prompt default: %q", settings.AIRewritePrompt)
 	}
+	if settings.GallerySubtitle != defaultGallerySubtitle {
+		t.Fatalf("unexpected gallery subtitle default: %q", settings.GallerySubtitle)
+	}
 	if !settings.GalleryEnabled {
 		t.Fatalf("expected gallery to be enabled by default")
 	}
@@ -95,6 +98,7 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 		SiteSocialImage:  "https://example.com/og.png",
 		AdminFooterText:  "后台页脚",
 		PublicFooterText: "前台页脚",
+		GallerySubtitle:  " Shot by Hasselblad X2D / iPhone 16 ",
 		AIProvider:       "deepseek",
 		OpenAIAPIKey:     "sk-xxxx",
 		DeepSeekAPIKey:   "ds-12345",
@@ -134,6 +138,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	}
 	if saved.AIRewritePrompt != "重写提示" {
 		t.Fatalf("expected rewrite prompt sanitized, got %q", saved.AIRewritePrompt)
+	}
+	if saved.GallerySubtitle != "Shot by Hasselblad X2D / iPhone 16" {
+		t.Fatalf("expected gallery subtitle sanitized, got %q", saved.GallerySubtitle)
 	}
 
 	fetched, err := svc.GetSettings()
@@ -183,6 +190,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if fetched.AIRewritePrompt != "重写提示" {
 		t.Fatalf("expected rewrite prompt %q, got %q", "重写提示", fetched.AIRewritePrompt)
 	}
+	if fetched.GallerySubtitle != "Shot by Hasselblad X2D / iPhone 16" {
+		t.Fatalf("expected gallery subtitle %q, got %q", "Shot by Hasselblad X2D / iPhone 16", fetched.GallerySubtitle)
+	}
 }
 
 func TestSystemSettingServiceFallbackSiteName(t *testing.T) {
@@ -218,6 +228,9 @@ func TestSystemSettingServiceFallbackSiteName(t *testing.T) {
 	}
 	if saved.AIRewritePrompt != defaultRewriteSystemPrompt {
 		t.Fatalf("expected rewrite prompt fallback to default, got %q", saved.AIRewritePrompt)
+	}
+	if saved.GallerySubtitle != defaultGallerySubtitle {
+		t.Fatalf("expected gallery subtitle fallback to default, got %q", saved.GallerySubtitle)
 	}
 }
 

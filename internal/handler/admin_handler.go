@@ -92,7 +92,7 @@ func (a *API) ShowDashboard(c *gin.Context) {
 		} else {
 			c.Error(err)
 		}
-		if trend, err := a.analytics.HourlyTrafficTrend(time.Now().UTC(), 24); err == nil {
+		if trend, err := a.analytics.HourlyTrafficTrend(time.Now().UTC(), 24*7); err == nil {
 			hourlyTrend = trend
 		} else {
 			c.Error(err)

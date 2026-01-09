@@ -378,7 +378,7 @@ func (a *API) ShowAbout(c *gin.Context) {
 		a.renderHTML(c, http.StatusOK, "about.html", gin.H{
 			"title": "关于",
 			"page": gin.H{
-				"Title": "关于我",
+				"Title": "About Me",
 			},
 			"content":         template.HTML("<p class=\"text-sm text-slate-600\">暂无简介，稍后再来看看。</p>"),
 			"year":            now.Year(),

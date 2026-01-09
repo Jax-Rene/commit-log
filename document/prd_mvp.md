@@ -76,7 +76,7 @@
     *   [x] 创建前端主布局 `web/template/frontend/layout.html`。
     *   [x] `index.html`: 网站首页，展示文章列表。
     *   [x] `post_detail.html`: 文章详情页。
-    *   [x] `about.html`: “关于我”简历页。
+    *   [x] `about.html`: “About Me”简历页。
     *   [x] `tag_list.html`: 按标签分类的文章列表页。
 
 2.  **后端渲染逻辑:**

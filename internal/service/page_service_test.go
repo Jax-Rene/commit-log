@@ -46,7 +46,7 @@ func TestSaveAboutPageCreatesRecord(t *testing.T) {
 		t.Fatalf("expected slug 'about', got %s", page.Slug)
 	}
 
-	if page.Title != "关于我" {
+	if page.Title != "About Me" {
 		t.Fatalf("expected default title, got %s", page.Title)
 	}
 

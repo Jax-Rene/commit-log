@@ -10,9 +10,11 @@
                 >
                     Photography Portfolio
                 </h1>
+                {{if .site.gallerySubtitle}}
                 <p class="text-sm text-slate-600 dark:text-slate-400">
-                    Shot by Lumix S5M2 / OnePlus 13
+                    {{.site.gallerySubtitle}}
                 </p>
+                {{end}}
             </div>
         </div>
     </header>
