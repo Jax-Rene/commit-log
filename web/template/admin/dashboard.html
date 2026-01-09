@@ -204,8 +204,17 @@
         >
             <template x-if="hasData">
                 <div class="space-y-4">
-                    <div class="relative h-48 w-full">
-                        <svg viewBox="0 0 640 200" class="h-full w-full">
+                    <div
+                        class="relative h-48 w-full"
+                        x-ref="chart"
+                        @mousemove="handleMouseMove($event)"
+                        @mouseleave="hideTooltip()"
+                    >
+                        <svg
+                            viewBox="0 0 640 200"
+                            preserveAspectRatio="none"
+                            class="h-full w-full"
+                        >
                             <defs>
                                 <linearGradient
                                     id="pvGradient"
@@ -268,7 +277,99 @@
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                             ></polyline>
+                            <template x-if="hoverPoint">
+                                <line
+                                    :x1="hoverPoint.x"
+                                    :x2="hoverPoint.x"
+                                    :y1="chart.padding"
+                                    :y2="chart.height - chart.padding"
+                                    stroke="#94a3b8"
+                                    stroke-width="1"
+                                    stroke-dasharray="4 4"
+                                ></line>
+                            </template>
                         </svg>
+                        <div class="pointer-events-none absolute inset-0">
+                            <template
+                                x-for="(point, index) in dotPoints"
+                                :key="`dot-${index}`"
+                            >
+                                <div>
+                                    <span
+                                        class="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-opacity duration-150"
+                                        :class="[
+                                            hoverIndex === index
+                                                ? 'h-2.5 w-2.5'
+                                                : 'h-2 w-2',
+                                            hoverIndex === index
+                                                ? 'opacity-100'
+                                                : 'opacity-0',
+                                            point.pv === 0
+                                                ? 'bg-blue-500/40 border-blue-200/80'
+                                                : 'bg-blue-500 border-white',
+                                        ]"
+                                        :style="dotStyle(point, 'pv')"
+                                    ></span>
+                                    <span
+                                        class="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-opacity duration-150"
+                                        :class="[
+                                            hoverIndex === index
+                                                ? 'h-2.5 w-2.5'
+                                                : 'h-2 w-2',
+                                            hoverIndex === index
+                                                ? 'opacity-100'
+                                                : 'opacity-0',
+                                            point.uv === 0
+                                                ? 'bg-emerald-500/40 border-emerald-200/80'
+                                                : 'bg-emerald-500 border-white',
+                                        ]"
+                                        :style="dotStyle(point, 'uv')"
+                                    ></span>
+                                </div>
+                            </template>
+                        </div>
+                        <div
+                            x-show="tooltip.visible"
+                            x-transition.opacity
+                            x-cloak
+                            class="pointer-events-none absolute z-10 rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-xs text-slate-600 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300"
+                            :style="`left: ${tooltip.left}px; top: ${tooltip.top}px; transform: translate(-50%, -110%);`"
+                        >
+                            <div
+                                class="text-[11px] text-slate-400 dark:text-slate-500"
+                                x-text="tooltip.date"
+                            ></div>
+                            <div
+                                class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                                x-text="tooltip.time"
+                            ></div>
+                            <div class="mt-2 flex items-center gap-3 text-xs">
+                                <span
+                                    class="inline-flex items-center gap-1 text-slate-500 dark:text-slate-300"
+                                >
+                                    <span
+                                        class="h-2 w-2 rounded-full bg-blue-500"
+                                    ></span>
+                                    <span>PV</span>
+                                    <span
+                                        class="font-semibold text-slate-900 dark:text-slate-100"
+                                        x-text="tooltip.pv"
+                                    ></span>
+                                </span>
+                                <span
+                                    class="inline-flex items-center gap-1 text-slate-500 dark:text-slate-300"
+                                >
+                                    <span
+                                        class="h-2 w-2 rounded-full bg-emerald-500"
+                                    ></span>
+                                    <span>UV</span>
+                                    <span
+                                        class="font-semibold text-slate-900 dark:text-slate-100"
+                                        x-text="tooltip.uv"
+                                    ></span>
+                                </span>
+                            </div>
+                        </div>
                     </div>
                     <div
                         class="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500"
@@ -471,31 +572,57 @@
         </div>
     </section>
 </div>
+<script src="/static/js/traffic_trend.js"></script>
 <script>
     function trafficTrend(points) {
         const entries = Array.isArray(points) ? points : [];
         return {
             points: entries,
+            entries: [],
             labels: [],
             pv: [],
             uv: [],
+            dotPoints: [],
             maxValue: 1,
             hasData: false,
             latest: { pageViews: 0, uniqueVisitors: 0, hour: null },
+            hoverIndex: null,
+            tooltip: {
+                visible: false,
+                left: 0,
+                top: 0,
+                time: "",
+                date: "",
+                pv: 0,
+                uv: 0,
+            },
+            chart: { width: 640, height: 200, padding: 20 },
+            tooltipSize: { width: 180, height: 72 },
             init() {
                 const normalized = this.points.map((point) => ({
                     hour: point.Hour ? new Date(point.Hour) : null,
                     pageViews: Number(point.PageViews || 0),
                     uniqueVisitors: Number(point.UniqueVisitors || 0),
                 }));
+                this.entries = normalized;
                 this.labels = normalized.map((point) =>
                     point.hour ? this.formatHour(point.hour) : "",
                 );
                 this.pv = normalized.map((point) => point.pageViews);
                 this.uv = normalized.map((point) => point.uniqueVisitors);
-                this.maxValue = Math.max(1, ...this.pv, ...this.uv);
-                this.hasData = normalized.length > 0;
+                this.refreshDots();
+                this.hasData = this.dotPoints.length > 0;
                 this.latest = normalized[normalized.length - 1] || this.latest;
+
+                window.addEventListener("resize", () => {
+                    if (
+                        this.tooltip.visible &&
+                        this.hoverIndex !== null &&
+                        this.dotPoints[this.hoverIndex]
+                    ) {
+                        this.updateTooltip(this.dotPoints[this.hoverIndex]);
+                    }
+                });
             },
             get startLabel() {
                 return this.labels[0] || "";
@@ -511,6 +638,12 @@
                     this.latest.hour,
                 )}`;
             },
+            get hoverPoint() {
+                if (this.hoverIndex === null) {
+                    return null;
+                }
+                return this.dotPoints[this.hoverIndex] || null;
+            },
             formatHour(date) {
                 return date.toLocaleTimeString("zh-CN", {
                     hour: "2-digit",
@@ -523,6 +656,102 @@
                     day: "2-digit",
                 });
             },
+            refreshDots() {
+                const helper = window.TrafficTrend;
+                if (helper && typeof helper.computeDotPoints === "function") {
+                    const result = helper.computeDotPoints(
+                        this.pv,
+                        this.uv,
+                        this.chart,
+                    );
+                    this.maxValue = result.maxValue;
+                    this.dotPoints = result.dots;
+                    return;
+                }
+
+                const count = Math.max(this.pv.length, this.uv.length);
+                this.maxValue = Math.max(1, ...this.pv, ...this.uv);
+                this.dotPoints = Array.from({ length: count }, (_, index) => ({
+                    index,
+                    x: this.pointX(index, count),
+                    pv: this.pv[index] || 0,
+                    uv: this.uv[index] || 0,
+                    pvY: this.valueY(this.pv[index] || 0),
+                    uvY: this.valueY(this.uv[index] || 0),
+                }));
+            },
+            dotStyle(point, series) {
+                if (!point) {
+                    return "";
+                }
+                const width = this.chart.width || 1;
+                const height = this.chart.height || 1;
+                const y = series === "uv" ? point.uvY : point.pvY;
+                const left = (point.x / width) * 100;
+                const top = (y / height) * 100;
+                return `left: ${left}%; top: ${top}%;`;
+            },
+            handleMouseMove(event) {
+                if (!this.dotPoints.length) {
+                    return;
+                }
+                const rect = this.$refs.chart
+                    ? this.$refs.chart.getBoundingClientRect()
+                    : null;
+                if (!rect || rect.width <= 0) {
+                    return;
+                }
+                const helper = window.TrafficTrend;
+                let index = null;
+                if (helper && typeof helper.computeHoverIndex === "function") {
+                    index = helper.computeHoverIndex(
+                        event.clientX - rect.left,
+                        this.dotPoints.length,
+                        this.chart,
+                        { width: rect.width },
+                    );
+                } else {
+                    const count = this.dotPoints.length;
+                    if (count === 1) {
+                        index = 0;
+                    } else {
+                        const step =
+                            (this.chart.width - this.chart.padding * 2) /
+                            (count - 1);
+                        const chartX =
+                            ((event.clientX - rect.left) / rect.width) *
+                            this.chart.width;
+                        index = Math.round(
+                            (chartX - this.chart.padding) / step,
+                        );
+                        index = Math.max(0, Math.min(count - 1, index));
+                    }
+                }
+                if (index === null) {
+                    this.hideTooltip();
+                    return;
+                }
+                if (index === this.hoverIndex && this.tooltip.visible) {
+                    return;
+                }
+                this.showTooltip(index);
+            },
+            pointX(index, count) {
+                const step =
+                    count > 1
+                        ? (this.chart.width - this.chart.padding * 2) /
+                          (count - 1)
+                        : 0;
+                return this.chart.padding + step * index;
+            },
+            valueY(value) {
+                return (
+                    this.chart.height -
+                    this.chart.padding -
+                    ((this.chart.height - this.chart.padding * 2) * value) /
+                        this.maxValue
+                );
+            },
             linePoints(series) {
                 return this.buildPoints(series, false);
             },
@@ -530,35 +759,75 @@
                 return this.buildPoints(series, true);
             },
             buildPoints(series, closed) {
-                const width = 640;
-                const height = 200;
-                const padding = 20;
                 if (!series.length) {
                     return "";
                 }
-                const step =
-                    series.length > 1
-                        ? (width - padding * 2) / (series.length - 1)
-                        : 0;
-                const points = series.map((value, index) => {
-                    const x = padding + step * index;
-                    const y =
-                        height -
-                        padding -
-                        ((height - padding * 2) * value) / this.maxValue;
-                    return [x, y];
-                });
+                const points = series.map((value, index) => [
+                    this.pointX(index, series.length),
+                    this.valueY(value),
+                ]);
                 if (!closed) {
                     return points.map((point) => point.join(",")).join(" ");
                 }
                 const first = points[0];
                 const last = points[points.length - 1];
-                const path = [`M ${first[0]} ${height - padding}`];
+                const path = [
+                    `M ${first[0]} ${this.chart.height - this.chart.padding}`,
+                ];
                 points.forEach((point) => {
                     path.push(`L ${point[0]} ${point[1]}`);
                 });
-                path.push(`L ${last[0]} ${height - padding}`, "Z");
+                path.push(
+                    `L ${last[0]} ${this.chart.height - this.chart.padding}`,
+                    "Z",
+                );
                 return path.join(" ");
+            },
+            showTooltip(index) {
+                const point = this.dotPoints[index];
+                if (!point) {
+                    return;
+                }
+                this.hoverIndex = index;
+                this.updateTooltip(point);
+            },
+            updateTooltip(point) {
+                const entry = this.entries[point.index] || {};
+                const hour = entry.hour;
+                this.tooltip.visible = true;
+                this.tooltip.pv = point.pv || 0;
+                this.tooltip.uv = point.uv || 0;
+                this.tooltip.time = hour ? this.formatHour(hour) : "";
+                this.tooltip.date = hour ? this.formatDate(hour) : "";
+
+                const rect = this.$refs.chart
+                    ? this.$refs.chart.getBoundingClientRect()
+                    : null;
+                if (!rect) {
+                    return;
+                }
+
+                const helper = window.TrafficTrend;
+                if (
+                    helper &&
+                    typeof helper.computeTooltipPosition === "function"
+                ) {
+                    const position = helper.computeTooltipPosition(
+                        point,
+                        this.chart,
+                        { width: rect.width, height: rect.height },
+                        this.tooltipSize,
+                    );
+                    this.tooltip.left = position.left;
+                    this.tooltip.top = position.top;
+                    return;
+                }
+                this.tooltip.left = rect.width / 2;
+                this.tooltip.top = rect.height / 2;
+            },
+            hideTooltip() {
+                this.hoverIndex = null;
+                this.tooltip.visible = false;
             },
         };
     }

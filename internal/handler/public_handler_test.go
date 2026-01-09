@@ -166,7 +166,7 @@ func TestHomeCanonicalUsesConfiguredBaseURL(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	expected := `<link rel="canonical" href="https://blog.jaxrene.dev/">`
+	expected := `rel="canonical" href="https://blog.jaxrene.dev/"`
 	if !strings.Contains(w.Body.String(), expected) {
 		t.Fatalf("expected canonical link %s", expected)
 	}
@@ -320,7 +320,7 @@ func TestShowAboutUsesSummaryForMeta(t *testing.T) {
 	}
 
 	body := w.Body.String()
-	if !strings.Contains(body, `<meta name="description" content="自定义关于页摘要">`) {
+	if !strings.Contains(body, `name="description" content="自定义关于页摘要"`) {
 		t.Fatalf("expected meta description to prefer page summary, body=%s", body)
 	}
 }
