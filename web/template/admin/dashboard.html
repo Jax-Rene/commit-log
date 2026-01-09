@@ -256,6 +256,24 @@
                                 :d="areaPath(uv)"
                                 fill="url(#uvGradient)"
                             ></path>
+                            <g
+                                class="text-slate-200/60 dark:text-slate-700/70"
+                                stroke="currentColor"
+                                stroke-width="1"
+                            >
+                                <line
+                                    :x1="chart.padding"
+                                    :x2="chart.padding"
+                                    :y1="chart.padding"
+                                    :y2="chart.height - chart.padding"
+                                ></line>
+                                <line
+                                    :x1="chart.padding"
+                                    :x2="chart.width - chart.padding"
+                                    :y1="chart.height - chart.padding"
+                                    :y2="chart.height - chart.padding"
+                                ></line>
+                            </g>
                             <polyline
                                 :points="linePoints(pv)"
                                 fill="none"
@@ -323,6 +341,28 @@
                                 </div>
                             </template>
                         </div>
+                        <div class="pointer-events-none absolute inset-0">
+                            <template
+                                x-for="tick in yAxisTicks"
+                                :key="`y-tick-${tick.value}`"
+                            >
+                                <span
+                                    class="absolute -translate-y-1/2 -translate-x-3 whitespace-nowrap text-[10px] text-slate-400 dark:text-slate-500"
+                                    :style="yAxisLabelStyle(tick)"
+                                    x-text="formatCount(tick.value)"
+                                ></span>
+                            </template>
+                            <template
+                                x-for="tick in xAxisTicks"
+                                :key="`x-tick-${tick.index}`"
+                            >
+                                <span
+                                    class="absolute -translate-x-1/2 translate-y-2 whitespace-nowrap text-[10px] text-slate-400 dark:text-slate-500"
+                                    :style="xAxisLabelStyle(tick)"
+                                    x-text="tick.label"
+                                ></span>
+                            </template>
+                        </div>
                         <div
                             x-show="tooltip.visible"
                             x-transition.opacity
@@ -365,12 +405,6 @@
                                 </span>
                             </div>
                         </div>
-                    </div>
-                    <div
-                        class="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500"
-                    >
-                        <span x-text="startLabel"></span>
-                        <span x-text="endLabel"></span>
                     </div>
                 </div>
             </template>
@@ -578,7 +612,10 @@
             pv: [],
             uv: [],
             dotPoints: [],
+            xAxisTicks: [],
+            yAxisTicks: [],
             maxValue: 1,
+            dataMax: 0,
             hasData: false,
             latest: { pageViews: 0, uniqueVisitors: 0, hour: null },
             hoverIndex: null,
@@ -606,6 +643,7 @@
                 this.pv = normalized.map((point) => point.pageViews);
                 this.uv = normalized.map((point) => point.uniqueVisitors);
                 this.refreshDots();
+                this.refreshAxis();
                 this.hasData = this.dotPoints.length > 0;
                 this.latest = normalized[normalized.length - 1] || this.latest;
 
@@ -618,12 +656,6 @@
                         this.updateTooltip(this.dotPoints[this.hoverIndex]);
                     }
                 });
-            },
-            get startLabel() {
-                return this.labels[0] || "";
-            },
-            get endLabel() {
-                return this.labels[this.labels.length - 1] || "";
             },
             get latestLabel() {
                 if (!this.latest.hour) {
@@ -651,6 +683,17 @@
                     day: "2-digit",
                 });
             },
+            formatDateTime(date) {
+                return `${this.formatDate(date)} ${this.formatHour(date)}`;
+            },
+            formatCount(value) {
+                const num = Number(value) || 0;
+                if (num >= 1000) {
+                    const scaled = (num / 1000).toFixed(1);
+                    return `${scaled.replace(/\.0$/, "")}k`;
+                }
+                return `${Math.round(num)}`;
+            },
             refreshDots() {
                 const helper = window.TrafficTrend;
                 if (helper && typeof helper.computeDotPoints === "function") {
@@ -675,6 +718,69 @@
                     uvY: this.valueY(this.uv[index] || 0),
                 }));
             },
+            refreshAxis() {
+                const helper = window.TrafficTrend;
+                this.dataMax = Math.max(0, ...this.pv, ...this.uv);
+
+                if (helper && typeof helper.computeYAxisTicks === "function") {
+                    this.yAxisTicks = helper.computeYAxisTicks(
+                        this.dataMax,
+                        this.chart,
+                        this.maxValue,
+                    );
+                } else {
+                    const values = [];
+                    [this.dataMax, Math.round(this.dataMax / 2), 0].forEach(
+                        (value) => {
+                            if (!values.includes(value)) {
+                                values.push(value);
+                            }
+                        },
+                    );
+                    this.yAxisTicks = values
+                        .sort((a, b) => b - a)
+                        .map((value) => ({
+                            value,
+                            y: this.valueY(value),
+                        }));
+                }
+
+                if (helper && typeof helper.computeXAxisTicks === "function") {
+                    const ticks = helper.computeXAxisTicks(
+                        this.entries.length,
+                        this.chart,
+                    );
+                    this.xAxisTicks = ticks.map((tick) => {
+                        const entry = this.entries[tick.index] || {};
+                        const hour = entry.hour;
+                        return {
+                            ...tick,
+                            label: hour ? this.formatDateTime(hour) : "",
+                        };
+                    });
+                } else {
+                    const count = this.entries.length;
+                    if (!count) {
+                        this.xAxisTicks = [];
+                        return;
+                    }
+                    const step = count <= 12 ? 1 : Math.ceil(count / 6);
+                    const indices = new Set([0]);
+                    for (let index = 0; index < count; index += step) {
+                        indices.add(index);
+                    }
+                    indices.add(count - 1);
+                    this.xAxisTicks = Array.from(indices)
+                        .sort((a, b) => a - b)
+                        .map((index) => ({
+                            index,
+                            x: this.pointX(index, count),
+                            label: this.entries[index]?.hour
+                                ? this.formatDateTime(this.entries[index].hour)
+                                : "",
+                        }));
+                }
+            },
             dotStyle(point, series) {
                 if (!point) {
                     return "";
@@ -684,6 +790,27 @@
                 const y = series === "uv" ? point.uvY : point.pvY;
                 const left = (point.x / width) * 100;
                 const top = (y / height) * 100;
+                return `left: ${left}%; top: ${top}%;`;
+            },
+            xAxisLabelStyle(tick) {
+                if (!tick) {
+                    return "";
+                }
+                const width = this.chart.width || 1;
+                const height = this.chart.height || 1;
+                const left = (tick.x / width) * 100;
+                const top =
+                    ((this.chart.height - this.chart.padding) / height) * 100;
+                return `left: ${left}%; top: ${top}%;`;
+            },
+            yAxisLabelStyle(tick) {
+                if (!tick) {
+                    return "";
+                }
+                const width = this.chart.width || 1;
+                const height = this.chart.height || 1;
+                const left = (this.chart.padding / width) * 100;
+                const top = (tick.y / height) * 100;
                 return `left: ${left}%; top: ${top}%;`;
             },
             handleMouseMove(event) {

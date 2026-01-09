@@ -5,6 +5,8 @@ const {
   computeDotPoints,
   computeTooltipPosition,
   computeHoverIndex,
+  computeXAxisTicks,
+  computeYAxisTicks,
 } = require("../web/static/js/traffic_trend");
 
 test("computeDotPoints builds dot coordinates with chart scale", () => {
@@ -67,4 +69,43 @@ test("computeHoverIndex handles single or empty series", () => {
 
   assert.equal(computeHoverIndex(10, 1, chart, { width: 640 }), 0);
   assert.equal(computeHoverIndex(10, 0, chart, { width: 640 }), null);
+});
+
+test("computeXAxisTicks picks daily steps for long ranges", () => {
+  const chart = { width: 640, height: 200, padding: 20 };
+  const ticks = computeXAxisTicks(168, chart);
+
+  assert.equal(ticks[0].index, 0);
+  assert.equal(ticks[1].index, 24);
+  assert.equal(ticks[ticks.length - 1].index, 167);
+  assert.ok(Math.abs(ticks[0].x - 20) < 1e-6);
+  assert.ok(Math.abs(ticks[ticks.length - 1].x - 620) < 1e-6);
+});
+
+test("computeXAxisTicks emits each point when count is small", () => {
+  const chart = { width: 640, height: 200, padding: 20 };
+  const ticks = computeXAxisTicks(6, chart);
+
+  assert.deepEqual(
+    ticks.map((tick) => tick.index),
+    [0, 1, 2, 3, 4, 5],
+  );
+});
+
+test("computeYAxisTicks builds max/mid/zero ticks", () => {
+  const chart = { width: 640, height: 200, padding: 20 };
+  const ticks = computeYAxisTicks(120, chart, 120);
+
+  assert.deepEqual(ticks, [
+    { value: 120, y: 20 },
+    { value: 60, y: 100 },
+    { value: 0, y: 180 },
+  ]);
+});
+
+test("computeYAxisTicks handles zero max", () => {
+  const chart = { width: 640, height: 200, padding: 20 };
+  const ticks = computeYAxisTicks(0, chart, 1);
+
+  assert.deepEqual(ticks, [{ value: 0, y: 180 }]);
 });

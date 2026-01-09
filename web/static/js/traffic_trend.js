@@ -125,5 +125,75 @@
     return clamp(rawIndex, 0, total - 1);
   }
 
-  return { computeDotPoints, computeTooltipPosition, computeHoverIndex };
+  function resolveXAxisStep(total) {
+    if (total <= 12) {
+      return 1;
+    }
+    if (total <= 48) {
+      return Math.ceil(total / 6);
+    }
+    return 24;
+  }
+
+  function computeXAxisTicks(count, chart) {
+    const total = Math.floor(toNumber(count));
+    if (total <= 0) {
+      return [];
+    }
+
+    const normalizedChart = normalizeChart(chart);
+    const step = resolveXAxisStep(total);
+    const indices = new Set([0]);
+    for (let index = 0; index < total; index += step) {
+      indices.add(index);
+    }
+    indices.add(total - 1);
+
+    const span = normalizedChart.width - normalizedChart.padding * 2;
+    const divisor = total > 1 ? total - 1 : 1;
+    return Array.from(indices)
+      .sort((a, b) => a - b)
+      .map((index) => ({
+        index,
+        x: normalizedChart.padding + (span * index) / divisor,
+      }));
+  }
+
+  function computeYAxisTicks(maxValue, chart, scaleMax) {
+    const normalizedChart = normalizeChart(chart);
+    const rawMax = Math.max(0, Math.round(toNumber(maxValue)));
+    const safeScale = Math.max(1, toNumber(scaleMax) || rawMax);
+
+    if (rawMax <= 0) {
+      return [
+        {
+          value: 0,
+          y: normalizedChart.height - normalizedChart.padding,
+        },
+      ];
+    }
+
+    const mid = Math.round(rawMax / 2);
+    const values = [];
+    [rawMax, mid, 0].forEach((value) => {
+      if (!values.includes(value)) {
+        values.push(value);
+      }
+    });
+
+    return values
+      .sort((a, b) => b - a)
+      .map((value) => ({
+        value,
+        y: valueToY(value, safeScale, normalizedChart),
+      }));
+  }
+
+  return {
+    computeDotPoints,
+    computeTooltipPosition,
+    computeHoverIndex,
+    computeXAxisTicks,
+    computeYAxisTicks,
+  };
 });
