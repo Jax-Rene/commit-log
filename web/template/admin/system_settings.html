@@ -1,7 +1,39 @@
 {{template "base" .}} {{define "content"}}
 <div class="space-y-8" x-data="systemSettingsForm()" x-init="init()" x-cloak>
+    <nav
+        class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
+    >
+        <div
+            class="flex flex-wrap gap-2"
+            role="tablist"
+            aria-label="系统设置导航"
+        >
+            <template x-for="tab in tabs" :key="tab.id">
+                <button
+                    type="button"
+                    class="inline-flex items-center rounded-xl border px-4 py-2 text-sm font-medium transition-colors"
+                    :class="
+                        activeTab === tab.id
+                            ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-400/60 dark:bg-blue-500/10 dark:text-blue-200'
+                            : 'border-transparent bg-slate-100 text-slate-600 hover:border-slate-200 hover:bg-white dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900'
+                    "
+                    @click="setTab(tab.id)"
+                    role="tab"
+                    :id="`tab-${tab.id}`"
+                    :aria-selected="activeTab === tab.id"
+                    :aria-controls="tab.id"
+                >
+                    <span x-text="tab.label"></span>
+                </button>
+            </template>
+        </div>
+    </nav>
     <section
         id="basic"
+        role="tabpanel"
+        aria-labelledby="tab-basic"
+        x-show="activeTab === 'basic'"
+        x-transition
         class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
     >
         <header class="space-y-1">
@@ -301,23 +333,45 @@
                             >展示于前台页脚，可用于呈现品牌口号或版权信息。</span
                         >
                     </label>
-                    <label class="flex flex-col gap-2 mt-2">
-                        <span
-                            class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                            >Gallery 副标题</span
-                        >
-                        <input
-                            type="text"
-                            x-model="form.gallerySubtitle"
-                            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                            placeholder="例如：Shot by Lumix S5M2 / OnePlus 13"
-                        />
-                        <span class="text-xs text-slate-500 dark:text-slate-400"
-                            >展示在 Gallery 页面标题下方。</span
-                        >
-                    </label>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <section
+        id="gallery"
+        role="tabpanel"
+        aria-labelledby="tab-gallery"
+        x-show="activeTab === 'gallery'"
+        x-transition
+        class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
+    >
+        <header class="space-y-1">
+            <h2
+                class="text-lg font-semibold text-slate-900 dark:text-slate-100"
+            >
+                Gallery 设置
+            </h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                管理作品集展示信息与前台入口开关。
+            </p>
+        </header>
+        <div class="space-y-6">
+            <label class="flex flex-col gap-2">
+                <span
+                    class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                    >Gallery 副标题</span
+                >
+                <input
+                    type="text"
+                    x-model="form.gallerySubtitle"
+                    class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                    placeholder="例如：Shot by Lumix S5M2 / OnePlus 13"
+                />
+                <span class="text-xs text-slate-500 dark:text-slate-400"
+                    >展示在 Gallery 页面标题下方。</span
+                >
+            </label>
             <div
                 class="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60"
             >
@@ -354,6 +408,10 @@
 
     <section
         id="contacts"
+        role="tabpanel"
+        aria-labelledby="tab-contacts"
+        x-show="activeTab === 'contacts'"
+        x-transition
         class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
     >
         {{template "admin_contact_manager" .}}
@@ -361,6 +419,10 @@
 
     <section
         id="ai"
+        role="tabpanel"
+        aria-labelledby="tab-ai"
+        x-show="activeTab === 'ai'"
+        x-transition
         class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
     >
         <header class="space-y-1">
@@ -552,6 +614,7 @@
     </section>
 </div>
 
+<script src="/static/js/system_settings_tabs.js"></script>
 <script>
     function systemSettingsForm() {
         return {
@@ -559,6 +622,13 @@
             showApiKey: false,
             showDeepSeekKey: false,
             aiTesting: false,
+            tabs: [
+                { id: "basic", label: "基础信息" },
+                { id: "gallery", label: "Gallery" },
+                { id: "contacts", label: "联系方式" },
+                { id: "ai", label: "AI 服务" },
+            ],
+            activeTab: "basic",
             form: {
                 siteName: "",
                 siteLogoUrl: "",
@@ -581,22 +651,48 @@
             logoUploadingDark: false,
             init() {
                 this.fetchSettings();
-                this.scrollToHash();
+                this.syncTabFromHash();
+                window.addEventListener("hashchange", () =>
+                    this.syncTabFromHash(),
+                );
             },
-            scrollToHash() {
-                const hash = window.location.hash.replace("#", "");
-                if (!hash) {
+            tabIds() {
+                return this.tabs.map((tab) => tab.id);
+            },
+            syncTabFromHash() {
+                const helper = window.SystemSettingsTabs;
+                const tabIds = this.tabIds();
+                if (helper && typeof helper.normalizeTabId === "function") {
+                    this.activeTab = helper.normalizeTabId(
+                        window.location.hash,
+                        tabIds,
+                        tabIds[0],
+                    );
                     return;
                 }
-                this.$nextTick(() => {
-                    const target = document.getElementById(hash);
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: "smooth",
-                            block: "start",
-                        });
-                    }
-                });
+                const raw = String(window.location.hash || "")
+                    .replace(/^#/, "")
+                    .trim();
+                if (raw && tabIds.includes(raw)) {
+                    this.activeTab = raw;
+                    return;
+                }
+                this.activeTab = tabIds[0];
+            },
+            setTab(id) {
+                if (!id) {
+                    return;
+                }
+                this.activeTab = id;
+                const hash = `#${id}`;
+                if (window.location.hash === hash) {
+                    return;
+                }
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, "", hash);
+                    return;
+                }
+                window.location.hash = hash;
             },
             fetchSettings() {
                 fetch("/admin/api/system/settings")
