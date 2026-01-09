@@ -20,7 +20,7 @@ type API struct {
 	pages           *service.PageService
 	galleries       *service.GalleryService
 	profiles        *service.ProfileService
-	analytics       *service.AnalyticsService
+	analytics       analyticsProvider
 	system          *service.SystemSettingService
 	summaries       service.SummaryGenerator
 	optimizer       service.ContentOptimizer
