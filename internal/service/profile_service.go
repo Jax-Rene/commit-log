@@ -16,7 +16,7 @@ var (
 	ErrProfileContactInvalidInput = errors.New("invalid profile contact input")
 )
 
-// ProfileService 负责维护关于我页面的联系信息
+// ProfileService 负责维护About Me页面的联系信息
 // 提供排序、增删改查能力，与 handler 解耦
 
 type ProfileService struct {

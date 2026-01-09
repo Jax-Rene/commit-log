@@ -13,7 +13,7 @@
             $site.name}}{{$site.name}}{{else}}CommitLog{{end}}
         </title>
         {{with $seo.description}}
-        <meta name="description" content="{{.}}">
+        <meta name="description" content="{{.}}" />
         {{end}} {{with $seo.keywords}}
         <meta name="keywords" content="{{.}}" />
         {{end}} {{with $seo.robots}}
@@ -21,7 +21,7 @@
         {{end}} {{if $site.avatar}}
         <link rel="icon" href="{{$site.avatar}}" />
         {{end}} {{with $seo.canonical}}
-        <link rel="canonical" href="{{.}}">
+        <link rel="canonical" href="{{.}}" />
         {{end}} {{if $site.name}}
         <meta property="og:site_name" content="{{$site.name}}" />
         {{end}} {{with $seo.ogTitle}}
@@ -185,7 +185,7 @@
                     <a
                         href="/about"
                         class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
-                        >关于我</a
+                        >About Me</a
                     >
                     <span class="mx-3 text-slate-300 dark:text-slate-600"
                         >/</span

@@ -4,7 +4,7 @@
 <div class="space-y-10" x-data="aboutForm({{printf "%q" .content}}, {{printf "%q" .updatedAt}})" x-init="init()">
 	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
 		<div>
-			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">编辑关于我</h1>
+			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">编辑About Me</h1>
 			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">使用 Markdown 撰写个人介绍，支持实时预览。</p>
 			<p class="mt-1 text-xs text-slate-400 dark:text-slate-500" x-show="updatedAt" x-cloak>最近保存：<span x-text="updatedAt"></span></p>
 		</div>
@@ -17,7 +17,7 @@
 
 	<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 		<label class="flex flex-col gap-2">
-			<span class="text-sm font-medium text-slate-700 dark:text-slate-200">关于我内容<span class="ml-1 text-rose-500">*</span></span>
+			<span class="text-sm font-medium text-slate-700 dark:text-slate-200">About Me内容<span class="ml-1 text-rose-500">*</span></span>
 			<p class="text-xs text-slate-500 dark:text-slate-400">支持 Markdown 语法，建议包含个人背景、擅长方向与联系渠道。</p>
 			<textarea id="about-content" class="hidden">{{- .content -}}</textarea>
 		</label>
@@ -113,7 +113,7 @@
 			submit() {
 				const content = this.editor ? this.editor.value() : this.form.content;
 				if (!content || !content.trim()) {
-					window.AdminUI.toast({ message: '请填写关于我内容', type: 'warning' });
+					window.AdminUI.toast({ message: '请填写About Me内容', type: 'warning' });
 					return;
 				}
 
@@ -153,7 +153,7 @@
 				previewWindow.document.write(`
 					<html>
 					<head>
-						<title>预览 · 关于我</title>
+						<title>预览 · About Me</title>
                                                 <link rel="stylesheet" href="/static/dist/assets/input.css">
                                                 <link rel="stylesheet" href="/static/dist/assets/admin.css">
 						<style>
@@ -172,7 +172,7 @@
                                                 <script>window.hljs = window.hljs || (window.opener && window.opener.hljs);</script>
 					</head>
 					<body>
-						<h1>关于我</h1>
+						<h1>About Me</h1>
 						<div>${parsed}</div>
                                                 <script>
                                                         const highlight = window.hljs || (window.opener && window.opener.hljs);

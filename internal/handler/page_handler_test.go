@@ -15,7 +15,7 @@ func TestUpdateAboutPageCreatesRecord(t *testing.T) {
 	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
-	payload := map[string]string{"content": "# 关于我\n这是新的介绍"}
+	payload := map[string]string{"content": "# About Me\n这是新的介绍"}
 	body, _ := json.Marshal(payload)
 
 	w := httptest.NewRecorder()

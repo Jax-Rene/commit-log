@@ -230,7 +230,7 @@ func TestShowAboutFallback(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	if !strings.Contains(w.Body.String(), "关于我") {
+	if !strings.Contains(w.Body.String(), "About Me") {
 		t.Fatalf("expected fallback about title in response")
 	}
 }
@@ -239,7 +239,7 @@ func TestShowAboutDisplaysContacts(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-	aboutPage := db.Page{Slug: "about", Title: "关于我", Content: "# 你好"}
+	aboutPage := db.Page{Slug: "about", Title: "About Me", Content: "# 你好"}
 	if err := db.DB.Create(&aboutPage).Error; err != nil {
 		t.Fatalf("failed to seed about page: %v", err)
 	}
@@ -277,7 +277,7 @@ func TestShowAboutHidesSummary(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-	aboutPage := db.Page{Slug: "about", Title: "关于我", Content: "# 你好", Summary: "不应显示摘要"}
+	aboutPage := db.Page{Slug: "about", Title: "About Me", Content: "# 你好", Summary: "不应显示摘要"}
 	if err := db.DB.Create(&aboutPage).Error; err != nil {
 		t.Fatalf("failed to seed about page: %v", err)
 	}
@@ -305,7 +305,7 @@ func TestShowAboutUsesSummaryForMeta(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-	aboutPage := db.Page{Slug: "about", Title: "关于我", Content: "# 正文内容", Summary: "自定义关于页摘要"}
+	aboutPage := db.Page{Slug: "about", Title: "About Me", Content: "# 正文内容", Summary: "自定义关于页摘要"}
 	if err := db.DB.Create(&aboutPage).Error; err != nil {
 		t.Fatalf("failed to seed about page: %v", err)
 	}

@@ -164,7 +164,7 @@ func newE2ESuite(t *testing.T) *e2eSuite {
 	}
 
 	pageSvc := service.NewPageService(db.DB)
-	aboutContent := "## 关于我\n这是 E2E 关于页面的测试内容。"
+	aboutContent := "## About Me\n这是 E2E 关于页面的测试内容。"
 	if _, err := pageSvc.SaveAboutPage(aboutContent); err != nil {
 		t.Fatalf("failed to seed about page: %v", err)
 	}
@@ -253,7 +253,7 @@ func (s *e2eSuite) testPublicEndpoints(t *testing.T) {
 	checkHTML("home", "/", "已发布文章", http.StatusOK)
 	checkHTML("post detail", "/posts/"+idStr(publishedID), "已发布文章", http.StatusOK)
 	checkHTML("tags page", "/tags", "标签", http.StatusOK)
-	checkHTML("about page", "/about", "关于我", http.StatusOK)
+	checkHTML("about page", "/about", "About Me", http.StatusOK)
 	checkHTML("load more", "/posts/more?page=2", "", http.StatusOK)
 	checkHTML("search suggestions", "/search/suggestions?search=已发布", "posts/"+idStr(publishedID), http.StatusOK)
 	checkHTML("robots", "/robots.txt", "User-agent", http.StatusOK)
