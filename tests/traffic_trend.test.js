@@ -5,6 +5,8 @@ const {
   computeDotPoints,
   computeTooltipPosition,
   computeHoverIndex,
+  computePointX,
+  computeValueY,
   computeXAxisTicks,
   computeYAxisTicks,
 } = require("../web/static/js/traffic_trend");
@@ -42,6 +44,23 @@ test("computeDotPoints handles empty series", () => {
 
   assert.equal(result.maxValue, 1);
   assert.equal(result.dots.length, 0);
+});
+
+test("computePointX scales index across chart width", () => {
+  const chart = { width: 640, height: 200, padding: 20 };
+
+  assert.equal(computePointX(0, 1, chart), 20);
+  assert.equal(computePointX(0, 2, chart), 20);
+  assert.equal(computePointX(1, 2, chart), 620);
+  assert.equal(computePointX(1, 3, chart), 320);
+});
+
+test("computeValueY maps value to chart height", () => {
+  const chart = { width: 640, height: 200, padding: 20 };
+
+  assert.equal(computeValueY(0, 50, chart), 180);
+  assert.equal(computeValueY(25, 50, chart), 100);
+  assert.equal(computeValueY(50, 50, chart), 20);
 });
 
 test("computeTooltipPosition clamps within container", () => {

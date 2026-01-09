@@ -608,7 +608,6 @@
         return {
             points: entries,
             entries: [],
-            labels: [],
             pv: [],
             uv: [],
             dotPoints: [],
@@ -619,6 +618,8 @@
             hasData: false,
             latest: { pageViews: 0, uniqueVisitors: 0, hour: null },
             hoverIndex: null,
+            helper: null,
+            formatters: null,
             tooltip: {
                 visible: false,
                 left: 0,
@@ -631,15 +632,15 @@
             chart: { width: 640, height: 200, padding: 20 },
             tooltipSize: { width: 180, height: 72 },
             init() {
+                this.helper = window.TrafficTrend || null;
+                this.ensureFormatters();
+
                 const normalized = this.points.map((point) => ({
                     hour: point.Hour ? new Date(point.Hour) : null,
                     pageViews: Number(point.PageViews || 0),
                     uniqueVisitors: Number(point.UniqueVisitors || 0),
                 }));
                 this.entries = normalized;
-                this.labels = normalized.map((point) =>
-                    point.hour ? this.formatHour(point.hour) : "",
-                );
                 this.pv = normalized.map((point) => point.pageViews);
                 this.uv = normalized.map((point) => point.uniqueVisitors);
                 this.refreshDots();
@@ -672,19 +673,30 @@
                 return this.dotPoints[this.hoverIndex] || null;
             },
             formatHour(date) {
-                return date.toLocaleTimeString("zh-CN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                });
+                this.ensureFormatters();
+                return this.formatters.time.format(date);
             },
             formatDate(date) {
-                return date.toLocaleDateString("zh-CN", {
-                    month: "2-digit",
-                    day: "2-digit",
-                });
+                this.ensureFormatters();
+                return this.formatters.date.format(date);
             },
             formatDateTime(date) {
                 return `${this.formatDate(date)} ${this.formatHour(date)}`;
+            },
+            ensureFormatters() {
+                if (this.formatters) {
+                    return;
+                }
+                this.formatters = {
+                    time: new Intl.DateTimeFormat("zh-CN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    }),
+                    date: new Intl.DateTimeFormat("zh-CN", {
+                        month: "2-digit",
+                        day: "2-digit",
+                    }),
+                };
             },
             formatCount(value) {
                 const num = Number(value) || 0;
@@ -695,123 +707,79 @@
                 return `${Math.round(num)}`;
             },
             refreshDots() {
-                const helper = window.TrafficTrend;
-                if (helper && typeof helper.computeDotPoints === "function") {
-                    const result = helper.computeDotPoints(
-                        this.pv,
-                        this.uv,
-                        this.chart,
-                    );
-                    this.maxValue = result.maxValue;
-                    this.dotPoints = result.dots;
+                const helper = this.helper;
+                if (!helper || typeof helper.computeDotPoints !== "function") {
+                    this.dotPoints = [];
+                    this.maxValue = 1;
+                    return;
+                }
+                const result = helper.computeDotPoints(
+                    this.pv,
+                    this.uv,
+                    this.chart,
+                );
+                this.maxValue = result.maxValue;
+                this.dotPoints = result.dots;
+            },
+            refreshAxis() {
+                const helper = this.helper;
+                this.dataMax = Math.max(0, ...this.pv, ...this.uv);
+
+                if (
+                    !helper ||
+                    typeof helper.computeYAxisTicks !== "function" ||
+                    typeof helper.computeXAxisTicks !== "function"
+                ) {
+                    this.yAxisTicks = [];
+                    this.xAxisTicks = [];
                     return;
                 }
 
-                const count = Math.max(this.pv.length, this.uv.length);
-                this.maxValue = Math.max(1, ...this.pv, ...this.uv);
-                this.dotPoints = Array.from({ length: count }, (_, index) => ({
-                    index,
-                    x: this.pointX(index, count),
-                    pv: this.pv[index] || 0,
-                    uv: this.uv[index] || 0,
-                    pvY: this.valueY(this.pv[index] || 0),
-                    uvY: this.valueY(this.uv[index] || 0),
-                }));
+                this.yAxisTicks = helper.computeYAxisTicks(
+                    this.dataMax,
+                    this.chart,
+                    this.maxValue,
+                );
+
+                const ticks = helper.computeXAxisTicks(
+                    this.entries.length,
+                    this.chart,
+                );
+                this.xAxisTicks = ticks.map((tick) => {
+                    const entry = this.entries[tick.index] || {};
+                    const hour = entry.hour;
+                    return {
+                        ...tick,
+                        label: hour ? this.formatDateTime(hour) : "",
+                    };
+                });
             },
-            refreshAxis() {
-                const helper = window.TrafficTrend;
-                this.dataMax = Math.max(0, ...this.pv, ...this.uv);
-
-                if (helper && typeof helper.computeYAxisTicks === "function") {
-                    this.yAxisTicks = helper.computeYAxisTicks(
-                        this.dataMax,
-                        this.chart,
-                        this.maxValue,
-                    );
-                } else {
-                    const values = [];
-                    [this.dataMax, Math.round(this.dataMax / 2), 0].forEach(
-                        (value) => {
-                            if (!values.includes(value)) {
-                                values.push(value);
-                            }
-                        },
-                    );
-                    this.yAxisTicks = values
-                        .sort((a, b) => b - a)
-                        .map((value) => ({
-                            value,
-                            y: this.valueY(value),
-                        }));
-                }
-
-                if (helper && typeof helper.computeXAxisTicks === "function") {
-                    const ticks = helper.computeXAxisTicks(
-                        this.entries.length,
-                        this.chart,
-                    );
-                    this.xAxisTicks = ticks.map((tick) => {
-                        const entry = this.entries[tick.index] || {};
-                        const hour = entry.hour;
-                        return {
-                            ...tick,
-                            label: hour ? this.formatDateTime(hour) : "",
-                        };
-                    });
-                } else {
-                    const count = this.entries.length;
-                    if (!count) {
-                        this.xAxisTicks = [];
-                        return;
-                    }
-                    const step = count <= 12 ? 1 : Math.ceil(count / 6);
-                    const indices = new Set([0]);
-                    for (let index = 0; index < count; index += step) {
-                        indices.add(index);
-                    }
-                    indices.add(count - 1);
-                    this.xAxisTicks = Array.from(indices)
-                        .sort((a, b) => a - b)
-                        .map((index) => ({
-                            index,
-                            x: this.pointX(index, count),
-                            label: this.entries[index]?.hour
-                                ? this.formatDateTime(this.entries[index].hour)
-                                : "",
-                        }));
-                }
+            positionStyle(x, y) {
+                const width = this.chart.width || 1;
+                const height = this.chart.height || 1;
+                const left = (x / width) * 100;
+                const top = (y / height) * 100;
+                return `left: ${left}%; top: ${top}%;`;
             },
             dotStyle(point, series) {
                 if (!point) {
                     return "";
                 }
-                const width = this.chart.width || 1;
-                const height = this.chart.height || 1;
                 const y = series === "uv" ? point.uvY : point.pvY;
-                const left = (point.x / width) * 100;
-                const top = (y / height) * 100;
-                return `left: ${left}%; top: ${top}%;`;
+                return this.positionStyle(point.x, y);
             },
             xAxisLabelStyle(tick) {
                 if (!tick) {
                     return "";
                 }
-                const width = this.chart.width || 1;
-                const height = this.chart.height || 1;
-                const left = (tick.x / width) * 100;
-                const top =
-                    ((this.chart.height - this.chart.padding) / height) * 100;
-                return `left: ${left}%; top: ${top}%;`;
+                const y = this.chart.height - this.chart.padding;
+                return this.positionStyle(tick.x, y);
             },
             yAxisLabelStyle(tick) {
                 if (!tick) {
                     return "";
                 }
-                const width = this.chart.width || 1;
-                const height = this.chart.height || 1;
-                const left = (this.chart.padding / width) * 100;
-                const top = (tick.y / height) * 100;
-                return `left: ${left}%; top: ${top}%;`;
+                return this.positionStyle(this.chart.padding, tick.y);
             },
             handleMouseMove(event) {
                 if (!this.dotPoints.length) {
@@ -823,32 +791,16 @@
                 if (!rect || rect.width <= 0) {
                     return;
                 }
-                const helper = window.TrafficTrend;
-                let index = null;
-                if (helper && typeof helper.computeHoverIndex === "function") {
-                    index = helper.computeHoverIndex(
-                        event.clientX - rect.left,
-                        this.dotPoints.length,
-                        this.chart,
-                        { width: rect.width },
-                    );
-                } else {
-                    const count = this.dotPoints.length;
-                    if (count === 1) {
-                        index = 0;
-                    } else {
-                        const step =
-                            (this.chart.width - this.chart.padding * 2) /
-                            (count - 1);
-                        const chartX =
-                            ((event.clientX - rect.left) / rect.width) *
-                            this.chart.width;
-                        index = Math.round(
-                            (chartX - this.chart.padding) / step,
-                        );
-                        index = Math.max(0, Math.min(count - 1, index));
-                    }
+                const helper = this.helper;
+                if (!helper || typeof helper.computeHoverIndex !== "function") {
+                    return;
                 }
+                const index = helper.computeHoverIndex(
+                    event.clientX - rect.left,
+                    this.dotPoints.length,
+                    this.chart,
+                    { width: rect.width },
+                );
                 if (index === null) {
                     this.hideTooltip();
                     return;
@@ -857,22 +809,6 @@
                     return;
                 }
                 this.showTooltip(index);
-            },
-            pointX(index, count) {
-                const step =
-                    count > 1
-                        ? (this.chart.width - this.chart.padding * 2) /
-                          (count - 1)
-                        : 0;
-                return this.chart.padding + step * index;
-            },
-            valueY(value) {
-                return (
-                    this.chart.height -
-                    this.chart.padding -
-                    ((this.chart.height - this.chart.padding * 2) * value) /
-                        this.maxValue
-                );
             },
             linePoints(series) {
                 return this.buildPoints(series, false);
@@ -884,9 +820,17 @@
                 if (!series.length) {
                     return "";
                 }
+                const helper = this.helper;
+                if (
+                    !helper ||
+                    typeof helper.computePointX !== "function" ||
+                    typeof helper.computeValueY !== "function"
+                ) {
+                    return "";
+                }
                 const points = series.map((value, index) => [
-                    this.pointX(index, series.length),
-                    this.valueY(value),
+                    helper.computePointX(index, series.length, this.chart),
+                    helper.computeValueY(value, this.maxValue, this.chart),
                 ]);
                 if (!closed) {
                     return points.map((point) => point.join(",")).join(" ");
@@ -929,23 +873,21 @@
                     return;
                 }
 
-                const helper = window.TrafficTrend;
+                const helper = this.helper;
                 if (
-                    helper &&
-                    typeof helper.computeTooltipPosition === "function"
+                    !helper ||
+                    typeof helper.computeTooltipPosition !== "function"
                 ) {
-                    const position = helper.computeTooltipPosition(
-                        point,
-                        this.chart,
-                        { width: rect.width, height: rect.height },
-                        this.tooltipSize,
-                    );
-                    this.tooltip.left = position.left;
-                    this.tooltip.top = position.top;
                     return;
                 }
-                this.tooltip.left = rect.width / 2;
-                this.tooltip.top = rect.height / 2;
+                const position = helper.computeTooltipPosition(
+                    point,
+                    this.chart,
+                    { width: rect.width, height: rect.height },
+                    this.tooltipSize,
+                );
+                this.tooltip.left = position.left;
+                this.tooltip.top = position.top;
             },
             hideTooltip() {
                 this.hoverIndex = null;
