@@ -43,6 +43,8 @@ const (
 	SettingKeySiteAdminFooter = "site_admin_footer"
 	// SettingKeySitePublicFooter 表示前台页脚文案。
 	SettingKeySitePublicFooter = "site_public_footer"
+	// SettingKeyGallerySubtitle 表示 Gallery 页面副标题。
+	SettingKeyGallerySubtitle = "gallery_subtitle"
 	// SettingKeyGalleryEnabled 表示是否启用 Gallery。
 	SettingKeyGalleryEnabled = "gallery_enabled"
 )

@@ -31,16 +31,17 @@ type API struct {
 }
 
 type siteViewModel struct {
-	Name           string
-	LogoLight      string
-	LogoDark       string
-	Avatar         string
-	AdminFooter    string
-	PublicFooter   string
-	Description    string
-	Keywords       string
-	SocialImage    string
-	GalleryEnabled bool
+	Name            string
+	LogoLight       string
+	LogoDark        string
+	Avatar          string
+	AdminFooter     string
+	PublicFooter    string
+	Description     string
+	Keywords        string
+	SocialImage     string
+	GallerySubtitle string
+	GalleryEnabled  bool
 }
 
 const siteSettingsContextKey = "__site_settings"
@@ -87,15 +88,16 @@ func (a *API) siteSettings(c *gin.Context) siteViewModel {
 	}
 
 	view := siteViewModel{
-		Name:           strings.TrimSpace(settings.SiteName),
-		LogoLight:      strings.TrimSpace(settings.SiteLogoURLLight),
-		LogoDark:       strings.TrimSpace(settings.SiteLogoURLDark),
-		AdminFooter:    strings.TrimSpace(settings.AdminFooterText),
-		PublicFooter:   strings.TrimSpace(settings.PublicFooterText),
-		Description:    strings.TrimSpace(settings.SiteDescription),
-		Keywords:       strings.TrimSpace(settings.SiteKeywords),
-		SocialImage:    strings.TrimSpace(settings.SiteSocialImage),
-		GalleryEnabled: settings.GalleryEnabled,
+		Name:            strings.TrimSpace(settings.SiteName),
+		LogoLight:       strings.TrimSpace(settings.SiteLogoURLLight),
+		LogoDark:        strings.TrimSpace(settings.SiteLogoURLDark),
+		AdminFooter:     strings.TrimSpace(settings.AdminFooterText),
+		PublicFooter:    strings.TrimSpace(settings.PublicFooterText),
+		Description:     strings.TrimSpace(settings.SiteDescription),
+		Keywords:        strings.TrimSpace(settings.SiteKeywords),
+		SocialImage:     strings.TrimSpace(settings.SiteSocialImage),
+		GallerySubtitle: strings.TrimSpace(settings.GallerySubtitle),
+		GalleryEnabled:  settings.GalleryEnabled,
 	}
 	if view.Name == "" {
 		view.Name = "CommitLog"
@@ -147,16 +149,17 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 	}
 
 	siteDefaults := map[string]interface{}{
-		"name":           view.Name,
-		"logoUrl":        view.LogoLight,
-		"logoUrlLight":   view.LogoLight,
-		"logoUrlDark":    view.LogoDark,
-		"avatar":         view.Avatar,
-		"adminFooter":    view.AdminFooter,
-		"publicFooter":   view.PublicFooter,
-		"description":    view.Description,
-		"keywords":       view.Keywords,
-		"galleryEnabled": view.GalleryEnabled,
+		"name":            view.Name,
+		"logoUrl":         view.LogoLight,
+		"logoUrlLight":    view.LogoLight,
+		"logoUrlDark":     view.LogoDark,
+		"avatar":          view.Avatar,
+		"adminFooter":     view.AdminFooter,
+		"publicFooter":    view.PublicFooter,
+		"description":     view.Description,
+		"keywords":        view.Keywords,
+		"gallerySubtitle": view.GallerySubtitle,
+		"galleryEnabled":  view.GalleryEnabled,
 	}
 	if view.SocialImage != "" {
 		siteDefaults["socialImage"] = a.absoluteURL(c, view.SocialImage)

@@ -32,6 +32,7 @@ const (
 	defaultAdminFooter     = "日拱一卒，功不唐捐"
 	defaultPublicFooter    = "激发创造，延迟满足"
 	defaultGalleryEnabled  = true
+	defaultGallerySubtitle = "Shot by Lumix S5M2 / OnePlus 13"
 )
 
 // SystemSettings 描述后台可配置的系统信息。
@@ -50,6 +51,7 @@ type SystemSettings struct {
 	PublicFooterText string
 	AISummaryPrompt  string
 	AIRewritePrompt  string
+	GallerySubtitle  string
 	GalleryEnabled   bool
 }
 
@@ -75,6 +77,7 @@ type SystemSettingsInput struct {
 	PublicFooterText string
 	AISummaryPrompt  string
 	AIRewritePrompt  string
+	GallerySubtitle  string
 	GalleryEnabled   *bool
 }
 
@@ -110,6 +113,7 @@ var settingKeys = []string{
 	db.SettingKeySiteSocialImage,
 	db.SettingKeySiteAdminFooter,
 	db.SettingKeySitePublicFooter,
+	db.SettingKeyGallerySubtitle,
 	db.SettingKeyAIProvider,
 	db.SettingKeyOpenAIAPIKey,
 	db.SettingKeyDeepSeekAPIKey,
@@ -129,6 +133,7 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 		PublicFooterText: defaultPublicFooter,
 		AISummaryPrompt:  defaultSummarySystemPrompt,
 		AIRewritePrompt:  defaultRewriteSystemPrompt,
+		GallerySubtitle:  defaultGallerySubtitle,
 		GalleryEnabled:   defaultGalleryEnabled,
 	}
 
@@ -166,6 +171,10 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 		case db.SettingKeySitePublicFooter:
 			if strings.TrimSpace(record.Value) != "" {
 				result.PublicFooterText = record.Value
+			}
+		case db.SettingKeyGallerySubtitle:
+			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
+				result.GallerySubtitle = trimmed
 			}
 		case db.SettingKeyAIProvider:
 			if provider := normalizeAIProvider(record.Value); provider != "" {
@@ -248,6 +257,7 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 		PublicFooterText: strings.TrimSpace(input.PublicFooterText),
 		AISummaryPrompt:  strings.TrimSpace(input.AISummaryPrompt),
 		AIRewritePrompt:  strings.TrimSpace(input.AIRewritePrompt),
+		GallerySubtitle:  strings.TrimSpace(input.GallerySubtitle),
 		GalleryEnabled:   galleryEnabled,
 	}
 
@@ -280,6 +290,9 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 	}
 	if sanitized.PublicFooterText == "" {
 		sanitized.PublicFooterText = defaultPublicFooter
+	}
+	if sanitized.GallerySubtitle == "" {
+		sanitized.GallerySubtitle = defaultGallerySubtitle
 	}
 	if sanitized.AISummaryPrompt == "" {
 		sanitized.AISummaryPrompt = defaultSummarySystemPrompt
@@ -314,6 +327,9 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeySitePublicFooter, sanitized.PublicFooterText); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeyGallerySubtitle, sanitized.GallerySubtitle); err != nil {
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeyAIProvider, sanitized.AIProvider); err != nil {
