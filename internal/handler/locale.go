@@ -62,7 +62,7 @@ func (a *API) resolveLanguage(c *gin.Context) (string, bool) {
 		return cookie, false
 	}
 	if preferred, ok := a.preferredLanguage(c); ok {
-		return preferred, false
+		return preferred, true
 	}
 	country := readCountryHeader(c)
 	if country != "" {

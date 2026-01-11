@@ -117,6 +117,21 @@
                     </li>
                 </ul>
                 <div class="flex items-center gap-3 text-sm">
+                    {{if eq .language "en"}}
+                    <a
+                        href="{{index .languageSwitch "zh"}}"
+                        class="text-xs font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+                        aria-label="{{tr .language "Switch to Chinese" "切换到中文"}}"
+                        >中文</a
+                    >
+                    {{else}}
+                    <a
+                        href="{{index .languageSwitch "en"}}"
+                        class="text-xs font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+                        aria-label="{{tr .language "Switch to English" "切换到英文"}}"
+                        >EN</a
+                    >
+                    {{end}}
                     <a
                         href="/admin/logout"
                         class="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"

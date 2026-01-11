@@ -250,6 +250,39 @@ func TestShowHomeUsesPreferredLanguageFallback(t *testing.T) {
 	}
 }
 
+func TestShowHomePreferredLanguageSetsCookie(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	systemService := service.NewSystemSettingService(db.DB)
+	if _, err := systemService.UpdateSettings(service.SystemSettingsInput{
+		PreferredLanguage: "en",
+	}); err != nil {
+		t.Fatalf("failed to update preferred language: %v", err)
+	}
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.ServeHTTP(w, req)
+
+	result := w.Result()
+	defer result.Body.Close()
+
+	found := false
+	for _, cookie := range result.Cookies() {
+		if cookie.Name == "cl_lang" {
+			found = true
+			if cookie.Value != "en" {
+				t.Fatalf("expected cl_lang cookie to be en, got %q", cookie.Value)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected cl_lang cookie to be set")
+	}
+}
+
 func TestShowHomeHonorsLangQueryParam(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
