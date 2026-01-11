@@ -14,6 +14,7 @@ import (
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/handler"
+	"github.com/commitlog/internal/locale"
 	"github.com/commitlog/internal/view"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -115,6 +116,9 @@ func newTemplateRegistry() *templateRegistry {
 					return template.JS("null")
 				}
 				return template.JS(data)
+			},
+			"tr": func(language, english, chinese string) string {
+				return locale.Pick(language, english, chinese)
 			},
 			"accent": func(text string) string {
 				palette := []string{
@@ -244,6 +248,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 
 	r.Use(gin.Logger())
 	r.Use(recoveryWithHandler(handlers))
+	r.Use(handlers.LocaleMiddleware())
 
 	// 配置会话中间件
 	trimmedSecret := strings.TrimSpace(sessionSecret)
@@ -364,11 +369,21 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 
 		path := c.Request.URL.Path
 		if strings.HasPrefix(path, "/admin") {
-			renderErrorPage(c, handlers, http.StatusNotFound, "后台页面走丢了", "该链接可能被移动或权限已变更，返回仪表盘继续管理站点。", &errorAction{Label: "返回仪表盘", Href: "/admin/dashboard"}, &errorAction{Label: "回到首页", Href: "/"})
+			renderErrorPage(c, handlers, http.StatusNotFound,
+				pickLocaleText(c, handlers, "Admin page not found", "后台页面走丢了"),
+				pickLocaleText(c, handlers, "This link may have moved or access changed. Return to the dashboard.", "该链接可能被移动或权限已变更，返回仪表盘继续管理站点。"),
+				&errorAction{Label: pickLocaleText(c, handlers, "Back to dashboard", "返回仪表盘"), Href: "/admin/dashboard"},
+				&errorAction{Label: pickLocaleText(c, handlers, "Back home", "回到首页"), Href: "/"},
+			)
 			return
 		}
 
-		renderErrorPage(c, handlers, http.StatusNotFound, "页面走丢了", "我们没有找到你想访问的内容，试试回到首页或浏览其他栏目。", &errorAction{Label: "返回首页", Href: "/"}, &errorAction{Label: "查看全部标签", Href: "/tags"})
+		renderErrorPage(c, handlers, http.StatusNotFound,
+			pickLocaleText(c, handlers, "Page not found", "页面走丢了"),
+			pickLocaleText(c, handlers, "We couldn't find that content. Try the homepage or browse tags.", "我们没有找到你想访问的内容，试试回到首页或浏览其他栏目。"),
+			&errorAction{Label: pickLocaleText(c, handlers, "Back home", "返回首页"), Href: "/"},
+			&errorAction{Label: pickLocaleText(c, handlers, "Browse tags", "查看全部标签"), Href: "/tags"},
+		)
 	})
 
 	return r
@@ -389,14 +404,19 @@ func recoveryWithHandler(handlers *handler.API) gin.HandlerFunc {
 		var primary *errorAction
 		var secondary *errorAction
 		if strings.HasPrefix(path, "/admin") {
-			primary = &errorAction{Label: "返回仪表盘", Href: "/admin/dashboard"}
-			secondary = &errorAction{Label: "回到首页", Href: "/"}
+			primary = &errorAction{Label: pickLocaleText(c, handlers, "Back to dashboard", "返回仪表盘"), Href: "/admin/dashboard"}
+			secondary = &errorAction{Label: pickLocaleText(c, handlers, "Back home", "回到首页"), Href: "/"}
 		} else {
-			primary = &errorAction{Label: "返回首页", Href: "/"}
-			secondary = &errorAction{Label: "联系站长", Href: "/about"}
+			primary = &errorAction{Label: pickLocaleText(c, handlers, "Back home", "返回首页"), Href: "/"}
+			secondary = &errorAction{Label: pickLocaleText(c, handlers, "Contact the author", "联系站长"), Href: "/about"}
 		}
 
-		renderErrorPage(c, handlers, http.StatusInternalServerError, "服务器开小差了", "我们已经记录了这个问题，请稍后再试。", primary, secondary)
+		renderErrorPage(c, handlers, http.StatusInternalServerError,
+			pickLocaleText(c, handlers, "Server error", "服务器开小差了"),
+			pickLocaleText(c, handlers, "We've logged the issue. Please try again later.", "我们已经记录了这个问题，请稍后再试。"),
+			primary,
+			secondary,
+		)
 		c.Abort()
 	})
 }
@@ -412,6 +432,13 @@ func renderErrorPage(c *gin.Context, handlers *handler.API, status int, headline
 		"secondaryAction": secondary,
 		"year":            time.Now().Year(),
 	})
+}
+
+func pickLocaleText(c *gin.Context, handlers *handler.API, english, chinese string) string {
+	if handlers == nil {
+		return locale.Pick("", english, chinese)
+	}
+	return locale.Pick(handlers.RequestLanguage(c), english, chinese)
 }
 
 func prefersJSON(c *gin.Context) bool {

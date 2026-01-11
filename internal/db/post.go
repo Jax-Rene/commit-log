@@ -13,17 +13,19 @@ var markdownEmphasisReplacer = strings.NewReplacer("**", "", "*", "")
 // Post 定义了文章模型
 type Post struct {
 	gorm.Model
-	Content     string
-	Summary     string
-	Status      string `gorm:"default:draft"` // draft, published
-	ReadingTime int
-	CoverURL    string
-	CoverWidth  int
-	CoverHeight int
-	UserID      uint
-	User        User
-	Tags        []Tag `gorm:"many2many:post_tags;"`
-	PublishedAt time.Time
+	Content            string
+	Summary            string
+	Status             string `gorm:"default:draft"` // draft, published
+	Language           string `gorm:"size:8;index;default:zh"`
+	ReadingTime        int
+	CoverURL           string
+	CoverWidth         int
+	CoverHeight        int
+	UserID             uint
+	User               User
+	Tags               []Tag `gorm:"many2many:post_tags;"`
+	PublishedAt        time.Time
+	TranslationGroupID uint `gorm:"index;default:0"`
 	// PublicationCount 记录文章发布次数，用于版本号展示
 	PublicationCount int
 	// LatestPublicationID 指向最近一次发布的快照

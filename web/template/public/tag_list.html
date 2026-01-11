@@ -3,8 +3,8 @@
 {{define "content"}}
 <section class="space-y-10">
 	<header class="rounded-3xl border border-slate-200 bg-white/80 p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
-		<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">标签索引</h1>
-		<p class="mt-3 text-sm text-slate-500 dark:text-slate-400">按照主题探索 {{.site.name}} 的文章合集</p>
+		<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">{{tr .language "Tag Index" "标签索引"}}</h1>
+		<p class="mt-3 text-sm text-slate-500 dark:text-slate-400">{{printf (tr .language "Explore %s posts by topic" "按照主题探索 %s 的文章合集") .site.name}}</p>
 	</header>
 
 	{{if .tags}}
@@ -13,15 +13,15 @@
 		<a href="/?tags={{.Name}}" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-transform hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/80 dark:hover:border-blue-400/40">
 			<div class="flex items-center justify-between">
 				<span class="text-base font-semibold text-slate-900 dark:text-slate-100">{{.Name}}</span>
-				<span class="text-xs text-slate-400 dark:text-slate-500">{{.Count}} 篇文章</span>
+				<span class="text-xs text-slate-400 dark:text-slate-500">{{printf (tr $.language "%d posts" "%d 篇文章") .Count}}</span>
 			</div>
-			<p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">{{if .Description}}{{truncate .Description 80}}{{else}}暂无描述{{end}}</p>
+			<p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">{{if .Description}}{{truncate .Description 80}}{{else}}{{tr $.language "No description" "暂无描述"}}{{end}}</p>
 		</a>
 		{{end}}
 	</section>
 	{{else}}
 	<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-400">
-		暂无标签，稍后再来探索～
+		{{tr .language "No tags yet. Check back soon." "暂无标签，稍后再来探索～"}}
 	</div>
 	{{end}}
 </section>

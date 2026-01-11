@@ -4,8 +4,8 @@
 <div class="space-y-8">
 	<header class="flex flex-col gap-4 border-b border-slate-200 pb-6 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
 		<div>
-			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">文章管理</h1>
-			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">筛选、检索并维护你的内容资产。</p>
+			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">{{tr .language "Post management" "文章管理"}}</h1>
+			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{tr .language "Filter, search, and maintain your content." "筛选、检索并维护你的内容资产。"}}</p>
 		</div>
 		<div class="flex flex-wrap items-center justify-start gap-3 sm:justify-end">
 			<a href="/admin/posts/new" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
@@ -13,7 +13,7 @@
 					<path d="M12 5v14" stroke-width="1.5" stroke-linecap="round"></path>
 					<path d="M5 12h14" stroke-width="1.5" stroke-linecap="round"></path>
 				</svg>
-				<span>新建文章</span>
+				<span>{{tr .language "New post" "新建文章"}}</span>
 			</a>
 		</div>
 	</header>
@@ -26,18 +26,18 @@
 					<path d="M16.5 16.5L20 20" stroke-width="1.5" stroke-linecap="round"></path>
 				</svg>
 			</span>
-			<span>关键搜索</span>
+			<span>{{tr .language "Search filters" "关键搜索"}}</span>
 		</div>
 		<form method="GET" action="/admin/posts" class="mt-4 space-y-5">
 			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 				<label class="col-span-full flex flex-col gap-2">
-					<span class="sr-only">关键词</span>
+					<span class="sr-only">{{tr .language "Keywords" "关键词"}}</span>
 					<div class="relative">
 						<svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
 							<circle cx="11" cy="11" r="7.25" stroke-width="1.5"></circle>
 							<path d="M16.5 16.5L20 20" stroke-width="1.5" stroke-linecap="round"></path>
 						</svg>
-						<input type="text" name="search" value="{{.search}}" placeholder="搜索标题、内容或摘要" class="w-full rounded-lg border border-slate-300 px-3 py-2 pl-10 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
+						<input type="text" name="search" value="{{.search}}" placeholder="{{tr .language "Search title, content, or summary" "搜索标题、内容或摘要"}}" class="w-full rounded-lg border border-slate-300 px-3 py-2 pl-10 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
 					</div>
 				</label>
 
@@ -48,12 +48,12 @@
 							<path d="M7 12h10" stroke-width="1.5" stroke-linecap="round"></path>
 							<path d="M7 15.5h6" stroke-width="1.5" stroke-linecap="round"></path>
 						</svg>
-						文章状态
+						{{tr .language "Status" "文章状态"}}
 					</span>
 					<select name="status" class="form-select">
-						<option value="" {{if eq .status ""}}selected{{end}}>全部</option>
-						<option value="draft" {{if eq .status "draft"}}selected{{end}}>草稿</option>
-						<option value="published" {{if eq .status "published"}}selected{{end}}>已发布</option>
+						<option value="" {{if eq .status ""}}selected{{end}}>{{tr .language "All" "全部"}}</option>
+						<option value="draft" {{if eq .status "draft"}}selected{{end}}>{{tr .language "Draft" "草稿"}}</option>
+						<option value="published" {{if eq .status "published"}}selected{{end}}>{{tr .language "Published" "已发布"}}</option>
 					</select>
 				</label>
 
@@ -64,11 +64,11 @@
 							<path d="M7 12h10" stroke-width="1.5" stroke-linecap="round"></path>
 							<path d="M10 18h4" stroke-width="1.5" stroke-linecap="round"></path>
 						</svg>
-						排序方式
+						{{tr .language "Sort by" "排序方式"}}
 					</span>
 					<select name="sort" class="form-select">
-						<option value="created" {{if or (eq .sort "") (eq .sort "created")}}selected{{end}}>创建时间</option>
-						<option value="hot" {{if eq .sort "hot"}}selected{{end}}>热度</option>
+						<option value="created" {{if or (eq .sort "") (eq .sort "created")}}selected{{end}}>{{tr .language "Created time" "创建时间"}}</option>
+						<option value="hot" {{if eq .sort "hot"}}selected{{end}}>{{tr .language "Popularity" "热度"}}</option>
 					</select>
 				</label>
 
@@ -80,11 +80,11 @@
 							<rect x="4" y="7" width="16" height="13" rx="2" stroke-width="1.5"></rect>
 							<path d="M4 11h16" stroke-width="1.5" stroke-linecap="round"></path>
 						</svg>
-						开始日期
+						{{tr .language "Start date" "开始日期"}}
 					</span>
 					<div class="relative">
-						<input id="start_date" type="text" name="start_date" value="{{.startDate}}" placeholder="选择开始日期" autocomplete="off" class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 pr-10 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
-						<button type="button" data-date-trigger="start" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" aria-label="选择开始日期">
+						<input id="start_date" type="text" name="start_date" value="{{.startDate}}" placeholder="{{tr .language "Select start date" "选择开始日期"}}" autocomplete="off" class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 pr-10 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
+						<button type="button" data-date-trigger="start" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" aria-label="{{tr .language "Select start date" "选择开始日期"}}">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
 								<path d="M7 4v3" stroke-width="1.5" stroke-linecap="round"></path>
 								<path d="M17 4v3" stroke-width="1.5" stroke-linecap="round"></path>
@@ -103,11 +103,11 @@
 							<rect x="4" y="7" width="16" height="13" rx="2" stroke-width="1.5"></rect>
 							<path d="M4 11h16" stroke-width="1.5" stroke-linecap="round"></path>
 						</svg>
-						结束日期
+						{{tr .language "End date" "结束日期"}}
 					</span>
 					<div class="relative">
-						<input id="end_date" type="text" name="end_date" value="{{.endDate}}" placeholder="选择结束日期" autocomplete="off" class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 pr-10 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
-						<button type="button" data-date-trigger="end" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" aria-label="选择结束日期">
+						<input id="end_date" type="text" name="end_date" value="{{.endDate}}" placeholder="{{tr .language "Select end date" "选择结束日期"}}" autocomplete="off" class="w-full cursor-pointer rounded-lg border border-slate-300 px-3 py-2 pr-10 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
+						<button type="button" data-date-trigger="end" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300" aria-label="{{tr .language "Select end date" "选择结束日期"}}">
 							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
 								<path d="M7 4v3" stroke-width="1.5" stroke-linecap="round"></path>
 								<path d="M17 4v3" stroke-width="1.5" stroke-linecap="round"></path>
@@ -125,7 +125,7 @@
 						<path d="M7.5 7.5h7l3 3-7.5 7.5a1.25 1.25 0 0 1-1.77 0l-3.23-3.23a1.25 1.25 0 0 1 0-1.77L7.5 7.5z" stroke-width="1.5" stroke-linejoin="round"></path>
 						<circle cx="14.5" cy="9.5" r="1.25" stroke-width="1.5"></circle>
 					</svg>
-					标签筛选
+					{{tr .language "Tag filter" "标签筛选"}}
 				</span>
 				<div class="flex flex-wrap gap-3">
 					{{range $tag := .allTags}}
@@ -143,7 +143,7 @@
 						<circle cx="11" cy="11" r="7.25" stroke-width="1.5"></circle>
 						<path d="M16.5 16.5L20 20" stroke-width="1.5" stroke-linecap="round"></path>
 					</svg>
-					搜索
+					{{tr .language "Search" "搜索"}}
 				</button>
 				<a href="/admin/posts" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
@@ -152,7 +152,7 @@
 						<path d="M20 12a8 8 0 0 1-8 8" stroke-width="1.5" stroke-linecap="round"></path>
 						<path d="M20 20v-5h-5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
 					</svg>
-					重置
+					{{tr .language "Reset" "重置"}}
 				</a>
 			</div>
 		</form>
@@ -166,12 +166,12 @@
 				<path d="M6 12h12" stroke-width="1.5" stroke-linecap="round"></path>
 				<path d="M6 16.5h8" stroke-width="1.5" stroke-linecap="round"></path>
 			</svg>
-			<span class="font-medium text-slate-700 dark:text-slate-200">文章列表</span>
+			<span class="font-medium text-slate-700 dark:text-slate-200">{{tr .language "Post list" "文章列表"}}</span>
 			<span class="h-4 w-px bg-slate-200 dark:bg-slate-800"></span>
-			<span>共 {{.total}} 篇</span>
+			<span>{{tr .language "Total" "共"}} {{.total}} {{tr .language "posts" "篇"}}</span>
 		</div>
 		<span class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-			共 {{.total}} 篇
+			{{tr .language "Total" "共"}} {{.total}} {{tr .language "posts" "篇"}}
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3.5 w-3.5">
 				<path d="M6 9l6 6 6-6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
 			</svg>
@@ -181,7 +181,7 @@
 	<section class="rounded-2xl border border-slate-200 bg-white overflow-hidden transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 		<div class="divide-y divide-slate-200 dark:divide-slate-800">
 			{{if .error}}
-			<div class="px-6 py-20 text-center text-sm text-rose-500 dark:text-rose-300">{{.error}}</div>
+			<div class="px-6 py-20 text-center text-sm text-rose-500 dark:text-rose-300">{{if eq .language "en"}}Failed to load posts.{{else}}{{.error}}{{end}}</div>
 			{{else if gt (len .posts) 0}}
 			{{range .posts}}
 			<article class="group flex flex-col gap-4 px-6 py-4 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40 sm:flex-row sm:items-center sm:justify-between">
@@ -198,7 +198,7 @@
 						<div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
 							<span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium {{if eq .Status "published"}}text-emerald-600{{else}}text-amber-600{{end}} dark:border-slate-700 dark:bg-slate-800/60">
 								<span class="h-1.5 w-1.5 rounded-full {{if eq .Status "published"}}bg-emerald-500{{else}}bg-amber-500{{end}}"></span>
-								{{if eq .Status "published"}}已发布{{else}}草稿{{end}}
+								{{if eq .Status "published"}}{{tr $.language "Published" "已发布"}}{{else}}{{tr $.language "Draft" "草稿"}}{{end}}
 							</span>
 							<span class="inline-flex items-center gap-1">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3.5 w-3.5 text-slate-400 dark:text-slate-500">
@@ -207,7 +207,7 @@
 									<rect x="4" y="7" width="16" height="13" rx="2" stroke-width="1.5"></rect>
 									<path d="M4 11h16" stroke-width="1.5" stroke-linecap="round"></path>
 								</svg>
-								创建于 {{.CreatedAt.Format "2006-01-02 15:04"}}
+								{{tr $.language "Created" "创建于"}} {{.CreatedAt.Format "2006-01-02 15:04"}}
 							</span>
 							{{if not (.PublishedAt.IsZero)}}
 							<span class="inline-flex items-center gap-1">
@@ -215,7 +215,7 @@
 									<path d="M12 6v6l3.5 2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
 									<circle cx="12" cy="12" r="9" stroke-width="1.5"></circle>
 								</svg>
-								发布于 {{.PublishedAt.Format "2006-01-02 15:04"}}
+								{{tr $.language "Published" "发布于"}} {{.PublishedAt.Format "2006-01-02 15:04"}}
 							</span>
 							{{end}}
 						</div>
@@ -233,7 +233,7 @@
 									<path d="M3.5 12s3-6.5 8.5-6.5S20.5 12 20.5 12s-3 6.5-8.5 6.5S3.5 12 3.5 12z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
 									<circle cx="12" cy="12" r="3" stroke-width="1.5"></circle>
 								</svg>
-								<span class="font-semibold text-slate-900 dark:text-slate-100">{{$stat.PageViews}}</span> 次浏览
+								<span class="font-semibold text-slate-900 dark:text-slate-100">{{$stat.PageViews}}</span> {{tr $.language "views" "次浏览"}}
 							</span>
 							<span class="inline-flex items-center gap-1">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3.5 w-3.5 text-slate-400 dark:text-slate-500">
@@ -242,7 +242,7 @@
 									<path d="M16 10a2.5 2.5 0 1 1 5 0" stroke-width="1.5" stroke-linecap="round"></path>
 									<path d="M16 19a4.5 4.5 0 0 1 5 0" stroke-width="1.5" stroke-linecap="round"></path>
 								</svg>
-								<span class="font-semibold text-slate-900 dark:text-slate-100">{{$stat.UniqueVisitors}}</span> 位访客
+								<span class="font-semibold text-slate-900 dark:text-slate-100">{{$stat.UniqueVisitors}}</span> {{tr $.language "visitors" "位访客"}}
 							</span>
 							{{if not ($stat.LastViewedAt.IsZero)}}
 							<span class="inline-flex items-center gap-1">
@@ -250,12 +250,12 @@
 									<path d="M12 6v6l3.5 2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
 									<circle cx="12" cy="12" r="9" stroke-width="1.5"></circle>
 								</svg>
-								最近 {{ $stat.LastViewedAt.Format "2006-01-02 15:04" }}
+								{{tr $.language "Last viewed" "最近"}} {{ $stat.LastViewedAt.Format "2006-01-02 15:04" }}
 							</span>
 							{{end}}
 						</div>
 						{{else}}
-						<div class="text-xs text-slate-400 dark:text-slate-500">暂无浏览数据</div>
+						<div class="text-xs text-slate-400 dark:text-slate-500">{{tr $.language "No views yet" "暂无浏览数据"}}</div>
 						{{end}}
 					</div>
 				</div>
@@ -265,7 +265,7 @@
 							<path d="M8 14l6-6 2 2-6 6-3 1 1-3z" stroke-width="1.5" stroke-linejoin="round"></path>
 							<path d="M14 7l2 2" stroke-width="1.5" stroke-linecap="round"></path>
 						</svg>
-						编辑
+						{{tr $.language "Edit" "编辑"}}
 					</a>
 					<button type="button" onclick="deletePost('{{.ID}}')" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:bg-rose-500/10 dark:hover:text-rose-300">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
@@ -275,37 +275,38 @@
 							<path d="M14.5 11.5v5" stroke-width="1.5" stroke-linecap="round"></path>
 							<path d="M7.5 7l1 11.5a1 1 0 0 0 1 .9h5a1 1 0 0 0 1-.9L16.5 7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
 						</svg>
-						删除
+						{{tr $.language "Delete" "删除"}}
 					</button>
 				</div>
 			</article>
 			{{end}}
 			{{else}}
-			<div class="px-6 py-20 text-center text-sm text-slate-500 dark:text-slate-400">暂无文章，请调整筛选条件或新建文章。</div>
+			<div class="px-6 py-20 text-center text-sm text-slate-500 dark:text-slate-400">{{tr .language "No posts found. Adjust filters or create a new one." "暂无文章，请调整筛选条件或新建文章。"}}</div>
 			{{end}}
 		</div>
 	</section>
 
 	{{if gt .totalPages 1}}
 	<nav class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm text-slate-600 transition-colors dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300">
-		<a href="?page={{sub .page 1}}{{.queryParams}}" class="rounded-lg px-3 py-1.5 transition-colors {{if gt .page 1}}hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100{{else}}pointer-events-none text-slate-300 dark:text-slate-600{{end}}">上一页</a>
+		<a href="?page={{sub .page 1}}{{.queryParams}}" class="rounded-lg px-3 py-1.5 transition-colors {{if gt .page 1}}hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100{{else}}pointer-events-none text-slate-300 dark:text-slate-600{{end}}">{{tr .language "Previous" "上一页"}}</a>
 		<div class="flex items-center gap-2">
 			{{range .pages}}
 			<a href="?page={{.}}{{$.queryParams}}" class="rounded-lg px-3 py-1.5 {{if eq . $.page}}bg-blue-600 text-white dark:bg-blue-500/90{{else}}hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100{{end}}">{{.}}</a>
 			{{end}}
 		</div>
-		<a href="?page={{add .page 1}}{{.queryParams}}" class="rounded-lg px-3 py-1.5 transition-colors {{if lt .page .totalPages}}hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100{{else}}pointer-events-none text-slate-300 dark:text-slate-600{{end}}">下一页</a>
+		<a href="?page={{add .page 1}}{{.queryParams}}" class="rounded-lg px-3 py-1.5 transition-colors {{if lt .page .totalPages}}hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100{{else}}pointer-events-none text-slate-300 dark:text-slate-600{{end}}">{{tr .language "Next" "下一页"}}</a>
 	</nav>
 	{{end}}
 </div>
 
 <script>
+        const preferServerMessage = {{if eq .language "zh"}}true{{else}}false{{end}};
         async function deletePost(id) {
                 const confirmed = await window.AdminUI.confirm({
-                        title: '删除文章',
-                        message: '确定要删除这篇文章吗？',
-                        confirmText: '删除',
-                        cancelText: '取消',
+                        title: {{toJSON (tr .language "Delete post" "删除文章")}},
+                        message: {{toJSON (tr .language "Are you sure you want to delete this post?" "确定要删除这篇文章吗？")}},
+                        confirmText: {{toJSON (tr .language "Delete" "删除")}},
+                        cancelText: {{toJSON (tr .language "Cancel" "取消")}},
                         tone: 'danger',
                 });
                 if (!confirmed) {
@@ -315,11 +316,13 @@
                 fetch(`/admin/api/posts/${id}`, { method: 'DELETE' })
                         .then(response => response.json())
                         .then(data => {
-                                window.AdminUI.toast({ message: data.message || '删除成功', type: 'success' });
+                                const fallback = {{toJSON (tr .language "Deleted" "删除成功")}};
+                                const message = (preferServerMessage && data.message) ? data.message : fallback;
+                                window.AdminUI.toast({ message, type: 'success' });
                                 setTimeout(() => window.location.reload(), 350);
                         })
                         .catch(() => {
-                                window.AdminUI.toast({ message: '删除失败，请稍后重试', type: 'error' });
+                                window.AdminUI.toast({ message: {{toJSON (tr .language "Delete failed. Please try again." "删除失败，请稍后重试")}}, type: 'error' });
                         });
         }
 </script>

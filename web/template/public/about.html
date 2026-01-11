@@ -2,7 +2,7 @@
 <section class="mx-auto max-w-3xl space-y-8">
     <header class="space-y-3 text-center">
         <p class="text-sm font-medium text-blue-600 dark:text-blue-400">
-            About Me
+            {{tr .language "About Me" "关于我"}}
         </p>
         <h1 class="text-4xl font-semibold text-slate-900 dark:text-slate-100">
             {{.page.Title}}
@@ -12,6 +12,6 @@
     <section class="post-content">{{.content}}</section>
 
     {{template "contact_links.html" (dict "Contacts" .contacts "Heading"
-    "联系我" "Subtitle" "喜欢的话记得打个招呼，互相交流。")}}
+    (tr .language "Get in touch" "联系我") "Subtitle" (tr .language "Say hello if you liked it—happy to connect." "喜欢的话记得打个招呼，互相交流。") "Language" .language)}}
 </section>
 {{end}}

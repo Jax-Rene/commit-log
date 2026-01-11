@@ -6,7 +6,7 @@
         <div
             class="flex flex-wrap gap-2"
             role="tablist"
-            aria-label="系统设置导航"
+            aria-label="{{tr .language "System settings navigation" "系统设置导航"}}"
         >
             <template x-for="tab in tabs" :key="tab.id">
                 <button
@@ -40,62 +40,78 @@
             <h2
                 class="text-lg font-semibold text-slate-900 dark:text-slate-100"
             >
-                基础信息
+                {{tr .language "Basic information" "基础信息"}}
             </h2>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-                站点名称与 Logo 将出现在前台和后台导航。
+                {{tr .language "Site name and logo appear in public and admin navigation." "站点名称与 Logo 将出现在前台和后台导航。"}}
             </p>
         </header>
         <div class="grid grid-cols-1 gap-6">
             <label class="flex flex-col gap-2">
                 <span
                     class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                    >站点名称<span class="ml-1 text-rose-500">*</span></span
+                    >{{tr .language "Site name" "站点名称"}}<span class="ml-1 text-rose-500">*</span></span
                 >
                 <input
                     type="text"
                     x-model="form.siteName"
                     class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                    placeholder="例如：CommitLog"
+                    placeholder="{{tr .language "e.g. CommitLog" "例如：CommitLog"}}"
                 />
                 <span class="text-xs text-slate-500 dark:text-slate-400"
-                    >用于浏览器标题、后台导航等位置。</span
+                    >{{tr .language "Used in browser titles and admin navigation." "用于浏览器标题、后台导航等位置。"}}</span
                 >
             </label>
             <label class="flex flex-col gap-2">
                 <span
                     class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                    >站点描述<span class="ml-1 text-rose-500">*</span></span
+                    >{{tr .language "Site description" "站点描述"}}<span class="ml-1 text-rose-500">*</span></span
                 >
                 <textarea
                     x-model="form.siteDescription"
                     rows="3"
                     class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                    placeholder="简要介绍博客定位与价值主张，建议 80-160 字。"
+                    placeholder="{{tr .language "Briefly describe the blog focus and value (80-160 chars)." "简要介绍博客定位与价值主张，建议 80-160 字。"}}"
                 ></textarea>
                 <span class="text-xs text-slate-500 dark:text-slate-400"
-                    >搜索引擎摘要与社交分享默认文案，会出现在未填写专属描述的页面。</span
+                    >{{tr .language "Used as default SEO and social summary when page-specific copy is missing." "搜索引擎摘要与社交分享默认文案，会出现在未填写专属描述的页面。"}}</span
                 >
             </label>
             <label class="flex flex-col gap-2">
                 <span
                     class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                    >默认关键词</span
+                    >{{tr .language "Preferred language" "首选语言"}}</span
+                >
+                <select
+                    x-model="form.preferredLanguage"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                >
+                    <option value="zh">{{tr .language "Chinese" "中文"}}（Chinese）</option>
+                    <option value="en">English</option>
+                </select>
+                <span class="text-xs text-slate-500 dark:text-slate-400"
+                    >{{tr .language "Sets the default site language and overrides region/browser detection (visitors can switch manually)." "保存后将作为站点默认语言，覆盖地区/浏览器识别（访客可手动切换）。"}}</span
+                >
+            </label>
+            <label class="flex flex-col gap-2">
+                <span
+                    class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                    >{{tr .language "Default keywords" "默认关键词"}}</span
                 >
                 <input
                     type="text"
                     x-model="form.siteKeywords"
                     class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                    placeholder="例如：AI, 全栈工程师, 博客"
+                    placeholder="{{tr .language "e.g. AI, Full-stack, Blog" "例如：AI, 全栈工程师, 博客"}}"
                 />
                 <span class="text-xs text-slate-500 dark:text-slate-400"
-                    >使用逗号、空格或分号分隔，系统会自动去重与规范格式。</span
+                    >{{tr .language "Separate with commas, spaces, or semicolons; duplicates are removed automatically." "使用逗号、空格或分号分隔，系统会自动去重与规范格式。"}}</span
                 >
             </label>
             <div class="space-y-2">
                 <span
                     class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                    >默认分享图</span
+                    >{{tr .language "Default social image" "默认分享图"}}</span
                 >
                 <div class="flex items-center gap-4">
                     <div
@@ -104,7 +120,7 @@
                         <template x-if="form.siteSocialImage">
                             <img
                                 :src="form.siteSocialImage"
-                                alt="分享图预览"
+                                alt="{{tr .language "Social image preview" "分享图预览"}}"
                                 class="h-full w-full object-cover"
                                 @error="form.siteSocialImage = ''"
                             />
@@ -112,7 +128,7 @@
                         <template x-if="!form.siteSocialImage">
                             <span
                                 class="text-xs font-medium text-slate-400 dark:text-slate-500"
-                                >暂无图片</span
+                                >{{tr .language "No image" "暂无图片"}}</span
                             >
                         </template>
                     </div>
@@ -120,8 +136,7 @@
                         class="max-w-sm space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400"
                     >
                         <p>
-                            文章未设置封面时用于社交媒体与消息卡片展示，建议尺寸
-                            1200×630px。
+                            {{tr .language "Used when posts have no cover. Recommended size: 1200×630px." "文章未设置封面时用于社交媒体与消息卡片展示，建议尺寸 1200×630px。"}}
                         </p>
                         <p
                             x-show="form.siteSocialImage"
@@ -138,25 +153,24 @@
                     placeholder="https://example.com/og.png"
                 />
                 <span class="text-xs text-slate-500 dark:text-slate-400"
-                    >可直接粘贴网络地址或后台上传的图片链接。</span
+                    >{{tr .language "Paste a URL or use an uploaded image link." "可直接粘贴网络地址或后台上传的图片链接。"}}</span
                 >
             </div>
             <div class="space-y-6">
                 <div class="flex flex-col gap-2">
                     <span
                         class="inline-flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200"
-                        >站点 Logo<span class="text-rose-500">*</span></span
+                        >{{tr .language "Site logo" "站点 Logo"}}<span class="text-rose-500">*</span></span
                     >
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        请分别上传适用于浅色与深色模式的 Logo，建议使用透明背景
-                        PNG 或 SVG。
+                        {{tr .language "Upload logos for light and dark modes. Transparent PNG or SVG is recommended." "请分别上传适用于浅色与深色模式的 Logo，建议使用透明背景 PNG 或 SVG。"}}
                     </p>
                 </div>
                 <div class="grid gap-6 md:grid-cols-2">
                     <div class="flex flex-col gap-3">
                         <span
                             class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
-                            >浅色模式</span
+                            >{{tr .language "Light mode" "浅色模式"}}</span
                         >
                         <div
                             class="rounded-2xl border border-dashed border-slate-200 p-4 transition-colors dark:border-slate-700/80"
@@ -168,7 +182,7 @@
                                     <template x-if="form.siteLogoUrlLight">
                                         <img
                                             :src="form.siteLogoUrlLight"
-                                            alt="浅色 Logo 预览"
+                                            alt="{{tr .language "Light logo preview" "浅色 Logo 预览"}}"
                                             class="h-full w-full object-cover"
                                             @error="form.siteLogoUrlLight = ''"
                                         />
@@ -176,7 +190,7 @@
                                     <template x-if="!form.siteLogoUrlLight">
                                         <span
                                             class="text-xs font-medium text-slate-400 dark:text-slate-500"
-                                            >暂无 Logo</span
+                                            >{{tr .language "No logo" "暂无 Logo"}}</span
                                         >
                                     </template>
                                 </div>
@@ -184,7 +198,7 @@
                                     class="max-w-xs space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400"
                                 >
                                     <p>
-                                        浅色模式下用于前台与后台导航的品牌展示。
+                                        {{tr .language "Displayed in navigation for light mode." "浅色模式下用于前台与后台导航的品牌展示。"}}
                                     </p>
                                     <p
                                         x-show="form.siteLogoUrlLight"
@@ -209,10 +223,10 @@
                                     :disabled="logoUploadingLight"
                                 >
                                     <span x-show="!logoUploadingLight"
-                                        >上传图片</span
+                                        >{{tr .language "Upload image" "上传图片"}}</span
                                     >
                                     <span x-show="logoUploadingLight"
-                                        >上传中...</span
+                                        >{{tr .language "Uploading..." "上传中..."}}</span
                                     >
                                 </button>
                                 <button
@@ -222,7 +236,7 @@
                                     x-show="form.siteLogoUrlLight"
                                     x-cloak
                                 >
-                                    移除 Logo
+                                    {{tr .language "Remove logo" "移除 Logo"}}
                                 </button>
                             </div>
                         </div>
@@ -230,7 +244,7 @@
                     <div class="flex flex-col gap-3">
                         <span
                             class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
-                            >深色模式</span
+                            >{{tr .language "Dark mode" "深色模式"}}</span
                         >
                         <div
                             class="rounded-2xl border border-dashed border-slate-200 p-4 transition-colors dark:border-slate-700/80"
@@ -242,7 +256,7 @@
                                     <template x-if="form.siteLogoUrlDark">
                                         <img
                                             :src="form.siteLogoUrlDark"
-                                            alt="深色 Logo 预览"
+                                            alt="{{tr .language "Dark logo preview" "深色 Logo 预览"}}"
                                             class="h-full w-full object-cover"
                                             @error="form.siteLogoUrlDark = ''"
                                         />
@@ -250,7 +264,7 @@
                                     <template x-if="!form.siteLogoUrlDark">
                                         <span
                                             class="text-xs font-medium text-slate-400 dark:text-slate-500"
-                                            >暂无 Logo</span
+                                            >{{tr .language "No logo" "暂无 Logo"}}</span
                                         >
                                     </template>
                                 </div>
@@ -258,7 +272,7 @@
                                     class="max-w-xs space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400"
                                 >
                                     <p>
-                                        深色模式下用于品牌展示的图标，可适当提升亮度对比。
+                                        {{tr .language "Logo for dark mode; consider higher contrast." "深色模式下用于品牌展示的图标，可适当提升亮度对比。"}}
                                     </p>
                                     <p
                                         x-show="form.siteLogoUrlDark"
@@ -283,10 +297,10 @@
                                     :disabled="logoUploadingDark"
                                 >
                                     <span x-show="!logoUploadingDark"
-                                        >上传图片</span
+                                        >{{tr .language "Upload image" "上传图片"}}</span
                                     >
                                     <span x-show="logoUploadingDark"
-                                        >上传中...</span
+                                        >{{tr .language "Uploading..." "上传中..."}}</span
                                     >
                                 </button>
                                 <button
@@ -296,7 +310,7 @@
                                     x-show="form.siteLogoUrlDark"
                                     x-cloak
                                 >
-                                    移除 Logo
+                                    {{tr .language "Remove logo" "移除 Logo"}}
                                 </button>
                             </div>
                         </div>
@@ -306,31 +320,31 @@
                     <label class="flex flex-col gap-2">
                         <span
                             class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                            >后台页脚文案</span
+                            >{{tr .language "Admin footer" "后台页脚文案"}}</span
                         >
                         <input
                             type="text"
                             x-model="form.adminFooterText"
                             class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                            placeholder="例如：日拱一卒，功不唐捐"
+                            placeholder="{{tr .language "e.g. Grow a little every day" "例如：日拱一卒，功不唐捐"}}"
                         />
                         <span class="text-xs text-slate-500 dark:text-slate-400"
-                            >展示于后台页面底部，可填写团队座右铭或提示语。</span
+                            >{{tr .language "Shown in the admin footer. Add a team motto or note." "展示于后台页面底部，可填写团队座右铭或提示语。"}}</span
                         >
                     </label>
                     <label class="flex flex-col gap-2 mt-2">
                         <span
                             class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                            >前台页脚文案</span
+                            >{{tr .language "Public footer" "前台页脚文案"}}</span
                         >
                         <input
                             type="text"
                             x-model="form.publicFooterText"
                             class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                            placeholder="例如：激发创造，延迟满足"
+                            placeholder="{{tr .language "e.g. Create with purpose" "例如：激发创造，延迟满足"}}"
                         />
                         <span class="text-xs text-slate-500 dark:text-slate-400"
-                            >展示于前台页脚，可用于呈现品牌口号或版权信息。</span
+                            >{{tr .language "Shown in the public footer for slogans or copyright." "展示于前台页脚，可用于呈现品牌口号或版权信息。"}}</span
                         >
                     </label>
                 </div>
@@ -350,26 +364,26 @@
             <h2
                 class="text-lg font-semibold text-slate-900 dark:text-slate-100"
             >
-                Gallery 设置
+                {{tr .language "Gallery settings" "Gallery 设置"}}
             </h2>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-                管理作品集展示信息与前台入口开关。
+                {{tr .language "Manage gallery display info and public nav visibility." "管理作品集展示信息与前台入口开关。"}}
             </p>
         </header>
         <div class="space-y-6">
             <label class="flex flex-col gap-2">
                 <span
                     class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                    >Gallery 副标题</span
+                    >{{tr .language "Gallery subtitle" "Gallery 副标题"}}</span
                 >
                 <input
                     type="text"
                     x-model="form.gallerySubtitle"
                     class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                    placeholder="例如：Shot by Lumix S5M2 / OnePlus 13"
+                    placeholder="{{tr .language "e.g. Shot by Lumix S5M2 / OnePlus 13" "例如：Shot by Lumix S5M2 / OnePlus 13"}}"
                 />
                 <span class="text-xs text-slate-500 dark:text-slate-400"
-                    >展示在 Gallery 页面标题下方。</span
+                    >{{tr .language "Shown under the Gallery page title." "展示在 Gallery 页面标题下方。"}}</span
                 >
             </label>
             <div
@@ -380,10 +394,10 @@
                         <p
                             class="text-sm font-medium text-slate-700 dark:text-slate-200"
                         >
-                            启用 Gallery
+                            {{tr .language "Enable Gallery" "启用 Gallery"}}
                         </p>
                         <p class="text-xs text-slate-500 dark:text-slate-400">
-                            开启后前台导航显示 Gallery 入口。
+                            {{tr .language "Shows Gallery in public navigation." "开启后前台导航显示 Gallery 入口。"}}
                         </p>
                     </div>
                     <label
@@ -429,11 +443,10 @@
             <h2
                 class="text-lg font-semibold text-slate-900 dark:text-slate-100"
             >
-                AI 服务集成
+                {{tr .language "AI service integration" "AI 服务集成"}}
             </h2>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-                选择用于自动摘要等能力的模型平台，并维护对应的 API
-                Key，可在此处快速测试连通性。
+                {{tr .language "Choose a model provider for summaries and manage API keys. Test connectivity here." "选择用于自动摘要等能力的模型平台，并维护对应的 API Key，可在此处快速测试连通性。"}}
             </p>
         </header>
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
@@ -441,7 +454,7 @@
                 <label class="flex flex-col gap-2">
                     <span
                         class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                        >当前 AI 平台<span class="ml-1 text-rose-500"
+                        >{{tr .language "AI provider" "当前 AI 平台"}}<span class="ml-1 text-rose-500"
                             >*</span
                         ></span
                     >
@@ -453,8 +466,7 @@
                         <option value="deepseek">DeepSeek</option>
                     </select>
                     <span class="text-xs text-slate-500 dark:text-slate-400"
-                        >系统会按照所选平台调用对应接口，请确保 API Key
-                        有效且额度充足。</span
+                        >{{tr .language "Requests will use the selected provider. Make sure the API key is valid." "系统会按照所选平台调用对应接口，请确保 API Key 有效且额度充足。"}}</span
                     >
                 </label>
                 <div class="space-y-3">
@@ -482,14 +494,13 @@
                                     class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"
                                 >
                                     <span
-                                        x-text="showApiKey ? '隐藏' : '显示'"
+                                        x-text="showApiKey ? {{toJSON (tr .language "Hide" "隐藏")}} : {{toJSON (tr .language "Show" "显示")}}"
                                     ></span>
                                 </button>
                             </div>
                             <span
                                 class="text-xs text-slate-500 dark:text-slate-400"
-                                >从 OpenAI 控制台复制
-                                Key，系统将以密文方式保存。</span
+                                >{{tr .language "Copy from OpenAI console; it is stored securely." "从 OpenAI 控制台复制 Key，系统将以密文方式保存。"}}</span
                             >
                         </label>
                     </div>
@@ -517,14 +528,13 @@
                                     class="whitespace-nowrap rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"
                                 >
                                     <span
-                                        x-text="showDeepSeekKey ? '隐藏' : '显示'"
+                                        x-text="showDeepSeekKey ? {{toJSON (tr .language "Hide" "隐藏")}} : {{toJSON (tr .language "Show" "显示")}}"
                                     ></span>
                                 </button>
                             </div>
                             <span
                                 class="text-xs text-slate-500 dark:text-slate-400"
-                                >请填写从 DeepSeek 开放平台获取的
-                                Key，确保具备调用权限。</span
+                                >{{tr .language "Use the DeepSeek platform key with proper access." "请填写从 DeepSeek 开放平台获取的 Key，确保具备调用权限。"}}</span
                             >
                         </label>
                     </div>
@@ -533,32 +543,31 @@
                     <label class="flex flex-col gap-2">
                         <span
                             class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                            >AI 摘要系统提示</span
+                            >{{tr .language "AI summary system prompt" "AI 摘要系统提示"}}</span
                         >
                         <textarea
                             x-model="form.aiSummaryPrompt"
                             rows="4"
                             class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                            placeholder="用于生成文章摘要的系统提示语，留空将使用默认值。"
+                            placeholder="{{tr .language "System prompt for summaries; leave blank for default." "用于生成文章摘要的系统提示语，留空将使用默认值。"}}"
                         ></textarea>
                         <span class="text-xs text-slate-500 dark:text-slate-400"
-                            >建议描述摘要风格、字数范围与注意事项，便于快速调整生成效果。</span
+                            >{{tr .language "Describe style, length, and constraints to refine outputs." "建议描述摘要风格、字数范围与注意事项，便于快速调整生成效果。"}}</span
                         >
                     </label>
                     <label class="flex flex-col gap-2">
                         <span
                             class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                            >AI 全文优化系统提示</span
+                            >{{tr .language "AI rewrite system prompt" "AI 全文优化系统提示"}}</span
                         >
                         <textarea
                             x-model="form.aiRewritePrompt"
                             rows="5"
                             class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                            placeholder="用于润色全文的系统提示语，留空将使用默认值。"
+                            placeholder="{{tr .language "System prompt for rewriting; leave blank for default." "用于润色全文的系统提示语，留空将使用默认值。"}}"
                         ></textarea>
                         <span class="text-xs text-slate-500 dark:text-slate-400"
-                            >可明确结构、语气与保留内容等要求，帮助模型输出更贴合预期的
-                            Markdown 文稿。</span
+                            >{{tr .language "Define structure, tone, and constraints to guide Markdown output." "可明确结构、语气与保留内容等要求，帮助模型输出更贴合预期的 Markdown 文稿。"}}</span
                         >
                     </label>
                 </div>
@@ -572,9 +581,9 @@
                 >
                     <span
                         x-show="!aiTesting"
-                        x-text="`测试${providerMeta().label}连通性`"
+                        x-text="`{{tr .language "Test" "测试"}}${providerMeta().label}{{tr .language " connectivity" "连通性"}}`"
                     ></span>
-                    <span x-show="aiTesting">测试中...</span>
+                    <span x-show="aiTesting">{{tr .language "Testing..." "测试中..."}}</span>
                 </button>
                 <button
                     type="button"
@@ -583,7 +592,7 @@
                     x-show="currentApiKey()"
                     x-cloak
                 >
-                    清空
+                    {{tr .language "Clear" "清空"}}
                 </button>
             </div>
         </div>
@@ -596,10 +605,10 @@
             <h2
                 class="text-sm font-semibold text-slate-900 dark:text-slate-100"
             >
-                保存设置
+                {{tr .language "Save settings" "保存设置"}}
             </h2>
             <p class="text-xs text-slate-500 dark:text-slate-400">
-                点击按钮将当前表单内容写入数据库。
+                {{tr .language "Write the current form values to the database." "点击按钮将当前表单内容写入数据库。"}}
             </p>
         </div>
         <button
@@ -608,8 +617,8 @@
             :disabled="loading"
             class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/80"
         >
-            <span x-show="!loading">保存设置</span>
-            <span x-show="loading">保存中...</span>
+            <span x-show="!loading">{{tr .language "Save settings" "保存设置"}}</span>
+            <span x-show="loading">{{tr .language "Saving..." "保存中..."}}</span>
         </button>
     </section>
 </div>
@@ -617,16 +626,36 @@
 <script src="/static/js/system_settings_tabs.js"></script>
 <script>
     function systemSettingsForm() {
+        const preferServerMessage = {{if eq .language "zh"}}true{{else}}false{{end}};
+        const i18n = {
+            tabBasic: {{toJSON (tr .language "Basic information" "基础信息")}},
+            tabGallery: {{toJSON (tr .language "Gallery" "Gallery")}},
+            tabContacts: {{toJSON (tr .language "Contacts" "联系方式")}},
+            tabAI: {{toJSON (tr .language "AI services" "AI 服务")}},
+            loadSettingsFailed: {{toJSON (tr .language "Failed to load system settings" "加载系统设置失败")}},
+            selectImageFile: {{toJSON (tr .language "Please select an image file" "请选择图片文件")}},
+            logoUploadFailed: {{toJSON (tr .language "Logo upload failed. Please try again." "Logo 上传失败，请稍后重试")}},
+            logoUploadSuccess: {{toJSON (tr .language "Logo uploaded" "Logo 上传成功")}},
+            apiKeyMissingPrefix: {{toJSON (tr .language "Please enter" "请先填写")}},
+            apiTestFailed: {{toJSON (tr .language "Test failed. Please try again." "测试失败，请稍后重试")}},
+            apiTestSuccessSuffix: {{toJSON (tr .language " connection is OK" " 接口连接正常")}},
+            siteNameRequired: {{toJSON (tr .language "Please enter site name" "请填写站点名称")}},
+            siteDescriptionRequired: {{toJSON (tr .language "Please enter site description" "请填写站点描述")}},
+            lightLogoRequired: {{toJSON (tr .language "Please upload light logo" "请上传浅色模式 Logo")}},
+            darkLogoRequired: {{toJSON (tr .language "Please upload dark logo" "请上传深色模式 Logo")}},
+            settingsSaved: {{toJSON (tr .language "Settings saved" "系统设置已保存")}},
+            saveFailed: {{toJSON (tr .language "Save failed. Please try again." "保存失败，请稍后重试")}},
+        };
         return {
             loading: false,
             showApiKey: false,
             showDeepSeekKey: false,
             aiTesting: false,
             tabs: [
-                { id: "basic", label: "基础信息" },
-                { id: "gallery", label: "Gallery" },
-                { id: "contacts", label: "联系方式" },
-                { id: "ai", label: "AI 服务" },
+                { id: "basic", label: i18n.tabBasic },
+                { id: "gallery", label: i18n.tabGallery },
+                { id: "contacts", label: i18n.tabContacts },
+                { id: "ai", label: i18n.tabAI },
             ],
             activeTab: "basic",
             form: {
@@ -637,6 +666,7 @@
                 siteDescription: "",
                 siteKeywords: "",
                 siteSocialImage: "",
+                preferredLanguage: "zh",
                 adminFooterText: "",
                 publicFooterText: "",
                 gallerySubtitle: "",
@@ -699,8 +729,11 @@
                     .then((response) => response.json())
                     .then((data) => {
                         if (data.error) {
+                            const message = preferServerMessage
+                                ? data.error
+                                : i18n.loadSettingsFailed;
                             window.AdminUI.toast({
-                                message: data.error,
+                                message,
                                 type: "error",
                             });
                             return;
@@ -713,7 +746,7 @@
                     })
                     .catch(() => {
                         window.AdminUI.toast({
-                            message: "加载系统设置失败",
+                            message: i18n.loadSettingsFailed,
                             type: "error",
                         });
                     });
@@ -772,7 +805,7 @@
                 event.target.value = "";
                 if (!file || !file.type.startsWith("image/")) {
                     window.AdminUI.toast({
-                        message: "请选择图片文件",
+                        message: i18n.selectImageFile,
                         type: "warning",
                     });
                     return;
@@ -800,9 +833,9 @@
                         !data.data.url
                     ) {
                         const message =
-                            data && (data.error || data.message)
+                            preferServerMessage && data && (data.error || data.message)
                                 ? data.error || data.message
-                                : "Logo 上传失败，请稍后重试";
+                                : i18n.logoUploadFailed;
                         window.AdminUI.toast({ message, type: "error" });
                         return;
                     }
@@ -814,14 +847,14 @@
                     }
                     this.applyLogoFallbacks();
                     window.AdminUI.toast({
-                        message: "Logo 上传成功",
+                        message: i18n.logoUploadSuccess,
                         type: "success",
                     });
                 } catch (error) {
                     const message =
-                        error && error.message
+                        preferServerMessage && error && error.message
                             ? error.message
-                            : "Logo 上传失败，请稍后重试";
+                            : i18n.logoUploadFailed;
                     window.AdminUI.toast({ message, type: "error" });
                 } finally {
                     this[flag] = false;
@@ -862,7 +895,7 @@
                 const apiKey = this.currentApiKey();
                 if (!apiKey) {
                     window.AdminUI.toast({
-                        message: `请先填写 ${meta.label} API Key`,
+                        message: `${i18n.apiKeyMissingPrefix} ${meta.label} API Key`,
                         type: "warning",
                     });
                     return;
@@ -880,21 +913,24 @@
                     const data = await response.json().catch(() => ({}));
                     if (!response.ok || data.error) {
                         const message =
-                            data && data.error
+                            preferServerMessage && data && data.error
                                 ? data.error
-                                : "测试失败，请稍后重试";
+                                : i18n.apiTestFailed;
                         window.AdminUI.toast({ message, type: "error" });
                         return;
                     }
                     window.AdminUI.toast({
-                        message: data.message || `${meta.label} 接口连接正常`,
+                        message:
+                            preferServerMessage && data.message
+                                ? data.message
+                                : `${meta.label}${i18n.apiTestSuccessSuffix}`,
                         type: "success",
                     });
                 } catch (error) {
                     const message =
-                        error && error.message
+                        preferServerMessage && error && error.message
                             ? error.message
-                            : "测试失败，请稍后重试";
+                            : i18n.apiTestFailed;
                     window.AdminUI.toast({ message, type: "error" });
                 } finally {
                     this.aiTesting = false;
@@ -903,14 +939,14 @@
             submit() {
                 if (!this.form.siteName.trim()) {
                     window.AdminUI.toast({
-                        message: "请填写站点名称",
+                        message: i18n.siteNameRequired,
                         type: "warning",
                     });
                     return;
                 }
                 if (!this.form.siteDescription.trim()) {
                     window.AdminUI.toast({
-                        message: "请填写站点描述",
+                        message: i18n.siteDescriptionRequired,
                         type: "warning",
                     });
                     return;
@@ -918,14 +954,14 @@
                 this.applyLogoFallbacks();
                 if (!this.form.siteLogoUrlLight?.trim()) {
                     window.AdminUI.toast({
-                        message: "请上传浅色模式 Logo",
+                        message: i18n.lightLogoRequired,
                         type: "warning",
                     });
                     return;
                 }
                 if (!this.form.siteLogoUrlDark?.trim()) {
                     window.AdminUI.toast({
-                        message: "请上传深色模式 Logo",
+                        message: i18n.darkLogoRequired,
                         type: "warning",
                     });
                     return;
@@ -943,6 +979,7 @@
                         siteDescription: this.form.siteDescription,
                         siteKeywords: this.form.siteKeywords,
                         siteSocialImage: this.form.siteSocialImage,
+                        preferredLanguage: this.form.preferredLanguage,
                         adminFooterText: this.form.adminFooterText,
                         publicFooterText: this.form.publicFooterText,
                         gallerySubtitle: this.form.gallerySubtitle,
@@ -957,8 +994,11 @@
                     .then((response) => response.json())
                     .then((data) => {
                         if (data.error) {
+                            const message = preferServerMessage
+                                ? data.error
+                                : i18n.saveFailed;
                             window.AdminUI.toast({
-                                message: data.error,
+                                message,
                                 type: "error",
                             });
                             return;
@@ -969,13 +1009,16 @@
                             this.normalizeProvider();
                         }
                         window.AdminUI.toast({
-                            message: data.message || "系统设置已保存",
+                            message:
+                                preferServerMessage && data.message
+                                    ? data.message
+                                    : i18n.settingsSaved,
                             type: "success",
                         });
                     })
                     .catch(() => {
                         window.AdminUI.toast({
-                            message: "保存失败，请稍后重试",
+                            message: i18n.saveFailed,
                             type: "error",
                         });
                     })

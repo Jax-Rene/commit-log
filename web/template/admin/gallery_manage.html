@@ -4,68 +4,70 @@
 <div class="space-y-8" x-data="galleryManager({{toJSON .items}})" x-init="init()" x-cloak>
 	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
 		<div class="space-y-2">
-			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">摄影作品</h1>
-			<p class="text-sm text-slate-500 dark:text-slate-400">集中管理上传的摄影作品，支持上下架与排序。</p>
+			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">{{tr .language "Gallery" "摄影作品"}}</h1>
+			<p class="text-sm text-slate-500 dark:text-slate-400">{{tr .language "Manage gallery items, including publish status and ordering." "集中管理上传的摄影作品，支持上下架与排序。"}}</p>
 			{{if .error}}
-			<p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-500/50 dark:bg-amber-500/10 dark:text-amber-200">{{.error}}</p>
+			<p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-500/50 dark:bg-amber-500/10 dark:text-amber-200">
+				{{if eq .language "en"}}Failed to load gallery. Please refresh.{{else}}{{.error}}{{end}}
+			</p>
 			{{end}}
 		</div>
-		<button type="button" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90" @click="openCreate()">新增作品</button>
+		<button type="button" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90" @click="openCreate()">{{tr .language "Add item" "新增作品"}}</button>
 	</header>
 
 	<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 		<header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 			<div class="space-y-1">
-				<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">作品列表</h2>
-				<p class="text-xs text-slate-500 dark:text-slate-400">当前共 <span x-text="items.length"></span> 张作品。</p>
+				<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{tr .language "Gallery list" "作品列表"}}</h2>
+				<p class="text-xs text-slate-500 dark:text-slate-400">{{tr .language "Total" "当前共"}} <span x-text="items.length"></span> {{tr .language "items." "张作品。"}}</p>
 			</div>
 			<div class="flex flex-wrap items-center gap-2">
 				<button type="button" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200" @click="refresh()" :disabled="loading">
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.023 9.348h4.271V5.077m-16.2 9.575a8.25 8.25 0 0014.198 2.665m2.002-4.285a8.25 8.25 0 00-14.205-2.66M20.294 5.077l-3.633 3.632" />
 					</svg>
-					<span x-show="!loading">刷新列表</span>
-					<span x-show="loading">刷新中...</span>
+					<span x-show="!loading">{{tr .language "Refresh" "刷新列表"}}</span>
+					<span x-show="loading">{{tr .language "Refreshing..." "刷新中..."}}</span>
 				</button>
 			</div>
 		</header>
 
-		<div x-show="loading" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>加载中...</div>
-		<div x-show="!loading && items.length === 0" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>暂未上传作品，点击右上角新增。</div>
+		<div x-show="loading" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>{{tr .language "Loading..." "加载中..."}}</div>
+		<div x-show="!loading && items.length === 0" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>{{tr .language "No items yet. Click top right to add one." "暂未上传作品，点击右上角新增。"}}</div>
 
 		<div x-show="!loading && items.length > 0" class="space-y-4" x-cloak>
 			<template x-for="item in items" :key="item.id">
 				<div class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-colors dark:border-slate-700 dark:bg-slate-900/70 sm:flex-row sm:items-center sm:justify-between">
 					<div class="flex min-w-0 flex-1 items-center gap-4">
 						<div class="relative h-20 w-28 overflow-hidden rounded-xl bg-slate-200 dark:bg-slate-800">
-							<img :src="item.imageUrl" :alt="item.title || '摄影作品'" class="h-full w-full object-cover">
+							<img :src="item.imageUrl" :alt="item.title || {{toJSON (tr .language "Gallery item" "摄影作品")}}" class="h-full w-full object-cover">
 						</div>
 						<div class="min-w-0 space-y-1">
 							<div class="flex flex-wrap items-center gap-2">
-								<h3 class="truncate text-base font-semibold text-slate-900 dark:text-slate-100" x-text="item.title || '未命名作品'"></h3>
+								<h3 class="truncate text-base font-semibold text-slate-900 dark:text-slate-100" x-text="item.title || {{toJSON (tr .language "Untitled" "未命名作品")}}"></h3>
 								<span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium"
 									:class="item.status === 'published'
 										? 'border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200'
 										: 'border-amber-200 bg-amber-50 text-amber-600 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200'">
-									<span x-text="item.status === 'published' ? '已上架' : '已下架'"></span>
+									<span x-text="item.status === 'published' ? {{toJSON (tr .language "Published" "已上架")}} : {{toJSON (tr .language "Unpublished" "已下架")}}"></span>
 								</span>
 							</div>
-							<p class="text-xs text-slate-500 dark:text-slate-400" x-text="item.description || '暂无描述'"></p>
-							<p class="text-xs text-slate-400 dark:text-slate-500">更新于 <span x-text="formatDate(item.updatedAt)"></span></p>
+							<p class="text-xs text-slate-500 dark:text-slate-400" x-text="item.description || {{toJSON (tr .language "No description" "暂无描述")}}"></p>
+							<p class="text-xs text-slate-400 dark:text-slate-500">{{tr .language "Updated" "更新于"}} <span x-text="formatDate(item.updatedAt)"></span></p>
 						</div>
 					</div>
 					<div class="flex flex-wrap items-center gap-2">
-						<button type="button" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200" @click="openEdit(item)">编辑</button>
+						<button type="button" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200" @click="openEdit(item)">{{tr .language "Edit" "编辑"}}</button>
 						<button type="button" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200" @click="toggleStatus(item)">
-							<span x-text="item.status === 'published' ? '下架' : '上架'"></span>
+							<span x-text="item.status === 'published' ? {{toJSON (tr .language "Unpublish" "下架")}} : {{toJSON (tr .language "Publish" "上架")}}"></span>
 						</button>
 						<div class="flex items-center gap-1">
-							<button type="button" class="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200" @click="move(item, 1)">上移</button>
-							<button type="button" class="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200" @click="move(item, -1)">下移</button>
+							<button type="button" class="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200" @click="move(item, 1)">{{tr .language "Move up" "上移"}}</button>
+							<button type="button" class="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200" @click="move(item, -1)">{{tr .language "Move down" "下移"}}</button>
 						</div>
 						<button type="button" class="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-rose-100 disabled:text-rose-300 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10 dark:disabled:border-rose-900/30 dark:disabled:text-rose-500/50" @click="confirmDelete(item)" :disabled="deletingId === item.id">
-							<span x-show="deletingId !== item.id">删除</span>
-							<span x-show="deletingId === item.id">删除中...</span>
+							<span x-show="deletingId !== item.id">{{tr .language "Delete" "删除"}}</span>
+							<span x-show="deletingId === item.id">{{tr .language "Deleting..." "删除中..."}}</span>
 						</button>
 					</div>
 				</div>
@@ -79,7 +81,7 @@
 			<div class="space-y-5">
 				<header class="space-y-1">
 					<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100" x-text="dialogTitle"></h2>
-					<p class="text-xs text-slate-500 dark:text-slate-400">支持上传 JPG、PNG、GIF 等格式，建议宽度不低于 1200px。</p>
+					<p class="text-xs text-slate-500 dark:text-slate-400">{{tr .language "Supports JPG, PNG, GIF. Recommended width is at least 1200px." "支持上传 JPG、PNG、GIF 等格式，建议宽度不低于 1200px。"}}</p>
 				</header>
 
 				<div class="grid gap-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
@@ -87,7 +89,7 @@
 						<div class="relative flex h-48 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-500 transition-colors dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
 							<input type="file" accept="image/*" class="absolute inset-0 cursor-pointer opacity-0" @change="handleFile($event)" :disabled="working">
 							<template x-if="form.imageUrl">
-								<img :src="form.imageUrl" alt="预览图" class="h-full w-full object-cover">
+								<img :src="form.imageUrl" alt="{{tr .language "Preview" "预览图"}}" class="h-full w-full object-cover">
 							</template>
 							<template x-if="!form.imageUrl">
 								<div class="space-y-2 text-center">
@@ -97,31 +99,31 @@
 											<path d="M4 8h16" stroke-width="1.5" stroke-linecap="round"></path>
 										</svg>
 									</div>
-									<p>点击或拖拽上传作品</p>
+									<p>{{tr .language "Click or drag to upload" "点击或拖拽上传作品"}}</p>
 								</div>
 							</template>
 						</div>
-						<p class="text-[11px] text-slate-500 dark:text-slate-400">图片尺寸：<span x-text="dimensionText"></span></p>
+						<p class="text-[11px] text-slate-500 dark:text-slate-400">{{tr .language "Dimensions:" "图片尺寸："}}<span x-text="dimensionText"></span></p>
 					</div>
 					<div class="space-y-4">
 						<label class="flex flex-col gap-2">
-							<span class="text-xs font-medium text-slate-600 dark:text-slate-300">作品标题</span>
-							<input type="text" x-model="form.title" placeholder="例如：城市夜景" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" :disabled="working">
+							<span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{tr .language "Title" "作品标题"}}</span>
+							<input type="text" x-model="form.title" placeholder="{{tr .language "e.g. City nightscape" "例如：城市夜景"}}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" :disabled="working">
 						</label>
 						<label class="flex flex-col gap-2">
-							<span class="text-xs font-medium text-slate-600 dark:text-slate-300">作品描述</span>
-							<textarea rows="4" x-model="form.description" placeholder="补充拍摄地点、时间或灵感" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" :disabled="working"></textarea>
+							<span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{tr .language "Description" "作品描述"}}</span>
+							<textarea rows="4" x-model="form.description" placeholder="{{tr .language "Add location, time, or inspiration" "补充拍摄地点、时间或灵感"}}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" :disabled="working"></textarea>
 						</label>
 						<div class="grid gap-4 sm:grid-cols-2">
 							<label class="flex flex-col gap-2">
-								<span class="text-xs font-medium text-slate-600 dark:text-slate-300">作品状态</span>
+								<span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{tr .language "Status" "作品状态"}}</span>
 								<select x-model="form.status" class="form-select" :disabled="working">
-									<option value="published">上架</option>
-									<option value="draft">下架</option>
+									<option value="published">{{tr .language "Published" "上架"}}</option>
+									<option value="draft">{{tr .language "Unpublished" "下架"}}</option>
 								</select>
 							</label>
 							<label class="flex flex-col gap-2">
-								<span class="text-xs font-medium text-slate-600 dark:text-slate-300">排序值</span>
+								<span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{tr .language "Sort order" "排序值"}}</span>
 								<input type="number" min="0" x-model.number="form.sortOrder" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" :disabled="working">
 							</label>
 						</div>
@@ -129,10 +131,10 @@
 				</div>
 
 				<div class="flex items-center justify-end gap-2">
-					<button type="button" class="rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100" @click="closeDialog()" :disabled="working">取消</button>
+					<button type="button" class="rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100" @click="closeDialog()" :disabled="working">{{tr .language "Cancel" "取消"}}</button>
 					<button type="button" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/70" @click="submit()" :disabled="working">
 						<span x-show="!working" x-text="submitLabel"></span>
-						<span x-show="working">保存中...</span>
+						<span x-show="working">{{tr .language "Saving..." "保存中..."}}</span>
 					</button>
 				</div>
 			</div>
@@ -142,14 +144,16 @@
 
 <script>
 	function galleryManager(initialItems) {
+		const dateLocale = {{toJSON (tr .language "en-US" "zh-CN")}};
+		const preferServerMessage = {{if eq .language "zh"}}true{{else}}false{{end}};
 		return {
 			items: [],
 			loading: false,
 			working: false,
 			showDialog: false,
 			deletingId: null,
-			dialogTitle: '新增作品',
-			submitLabel: '保存作品',
+			dialogTitle: {{toJSON (tr .language "Add item" "新增作品")}},
+			submitLabel: {{toJSON (tr .language "Save item" "保存作品")}},
 			form: {
 				id: null,
 				title: '',
@@ -190,15 +194,15 @@
 
 			openCreate() {
 				this.resetForm();
-				this.dialogTitle = '新增作品';
-				this.submitLabel = '保存作品';
+				this.dialogTitle = {{toJSON (tr .language "Add item" "新增作品")}};
+				this.submitLabel = {{toJSON (tr .language "Save item" "保存作品")}};
 				this.showDialog = true;
 			},
 
 			openEdit(item) {
 				this.form = { ...item };
-				this.dialogTitle = '编辑作品';
-				this.submitLabel = '更新作品';
+				this.dialogTitle = {{toJSON (tr .language "Edit item" "编辑作品")}};
+				this.submitLabel = {{toJSON (tr .language "Update item" "更新作品")}};
 				this.showDialog = true;
 			},
 
@@ -224,7 +228,7 @@
 
 			get dimensionText() {
 				if (!this.form.imageWidth || !this.form.imageHeight) {
-					return '等待上传';
+					return {{toJSON (tr .language "Waiting for upload" "等待上传")}};
 				}
 				return `${this.form.imageWidth} × ${this.form.imageHeight}px`;
 			},
@@ -249,16 +253,18 @@
 					.then(async res => {
 						const data = await res.json().catch(() => ({}));
 						if (!res.ok || data.success !== 1) {
-							throw new Error(data.error || '上传失败');
+							const fallback = {{toJSON (tr .language "Upload failed" "上传失败")}};
+							throw new Error((preferServerMessage && data.error) ? data.error : fallback);
 						}
 						const payload = data.data || {};
 						this.form.imageUrl = payload.url || '';
 						this.form.imageWidth = Number(payload.width || 0);
 						this.form.imageHeight = Number(payload.height || 0);
-						this.toastSuccess('图片上传成功');
+						this.toastSuccess({{toJSON (tr .language "Image uploaded" "图片上传成功")}});
 					})
 					.catch(err => {
-						this.toastError(err.message || '上传失败');
+						const fallback = {{toJSON (tr .language "Upload failed" "上传失败")}};
+						this.toastError(err.message || fallback);
 					})
 					.finally(() => {
 						this.working = false;
@@ -267,7 +273,7 @@
 
 			submit() {
 				if (!this.form.imageUrl) {
-					this.toastWarning('请先上传作品图片');
+					this.toastWarning({{toJSON (tr .language "Please upload an image first" "请先上传作品图片")}});
 					return;
 				}
 				this.working = true;
@@ -288,14 +294,17 @@
 					.then(async res => {
 						const data = await res.json().catch(() => ({}));
 						if (!res.ok) {
-							throw new Error(data.error || '保存失败');
+							const fallback = {{toJSON (tr .language "Save failed" "保存失败")}};
+							throw new Error((preferServerMessage && data.error) ? data.error : fallback);
 						}
-						this.toastSuccess(data.message || '操作成功');
+						const fallback = {{toJSON (tr .language "Saved" "操作成功")}};
+						this.toastSuccess((preferServerMessage && data.message) ? data.message : fallback);
 						this.showDialog = false;
 						this.refresh();
 					})
 					.catch(err => {
-						this.toastError(err.message || '保存失败');
+						const fallback = {{toJSON (tr .language "Save failed" "保存失败")}};
+						this.toastError(err.message || fallback);
 					})
 					.finally(() => {
 						this.working = false;
@@ -308,12 +317,14 @@
 					.then(async res => {
 						const data = await res.json().catch(() => ({}));
 						if (!res.ok) {
-							throw new Error(data.error || '获取作品失败');
+							const fallback = {{toJSON (tr .language "Failed to load gallery" "获取作品失败")}};
+							throw new Error((preferServerMessage && data.error) ? data.error : fallback);
 						}
 						this.items = this.normalize(data.items || []);
 					})
 					.catch(err => {
-						this.toastError(err.message || '获取作品失败');
+						const fallback = {{toJSON (tr .language "Failed to load gallery" "获取作品失败")}};
+						this.toastError(err.message || fallback);
 					})
 					.finally(() => {
 						this.loading = false;
@@ -349,13 +360,16 @@
 					.then(async res => {
 						const data = await res.json().catch(() => ({}));
 						if (!res.ok) {
-							throw new Error(data.error || '更新失败');
+							const fallback = {{toJSON (tr .language "Update failed" "更新失败")}};
+							throw new Error((preferServerMessage && data.error) ? data.error : fallback);
 						}
-						this.toastSuccess(data.message || '作品已更新');
+						const fallback = {{toJSON (tr .language "Gallery item updated" "作品已更新")}};
+						this.toastSuccess((preferServerMessage && data.message) ? data.message : fallback);
 						this.refresh();
 					})
 					.catch(err => {
-						this.toastError(err.message || '更新失败');
+						const fallback = {{toJSON (tr .language "Update failed" "更新失败")}};
+						this.toastError(err.message || fallback);
 					})
 					.finally(() => {
 						this.working = false;
@@ -366,7 +380,7 @@
 				if (!item || !item.id) {
 					return;
 				}
-				if (!window.confirm('确定要删除这张作品吗？')) {
+				if (!window.confirm({{toJSON (tr .language "Are you sure you want to delete this item?" "确定要删除这张作品吗？")}})) {
 					return;
 				}
 				this.deletingId = item.id;
@@ -374,13 +388,16 @@
 					.then(async res => {
 						const data = await res.json().catch(() => ({}));
 						if (!res.ok) {
-							throw new Error(data.error || '删除失败');
+							const fallback = {{toJSON (tr .language "Delete failed" "删除失败")}};
+							throw new Error((preferServerMessage && data.error) ? data.error : fallback);
 						}
-						this.toastSuccess(data.message || '作品已删除');
+						const fallback = {{toJSON (tr .language "Gallery item deleted" "作品已删除")}};
+						this.toastSuccess((preferServerMessage && data.message) ? data.message : fallback);
 						this.refresh();
 					})
 					.catch(err => {
-						this.toastError(err.message || '删除失败');
+						const fallback = {{toJSON (tr .language "Delete failed" "删除失败")}};
+						this.toastError(err.message || fallback);
 					})
 					.finally(() => {
 						this.deletingId = null;
@@ -389,13 +406,13 @@
 
 			formatDate(value) {
 				if (!value) {
-					return '未知时间';
+					return {{toJSON (tr .language "Unknown time" "未知时间")}};
 				}
 				const date = new Date(value);
 				if (Number.isNaN(date.getTime())) {
 					return value;
 				}
-				const formatter = new Intl.DateTimeFormat('zh-CN', {
+				const formatter = new Intl.DateTimeFormat(dateLocale, {
 					year: 'numeric',
 					month: '2-digit',
 					day: '2-digit',

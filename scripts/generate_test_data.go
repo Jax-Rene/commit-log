@@ -103,10 +103,11 @@ func createAboutPage() {
 	}
 
 	page := db.Page{
-		Slug:    "about",
-		Title:   "About Me",
-		Summary: "AI 全栈工程师，专注技术与产品的长期主义者。",
-		Content: "## 你好，我是 CommitLog\n\n- 专注 Go、前端与 AI 协同开发\n- 坚持通过文字记录成长，分享工程实践\n- 相信长期主义与复利思维\n\n### 近期关注\n1. AI 辅助研发流程的落地\n2. 优雅的技术写作与知识管理\n3. 个人品牌与产品化能力",
+		Slug:     "about",
+		Title:    "About Me",
+		Summary:  "AI 全栈工程师，专注技术与产品的长期主义者。",
+		Content:  "## 你好，我是 CommitLog\n\n- 专注 Go、前端与 AI 协同开发\n- 坚持通过文字记录成长，分享工程实践\n- 相信长期主义与复利思维\n\n### 近期关注\n1. AI 辅助研发流程的落地\n2. 优雅的技术写作与知识管理\n3. 个人品牌与产品化能力",
+		Language: "zh",
 	}
 
 	if err := db.DB.Create(&page).Error; err != nil {
@@ -406,6 +407,7 @@ func createTestPosts() {
 			CoverURL:    data.coverURL,
 			CoverWidth:  data.coverWidth,
 			CoverHeight: data.coverHeight,
+			Language:    "zh",
 		}
 		if post.ReadingTime < 1 {
 			post.ReadingTime = 1
@@ -415,6 +417,9 @@ func createTestPosts() {
 		if err := db.DB.Create(&post).Error; err != nil {
 			log.Printf("创建文章失败: %v", err)
 			continue
+		}
+		if err := db.DB.Model(&post).Update("translation_group_id", post.ID).Error; err != nil {
+			log.Printf("更新翻译组失败: %v", err)
 		}
 
 		// 关联标签

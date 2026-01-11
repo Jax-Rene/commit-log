@@ -250,10 +250,14 @@
                 >
                     {{if gt .post.ReadingTime 0}}
                     <span class="flex items-center"
-                        >{{.post.ReadingTime}} 分钟阅读</span
+                        >{{printf (tr .language "%d min read" "%d 分钟阅读")
+                        .post.ReadingTime}}</span
                     >
                     {{end}}
-                    <span class="flex items-center">{{.pageViews}} 次浏览</span>
+                    <span class="flex items-center"
+                        >{{printf (tr .language "%d views" "%d 次浏览")
+                        .pageViews}}</span
+                    >
                     <span class="flex items-center"
                         >{{formatDate .post.PublishedAt}}</span
                     >
@@ -266,7 +270,7 @@
                 </div>
                 <!-- {{if .post.CoverURL}}
 				<div class="relative w-full overflow-hidden rounded-3xl shadow-md shadow-slate-200/60 dark:shadow-slate-900/80" style="padding-top: {{aspectPadding .post.CoverWidth .post.CoverHeight}};">
-					<img src="{{.post.CoverURL}}" alt="{{.post.Title}} 封面" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+					<img src="{{.post.CoverURL}}" alt="{{.post.Title}} {{tr .language "Cover" "封面"}}" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
 				</div>
 				{{else}}
 				<div
@@ -282,10 +286,10 @@
                     class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-left shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10"
                 >
                     <div
-                        class="text-xs font-extrabold uppercase tracking-wide text-amber-600 dark:text-amber-300"
-                    >
-                        AI Summary
-                    </div>
+                    class="text-xs font-extrabold uppercase tracking-wide text-amber-600 dark:text-amber-300"
+                >
+                    {{tr .language "AI Summary" "AI 摘要"}}
+                </div>
                     <p
                         class="mt-2 text-base leading-relaxed text-amber-900 dark:text-amber-100/90"
                     >
@@ -313,7 +317,7 @@
             </script>
 
             {{template "contact_links.html" (dict "Contacts" .contacts "Heading"
-            "联系作者" "Subtitle" "在这些平台找到我。")}}
+            (tr .language "Contact the author" "联系作者") "Subtitle" (tr .language "Find me on these platforms." "在这些平台找到我。") "Language" .language)}}
         </div>
 
         <aside class="hidden xl:block">
@@ -326,7 +330,7 @@
                     <div
                         class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500"
                     >
-                        CONTENTS
+                        {{tr .language "Contents" "目录"}}
                     </div>
                     <nav class="relative mt-5" aria-label="Table of contents">
                         <ul class="space-y-3" data-toc-list></ul>

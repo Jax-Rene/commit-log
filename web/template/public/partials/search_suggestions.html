@@ -5,12 +5,14 @@
         class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400"
     >
         <span>
-            共 {{.total}} 条搜索结果
+            {{printf (tr .language "%d results for" "共 %d 条搜索结果") .total}}
             <span class="font-medium text-slate-700 dark:text-slate-200"
                 >“{{.search}}”</span
             >
         </span>
-        <span class="text-slate-400 dark:text-slate-500">回车查看全部</span>
+        <span class="text-slate-400 dark:text-slate-500"
+            >{{tr .language "Press Enter to view all" "回车查看全部"}}</span
+        >
     </div>
 
     <div class="max-h-[60vh] overflow-y-auto overscroll-contain">
@@ -40,7 +42,7 @@
         </ul>
         {{else}}
         <div class="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">
-            暂无匹配内容，试试其他关键词吧。
+            {{tr .language "No matches yet. Try another keyword." "暂无匹配内容，试试其他关键词吧。"}}
         </div>
         {{end}}
     </div>

@@ -436,7 +436,7 @@
                     <div
                         class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500"
                     >
-                        <span>写作助手</span>
+                        <span>{{tr .language "Writing assistant" "写作助手"}}</span>
                         <span
                             class="h-1.5 w-1.5 rounded-full"
                             :class="autoSaveIndicatorClasses()"
@@ -446,7 +446,7 @@
                         type="button"
                         class="rounded-full p-1 text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                         @click="collapseQuickActions()"
-                        aria-label="收起工具面板"
+                        aria-label="{{tr .language "Collapse tools" "收起工具面板"}}"
                     >
                         <svg
                             class="h-4 w-4"
@@ -493,8 +493,8 @@
                                 d="M9.75 7.5h4.5M9.75 12h4.5m-4.5 4.5h2.25"
                             ></path>
                         </svg>
-                        <span x-show="!savingDraft">保存草稿</span>
-                        <span x-show="savingDraft">保存中...</span>
+                        <span x-show="!savingDraft">{{tr .language "Save draft" "保存草稿"}}</span>
+                        <span x-show="savingDraft">{{tr .language "Saving..." "保存中..."}}</span>
                     </button>
                     <div
                         class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-slate-600 shadow-sm dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-slate-200"
@@ -504,7 +504,7 @@
                                 <p
                                     class="text-[11px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-300"
                                 >
-                                    发布状态
+                                    {{tr .language "Publish status" "发布状态"}}
                                 </p>
                                 <p
                                     class="mt-1 text-sm font-medium text-slate-700 dark:text-slate-100"
@@ -534,7 +534,7 @@
                                     x-show="!publishing"
                                     x-text="publishButtonLabel()"
                                 ></span>
-                                <span x-show="publishing">发布中...</span>
+                                <span x-show="publishing">{{tr .language "Publishing..." "发布中..."}}</span>
                             </button>
                         </div>
                         <p
@@ -567,17 +567,17 @@
                                 ></path>
                             </svg>
                             <span x-show="!resettingFromPublication"
-                                >重置为线上版</span
+                                >{{tr .language "Reset to published" "重置为线上版"}}</span
                             >
                             <span x-show="resettingFromPublication"
-                                >重置中...</span
+                                >{{tr .language "Resetting..." "重置中..."}}</span
                             >
                         </button>
                         <p
                             x-show="!hasPublishedVersion()"
                             class="mt-1 text-[11px] text-slate-400 dark:text-slate-500"
                         >
-                            暂无线上版本，发布后可用该操作。
+                            {{tr .language "No published version yet. Publish to enable reset." "暂无线上版本，发布后可用该操作。"}}
                         </p>
                     </div>
                     <button
@@ -599,8 +599,8 @@
                                 d="M12 3v2.25M19.5 12H21M3 12h2.25M16.95 7.05l1.59-1.59M5.46 18.54l1.59-1.59M7.05 7.05 5.46 5.46M18.54 18.54l-1.59-1.59M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z"
                             ></path>
                         </svg>
-                        <span x-show="!optimizingContent">AI 全文优化</span>
-                        <span x-show="optimizingContent">优化中...</span>
+                        <span x-show="!optimizingContent">{{tr .language "AI rewrite" "AI 全文优化"}}</span>
+                        <span x-show="optimizingContent">{{tr .language "Optimizing..." "优化中..."}}</span>
                     </button>
                     <div class="relative">
                         <button
@@ -721,7 +721,7 @@
                                 d="M8.25 6.75h7.5M8.25 12h7.5M8.25 17.25h4.5"
                             ></path>
                         </svg>
-                        <span>文章设置</span>
+                        <span>{{tr .language "Post settings" "文章设置"}}</span>
                     </button>
                 </div>
                 <div
@@ -745,7 +745,7 @@
                                 d="M10.5 6h7.125M10.5 12h7.125M10.5 18H17.625M6.375 6v12l-3-3H9.375"
                             ></path>
                         </svg>
-                        <span>返回列表</span>
+                        <span>{{tr .language "Back to list" "返回列表"}}</span>
                     </a>
                 </div>
             </div>
@@ -754,7 +754,7 @@
                 class="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200/70 bg-white/75 text-slate-500 shadow-md shadow-slate-200/50 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-600/70 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-700/80"
                 @click="toggleQuickActions()"
                 :aria-expanded="quickActionsExpanded"
-                aria-label="快速操作"
+                aria-label="{{tr .language "Quick actions" "快速操作"}}"
             >
                 <svg
                     x-show="!quickActionsExpanded"
@@ -814,10 +814,10 @@
                     <h2
                         class="text-lg font-semibold text-slate-900 dark:text-slate-100"
                     >
-                        文章设置
+                        {{tr .language "Post settings" "文章设置"}}
                     </h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                        管理文章摘要、封面与标签等元数据。
+                        {{tr .language "Manage summary, cover, tags, and metadata." "管理文章摘要、封面与标签等元数据。"}}
                     </p>
                 </div>
                 <button
@@ -848,12 +848,12 @@
                             <h3
                                 class="text-sm font-semibold text-slate-900 dark:text-slate-100"
                             >
-                                文章摘要
+                                {{tr .language "Post summary" "文章摘要"}}
                             </h3>
                             <p
                                 class="text-xs text-slate-500 dark:text-slate-400"
                             >
-                                用于列表页描述和 SEO 元信息。
+                                {{tr .language "Used for list descriptions and SEO metadata." "用于列表页描述和 SEO 元信息。"}}
                             </p>
                         </div>
                         <button
@@ -876,25 +876,62 @@
                                 ></path>
                             </svg>
                             <span x-show="!generatingSummary"
-                                >生成 AI 摘要</span
+                                >{{tr .language "Generate AI summary" "生成 AI 摘要"}}</span
                             >
-                            <span x-show="generatingSummary">生成中...</span>
+                            <span x-show="generatingSummary">{{tr .language "Generating..." "生成中..."}}</span>
                         </button>
                     </div>
                     <textarea
                         rows="6"
                         x-model="metadata.summary"
                         @input.debounce.500ms="handleSummaryChange(metadata.summary)"
-                        placeholder="简要概括文章核心观点"
+                        placeholder="{{tr .language "Summarize the core idea" "简要概括文章核心观点"}}"
                         class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30"
                     ></textarea>
                     <template x-if="summaryUsage">
                         <p class="text-xs text-slate-400 dark:text-slate-500">
-                            提示词用量：<span
+                            {{tr .language "Prompt usage:" "提示词用量："}}<span
                                 x-text="summaryUsageLabel()"
                             ></span>
                         </p>
                     </template>
+                </section>
+
+                <section class="space-y-3">
+                    <div>
+                        <h3
+                            class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                        >
+                            {{tr .language "Content language" "内容语言"}}
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            {{tr .language "Used to show the correct locale on the public site." "用于前台根据地区展示对应语言版本。"}}
+                        </p>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="flex flex-col gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+                            <span>{{tr .language "Language" "语言"}}</span>
+                            <select
+                                x-model="metadata.language"
+                                @change="handleLanguageChange(metadata.language)"
+                                class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30"
+                            >
+                                <option value="zh">{{tr .language "Chinese" "中文"}}</option>
+                                <option value="en">English</option>
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+                            <span>{{tr .language "Translation group ID" "翻译组 ID"}}</span>
+                            <input
+                                type="number"
+                                min="0"
+                                x-model.number="metadata.translationGroupID"
+                                @input.debounce.300ms="handleTranslationGroupChange(metadata.translationGroupID)"
+                                placeholder="{{tr .language "Linked ID for translations" "同一文章的关联 ID"}}"
+                                class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30"
+                            />
+                        </label>
+                    </div>
                 </section>
 
                 <section class="space-y-4">
@@ -905,12 +942,12 @@
                             <h3
                                 class="text-sm font-semibold text-slate-900 dark:text-slate-100"
                             >
-                                文章标签
+                                {{tr .language "Tags" "文章标签"}}
                             </h3>
                             <p
                                 class="text-xs text-slate-500 dark:text-slate-400"
                             >
-                                为文章挑选合适标签，帮助归档与专题聚合。
+                                {{tr .language "Pick tags to organize and group posts." "为文章挑选合适标签，帮助归档与专题聚合。"}}
                             </p>
                         </div>
                         <a
@@ -930,7 +967,7 @@
                                     d="M10 4.167v11.666M4.167 10h11.666"
                                 ></path>
                             </svg>
-                            <span>管理标签</span>
+                            <span>{{tr .language "Manage tags" "管理标签"}}</span>
                         </a>
                     </div>
                     <template x-if="tagError">
@@ -972,18 +1009,18 @@
                         x-cloak
                         class="rounded-xl border border-dashed border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400"
                     >
-                        暂无可用标签，请先前往标签管理创建。
+                        {{tr .language "No tags yet. Create one in tag management." "暂无可用标签，请先前往标签管理创建。"}}
                     </div>
                     <div
                         class="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500"
                     >
                         <span class="font-semibold uppercase tracking-wide"
-                            >已选择</span
+                            >{{tr .language "Selected" "已选择"}}</span
                         >
                         <template x-if="metadata.tags.length === 0">
                             <span
                                 class="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-500 dark:bg-slate-800/70 dark:text-slate-300"
-                                >未选择</span
+                                >{{tr .language "None" "未选择"}}</span
                             >
                         </template>
                         <template
@@ -1006,12 +1043,12 @@
                             <h3
                                 class="text-sm font-semibold text-slate-900 dark:text-slate-100"
                             >
-                                发布时间
+                                {{tr .language "Publish time" "发布时间"}}
                             </h3>
                             <p
                                 class="text-xs text-slate-500 dark:text-slate-400"
                             >
-                                留空则发布时使用当前时间，已发布文章会默认沿用最近的发布时间。
+                                {{tr .language "If empty, current time is used; published posts keep the latest time." "留空则发布时使用当前时间，已发布文章会默认沿用最近的发布时间。"}}
                             </p>
                         </div>
                         <div
@@ -1035,7 +1072,7 @@
                                         d="M10 4.167v6.111l4.444 2.223M10 18.333A8.333 8.333 0 1 0 10 1.667a8.333 8.333 0 0 0 0 16.666Z"
                                     ></path>
                                 </svg>
-                                <span>设为当前时间</span>
+                                <span>{{tr .language "Set to now" "设为当前时间"}}</span>
                             </button>
                             <button
                                 type="button"
@@ -1055,7 +1092,7 @@
                                         d="M5.5 5.5l9 9m0-9l-9 9"
                                     ></path>
                                 </svg>
-                                <span>清空</span>
+                                <span>{{tr .language "Clear" "清空"}}</span>
                             </button>
                         </div>
                     </div>
@@ -1087,15 +1124,15 @@
                             <h3
                                 class="text-sm font-semibold text-slate-900 dark:text-slate-100"
                             >
-                                文章封面<span
+                                {{tr .language "Cover image" "文章封面"}}<span
                                     class="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800/70 dark:text-slate-400"
-                                    >发布前必填</span
+                                    >{{tr .language "Required before publish" "发布前必填"}}</span
                                 >
                             </h3>
                             <p
                                 class="text-xs text-slate-500 dark:text-slate-400"
                             >
-                                建议尺寸 ≥ 1200px，可裁剪为 16:9 或 3:4。
+                                {{tr .language "Recommended width ≥ 1200px. Crop to 16:9 or 3:4." "建议尺寸 ≥ 1200px，可裁剪为 16:9 或 3:4。"}}
                             </p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -1111,7 +1148,7 @@
                                 class="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/60 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
                                 @click="openCoverPicker()"
                             >
-                                选择图片
+                                {{tr .language "Choose image" "选择图片"}}
                             </button>
                             <button
                                 type="button"
@@ -1120,7 +1157,7 @@
                                 x-show="metadata.cover.url"
                                 x-cloak
                             >
-                                重新裁剪
+                                {{tr .language "Re-crop" "重新裁剪"}}
                             </button>
                         </div>
                     </div>
@@ -1135,7 +1172,7 @@
                             <div class="flex items-center gap-4">
                                 <img
                                     :src="metadata.cover.url"
-                                    alt="封面预览"
+                                    alt="{{tr .language "Cover preview" "封面预览"}}"
                                     class="h-28 w-28 rounded-lg object-cover shadow-sm"
                                 />
                                 <div
@@ -1144,19 +1181,19 @@
                                     <p
                                         class="font-medium text-slate-800 dark:text-slate-100"
                                     >
-                                        当前封面
+                                        {{tr .language "Current cover" "当前封面"}}
                                     </p>
                                     <p
                                         class="text-slate-500 dark:text-slate-400"
                                     >
-                                        尺寸：<span
+                                        {{tr .language "Size:" "尺寸："}}<span
                                             x-text="formatCoverSize()"
                                         ></span>
                                     </p>
                                     <p
                                         class="text-[11px] text-slate-400 dark:text-slate-500"
                                     >
-                                        保存后将自动适配首页与分享卡片。
+                                        {{tr .language "Saved cover is used for the homepage and share cards." "保存后将自动适配首页与分享卡片。"}}
                                     </p>
                                 </div>
                             </div>
@@ -1166,14 +1203,14 @@
                                     class="rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                                     @click="reCropCover()"
                                 >
-                                    重新裁剪
+                                    {{tr .language "Re-crop" "重新裁剪"}}
                                 </button>
                                 <button
                                     type="button"
                                     class="rounded-lg border border-rose-200 px-3 py-1.5 font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-500/50 dark:text-rose-300 dark:hover:bg-rose-500/10"
                                     @click="removeCover()"
                                 >
-                                    移除
+                                    {{tr .language "Remove" "移除"}}
                                 </button>
                             </div>
                         </div>
@@ -1182,7 +1219,7 @@
                         x-show="!metadata.cover.url"
                         class="rounded-xl border border-dashed border-slate-200 bg-white/70 p-6 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400"
                     >
-                        还没有封面，上传后可用于首页展示与社交分享卡片。
+                        {{tr .language "No cover yet. Upload to use on the homepage and social cards." "还没有封面，上传后可用于首页展示与社交分享卡片。"}}
                     </div>
                 </section>
 
@@ -1192,7 +1229,7 @@
                     <div
                         class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500"
                     >
-                        <span>草稿状态</span>
+                        <span>{{tr .language "Draft status" "草稿状态"}}</span>
                         <span
                             class="h-1.5 w-1.5 rounded-full"
                             :class="autoSaveIndicatorClasses()"
@@ -1220,17 +1257,17 @@
                     <h3
                         class="text-lg font-semibold text-slate-900 dark:text-slate-100"
                     >
-                        AI 全文优化预览
+                        {{tr .language "AI rewrite preview" "AI 全文优化预览"}}
                     </h3>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        左右对照新旧版本，确认后可一键替换。
+                        {{tr .language "Compare versions side by side and replace if confirmed." "左右对照新旧版本，确认后可一键替换。"}}
                     </p>
                 </div>
                 <button
                     type="button"
                     class="rounded-full p-1.5 text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                     @click="closeOptimizationModal()"
-                    aria-label="关闭优化预览"
+                    aria-label="{{tr .language "Close rewrite preview" "关闭优化预览"}}"
                 >
                     ✕
                 </button>
@@ -1243,7 +1280,7 @@
                         class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-800/70"
                     >
                         <span class="text-slate-500 dark:text-slate-400"
-                            >提示词 Token：</span
+                            >{{tr .language "Prompt tokens:" "提示词 Token："}}</span
                         >
                         <span
                             x-text="optimizationUsage.prompt_tokens ?? optimizationUsage.promptTokens"
@@ -1253,7 +1290,7 @@
                         class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-800/70"
                     >
                         <span class="text-slate-500 dark:text-slate-400"
-                            >生成 Token：</span
+                            >{{tr .language "Completion tokens:" "生成 Token："}}</span
                         >
                         <span
                             x-text="optimizationUsage.completion_tokens ?? optimizationUsage.completionTokens"
@@ -1270,7 +1307,7 @@
                     <div
                         class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"
                     >
-                        <span class="animate-pulse">正在优化全文...</span>
+                        <span class="animate-pulse">{{tr .language "Optimizing content..." "正在优化全文..."}}</span>
                     </div>
                 </div>
                 <div class="grid gap-4 lg:grid-cols-2">
@@ -1280,7 +1317,7 @@
                         <div
                             class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500"
                         >
-                            <span>当前正文</span>
+                            <span>{{tr .language "Current content" "当前正文"}}</span>
                         </div>
                         <div
                             class="mt-3 max-h-[60vh] overflow-y-auto rounded-lg border border-slate-100/80 bg-slate-50/60 px-4 py-3 text-sm leading-6 text-slate-700 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-200"
@@ -1289,7 +1326,7 @@
                                 x-show="!optimizationPreviews.source.ready"
                                 class="text-xs text-slate-400 dark:text-slate-500"
                             >
-                                暂无内容
+                                {{tr .language "No content yet" "暂无内容"}}
                             </div>
                             <div
                                 x-ref="optimizationSourcePreview"
@@ -1304,7 +1341,7 @@
                         <div
                             class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide"
                         >
-                            <span>优化提案</span>
+                            <span>{{tr .language "Rewrite proposal" "优化提案"}}</span>
                         </div>
                         <div
                             class="mt-3 max-h-[60vh] overflow-y-auto rounded-lg border border-emerald-200/60 bg-white/70 px-4 py-3 text-sm leading-6 text-slate-700 dark:border-emerald-500/30 dark:bg-slate-900/60 dark:text-emerald-50"
@@ -1313,7 +1350,7 @@
                                 x-show="!optimizationPreviews.optimized.ready"
                                 class="text-xs text-emerald-500/70 dark:text-emerald-200/70"
                             >
-                                等待优化结果...
+                                {{tr .language "Waiting for rewrite..." "等待优化结果..."}}
                             </div>
                             <div
                                 x-ref="optimizedContentPreview"
@@ -1330,7 +1367,7 @@
                     class="rounded-lg border border-slate-200 px-4 py-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                     @click="closeOptimizationModal()"
                 >
-                    关闭
+                    {{tr .language "Close" "关闭"}}
                 </button>
                 <button
                     type="button"
@@ -1338,14 +1375,14 @@
                     @click="optimizeContent()"
                     :disabled="optimizingContent"
                 >
-                    重新生成
+                    {{tr .language "Regenerate" "重新生成"}}
                 </button>
                 <button
                     type="button"
                     class="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white transition hover:bg-emerald-500 dark:hover:bg-emerald-500/90"
                     @click="applyOptimization()"
                 >
-                    替换正文
+                    {{tr .language "Replace content" "替换正文"}}
                 </button>
             </div>
         </div>
@@ -1368,17 +1405,17 @@
                     <h3
                         class="text-lg font-semibold text-slate-900 dark:text-slate-100"
                     >
-                        AI Chat 改写
+                        {{tr .language "AI Chat rewrite" "AI Chat 改写"}}
                     </h3>
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        选中段落后输入你的需求，模型将返回改写建议。
+                        {{tr .language "Select a paragraph and describe your request for a rewrite." "选中段落后输入你的需求，模型将返回改写建议。"}}
                     </p>
                 </div>
                 <button
                     type="button"
                     class="rounded-full p-1.5 text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                     @click="closeInlineAI()"
-                    aria-label="关闭 AI Chat 弹窗"
+                    aria-label="{{tr .language "Close AI Chat" "关闭 AI Chat 弹窗"}}"
                 >
                     ✕
                 </button>
@@ -1390,7 +1427,7 @@
                     <p
                         class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500"
                     >
-                        原始选区
+                        {{tr .language "Selection" "原始选区"}}
                     </p>
                     <div
                         class="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 whitespace-pre-wrap break-words"
@@ -1403,7 +1440,7 @@
                             <p
                                 class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500"
                             >
-                                上下文参考
+                                {{tr .language "Context" "上下文参考"}}
                             </p>
                             <div
                                 class="rounded-xl border border-dashed border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300 whitespace-pre-wrap break-words"
@@ -1415,12 +1452,12 @@
                 <div class="space-y-2">
                     <label
                         class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                        >改写指令</label
+                        >{{tr .language "Rewrite instruction" "改写指令"}}</label
                     >
                     <textarea
                         rows="3"
                         x-model="inlineAI.instruction"
-                        placeholder="例如：请改写成更具鼓动性的语气，并保留原有数据引用。"
+                        placeholder="{{tr .language "e.g. Rewrite with a more inspiring tone while keeping citations." "例如：请改写成更具鼓动性的语气，并保留原有数据引用。"}}"
                         class="w-full resize-y rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-500/40"
                     ></textarea>
                 </div>
@@ -1466,7 +1503,7 @@
                             ></path>
                         </svg>
                         <span
-                            x-text="inlineAI.loading ? '生成中…' : '生成改写建议'"
+                            x-text="inlineAI.loading ? {{toJSON (tr .language "Generating..." "生成中…")}} : {{toJSON (tr .language "Generate rewrite" "生成改写建议")}}"
                         ></span>
                     </button>
                     <template x-if="inlineAI.usage">
@@ -1481,7 +1518,7 @@
                         <p
                             class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500"
                         >
-                            AI 改写建议
+                            {{tr .language "AI rewrite suggestion" "AI 改写建议"}}
                         </p>
                         <div
                             class="rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-sm leading-relaxed text-slate-800 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-slate-200 whitespace-pre-wrap break-words"
@@ -1513,7 +1550,7 @@
                                 d="M9 9V5.25A2.25 2.25 0 0 1 11.25 3h7.5A2.25 2.25 0 0 1 21 5.25v7.5A2.25 2.25 0 0 1 18.75 15H15m-6 6H5.25A2.25 2.25 0 0 1 3 18.75v-7.5A2.25 2.25 0 0 1 5.25 9h7.5A2.25 2.25 0 0 1 15 11.25v7.5A2.25 2.25 0 0 1 12.75 21H9Z"
                             ></path>
                         </svg>
-                        <span>复制建议</span>
+                        <span>{{tr .language "Copy suggestion" "复制建议"}}</span>
                     </button>
                 </div>
                 <div class="flex items-center gap-3">
@@ -1522,7 +1559,7 @@
                         class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:text-slate-100"
                         @click="closeInlineAI()"
                     >
-                        取消
+                        {{tr .language "Cancel" "取消"}}
                     </button>
                     <button
                         type="button"
@@ -1530,7 +1567,7 @@
                         @click="applyInlineAISuggestion()"
                         :disabled="!inlineAI.suggestion"
                     >
-                        应用到选区
+                        {{tr .language "Apply to selection" "应用到选区"}}
                     </button>
                 </div>
             </div>
@@ -1548,14 +1585,14 @@
             <h3
                 class="text-lg font-semibold text-slate-900 dark:text-slate-100"
             >
-                裁剪封面
+                {{tr .language "Crop cover" "裁剪封面"}}
             </h3>
             <div class="mt-4 flex flex-col gap-4">
                 <div
                     class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400"
                 >
                     <span class="font-medium text-slate-600 dark:text-slate-300"
-                        >裁剪比例：</span
+                        >{{tr .language "Aspect ratio:" "裁剪比例："}}</span
                     >
                     <button
                         type="button"
@@ -1580,7 +1617,7 @@
                     <img
                         x-ref="cropperImage"
                         :src="coverSource"
-                        alt="裁剪预览"
+                        alt="{{tr .language "Crop preview" "裁剪预览"}}"
                         class="max-h-[60vh] w-full object-contain"
                     />
                 </div>
@@ -1592,7 +1629,7 @@
                     @click="closeCropper()"
                     :disabled="uploadingCover"
                 >
-                    取消
+                    {{tr .language "Cancel" "取消"}}
                 </button>
                 <button
                     type="button"
@@ -1600,8 +1637,8 @@
                     @click="confirmCrop()"
                     :disabled="uploadingCover"
                 >
-                    <span x-show="!uploadingCover">确认裁剪</span>
-                    <span x-show="uploadingCover">上传中...</span>
+                    <span x-show="!uploadingCover">{{tr .language "Confirm crop" "确认裁剪"}}</span>
+                    <span x-show="uploadingCover">{{tr .language "Uploading..." "上传中..."}}</span>
                 </button>
             </div>
         </div>
@@ -1683,6 +1720,79 @@
             return `<div class="space-y-4">${blocks}</div>`;
         };
 
+        const i18n = {
+            selectParagraph: {{toJSON (tr .language "Please select a paragraph to rewrite first" "请选择需要改写的段落后再试")}},
+            editorNotReady: {{toJSON (tr .language "Editor isn't ready. Please try again." "编辑器尚未就绪，请稍后重试")}},
+            noPublishedVersion: {{toJSON (tr .language "No published version available to reset." "当前没有线上版本可供重置")}},
+            resetConfirm: {{toJSON (tr .language "This will overwrite the draft with the published version. Continue?" "将用当前线上发布的内容覆盖草稿，未保存的修改会丢失，确认继续？")}},
+            resetTitle: {{toJSON (tr .language "Reset to published" "重置为线上版本")}},
+            resetDescription: {{toJSON (tr .language "The published version will replace the draft. Please back up any changes you want to keep." "系统会使用线上版本完全替换编辑器中的草稿内容，请先确认需要保留的修改已另存。")}},
+            resetConfirmText: {{toJSON (tr .language "Reset" "重置")}},
+            resetCancelText: {{toJSON (tr .language "Cancel" "取消")}},
+            resetSuccess: {{toJSON (tr .language "Reset to published version. Review and save the draft." "已重置为线上发布版本，请检查后保存草稿")}},
+            resetFailed: {{toJSON (tr .language "Reset failed. Please try again." "重置失败，请稍后重试")}},
+            publishUpdate: {{toJSON (tr .language "Update post" "更新文章")}},
+            publishCreate: {{toJSON (tr .language "Publish post" "发布文章")}},
+            publishing: {{toJSON (tr .language "Updating published version" "正在更新线上版本")}},
+            publishedReady: {{toJSON (tr .language "Published version ready" "线上版本已就绪")}},
+            draftState: {{toJSON (tr .language "Draft" "当前为草稿")}},
+            syncing: {{toJSON (tr .language "Syncing latest content..." "正在同步最新内容，请稍候...")}},
+            lastPublished: {{toJSON (tr .language "Last published at" "最近发布于")}},
+            publishHint: {{toJSON (tr .language "Publishing will sync the post to the live site." "发布后文章会立即同步至线上站点。")}},
+            publishTimeInvalid: {{toJSON (tr .language "Invalid publish time format. Please reselect date/time." "发布时间格式无效，请重新选择日期和时间。")}},
+            publishTimeNext: {{toJSON (tr .language "Next publish will use ${formatted} (local time)." "下次发布将使用 ${formatted}（本地时间）作为发布时间。")}},
+            publishTimeKeep: {{toJSON (tr .language "If empty, the latest publish time ${latest} will be used." "未填写时将沿用最近的发布时间：${latest}。")}},
+            publishTimeNow: {{toJSON (tr .language "If empty, current time will be used." "未填写时将默认使用当前时间。")}},
+            tagFallback: {{toJSON (tr .language "Tag #" "标签 #")}},
+            autoSaveSaving: {{toJSON (tr .language "Auto-saving..." "自动保存中...")}},
+            autoSavePending: {{toJSON (tr .language "Unsaved changes" "存在未保存的更改")}},
+            autoSaveSaved: {{toJSON (tr .language "Saved ${time}" "已保存 ${time}")}},
+            autoSaveEnabled: {{toJSON (tr .language "Draft auto-save enabled" "草稿模式已启用")}},
+            autoSaveWriting: {{toJSON (tr .language "Writing changes. Please don't close this page." "正在写入最新内容，请勿关闭页面。")}},
+            autoSaveQueued: {{toJSON (tr .language "Changes queued for auto-save." "有新的更改等待保存，稍后将自动提交。")}},
+            autoSaveLastSaved: {{toJSON (tr .language "Last saved at ${time}." "最近保存于 ${time}。")}},
+            autoSaveHint: {{toJSON (tr .language "Drafts auto-save regularly to keep content safe." "系统会定期自动保存草稿，确保写作内容安全。")}},
+            timeJustNow: {{toJSON (tr .language "just now" "刚刚")}},
+            timeMinutesAgo: {{toJSON (tr .language "${minutes} minutes ago" "${minutes} 分钟前")}},
+            timeHoursAgo: {{toJSON (tr .language "${hours} hours ago" "${hours} 小时前")}},
+            timeDaysAgo: {{toJSON (tr .language "${days} days ago" "${days} 天前")}},
+            usageMissing: {{toJSON (tr .language "Usage info not available" "未提供用量信息")}},
+            promptLabel: {{toJSON (tr .language "Prompt" "提示词")}},
+            completionLabel: {{toJSON (tr .language "Completion" "生成")}},
+            inlineInstructionMissing: {{toJSON (tr .language "Please enter a rewrite instruction" "请输入改写指令")}},
+            inlineChatFailed: {{toJSON (tr .language "AI Chat request failed. Please try again." "AI Chat 请求失败，请稍后重试")}},
+            inlineChatEmpty: {{toJSON (tr .language "AI Chat returned no content. Please try again." "AI Chat 未返回内容，请稍后重试")}},
+            inlineSuggestionReady: {{toJSON (tr .language "AI rewrite suggestion is ready" "AI 已返回改写建议")}},
+            inlineSelectionMissing: {{toJSON (tr .language "Unable to locate selection. Please try again." "无法定位原始选区，请重新选择后再试")}},
+            inlineApplyFailed: {{toJSON (tr .language "Failed to apply AI rewrite" "未能应用 AI 改写内容")}},
+            inlineApplied: {{toJSON (tr .language "AI rewrite applied" "已应用 AI 改写内容")}},
+            inlineCopyEmpty: {{toJSON (tr .language "Nothing to copy" "暂无可复制的内容")}},
+            inlineCopyUnsupported: {{toJSON (tr .language "Quick copy not supported. Please copy manually." "浏览器不支持快速复制，请手动复制文本")}},
+            inlineCopySuccess: {{toJSON (tr .language "Copied to clipboard" "已复制到剪贴板")}},
+            inlineCopyFailed: {{toJSON (tr .language "Copy failed. Please select text manually." "复制失败，请手动选择文本")}},
+            optimizationWaitingHtml: {{toJSON (tr .language "Waiting for rewrite..." "等待优化结果...")}},
+            optimizationEmptyHtml: {{toJSON (tr .language "No content" "暂无内容")}},
+            optimizationMissingContent: {{toJSON (tr .language "Please enter content before optimizing." "请先填写文章正文再尝试全文优化")}},
+            optimizationFailed: {{toJSON (tr .language "Rewrite failed. Please try again." "全文优化失败，请稍后重试")}},
+            optimizationEmpty: {{toJSON (tr .language "AI rewrite returned no content. Please try again." "AI 全文优化未返回内容，请稍后重试")}},
+            optimizationReady: {{toJSON (tr .language "Rewrite proposal generated. Please review." "已生成优化提案，请确认内容")}},
+            optimizationSync: {{toJSON (tr .language "Optimized content generated. Please verify preview." "优化内容已生成，请确认编辑器中的展示是否同步")}},
+            optimizationApplied: {{toJSON (tr .language "Optimized content applied" "已替换为优化后的正文")}},
+            summaryMissing: {{toJSON (tr .language "Please enter title or content before generating summary." "请先填写标题或正文后再生成摘要")}},
+            summaryFailed: {{toJSON (tr .language "Summary generation failed. Please try again." "生成摘要失败，请稍后重试")}},
+            summaryEmpty: {{toJSON (tr .language "AI summary returned no content. Please try again." "AI 摘要服务未返回内容，请稍后重试")}},
+            summaryReady: {{toJSON (tr .language "AI summary generated. Please review." "已生成 AI 摘要，请确认内容")}},
+            cropperNotReady: {{toJSON (tr .language "Cover cropper isn't ready. Please refresh and try again." "封面裁剪模块尚未加载，请刷新页面后重试")}},
+            cropGenerateFailed: {{toJSON (tr .language "Failed to generate cropped image. Please try again." "生成裁剪图片失败，请重试")}},
+            coverUpdated: {{toJSON (tr .language "Cover updated" "封面已更新")}},
+            coverUploadFailed: {{toJSON (tr .language "Cover upload failed. Please try again." "封面上传失败，请稍后重试")}},
+            coverUploadNoURL: {{toJSON (tr .language "Cover upload succeeded but no URL returned." "封面上传成功但未返回访问地址")}},
+            coverExternal: {{toJSON (tr .language "Cover is from an external link. Please upload a new cover." "该封面来源于外部链接，请重新上传新的封面")}},
+            unknownSize: {{toJSON (tr .language "Unknown size" "未知尺寸")}},
+            saveUnavailable: {{toJSON (tr .language "Save is unavailable. Please try again." "保存功能暂不可用，请稍后重试")}},
+            saveFailed: {{toJSON (tr .language "Save failed. Please try again." "保存失败，请稍后重试")}},
+        };
+
         const toast =
             window.AdminUI?.toast ||
             ((payload) => {
@@ -1713,6 +1823,8 @@
                 summary: "",
                 cover: { url: "", width: 0, height: 0 },
                 tags: [],
+                language: "zh",
+                translationGroupID: 0,
             },
             summaryUsage: null,
             optimizationUsage: null,
@@ -1832,7 +1944,9 @@
                 if (window.__MILKDOWN_V2__?.post) {
                     this.syncTagsFromController(window.__MILKDOWN_V2__.post);
                 }
-                this.numberFormatter = new Intl.NumberFormat("zh-CN");
+                this.numberFormatter = new Intl.NumberFormat(
+                    {{toJSON (tr .language "en-US" "zh-CN")}},
+                );
                 this.latestPublication =
                     window.__MILKDOWN_V2__?.latestPublication || null;
                 this.updatePublishAtFromSource(
@@ -1856,7 +1970,7 @@
                     );
                     if (!normalized.trim()) {
                         toast({
-                            message: "请选择需要改写的段落后再试",
+                            message: i18n.selectParagraph,
                             type: "warning",
                         });
                         return;
@@ -2086,7 +2200,7 @@
                 const controller = this.ensureController();
                 if (!controller || typeof controller.publish !== "function") {
                     toast({
-                        message: "编辑器尚未就绪，请稍后重试",
+                        message: i18n.editorNotReady,
                         type: "error",
                     });
                     return;
@@ -2154,24 +2268,22 @@
                 const publication = this.resolveLatestPublicationObject();
                 if (!publication) {
                     toast({
-                        message: "当前没有线上版本可供重置",
+                        message: i18n.noPublishedVersion,
                         type: "error",
                     });
                     return;
                 }
-                const message =
-                    "将用当前线上发布的内容覆盖草稿，未保存的修改会丢失，确认继续？";
+                const message = i18n.resetConfirm;
                 if (
                     window.AdminUI &&
                     typeof window.AdminUI.confirm === "function"
                 ) {
                     const confirmed = await window.AdminUI.confirm({
-                        title: "重置为线上版本",
+                        title: i18n.resetTitle,
                         message,
-                        description:
-                            "系统会使用线上版本完全替换编辑器中的草稿内容，请先确认需要保留的修改已另存。",
-                        confirmText: "重置",
-                        cancelText: "取消",
+                        description: i18n.resetDescription,
+                        confirmText: i18n.resetConfirmText,
+                        cancelText: i18n.resetCancelText,
                         tone: "danger",
                     });
                     if (!confirmed) {
@@ -2192,7 +2304,7 @@
                     typeof controller.resetToLatestPublication !== "function"
                 ) {
                     toast({
-                        message: "编辑器尚未就绪，请稍后重试",
+                        message: i18n.editorNotReady,
                         type: "error",
                     });
                     return;
@@ -2200,7 +2312,7 @@
                 const publication = this.resolveLatestPublicationObject();
                 if (!publication) {
                     toast({
-                        message: "当前没有线上版本可供重置",
+                        message: i18n.noPublishedVersion,
                         type: "error",
                     });
                     return;
@@ -2226,13 +2338,13 @@
                         this.scheduleEditorTocRefresh();
                         this.refreshStatus();
                         toast({
-                            message: "已重置为线上发布版本，请检查后保存草稿",
+                            message: i18n.resetSuccess,
                             type: "success",
                         });
                     }
                 } catch (error) {
                     toast({
-                        message: error?.message || "重置失败，请稍后重试",
+                        message: error?.message || i18n.resetFailed,
                         type: "error",
                     });
                 } finally {
@@ -2258,25 +2370,27 @@
                 return status.toLowerCase() === "published";
             },
             publishButtonLabel() {
-                return this.hasPublishedVersion() ? "更新文章" : "发布文章";
+                return this.hasPublishedVersion()
+                    ? i18n.publishUpdate
+                    : i18n.publishCreate;
             },
             publishStatusLabel() {
                 if (this.publishing) {
-                    return "正在更新线上版本";
+                    return i18n.publishing;
                 }
                 return this.hasPublishedVersion()
-                    ? "线上版本已就绪"
-                    : "当前为草稿";
+                    ? i18n.publishedReady
+                    : i18n.draftState;
             },
             publishStatusDescription() {
                 if (this.publishing) {
-                    return "正在同步最新内容，请稍候...";
+                    return i18n.syncing;
                 }
                 const timestamp = this.latestPublicationTimestamp();
                 if (timestamp) {
-                    return `最近发布于 ${timestamp}`;
+                    return `${i18n.lastPublished} ${timestamp}`;
                 }
-                return "发布后文章会立即同步至线上站点。";
+                return i18n.publishHint;
             },
             buildPublishOptions() {
                 const value = sanitizeString(this.publishAtInput || "");
@@ -2286,8 +2400,7 @@
                 }
                 const parsed = toDate(value);
                 if (!parsed) {
-                    this.publishAtError =
-                        "发布时间格式无效，请重新选择日期和时间。";
+                    this.publishAtError = i18n.publishTimeInvalid;
                     return null;
                 }
                 this.publishAtError = "";
@@ -2314,14 +2427,17 @@
                 if (this.publishAtInput) {
                     const formatted = this.formatDateTime(this.publishAtInput);
                     if (formatted) {
-                        return `下次发布将使用 ${formatted}（本地时间）作为发布时间。`;
+                        return i18n.publishTimeNext.replace(
+                            "${formatted}",
+                            formatted,
+                        );
                     }
                 }
                 const latest = this.latestPublicationTimestamp();
                 if (latest) {
-                    return `未填写时将沿用最近的发布时间：${latest}。`;
+                    return i18n.publishTimeKeep.replace("${latest}", latest);
                 }
-                return "未填写时将默认使用当前时间。";
+                return i18n.publishTimeNow;
             },
             updatePublishAtFromSource(source, { force = false } = {}) {
                 const raw = this.resolvePublishedAt(source);
@@ -2458,9 +2574,45 @@
                     width: coverWidth,
                     height: coverHeight,
                 };
+                const language = sanitizeString(
+                    post.Language ?? post.language ?? "",
+                ).toLowerCase();
+                this.metadata.language = language === "en" ? "en" : "zh";
+                this.metadata.translationGroupID = sanitizeNumber(
+                    post.TranslationGroupID ??
+                        post.translation_group_id ??
+                        post.translationGroupID ??
+                        0,
+                );
                 this.syncTagsFromController(post);
                 this.updatePostTimestamps(post);
                 this.updatePublishAtFromSource(this.latestPublication || post);
+            },
+            handleLanguageChange(value) {
+                const controller = this.ensureController();
+                const normalized =
+                    sanitizeString(value).toLowerCase() === "en" ? "en" : "zh";
+                this.metadata.language = normalized;
+                if (controller && typeof controller.setLanguage === "function") {
+                    controller.setLanguage(normalized);
+                } else if (controller && controller.postData) {
+                    controller.postData.Language = normalized;
+                    controller.postData.language = normalized;
+                }
+            },
+            handleTranslationGroupChange(value) {
+                const controller = this.ensureController();
+                const normalized = Math.max(0, Math.round(sanitizeNumber(value)));
+                this.metadata.translationGroupID = normalized;
+                if (
+                    controller &&
+                    typeof controller.setTranslationGroupID === "function"
+                ) {
+                    controller.setTranslationGroupID(normalized);
+                } else if (controller && controller.postData) {
+                    controller.postData.TranslationGroupID = normalized;
+                    controller.postData.translation_group_id = normalized;
+                }
             },
             updatePostTimestamps(post) {
                 if (!post || typeof post !== "object") {
@@ -2581,7 +2733,7 @@
                 const slugCandidate = sanitizeString(
                     source.Slug ?? source.slug ?? "",
                 ).trim();
-                const name = nameCandidate || `标签 #${id}`;
+                const name = nameCandidate || `${i18n.tagFallback}${id}`;
                 const normalized = {
                     id,
                     ID: id,
@@ -2703,7 +2855,9 @@
             },
             formatNumber(value) {
                 if (!this.numberFormatter) {
-                    this.numberFormatter = new Intl.NumberFormat("zh-CN");
+                    this.numberFormatter = new Intl.NumberFormat(
+                        {{toJSON (tr .language "en-US" "zh-CN")}},
+                    );
                 }
                 const sanitized = Math.max(
                     0,
@@ -2743,30 +2897,32 @@
                     return this.autoSaveError;
                 }
                 if (this.autoSaving) {
-                    return "自动保存中...";
+                    return i18n.autoSaveSaving;
                 }
                 if (this.autoSavePending) {
-                    return "存在未保存的更改";
+                    return i18n.autoSavePending;
                 }
                 if (this.lastAutoSavedAt) {
-                    return `已保存 ${this.relativeTime(this.lastAutoSavedAt)}`;
+                    const time = this.relativeTime(this.lastAutoSavedAt);
+                    return i18n.autoSaveSaved.replace("${time}", time);
                 }
-                return "草稿模式已启用";
+                return i18n.autoSaveEnabled;
             },
             autoSaveDescription() {
                 if (this.autoSaveError) {
                     return this.autoSaveError;
                 }
                 if (this.autoSaving) {
-                    return "正在写入最新内容，请勿关闭页面。";
+                    return i18n.autoSaveWriting;
                 }
                 if (this.autoSavePending) {
-                    return "有新的更改等待保存，稍后将自动提交。";
+                    return i18n.autoSaveQueued;
                 }
                 if (this.lastAutoSavedAt) {
-                    return `最近保存于 ${this.formatDateTime(this.lastAutoSavedAt)}。`;
+                    const time = this.formatDateTime(this.lastAutoSavedAt);
+                    return i18n.autoSaveLastSaved.replace("${time}", time);
                 }
-                return "系统会定期自动保存草稿，确保写作内容安全。";
+                return i18n.autoSaveHint;
             },
             relativeTime(date) {
                 const target = toDate(date);
@@ -2778,30 +2934,39 @@
                     (now.getTime() - target.getTime()) / 1000,
                 );
                 if (diffSeconds < 60) {
-                    return "刚刚";
+                    return i18n.timeJustNow;
                 }
                 if (diffSeconds < 3600) {
                     const minutes = Math.max(1, Math.floor(diffSeconds / 60));
-                    return `${minutes} 分钟前`;
+                    return i18n.timeMinutesAgo.replace(
+                        "${minutes}",
+                        String(minutes),
+                    );
                 }
                 const hours = Math.floor(diffSeconds / 3600);
                 if (hours < 24) {
-                    return `${hours} 小时前`;
+                    return i18n.timeHoursAgo.replace(
+                        "${hours}",
+                        String(hours),
+                    );
                 }
                 const days = Math.floor(diffSeconds / 86400);
-                return `${days} 天前`;
+                return i18n.timeDaysAgo.replace("${days}", String(days));
             },
             formatDateTime(date) {
                 const target = toDate(date);
                 if (!target) {
                     return "";
                 }
-                return target.toLocaleString("zh-CN", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                });
+                return target.toLocaleString(
+                    {{toJSON (tr .language "en-US" "zh-CN")}},
+                    {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    },
+                );
             },
             togglePanel(force) {
                 this.panelOpen =
@@ -2835,9 +3000,9 @@
                         0,
                 );
                 if (!prompt && !completion) {
-                    return "未提供用量信息";
+                    return i18n.usageMissing;
                 }
-                return `Prompt ${prompt} · Completion ${completion}`;
+                return `${i18n.promptLabel} ${prompt} · ${i18n.completionLabel} ${completion}`;
             },
             inlineAIUsageLabel() {
                 const usage = this.inlineAI?.usage;
@@ -2853,7 +3018,7 @@
                 if (!prompt && !completion) {
                     return "";
                 }
-                return `Prompt ${prompt} · Completion ${completion}`;
+                return `${i18n.promptLabel} ${prompt} · ${i18n.completionLabel} ${completion}`;
             },
             closeInlineAI() {
                 this.inlineAI.open = false;
@@ -2883,7 +3048,7 @@
                 );
                 if (!selectionText.trim()) {
                     toast({
-                        message: "请选择需要改写的段落后再试",
+                        message: i18n.selectParagraph,
                         type: "warning",
                     });
                     return;
@@ -2892,7 +3057,10 @@
                     this.inlineAI.instruction,
                 ).trim();
                 if (!instruction) {
-                    toast({ message: "请输入改写指令", type: "warning" });
+                    toast({
+                        message: i18n.inlineInstructionMissing,
+                        type: "warning",
+                    });
                     return;
                 }
                 this.inlineAI.loading = true;
@@ -2914,24 +3082,27 @@
                         const message = sanitizeString(
                             data?.error ||
                                 data?.message ||
-                                "AI Chat 请求失败，请稍后重试",
+                                i18n.inlineChatFailed,
                         );
                         throw new Error(
-                            message || "AI Chat 请求失败，请稍后重试",
+                            message || i18n.inlineChatFailed,
                         );
                     }
                     const suggestion = sanitizeString(
                         data?.content ?? data?.result ?? "",
                     );
                     if (!suggestion.trim()) {
-                        throw new Error("AI Chat 未返回内容，请稍后重试");
+                        throw new Error(i18n.inlineChatEmpty);
                     }
                     this.inlineAI.suggestion = suggestion;
                     this.inlineAI.usage = data?.usage || null;
-                    toast({ message: "AI 已返回改写建议", type: "success" });
+                    toast({
+                        message: i18n.inlineSuggestionReady,
+                        type: "success",
+                    });
                 } catch (error) {
                     const message = sanitizeString(
-                        error?.message || "AI Chat 请求失败，请稍后重试",
+                        error?.message || i18n.inlineChatFailed,
                     );
                     this.inlineAI.error = message;
                     toast({ message, type: "error" });
@@ -2956,7 +3127,7 @@
                     from === to
                 ) {
                     toast({
-                        message: "无法定位原始选区，请重新选择后再试",
+                        message: i18n.inlineSelectionMissing,
                         type: "error",
                     });
                     return;
@@ -2969,14 +3140,14 @@
                         replacement: suggestion,
                     });
                     if (!applied) {
-                        throw new Error("未能应用 AI 改写内容");
+                        throw new Error(i18n.inlineApplyFailed);
                     }
                     this.closeInlineAI();
-                    toast({ message: "已应用 AI 改写内容", type: "success" });
+                    toast({ message: i18n.inlineApplied, type: "success" });
                     this.scheduleEditorTocRefresh();
                 } catch (error) {
                     const message = sanitizeString(
-                        error?.message || "应用改写内容失败，请稍后重试",
+                        error?.message || i18n.inlineApplyFailed,
                     );
                     toast({ message, type: "error" });
                 }
@@ -2986,22 +3157,22 @@
                     this.inlineAI.suggestion,
                 ).trim();
                 if (!suggestion) {
-                    toast({ message: "暂无可复制的内容", type: "warning" });
+                    toast({ message: i18n.inlineCopyEmpty, type: "warning" });
                     return;
                 }
                 if (!navigator?.clipboard?.writeText) {
                     toast({
-                        message: "浏览器不支持快速复制，请手动复制文本",
+                        message: i18n.inlineCopyUnsupported,
                         type: "warning",
                     });
                     return;
                 }
                 try {
                     await navigator.clipboard.writeText(suggestion);
-                    toast({ message: "已复制到剪贴板", type: "success" });
+                    toast({ message: i18n.inlineCopySuccess, type: "success" });
                 } catch (error) {
                     toast({
-                        message: "复制失败，请手动选择文本",
+                        message: i18n.inlineCopyFailed,
                         type: "error",
                     });
                 }
@@ -3025,9 +3196,9 @@
             },
             previewPlaceholder(target) {
                 if (target === "optimized") {
-                    return '<p class="text-xs text-emerald-500/70 dark:text-emerald-200/70">等待优化结果...</p>';
+                    return `<p class="text-xs text-emerald-500/70 dark:text-emerald-200/70">${i18n.optimizationWaitingHtml}</p>`;
                 }
-                return '<p class="text-xs text-slate-400 dark:text-slate-500">暂无内容</p>';
+                return `<p class="text-xs text-slate-400 dark:text-slate-500">${i18n.optimizationEmptyHtml}</p>`;
             },
             async destroyOptimizationPreview(
                 target,
@@ -3184,7 +3355,7 @@
                 const controller = this.ensureController();
                 if (!controller) {
                     toast({
-                        message: "编辑器尚未就绪，请稍后重试",
+                        message: i18n.editorNotReady,
                         type: "warning",
                     });
                     return;
@@ -3197,7 +3368,7 @@
                 const trimmedContent = sourceContent.trim();
                 if (!trimmedContent) {
                     toast({
-                        message: "请先填写文章正文再尝试全文优化",
+                        message: i18n.optimizationMissingContent,
                         type: "warning",
                     });
                     return;
@@ -3243,14 +3414,14 @@
                         const message =
                             data?.error ||
                             data?.message ||
-                            "全文优化失败，请稍后重试";
+                            i18n.optimizationFailed;
                         throw new Error(message);
                     }
                     const optimized = sanitizeString(
                         data?.optimized_content ?? data?.optimizedContent ?? "",
                     );
                     if (!optimized.trim()) {
-                        throw new Error("AI 全文优化未返回内容，请稍后重试");
+                        throw new Error(i18n.optimizationEmpty);
                     }
                     this.optimizedContent = optimized;
                     void this.renderOptimizationPreview("optimized", optimized);
@@ -3259,12 +3430,12 @@
                         this.optimizationModal = true;
                     }
                     toast({
-                        message: "已生成优化提案，请确认内容",
+                        message: i18n.optimizationReady,
                         type: "success",
                     });
                 } catch (error) {
                     toast({
-                        message: error?.message || "全文优化失败，请稍后重试",
+                        message: error?.message || i18n.optimizationFailed,
                         type: "error",
                     });
                     if (hadResult) {
@@ -3327,11 +3498,11 @@
                 void this.renderOptimizationPreview("source", optimized);
                 if (!applied) {
                     toast({
-                        message: "优化内容已生成，请确认编辑器中的展示是否同步",
+                        message: i18n.optimizationSync,
                         type: "info",
                     });
                 } else {
-                    toast({ message: "已替换为优化后的正文", type: "success" });
+                    toast({ message: i18n.optimizationApplied, type: "success" });
                 }
                 this.scheduleEditorTocRefresh();
                 this.closeOptimizationModal();
@@ -3343,7 +3514,7 @@
                 const controller = this.ensureController();
                 if (!controller) {
                     toast({
-                        message: "编辑器尚未就绪，请稍后重试",
+                        message: i18n.editorNotReady,
                         type: "warning",
                     });
                     return;
@@ -3367,7 +3538,7 @@
                 }
                 if (!title && !content) {
                     toast({
-                        message: "请先填写标题或正文后再生成摘要",
+                        message: i18n.summaryMissing,
                         type: "warning",
                     });
                     return;
@@ -3385,21 +3556,21 @@
                         const message =
                             data?.error ||
                             data?.message ||
-                            "生成摘要失败，请稍后重试";
+                            i18n.summaryFailed;
                         throw new Error(message);
                     }
                     const summary = sanitizeString(data.summary);
                     if (!summary.trim()) {
-                        throw new Error("AI 摘要服务未返回内容，请稍后重试");
+                        throw new Error(i18n.summaryEmpty);
                     }
                     this.applySummary(summary, data.usage || null);
                     toast({
-                        message: "已生成 AI 摘要，请确认内容",
+                        message: i18n.summaryReady,
                         type: "success",
                     });
                 } catch (error) {
                     toast({
-                        message: error?.message || "生成摘要失败，请稍后重试",
+                        message: error?.message || i18n.summaryFailed,
                         type: "error",
                     });
                 } finally {
@@ -3427,7 +3598,7 @@
                 }
                 if (typeof window.Cropper === "undefined") {
                     toast({
-                        message: "封面裁剪模块尚未加载，请刷新页面后重试",
+                        message: i18n.cropperNotReady,
                         type: "error",
                     });
                     return;
@@ -3480,7 +3651,7 @@
                 if (!canvas) {
                     this.uploadingCover = false;
                     toast({
-                        message: "生成裁剪图片失败，请重试",
+                        message: i18n.cropGenerateFailed,
                         type: "error",
                     });
                     return;
@@ -3491,19 +3662,18 @@
                         if (!blob) {
                             this.uploadingCover = false;
                             toast({
-                                message: "生成裁剪图片失败，请重试",
+                                message: i18n.cropGenerateFailed,
                                 type: "error",
                             });
                             return;
                         }
                         try {
                             await this.uploadCroppedImage(blob);
-                            toast({ message: "封面已更新", type: "success" });
+                            toast({ message: i18n.coverUpdated, type: "success" });
                         } catch (error) {
                             toast({
                                 message:
-                                    error?.message ||
-                                    "封面上传失败，请稍后重试",
+                                    error?.message || i18n.coverUploadFailed,
                                 type: "error",
                             });
                         } finally {
@@ -3524,7 +3694,7 @@
                 const data = await response.json();
                 if (!response.ok || data?.success !== 1) {
                     const message =
-                        data?.error || data?.message || "封面上传失败";
+                        data?.error || data?.message || i18n.coverUploadFailed;
                     throw new Error(message);
                 }
                 const url = sanitizeString(
@@ -3537,7 +3707,7 @@
                     data?.data?.height || data?.data?.Height || 0,
                 );
                 if (!url) {
-                    throw new Error("封面上传成功但未返回访问地址");
+                    throw new Error(i18n.coverUploadNoURL);
                 }
                 this.applyCover(url, width, height);
                 this.closeCropper();
@@ -3569,7 +3739,7 @@
                     const target = new URL(url, window.location.origin);
                     if (target.origin !== window.location.origin) {
                         toast({
-                            message: "该封面来源于外部链接，请重新上传新的封面",
+                            message: i18n.coverExternal,
                             type: "warning",
                         });
                         return;
@@ -3579,7 +3749,7 @@
                 }
                 if (typeof window.Cropper === "undefined") {
                     toast({
-                        message: "封面裁剪模块尚未加载，请刷新页面后重试",
+                        message: i18n.cropperNotReady,
                         type: "error",
                     });
                     return;
@@ -3618,7 +3788,7 @@
             formatCoverSize() {
                 const { width, height } = this.metadata.cover || {};
                 if (!width || !height) {
-                    return "未知尺寸";
+                    return i18n.unknownSize;
                 }
                 return `${width} × ${height} px`;
             },
@@ -3632,7 +3802,7 @@
                     typeof window.MilkdownV2.saveDraft !== "function"
                 ) {
                     toast({
-                        message: "保存功能暂不可用，请稍后重试",
+                        message: i18n.saveUnavailable,
                         type: "error",
                     });
                     return;
@@ -3647,7 +3817,7 @@
                     });
                 } catch (error) {
                     toast({
-                        message: error?.message || "保存失败，请稍后重试",
+                        message: error?.message || i18n.saveFailed,
                         type: "error",
                     });
                 } finally {

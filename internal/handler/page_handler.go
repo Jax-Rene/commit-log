@@ -5,22 +5,33 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/commitlog/internal/locale"
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
 type aboutPayload struct {
-	Content string `json:"content"`
+	Content  string `json:"content"`
+	Language string `json:"language"`
 }
 
 // ShowAboutEditor renders the admin editor for the about page.
 func (a *API) ShowAboutEditor(c *gin.Context) {
-	page, err := a.pages.GetBySlug("about")
+	language := locale.NormalizeLanguage(c.Query("lang"))
+	if language == "" {
+		language = a.requestLocale(c).Language
+	}
+	if language == "" {
+		language = locale.LanguageChinese
+	}
+
+	page, err := a.pages.GetBySlug("about", language)
 	if err != nil {
 		if !errors.Is(err, service.ErrPageNotFound) {
 			a.renderHTML(c, http.StatusInternalServerError, "about_edit.html", gin.H{
-				"title": "About Me",
-				"error": "加载关于页面失败，请稍后再试",
+				"title":    "About Me",
+				"error":    "加载关于页面失败，请稍后再试",
+				"language": language,
 			})
 			return
 		}
@@ -39,6 +50,7 @@ func (a *API) ShowAboutEditor(c *gin.Context) {
 		"title":     "About Me",
 		"content":   content,
 		"updatedAt": updatedAt,
+		"language":  language,
 	})
 }
 
@@ -49,7 +61,12 @@ func (a *API) UpdateAboutPage(c *gin.Context) {
 		return
 	}
 
-	page, err := a.pages.SaveAboutPage(payload.Content)
+	language := locale.NormalizeLanguage(payload.Language)
+	if language == "" {
+		language = locale.LanguageChinese
+	}
+
+	page, err := a.pages.SaveAboutPage(payload.Content, language)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrPageContentMissing):

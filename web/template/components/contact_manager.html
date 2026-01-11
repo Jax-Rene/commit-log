@@ -2,17 +2,17 @@
 <div class="space-y-4" x-data="contactManager()" x-init="init()" x-cloak>
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                        <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">社交联系方式</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">统一维护微信、邮箱、GitHub 等信息，前台展示会自动同步。</p>
+                        <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{tr .language "Social contacts" "社交联系方式"}}</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">{{tr .language "Manage WeChat, email, GitHub, etc. Updates sync to the public site." "统一维护微信、邮箱、GitHub 等信息，前台展示会自动同步。"}}</p>
                 </div>
                 <div class="flex items-center gap-2">
-                        <button type="button" class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="fetch()" x-show="!loading">刷新列表</button>
-                        <button type="button" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90" @click="startCreate()">新增信息</button>
+                        <button type="button" class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="fetch()" x-show="!loading">{{tr .language "Refresh" "刷新列表"}}</button>
+                        <button type="button" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90" @click="startCreate()">{{tr .language "Add contact" "新增信息"}}</button>
                 </div>
         </div>
 
-        <div x-show="loading" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>加载中...</div>
-        <div x-show="!loading && items.length === 0" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>暂未配置联系方式，点击「新增信息」补充。</div>
+        <div x-show="loading" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>{{tr .language "Loading..." "加载中..."}}</div>
+        <div x-show="!loading && items.length === 0" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>{{tr .language "No contacts yet. Click add to create one." "暂未配置联系方式，点击「新增信息」补充。"}}</div>
 
         <div x-show="items.length > 0" class="space-y-3" x-cloak>
                 <template x-for="(item, index) in items" :key="item.id">
@@ -23,8 +23,8 @@
                                                 <div class="flex flex-wrap items-center gap-2">
                                                         <p class="text-sm font-semibold text-slate-900 dark:text-slate-100" x-text="item.label"></p>
                                                         <span class="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600 dark:bg-blue-500/10 dark:text-blue-200" x-text="platformLabel(item.platform)"></span>
-                                                        <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-700/60 dark:text-slate-300" x-text="item.visible ? '显示中' : '已隐藏'"></span>
-                                                        <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-200" x-show="item.qrImageUrl" x-cloak>二维码</span>
+                                                        <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-700/60 dark:text-slate-300" x-text="item.visible ? {{toJSON (tr .language "Visible" "显示中")}} : {{toJSON (tr .language "Hidden" "已隐藏")}}"></span>
+                                                        <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-200" x-show="item.qrImageUrl" x-cloak>{{tr .language "QR code" "二维码"}}</span>
                                                 </div>
                                                 <p class="text-xs text-slate-500 dark:text-slate-400" x-text="item.value"></p>
                                                 <p class="text-xs text-blue-600 dark:text-blue-300" x-show="item.link && item.platform !== 'wechat'" x-text="item.link" x-cloak></p>
@@ -32,37 +32,37 @@
                                         </div>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-2">
-                                        <button type="button" class="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-blue-500/40 dark:hover:text-blue-200" @click="move(index, -1)" :disabled="index === 0">上移</button>
-                                        <button type="button" class="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-blue-500/40 dark:hover:text-blue-200" @click="move(index, 1)" :disabled="index === items.length - 1">下移</button>
-                                        <button type="button" class="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-blue-500/40 dark:hover:text-blue-200" @click="toggle(item)">切换显示</button>
-                                        <button type="button" class="rounded-lg border border-blue-200 px-2 py-1 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-500/10 dark:border-blue-500/40 dark:text-blue-200" @click="startEdit(item)">编辑</button>
-                                        <button type="button" class="rounded-lg border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10" @click="remove(item)">删除</button>
+                                        <button type="button" class="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-blue-500/40 dark:hover:text-blue-200" @click="move(index, -1)" :disabled="index === 0">{{tr .language "Move up" "上移"}}</button>
+                                        <button type="button" class="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-blue-500/40 dark:hover:text-blue-200" @click="move(index, 1)" :disabled="index === items.length - 1">{{tr .language "Move down" "下移"}}</button>
+                                        <button type="button" class="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-blue-500/40 dark:hover:text-blue-200" @click="toggle(item)">{{tr .language "Toggle visibility" "切换显示"}}</button>
+                                        <button type="button" class="rounded-lg border border-blue-200 px-2 py-1 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-500/10 dark:border-blue-500/40 dark:text-blue-200" @click="startEdit(item)">{{tr .language "Edit" "编辑"}}</button>
+                                        <button type="button" class="rounded-lg border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10" @click="remove(item)">{{tr .language "Delete" "删除"}}</button>
                                 </div>
                         </div>
                 </template>
         </div>
 
         <div x-show="showForm" class="rounded-xl border border-dashed border-slate-300 bg-white p-4 dark:border-slate-600 dark:bg-slate-900/70" x-cloak>
-                <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100" x-text="editingId ? '编辑联系方式' : '新增联系方式'"></h4>
+                <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100" x-text="editingId ? {{toJSON (tr .language "Edit contact" "编辑联系方式")}} : {{toJSON (tr .language "Add contact" "新增联系方式")}}"></h4>
                 <div class="mt-3 space-y-4">
                         <div class="grid gap-3 md:grid-cols-2">
                                 <label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
-                                        <span>平台<span class="ml-1 text-rose-500">*</span></span>
+                                        <span>{{tr .language "Platform" "平台"}}<span class="ml-1 text-rose-500">*</span></span>
                                         <select x-model="form.platformType" @change="handlePlatformChange(false)" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20">
                                                 <template x-for="option in platformPresets" :key="option.value">
                                                         <option :value="option.value" x-text="option.label"></option>
                                                 </template>
                                         </select>
                                 </label>
-                                <template x-if="form.platformType === 'custom'">
+                                        <template x-if="form.platformType === 'custom'">
                                         <label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
-                                                <span>自定义平台标识<span class="ml-1 text-rose-500">*</span></span>
-                                                <input type="text" x-model="form.platform" placeholder="如：豆瓣" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" />
+                                                <span>{{tr .language "Custom platform key" "自定义平台标识"}}<span class="ml-1 text-rose-500">*</span></span>
+                                                <input type="text" x-model="form.platform" placeholder="{{tr .language "e.g. Douban" "如：豆瓣"}}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" />
                                         </label>
                                 </template>
                                 <label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
-                                        <span>展示名称<span class="ml-1 text-rose-500">*</span></span>
-                                        <input type="text" x-model="form.label" @input="labelTouched = true" placeholder="在前台展示的标题" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" />
+                                        <span>{{tr .language "Display name" "展示名称"}}<span class="ml-1 text-rose-500">*</span></span>
+                                        <input type="text" x-model="form.label" @input="labelTouched = true" placeholder="{{tr .language "Label shown on the site" "在前台展示的标题"}}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" />
                                 </label>
                         </div>
 
@@ -73,9 +73,9 @@
                                         <span class="text-[11px] text-slate-400 dark:text-slate-500" x-text="valueHelper()" x-show="valueHelper()" x-cloak></span>
                                 </label>
                                 <label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300" x-show="shouldShowLinkInput()" x-cloak>
-                                        <span>跳转链接</span>
+                                        <span>{{tr .language "Link" "跳转链接"}}</span>
                                         <input type="url" x-model="form.link" placeholder="https://" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" />
-                                        <span class="text-[11px] text-slate-400 dark:text-slate-500">将直接用于前台跳转，可留空。</span>
+                                        <span class="text-[11px] text-slate-400 dark:text-slate-500">{{tr .language "Used for direct navigation; optional." "将直接用于前台跳转，可留空。"}}</span>
                                 </label>
                         </div>
 
@@ -84,63 +84,110 @@
                                         <div class="flex items-center gap-4">
                                                 <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
                                                         <template x-if="form.qrImageUrl">
-                                                                <img :src="form.qrImageUrl" alt="微信二维码" class="h-full w-full object-cover" />
+                                                                <img :src="form.qrImageUrl" alt="{{tr .language "WeChat QR code" "微信二维码"}}" class="h-full w-full object-cover" />
                                                         </template>
                                                         <template x-if="!form.qrImageUrl">
-                                                                <span class="text-xs font-medium text-slate-400 dark:text-slate-500">未上传</span>
+                                                                <span class="text-xs font-medium text-slate-400 dark:text-slate-500">{{tr .language "Not uploaded" "未上传"}}</span>
                                                         </template>
                                                 </div>
                                                 <div class="max-w-xs space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                                                        <p>上传微信二维码图片，用户在前台悬停图标即可查看。</p>
+                                                        <p>{{tr .language "Upload a WeChat QR image; users can hover the icon on the site." "上传微信二维码图片，用户在前台悬停图标即可查看。"}}</p>
                                                         <p x-show="form.qrImageUrl" x-text="form.qrImageUrl" class="truncate text-[11px]" x-cloak></p>
                                                 </div>
                                         </div>
                                         <div class="flex flex-wrap items-center gap-2">
                                                 <input type="file" accept="image/*" class="hidden" x-ref="qrInput" @change="handleQrSelected($event)" />
                                                 <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200" @click="triggerQrUpload()" :disabled="qrUploading">
-                                                        <span x-show="!qrUploading">上传二维码</span>
-                                                        <span x-show="qrUploading">上传中...</span>
+                                                        <span x-show="!qrUploading">{{tr .language "Upload QR" "上传二维码"}}</span>
+                                                        <span x-show="qrUploading">{{tr .language "Uploading..." "上传中..."}}</span>
                                                 </button>
-                                                <button type="button" class="rounded-lg border border-rose-200 px-3 py-2 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10" @click="clearQr()" x-show="form.qrImageUrl" x-cloak>移除二维码</button>
+                                                <button type="button" class="rounded-lg border border-rose-200 px-3 py-2 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10" @click="clearQr()" x-show="form.qrImageUrl" x-cloak>{{tr .language "Remove QR" "移除二维码"}}</button>
                                         </div>
                                 </div>
                         </div>
 
                         <div class="grid gap-3 md:grid-cols-2">
                                 <label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
-                                        <span>显示顺序</span>
-                                        <input type="number" x-model.number="form.sort" placeholder="数值越小越靠前" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" />
+                                        <span>{{tr .language "Sort order" "显示顺序"}}</span>
+                                        <input type="number" x-model.number="form.sort" placeholder="{{tr .language "Lower comes first" "数值越小越靠前"}}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20" />
                                 </label>
                                 <label class="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
-                                        <span>是否展示</span>
+                                        <span>{{tr .language "Visibility" "是否展示"}}</span>
                                         <label class="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                                                <input type="checkbox" x-model="form.visible" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600" />显示
+                                                <input type="checkbox" x-model="form.visible" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600" />{{tr .language "Visible" "显示"}}
                                         </label>
                                 </label>
                         </div>
 
                         <div class="flex flex-col gap-1 text-xs text-slate-400 dark:text-slate-500" x-show="linkPreview()" x-cloak>
-                                <span>预览链接</span>
+                                <span>{{tr .language "Preview link" "预览链接"}}</span>
                                 <span class="truncate text-blue-600 dark:text-blue-300" x-text="linkPreview()"></span>
                         </div>
 
                         <div class="flex justify-end gap-3">
-                                <button type="button" class="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100" @click="cancel()">取消</button>
-                                <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90" @click="submit()">保存信息</button>
+                                <button type="button" class="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100" @click="cancel()">{{tr .language "Cancel" "取消"}}</button>
+                                <button type="button" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 dark:hover:bg-blue-500/90" @click="submit()">{{tr .language "Save contact" "保存信息"}}</button>
                         </div>
                 </div>
         </div>
 </div>
 
 <script>
+        const preferServerMessage = {{if eq .language "zh"}}true{{else}}false{{end}};
+        const CONTACT_I18N = {
+                wechat: {{toJSON (tr .language "WeChat" "微信")}},
+                email: {{toJSON (tr .language "Email" "邮箱")}},
+                github: "GitHub",
+                telegram: "Telegram",
+                x: "X / Twitter",
+                website: {{toJSON (tr .language "Website" "个人网站")}},
+                custom: {{toJSON (tr .language "Custom" "自定义")}},
+                valueLabelFallback: {{toJSON (tr .language "Value" "值")}},
+                wechatId: {{toJSON (tr .language "WeChat ID" "微信号")}},
+                emailAddress: {{toJSON (tr .language "Email address" "邮箱地址")}},
+                githubHandle: {{toJSON (tr .language "GitHub username" "GitHub 用户名")}},
+                telegramHandle: {{toJSON (tr .language "Telegram username" "Telegram 用户名")}},
+                accountName: {{toJSON (tr .language "Account name" "账号名")}},
+                websiteUrl: {{toJSON (tr .language "Website URL" "网站地址")}},
+                displayContent: {{toJSON (tr .language "Display content" "展示内容")}},
+                helperEmail: {{toJSON (tr .language "We will generate a mailto link" "我们会自动生成 mailto 链接")}},
+                helperGithub: {{toJSON (tr .language "No need for https://github.com; link auto-generated" "无需填写 https://github.com，自动生成链接")}},
+                helperTelegram: {{toJSON (tr .language "No need for https://t.me; link auto-generated" "无需填写 https://t.me，自动生成链接")}},
+                helperX: {{toJSON (tr .language "No need for https://x.com; link auto-generated" "无需填写 https://x.com，自动生成链接")}},
+                helperWebsite: {{toJSON (tr .language "Enter full URL; link opens directly" "请填写完整链接，默认直接跳转")}},
+                placeholderWechat: {{toJSON (tr .language "e.g. commitlog" "如：commitlog")}},
+                placeholderEmail: "hi@example.com",
+                placeholderHandle: "commitlog",
+                placeholderWebsite: "https://example.com",
+                placeholderCustom: {{toJSON (tr .language "Enter content to display" "请输入要展示的内容")}},
+                customPlatformRequired: {{toJSON (tr .language "Please enter custom platform key" "请填写自定义平台标识")}},
+                displayNameRequired: {{toJSON (tr .language "Please enter display name" "请填写展示名称")}},
+                requiredSuffix: {{toJSON (tr .language "is required" "不能为空")}},
+                wechatQrRequired: {{toJSON (tr .language "Please upload WeChat QR code" "请上传微信二维码")}},
+                saveFailed: {{toJSON (tr .language "Save failed. Please try again." "保存失败，请稍后重试")}},
+                saveSuccess: {{toJSON (tr .language "Saved" "保存成功")}},
+                loadFailed: {{toJSON (tr .language "Failed to load contacts" "加载展示信息失败")}},
+                updateFailed: {{toJSON (tr .language "Update failed. Please try again." "更新失败，请稍后重试")}},
+                shown: {{toJSON (tr .language "Shown" "已显示")}},
+                hidden: {{toJSON (tr .language "Hidden" "已隐藏")}},
+                orderSyncFailed: {{toJSON (tr .language "Failed to sync order. Please refresh." "排序同步失败，请刷新重试")}},
+                deleteTitle: {{toJSON (tr .language "Delete contact" "删除联系方式")}},
+                deleteConfirm: {{toJSON (tr .language "Delete" "删除")}},
+                deleteCancel: {{toJSON (tr .language "Cancel" "取消")}},
+                deleteFailed: {{toJSON (tr .language "Delete failed. Please try again." "删除失败，请稍后重试")}},
+                deleteSuccess: {{toJSON (tr .language "Deleted" "已删除")}},
+                selectImageFile: {{toJSON (tr .language "Please select an image file" "请选择图片文件")}},
+                qrUploadFailed: {{toJSON (tr .language "QR upload failed. Please try again." "二维码上传失败，请稍后重试")}},
+                qrUploadSuccess: {{toJSON (tr .language "QR uploaded" "二维码上传成功")}},
+        };
         const PLATFORM_PRESETS = [
-                { value: 'wechat', label: '微信', icon: 'wechat', labelDefault: '微信', valueLabel: '微信号', valuePlaceholder: '如：commitlog', valueHelper: '', requiresQR: true },
-                { value: 'email', label: '邮箱', icon: 'email', labelDefault: '邮箱', valueLabel: '邮箱地址', valuePlaceholder: 'hi@example.com', valueHelper: '我们会自动生成 mailto 链接', autoLink: value => value ? `mailto:${value.trim()}` : '' },
-                { value: 'github', label: 'GitHub', icon: 'github', labelDefault: 'GitHub', valueLabel: 'GitHub 用户名', valuePlaceholder: 'commitlog', valueHelper: '无需填写 https://github.com，自动生成链接', autoLink: value => value ? `https://github.com/${value.trim().replace(/^@/, '')}` : '' },
-                { value: 'telegram', label: 'Telegram', icon: 'telegram', labelDefault: 'Telegram', valueLabel: 'Telegram 用户名', valuePlaceholder: 'commitlog', valueHelper: '无需填写 https://t.me，自动生成链接', autoLink: value => value ? `https://t.me/${value.trim().replace(/^@/, '')}` : '' },
-                { value: 'x', label: 'X / Twitter', icon: 'x', labelDefault: 'X / Twitter', valueLabel: '账号名', valuePlaceholder: 'commitlog', valueHelper: '无需填写 https://x.com，自动生成链接', autoLink: value => value ? `https://x.com/${value.trim().replace(/^@/, '')}` : '' },
-                { value: 'website', label: '个人网站', icon: 'website', labelDefault: '网站', valueLabel: '网站地址', valuePlaceholder: 'https://example.com', valueHelper: '请填写完整链接，默认直接跳转', autoLink: value => value ? value.trim() : '' },
-                { value: 'custom', label: '自定义', icon: '', labelDefault: '', valueLabel: '展示内容', valuePlaceholder: '请输入要展示的内容', valueHelper: '', manualLink: true }
+                { value: 'wechat', label: CONTACT_I18N.wechat, icon: 'wechat', labelDefault: CONTACT_I18N.wechat, valueLabel: CONTACT_I18N.wechatId, valuePlaceholder: CONTACT_I18N.placeholderWechat, valueHelper: '', requiresQR: true },
+                { value: 'email', label: CONTACT_I18N.email, icon: 'email', labelDefault: CONTACT_I18N.email, valueLabel: CONTACT_I18N.emailAddress, valuePlaceholder: CONTACT_I18N.placeholderEmail, valueHelper: CONTACT_I18N.helperEmail, autoLink: value => value ? `mailto:${value.trim()}` : '' },
+                { value: 'github', label: CONTACT_I18N.github, icon: 'github', labelDefault: CONTACT_I18N.github, valueLabel: CONTACT_I18N.githubHandle, valuePlaceholder: CONTACT_I18N.placeholderHandle, valueHelper: CONTACT_I18N.helperGithub, autoLink: value => value ? `https://github.com/${value.trim().replace(/^@/, '')}` : '' },
+                { value: 'telegram', label: CONTACT_I18N.telegram, icon: 'telegram', labelDefault: CONTACT_I18N.telegram, valueLabel: CONTACT_I18N.telegramHandle, valuePlaceholder: CONTACT_I18N.placeholderHandle, valueHelper: CONTACT_I18N.helperTelegram, autoLink: value => value ? `https://t.me/${value.trim().replace(/^@/, '')}` : '' },
+                { value: 'x', label: CONTACT_I18N.x, icon: 'x', labelDefault: CONTACT_I18N.x, valueLabel: CONTACT_I18N.accountName, valuePlaceholder: CONTACT_I18N.placeholderHandle, valueHelper: CONTACT_I18N.helperX, autoLink: value => value ? `https://x.com/${value.trim().replace(/^@/, '')}` : '' },
+                { value: 'website', label: CONTACT_I18N.website, icon: 'website', labelDefault: CONTACT_I18N.website, valueLabel: CONTACT_I18N.websiteUrl, valuePlaceholder: CONTACT_I18N.placeholderWebsite, valueHelper: CONTACT_I18N.helperWebsite, autoLink: value => value ? value.trim() : '' },
+                { value: 'custom', label: CONTACT_I18N.custom, icon: '', labelDefault: '', valueLabel: CONTACT_I18N.displayContent, valuePlaceholder: CONTACT_I18N.placeholderCustom, valueHelper: '', manualLink: true }
         ];
         const PROFILE_ICON_SVGS = {{toJSON .profileIconSVGs}} || {};
 
@@ -172,7 +219,7 @@
 
                         platformLabel(value) {
                                 const preset = this.findPreset(value);
-                                return preset ? preset.label : (value || '自定义');
+                                return preset ? preset.label : (value || CONTACT_I18N.custom);
                         },
 
                         findPreset(key) {
@@ -185,7 +232,9 @@
 
                         valueLabel() {
                                 const preset = this.currentPreset();
-                                return preset ? `${preset.valueLabel || '值'} *` : '值 *';
+                                return preset
+                                        ? `${preset.valueLabel || CONTACT_I18N.valueLabelFallback} *`
+                                        : `${CONTACT_I18N.valueLabelFallback} *`;
                         },
 
                         valuePlaceholder() {
@@ -299,20 +348,21 @@
 
                         validate() {
                                 if (this.form.platformType === 'custom' && !this.form.platform.trim()) {
-                                        window.AdminUI.toast({ message: '请填写自定义平台标识', type: 'warning' });
+                                        window.AdminUI.toast({ message: CONTACT_I18N.customPlatformRequired, type: 'warning' });
                                         return false;
                                 }
                                 if (!this.form.label.trim()) {
-                                        window.AdminUI.toast({ message: '请填写展示名称', type: 'warning' });
+                                        window.AdminUI.toast({ message: CONTACT_I18N.displayNameRequired, type: 'warning' });
                                         return false;
                                 }
                                 if (!this.form.value.trim()) {
-                                        window.AdminUI.toast({ message: this.valueLabel() + '不能为空', type: 'warning' });
+                                        const label = this.valueLabel().replace('*', '').trim();
+                                        window.AdminUI.toast({ message: `${label} ${CONTACT_I18N.requiredSuffix}`, type: 'warning' });
                                         return false;
                                 }
                                 const preset = this.currentPreset();
                                 if (preset && preset.requiresQR && !this.form.qrImageUrl.trim()) {
-                                        window.AdminUI.toast({ message: '请上传微信二维码', type: 'warning' });
+                                        window.AdminUI.toast({ message: CONTACT_I18N.wechatQrRequired, type: 'warning' });
                                         return false;
                                 }
                                 return true;
@@ -360,16 +410,23 @@
                                         });
                                         const data = await response.json().catch(() => ({}));
                                         if (!response.ok || data.error) {
-                                                const message = data && data.error ? data.error : '保存失败，请稍后重试';
+                                                const message = preferServerMessage && data && data.error
+                                                        ? data.error
+                                                        : CONTACT_I18N.saveFailed;
                                                 window.AdminUI.toast({ message, type: 'error' });
                                                 return;
                                         }
-                                        window.AdminUI.toast({ message: data.message || '保存成功', type: 'success' });
+                                        const message = preferServerMessage && data.message
+                                                ? data.message
+                                                : CONTACT_I18N.saveSuccess;
+                                        window.AdminUI.toast({ message, type: 'success' });
                                         this.showForm = false;
                                         this.resetForm();
                                         this.fetch();
                                 } catch (error) {
-                                        const message = error && error.message ? error.message : '保存失败，请稍后重试';
+                                        const message = preferServerMessage && error && error.message
+                                                ? error.message
+                                                : CONTACT_I18N.saveFailed;
                                         window.AdminUI.toast({ message, type: 'error' });
                                 }
                         },
@@ -380,7 +437,10 @@
                                         const response = await fetch('/admin/api/profile/contacts');
                                         const data = await response.json().catch(() => ({}));
                                         if (!response.ok || data.error) {
-                                                throw new Error(data && data.error ? data.error : '加载展示信息失败');
+                                                const message = preferServerMessage && data && data.error
+                                                        ? data.error
+                                                        : CONTACT_I18N.loadFailed;
+                                                throw new Error(message);
                                         }
                                         const items = Array.isArray(data.contacts) ? data.contacts.slice() : [];
                                         items.sort((a, b) => {
@@ -396,7 +456,9 @@
                                                 icon: item.icon || ''
                                         }));
                                 } catch (error) {
-                                        const message = error && error.message ? error.message : '加载展示信息失败';
+                                        const message = error && error.message
+                                                ? error.message
+                                                : CONTACT_I18N.loadFailed;
                                         window.AdminUI.toast({ message, type: 'error' });
                                 } finally {
                                         this.loading = false;
@@ -433,14 +495,18 @@
                                         });
                                         const data = await response.json().catch(() => ({}));
                                         if (!response.ok || data.error) {
-                                                const message = data && data.error ? data.error : '更新失败，请稍后重试';
+                                                const message = preferServerMessage && data && data.error
+                                                        ? data.error
+                                                        : CONTACT_I18N.updateFailed;
                                                 window.AdminUI.toast({ message, type: 'error' });
                                                 return;
                                         }
                                         item.visible = !item.visible;
-                                        window.AdminUI.toast({ message: item.visible ? '已显示' : '已隐藏', type: 'success' });
+                                        window.AdminUI.toast({ message: item.visible ? CONTACT_I18N.shown : CONTACT_I18N.hidden, type: 'success' });
                                 } catch (error) {
-                                        const message = error && error.message ? error.message : '更新失败，请稍后重试';
+                                        const message = error && error.message
+                                                ? error.message
+                                                : CONTACT_I18N.updateFailed;
                                         window.AdminUI.toast({ message, type: 'error' });
                                 }
                         },
@@ -467,10 +533,12 @@
                                                 body: JSON.stringify({ ids })
                                         });
                                         if (!response.ok) {
-                                                throw new Error('排序同步失败，请刷新重试');
+                                                throw new Error(CONTACT_I18N.orderSyncFailed);
                                         }
                                 } catch (error) {
-                                        const message = error && error.message ? error.message : '排序同步失败，请刷新重试';
+                                        const message = error && error.message
+                                                ? error.message
+                                                : CONTACT_I18N.orderSyncFailed;
                                         window.AdminUI.toast({ message, type: 'error' });
                                 }
                         },
@@ -480,10 +548,10 @@
                                         return;
                                 }
                                 const confirmed = await window.AdminUI.confirm({
-                                        title: '删除联系方式',
-                                        message: `确定删除「${item.label}」吗？`,
-                                        confirmText: '删除',
-                                        cancelText: '取消',
+                                        title: CONTACT_I18N.deleteTitle,
+                                        message: {{if eq .language "en"}}`Are you sure you want to delete "${item.label}"?`{{else}}`确定删除「${item.label}」吗？`{{end}},
+                                        confirmText: CONTACT_I18N.deleteConfirm,
+                                        cancelText: CONTACT_I18N.deleteCancel,
                                         tone: 'danger'
                                 });
                                 if (!confirmed) {
@@ -496,14 +564,21 @@
                                         });
                                         const data = await response.json().catch(() => ({}));
                                         if (!response.ok || data.error) {
-                                                const message = data && data.error ? data.error : '删除失败，请稍后重试';
+                                                const message = preferServerMessage && data && data.error
+                                                        ? data.error
+                                                        : CONTACT_I18N.deleteFailed;
                                                 window.AdminUI.toast({ message, type: 'error' });
                                                 return;
                                         }
-                                        window.AdminUI.toast({ message: data.message || '已删除', type: 'success' });
+                                        const message = preferServerMessage && data.message
+                                                ? data.message
+                                                : CONTACT_I18N.deleteSuccess;
+                                        window.AdminUI.toast({ message, type: 'success' });
                                         this.fetch();
                                 } catch (error) {
-                                        const message = error && error.message ? error.message : '删除失败，请稍后重试';
+                                        const message = error && error.message
+                                                ? error.message
+                                                : CONTACT_I18N.deleteFailed;
                                         window.AdminUI.toast({ message, type: 'error' });
                                 }
                         },
@@ -525,7 +600,7 @@
                                 const [file] = files;
                                 event.target.value = '';
                                 if (!file || !file.type.startsWith('image/')) {
-                                        window.AdminUI.toast({ message: '请选择图片文件', type: 'warning' });
+                                        window.AdminUI.toast({ message: CONTACT_I18N.selectImageFile, type: 'warning' });
                                         return;
                                 }
                                 this.uploadQr(file);
@@ -542,14 +617,18 @@
                                         });
                                         const data = await response.json().catch(() => ({}));
                                         if (!response.ok || data.error || !data.data || !data.data.url) {
-                                                const message = data && (data.error || data.message) ? (data.error || data.message) : '二维码上传失败，请稍后重试';
+                                                const message = preferServerMessage && data && (data.error || data.message)
+                                                        ? (data.error || data.message)
+                                                        : CONTACT_I18N.qrUploadFailed;
                                                 window.AdminUI.toast({ message, type: 'error' });
                                                 return;
                                         }
                                         this.form.qrImageUrl = data.data.url;
-                                        window.AdminUI.toast({ message: '二维码上传成功', type: 'success' });
+                                        window.AdminUI.toast({ message: CONTACT_I18N.qrUploadSuccess, type: 'success' });
                                 } catch (error) {
-                                        const message = error && error.message ? error.message : '二维码上传失败，请稍后重试';
+                                        const message = preferServerMessage && error && error.message
+                                                ? error.message
+                                                : CONTACT_I18N.qrUploadFailed;
                                         window.AdminUI.toast({ message, type: 'error' });
                                 } finally {
                                         this.qrUploading = false;

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/locale"
 	"gorm.io/gorm"
 )
 
@@ -31,6 +32,7 @@ type PostService struct {
 type PostFilter struct {
 	Search    string
 	Status    string
+	Language  string
 	TagNames  []string
 	StartDate *time.Time
 	EndDate   *time.Time
@@ -61,14 +63,16 @@ type PublicationListResult struct {
 
 // PostInput represents fields accepted when creating or updating a post.
 type PostInput struct {
-	Title       string
-	Content     string
-	Summary     string
-	TagIDs      []uint
-	UserID      uint
-	CoverURL    string
-	CoverWidth  int
-	CoverHeight int
+	Title              string
+	Content            string
+	Summary            string
+	TagIDs             []uint
+	UserID             uint
+	CoverURL           string
+	CoverWidth         int
+	CoverHeight        int
+	Language           string
+	TranslationGroupID uint
 }
 
 // NewPostService creates a PostService instance.
@@ -107,15 +111,19 @@ func (s *PostService) Create(input PostInput) (*db.Post, error) {
 		return nil, err
 	}
 
+	language := normalizeLanguage(input.Language)
+
 	post := db.Post{
-		Content:     input.Content,
-		Summary:     strings.TrimSpace(input.Summary),
-		Status:      "draft",
-		UserID:      input.UserID,
-		CoverURL:    coverURL,
-		CoverWidth:  coverWidth,
-		CoverHeight: coverHeight,
-		ReadingTime: calculateReadingTime(input.Content),
+		Content:            input.Content,
+		Summary:            strings.TrimSpace(input.Summary),
+		Status:             "draft",
+		UserID:             input.UserID,
+		CoverURL:           coverURL,
+		CoverWidth:         coverWidth,
+		CoverHeight:        coverHeight,
+		Language:           language,
+		TranslationGroupID: input.TranslationGroupID,
+		ReadingTime:        calculateReadingTime(input.Content),
 	}
 
 	return s.saveWithTags(&post, input.TagIDs)
@@ -142,6 +150,12 @@ func (s *PostService) Update(id uint, input PostInput) (*db.Post, error) {
 	existing.CoverWidth = coverWidth
 	existing.CoverHeight = coverHeight
 	existing.ReadingTime = calculateReadingTime(input.Content)
+	if language := normalizeLanguageInput(input.Language); language != "" {
+		existing.Language = language
+	}
+	if input.TranslationGroupID > 0 {
+		existing.TranslationGroupID = input.TranslationGroupID
+	}
 
 	post, err := s.saveWithTags(&existing, input.TagIDs)
 	if err != nil {
@@ -354,6 +368,46 @@ func (s *PostService) LatestPublication(postID uint) (*db.PostPublication, error
 	return &publication, nil
 }
 
+// LatestPublicationForLanguage 返回指定语言的文章发布快照
+func (s *PostService) LatestPublicationForLanguage(postID uint, language string) (*db.PostPublication, error) {
+	var publication db.PostPublication
+	query := s.db.Preload("Tags").
+		Preload("User").
+		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
+		Where("posts.id = ?", postID)
+	if normalized := normalizeFilterLanguage(language); normalized != "" {
+		query = query.Where("posts.language = ?", normalized)
+	}
+	if err := query.First(&publication).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrPublicationNotFound
+		}
+		return nil, err
+	}
+	publication.PopulateDerivedFields()
+	return &publication, nil
+}
+
+// LatestPublicationByTranslationGroup 返回同一翻译组内指定语言的发布快照
+func (s *PostService) LatestPublicationByTranslationGroup(groupID uint, language string) (*db.PostPublication, error) {
+	var publication db.PostPublication
+	query := s.db.Preload("Tags").
+		Preload("User").
+		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
+		Where("posts.translation_group_id = ?", groupID)
+	if normalized := normalizeFilterLanguage(language); normalized != "" {
+		query = query.Where("posts.language = ?", normalized)
+	}
+	if err := query.First(&publication).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrPublicationNotFound
+		}
+		return nil, err
+	}
+	publication.PopulateDerivedFields()
+	return &publication, nil
+}
+
 // ListPublished 返回最新发布的文章快照列表
 func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, error) {
 	result := &PublicationListResult{Page: filter.Page, PerPage: filter.PerPage}
@@ -406,11 +460,15 @@ func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, 
 }
 
 // ListAllPublished 返回所有文章的最新发布快照
-func (s *PostService) ListAllPublished() ([]db.PostPublication, error) {
+func (s *PostService) ListAllPublished(language string) ([]db.PostPublication, error) {
 	var publications []db.PostPublication
-	if err := s.db.Preload("Tags").
+	query := s.db.Preload("Tags").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
-		Where("posts.status = ?", "published").
+		Where("posts.status = ?", "published")
+	if normalized := normalizeFilterLanguage(language); normalized != "" {
+		query = query.Where("posts.language = ?", normalized)
+	}
+	if err := query.
 		Order("post_publications.published_at desc, post_publications.id desc").
 		Find(&publications).Error; err != nil {
 		return nil, err
@@ -425,6 +483,14 @@ func (s *PostService) saveWithTags(post *db.Post, tagIDs []uint) (*db.Post, erro
 	return post, s.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(post).Error; err != nil {
 			return err
+		}
+
+		if post.TranslationGroupID == 0 {
+			if err := tx.Model(post).
+				Update("translation_group_id", post.ID).Error; err != nil {
+				return err
+			}
+			post.TranslationGroupID = post.ID
 		}
 
 		var tags []db.Tag
@@ -463,6 +529,10 @@ func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeSta
 		query = query.Where("posts.status = ?", filter.Status)
 	}
 
+	if language := normalizeFilterLanguage(filter.Language); language != "" {
+		query = query.Where("posts.language = ?", language)
+	}
+
 	if len(filter.TagNames) > 0 {
 		subQuery := s.db.Model(&db.Post{}).
 			Select("posts.id").
@@ -491,6 +561,10 @@ func (s *PostService) applyPublicationFilters(query *gorm.DB, filter PostFilter)
 		alias := "post_publications"
 		titleExpr := derivedTitleQueryExpr(alias)
 		query = query.Where(fmt.Sprintf("(%s LIKE ? OR %s.content LIKE ? OR %s.summary LIKE ?)", titleExpr, alias, alias), search, search, search)
+	}
+
+	if language := normalizeFilterLanguage(filter.Language); language != "" {
+		query = query.Where("posts.language = ?", language)
 	}
 
 	if len(filter.TagNames) > 0 {
@@ -561,6 +635,28 @@ func calculateReadingTime(content string) int {
 		minutes = 1
 	}
 	return minutes
+}
+
+func normalizeLanguage(raw string) string {
+	normalized := locale.NormalizeLanguage(raw)
+	if normalized == "" {
+		return locale.LanguageChinese
+	}
+	return normalized
+}
+
+func normalizeLanguageInput(raw string) string {
+	if strings.TrimSpace(raw) == "" {
+		return ""
+	}
+	return locale.NormalizeLanguage(raw)
+}
+
+func normalizeFilterLanguage(raw string) string {
+	if strings.TrimSpace(raw) == "" {
+		return ""
+	}
+	return locale.NormalizeLanguage(raw)
 }
 
 func derivedTitleQueryExpr(alias string) string {

@@ -47,4 +47,6 @@ const (
 	SettingKeyGallerySubtitle = "gallery_subtitle"
 	// SettingKeyGalleryEnabled 表示是否启用 Gallery。
 	SettingKeyGalleryEnabled = "gallery_enabled"
+	// SettingKeyPreferredLanguage 表示站点首选语言。
+	SettingKeyPreferredLanguage = "preferred_language"
 )

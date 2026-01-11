@@ -24,8 +24,8 @@
                 </div>
 
                 <div class="text-center">
-                    <h2 class="text-3xl font-display font-bold text-gray-900 dark:text-slate-100">登录失败</h2>
-                    <p class="mt-2 text-sm text-gray-600 dark:text-slate-400">请检查您的登录信息</p>
+                    <h2 class="text-3xl font-display font-bold text-gray-900 dark:text-slate-100">{{tr .language "Login failed" "登录失败"}}</h2>
+                    <p class="mt-2 text-sm text-gray-600 dark:text-slate-400">{{tr .language "Please check your login details" "请检查您的登录信息"}}</p>
                 </div>
 
                 <div class="rounded-2xl border border-red-200/50 bg-red-50/80 p-4 backdrop-blur-sm dark:border-red-500/40 dark:bg-red-500/10">
@@ -37,7 +37,13 @@
                             </svg>
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm font-medium text-red-800 dark:text-red-200">{{.error}}</p>
+                            <p class="text-sm font-medium text-red-800 dark:text-red-200">
+                                {{if eq .language "en"}}
+                                    {{if eq .error "用户名或密码错误"}}Invalid username or password{{else if eq .error "会话保存失败"}}Failed to save session{{else}}{{.error}}{{end}}
+                                {{else}}
+                                    {{.error}}
+                                {{end}}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -50,13 +56,13 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
                         </span>
-                        返回登录
+                        {{tr .language "Back to login" "返回登录"}}
                     </a>
                 </div>
 
                 <div class="text-center">
                     <p class="text-xs text-gray-500 dark:text-slate-500">
-                        如需帮助，请联系系统管理员
+                        {{tr .language "Need help? Contact your system administrator." "如需帮助，请联系系统管理员"}}
                     </p>
                 </div>
             </div>

@@ -12,6 +12,7 @@ import (
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/router"
+	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -52,21 +53,33 @@ func setupPublicTestDB(t *testing.T) func() {
 }
 
 func seedPublishedPostAt(t *testing.T, title, content string, publishedAt time.Time) db.Post {
+	return seedPublishedPostAtWithLanguage(t, title, content, publishedAt, "zh", 0)
+}
+
+func seedPublishedPostAtWithLanguage(t *testing.T, title, content string, publishedAt time.Time, language string, groupID uint) db.Post {
 	t.Helper()
 
 	summary := fmt.Sprintf("%s 摘要", title)
 	post := db.Post{
-		Title:       title,
-		Content:     content,
-		Summary:     summary,
-		Status:      "draft",
-		UserID:      1,
-		CoverURL:    fmt.Sprintf("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?title=%s", urlSafe(title)),
-		CoverWidth:  1280,
-		CoverHeight: 720,
+		Title:              title,
+		Content:            content,
+		Summary:            summary,
+		Status:             "draft",
+		UserID:             1,
+		CoverURL:           fmt.Sprintf("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?title=%s", urlSafe(title)),
+		CoverWidth:         1280,
+		CoverHeight:        720,
+		Language:           language,
+		TranslationGroupID: groupID,
 	}
 	if err := db.DB.Create(&post).Error; err != nil {
 		t.Fatalf("failed to create post: %v", err)
+	}
+	if post.TranslationGroupID == 0 {
+		if err := db.DB.Model(&post).Update("translation_group_id", post.ID).Error; err != nil {
+			t.Fatalf("failed to set translation group id: %v", err)
+		}
+		post.TranslationGroupID = post.ID
 	}
 
 	publication := db.PostPublication{
@@ -107,6 +120,14 @@ func seedPublishedPost(t *testing.T, title, content string) db.Post {
 	return seedPublishedPostAt(t, title, content, time.Now())
 }
 
+func seedPublishedPostWithLanguage(t *testing.T, title, content, language string) db.Post {
+	return seedPublishedPostAtWithLanguage(t, title, content, time.Now(), language, 0)
+}
+
+func seedPublishedPostWithLanguageGroup(t *testing.T, title, content, language string, groupID uint) db.Post {
+	return seedPublishedPostAtWithLanguage(t, title, content, time.Now(), language, groupID)
+}
+
 func seedDraftPost(t *testing.T, title string) db.Post {
 	t.Helper()
 	post := db.Post{
@@ -117,9 +138,13 @@ func seedDraftPost(t *testing.T, title string) db.Post {
 		CoverURL:    fmt.Sprintf("https://images.unsplash.com/photo-1441986300917-64674bd600d8?title=%s", urlSafe(title)),
 		CoverWidth:  960,
 		CoverHeight: 1280,
+		Language:    "zh",
 	}
 	if err := db.DB.Create(&post).Error; err != nil {
 		t.Fatalf("failed to create draft: %v", err)
+	}
+	if err := db.DB.Model(&post).Update("translation_group_id", post.ID).Error; err != nil {
+		t.Fatalf("failed to set translation group id: %v", err)
 	}
 	return post
 }
@@ -150,6 +175,154 @@ func TestShowHomeExcludesDrafts(t *testing.T) {
 	}
 	if strings.Contains(body, draft.Title) {
 		t.Fatalf("draft post should not be rendered on public home")
+	}
+}
+
+func TestShowHomeUsesCountryLanguage(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	zhPost := seedPublishedPostWithLanguage(t, "中文文章", "内容", "zh")
+	enPost := seedPublishedPostWithLanguage(t, "English Post", "Content", "en")
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+
+	cnResp := httptest.NewRecorder()
+	cnReq := httptest.NewRequest(http.MethodGet, "/", nil)
+	cnReq.Header.Set("CF-IPCountry", "CN")
+	r.ServeHTTP(cnResp, cnReq)
+
+	if cnResp.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", cnResp.Code)
+	}
+	if !strings.Contains(cnResp.Body.String(), zhPost.Summary) {
+		t.Fatalf("expected cn response to include zh content")
+	}
+	if strings.Contains(cnResp.Body.String(), enPost.Summary) {
+		t.Fatalf("expected cn response to exclude en content")
+	}
+
+	enResp := httptest.NewRecorder()
+	enReq := httptest.NewRequest(http.MethodGet, "/", nil)
+	enReq.Header.Set("CF-IPCountry", "US")
+	r.ServeHTTP(enResp, enReq)
+
+	if enResp.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", enResp.Code)
+	}
+	if !strings.Contains(enResp.Body.String(), enPost.Summary) {
+		t.Fatalf("expected en response to include en content")
+	}
+	if strings.Contains(enResp.Body.String(), zhPost.Summary) {
+		t.Fatalf("expected en response to exclude zh content")
+	}
+}
+
+func TestShowHomeUsesPreferredLanguageFallback(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	systemService := service.NewSystemSettingService(db.DB)
+	if _, err := systemService.UpdateSettings(service.SystemSettingsInput{
+		PreferredLanguage: "en",
+	}); err != nil {
+		t.Fatalf("failed to update preferred language: %v", err)
+	}
+
+	zhPost := seedPublishedPostWithLanguage(t, "中文文章", "内容", "zh")
+	enPost := seedPublishedPostWithLanguage(t, "English Post", "Content", "en")
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("CF-IPCountry", "CN")
+	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), enPost.Summary) {
+		t.Fatalf("expected preferred language to include en content")
+	}
+	if strings.Contains(w.Body.String(), zhPost.Summary) {
+		t.Fatalf("expected preferred language to exclude zh content")
+	}
+}
+
+func TestShowHomeHonorsLangQueryParam(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	zhPost := seedPublishedPostWithLanguage(t, "中文文章", "内容", "zh")
+	enPost := seedPublishedPostWithLanguage(t, "English Post", "Content", "en")
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/?lang=en", nil)
+	req.Header.Set("CF-IPCountry", "CN")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), enPost.Summary) {
+		t.Fatalf("expected lang query to include en content")
+	}
+	if strings.Contains(w.Body.String(), zhPost.Summary) {
+		t.Fatalf("expected lang query to exclude zh content")
+	}
+}
+
+func TestShowHomeHonorsLangCookie(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	zhPost := seedPublishedPostWithLanguage(t, "中文文章", "内容", "zh")
+	enPost := seedPublishedPostWithLanguage(t, "English Post", "Content", "en")
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("CF-IPCountry", "CN")
+	req.AddCookie(&http.Cookie{Name: "cl_lang", Value: "en"})
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), enPost.Summary) {
+		t.Fatalf("expected lang cookie to include en content")
+	}
+	if strings.Contains(w.Body.String(), zhPost.Summary) {
+		t.Fatalf("expected lang cookie to exclude zh content")
+	}
+}
+
+func TestShowPostDetailRedirectsToTranslation(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	zhPost := seedPublishedPostWithLanguage(t, "中文文章", "# 中文文章\n正文", "zh")
+	enPost := seedPublishedPostWithLanguageGroup(t, "English Post", "# English Post\nBody", "en", zhPost.TranslationGroupID)
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(zhPost.ID)), nil)
+	req.Header.Set("CF-IPCountry", "US")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected redirect, got %d", w.Code)
+	}
+
+	location := w.Header().Get("Location")
+	expected := fmt.Sprintf("/posts/%d", enPost.ID)
+	if location != expected {
+		t.Fatalf("expected redirect to %s, got %s", expected, location)
 	}
 }
 
@@ -239,7 +412,7 @@ func TestShowAboutDisplaysContacts(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-	aboutPage := db.Page{Slug: "about", Title: "About Me", Content: "# 你好"}
+	aboutPage := db.Page{Slug: "about", Title: "About Me", Content: "# 你好", Language: "zh"}
 	if err := db.DB.Create(&aboutPage).Error; err != nil {
 		t.Fatalf("failed to seed about page: %v", err)
 	}
@@ -277,7 +450,7 @@ func TestShowAboutHidesSummary(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-	aboutPage := db.Page{Slug: "about", Title: "About Me", Content: "# 你好", Summary: "不应显示摘要"}
+	aboutPage := db.Page{Slug: "about", Title: "About Me", Content: "# 你好", Summary: "不应显示摘要", Language: "zh"}
 	if err := db.DB.Create(&aboutPage).Error; err != nil {
 		t.Fatalf("failed to seed about page: %v", err)
 	}
@@ -305,7 +478,7 @@ func TestShowAboutUsesSummaryForMeta(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
 
-	aboutPage := db.Page{Slug: "about", Title: "About Me", Content: "# 正文内容", Summary: "自定义关于页摘要"}
+	aboutPage := db.Page{Slug: "about", Title: "About Me", Content: "# 正文内容", Summary: "自定义关于页摘要", Language: "zh"}
 	if err := db.DB.Create(&aboutPage).Error; err != nil {
 		t.Fatalf("failed to seed about page: %v", err)
 	}
@@ -322,6 +495,46 @@ func TestShowAboutUsesSummaryForMeta(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, `name="description" content="自定义关于页摘要"`) {
 		t.Fatalf("expected meta description to prefer page summary, body=%s", body)
+	}
+}
+
+func TestShowAboutRespectsLanguage(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	zhPage := db.Page{Slug: "about", Title: "关于我", Content: "# 你好", Language: "zh"}
+	if err := db.DB.Create(&zhPage).Error; err != nil {
+		t.Fatalf("failed to seed zh about page: %v", err)
+	}
+	enPage := db.Page{Slug: "about", Title: "About Me", Content: "# Hello", Language: "en"}
+	if err := db.DB.Create(&enPage).Error; err != nil {
+		t.Fatalf("failed to seed en about page: %v", err)
+	}
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+
+	cnResp := httptest.NewRecorder()
+	cnReq := httptest.NewRequest(http.MethodGet, "/about", nil)
+	cnReq.Header.Set("CF-IPCountry", "CN")
+	r.ServeHTTP(cnResp, cnReq)
+
+	if cnResp.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", cnResp.Code)
+	}
+	if !strings.Contains(cnResp.Body.String(), "关于我") {
+		t.Fatalf("expected zh about content")
+	}
+
+	enResp := httptest.NewRecorder()
+	enReq := httptest.NewRequest(http.MethodGet, "/about", nil)
+	enReq.Header.Set("CF-IPCountry", "US")
+	r.ServeHTTP(enResp, enReq)
+
+	if enResp.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", enResp.Code)
+	}
+	if !strings.Contains(enResp.Body.String(), "About Me") {
+		t.Fatalf("expected en about content")
 	}
 }
 

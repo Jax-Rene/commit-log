@@ -205,6 +205,20 @@ function coerceString(value, fallback = "") {
   return fallback;
 }
 
+function normalizeLanguage(value) {
+  const raw = coerceString(value, "").trim().toLowerCase();
+  if (!raw) {
+    return "";
+  }
+  if (raw.startsWith("zh") || raw === "cn") {
+    return "zh";
+  }
+  if (raw.startsWith("en")) {
+    return "en";
+  }
+  return "";
+}
+
 function deriveTitleFromMarkdown(content) {
   const source = coerceString(content, "");
   if (!source) {
@@ -1898,9 +1912,31 @@ class PostDraftController {
     if (source.Status === undefined && typeof source.status === "string") {
       source.Status = source.status;
     }
+    if (source.Language === undefined && typeof source.language === "string") {
+      source.Language = source.language;
+    }
+    if (
+      source.TranslationGroupID === undefined &&
+      source.translation_group_id !== undefined
+    ) {
+      source.TranslationGroupID = source.translation_group_id;
+    }
+    if (
+      source.TranslationGroupID === undefined &&
+      source.translationGroupID !== undefined
+    ) {
+      source.TranslationGroupID = source.translationGroupID;
+    }
     if (source.UserID === undefined && source.user_id !== undefined) {
       source.UserID = source.user_id;
     }
+
+    const normalizedLanguage = normalizeLanguage(source.Language) || "zh";
+    source.Language = normalizedLanguage;
+    source.language = normalizedLanguage;
+    const normalizedGroupID = coerceNumber(source.TranslationGroupID, 0);
+    source.TranslationGroupID = normalizedGroupID;
+    source.translation_group_id = normalizedGroupID;
 
     const normalizedTags = this.normalizeTags(source.Tags);
     const primaryTags = normalizedTags.map(
@@ -1914,6 +1950,8 @@ class PostDraftController {
       Summary: "",
       Content: "",
       Status: "draft",
+      Language: "zh",
+      TranslationGroupID: 0,
       Tags: [],
       CoverURL: "",
       CoverWidth: 0,
@@ -2313,6 +2351,42 @@ class PostDraftController {
     return normalized;
   }
 
+  setLanguage(value) {
+    const normalized = normalizeLanguage(value) || "zh";
+    if (!this.postData || typeof this.postData !== "object") {
+      this.postData = {};
+    }
+    if (
+      this.postData.Language === normalized &&
+      this.postData.language === normalized
+    ) {
+      return normalized;
+    }
+    this.postData.Language = normalized;
+    this.postData.language = normalized;
+    this.markDirty();
+    this.notifyPostChange("language");
+    return normalized;
+  }
+
+  setTranslationGroupID(value) {
+    const normalized = coerceNumber(value, 0);
+    if (!this.postData || typeof this.postData !== "object") {
+      this.postData = {};
+    }
+    if (
+      this.postData.TranslationGroupID === normalized &&
+      this.postData.translation_group_id === normalized
+    ) {
+      return normalized;
+    }
+    this.postData.TranslationGroupID = normalized;
+    this.postData.translation_group_id = normalized;
+    this.markDirty();
+    this.notifyPostChange("translation-group");
+    return normalized;
+  }
+
   setCover(info = {}) {
     const nextUrl = coerceString(
       pickProperty(info, ["url", "CoverURL", "cover_url"], ""),
@@ -2451,6 +2525,19 @@ class PostDraftController {
       pickProperty(post, ["Summary", "summary"], ""),
       "",
     );
+    const language =
+      normalizeLanguage(pickProperty(post, ["Language", "language"], "")) ||
+      "zh";
+    post.Language = language;
+    post.language = language;
+    const translationGroupID = coerceNumber(
+      pickProperty(
+        post,
+        ["TranslationGroupID", "translation_group_id", "translationGroupID"],
+        0,
+      ),
+      0,
+    );
     const coverUrl = coerceString(
       pickProperty(post, ["CoverURL", "cover_url"], ""),
       "",
@@ -2480,6 +2567,8 @@ class PostDraftController {
       cover_url: coverUrl,
       cover_width: coverWidth,
       cover_height: coverHeight,
+      language,
+      translation_group_id: translationGroupID,
     };
   }
 

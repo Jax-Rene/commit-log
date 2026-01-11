@@ -8,7 +8,7 @@
                 <h1
                     class="text-3xl font-semibold text-slate-900 dark:text-slate-100"
                 >
-                    Photography Portfolio
+                    {{tr .language "Photography Portfolio" "摄影作品集"}}
                 </h1>
                 {{if .site.gallerySubtitle}}
                 <p class="text-sm text-slate-600 dark:text-slate-400">
@@ -31,7 +31,7 @@
                     data-gallery-trigger
                     data-full-url="{{.ImageURL}}"
                     class="block w-full"
-                    aria-label="{{if .Title}}{{.Title}}{{else}}摄影作品{{end}}"
+                    aria-label="{{if .Title}}{{.Title}}{{else}}{{tr $.language "Photography" "摄影作品"}}{{end}}"
                 >
                     <div
                         class="relative w-full overflow-hidden"
@@ -39,7 +39,7 @@
                     >
                         <img
                             src="{{.ImageURL}}"
-                            alt="{{if .Title}}{{.Title}}{{else}}摄影作品{{end}}"
+                            alt="{{if .Title}}{{.Title}}{{else}}{{tr $.language "Photography" "摄影作品"}}{{end}}"
                             loading="lazy"
                             class="absolute inset-0 h-full w-full object-cover"
                         />
@@ -50,7 +50,7 @@
             <div
                 class="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-12 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-400"
             >
-                暂时没有作品，稍后再来看吧。
+                {{tr .language "No work yet. Check back soon." "暂时没有作品，稍后再来看吧。"}}
             </div>
             {{end}}
         </div>
@@ -66,7 +66,7 @@
             <div
                 class="flex justify-center py-8 text-sm text-slate-500 dark:text-slate-400"
             >
-                加载中…
+                {{tr .language "Loading…" "加载中…"}}
             </div>
         </div>
         {{else}}
@@ -74,7 +74,7 @@
             id="load-more"
             class="py-8 text-center text-sm text-slate-400 dark:text-slate-500"
         >
-            已经到底啦 ✨
+            {{tr .language "You're all caught up ✨" "已经到底啦 ✨"}}
         </div>
         {{end}} {{end}}
     </div>
@@ -90,7 +90,7 @@
             id="gallery-lightbox-close"
             class="absolute right-3 top-3 rounded-full bg-white/90 p-2 text-slate-700 shadow-lg transition hover:bg-white"
         >
-            <span class="sr-only">关闭</span>
+            <span class="sr-only">{{tr .language "Close" "关闭"}}</span>
             <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -169,7 +169,7 @@
             const fullUrl = trigger.getAttribute("data-full-url");
             if (!fullUrl) return;
             const thumb = trigger.querySelector("img");
-            const altText = thumb && thumb.alt ? thumb.alt : "摄影作品";
+            const altText = thumb && thumb.alt ? thumb.alt : {{toJSON (tr .language "Photography" "摄影作品")}};
             lightboxImage.src = fullUrl;
             lightboxImage.alt = altText;
             lightbox.classList.remove("hidden");

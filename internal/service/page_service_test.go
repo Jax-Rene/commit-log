@@ -37,7 +37,7 @@ func TestSaveAboutPageCreatesRecord(t *testing.T) {
 	defer cleanup()
 
 	svc := NewPageService(db.DB)
-	page, err := svc.SaveAboutPage("# Hello\n这是关于页")
+	page, err := svc.SaveAboutPage("# Hello\n这是关于页", "zh")
 	if err != nil {
 		t.Fatalf("SaveAboutPage returned error: %v", err)
 	}
@@ -46,12 +46,15 @@ func TestSaveAboutPageCreatesRecord(t *testing.T) {
 		t.Fatalf("expected slug 'about', got %s", page.Slug)
 	}
 
-	if page.Title != "About Me" {
+	if page.Title != "关于我" {
 		t.Fatalf("expected default title, got %s", page.Title)
 	}
 
 	if page.Content == "" {
 		t.Fatal("expected content to be persisted")
+	}
+	if page.Language != "zh" {
+		t.Fatalf("expected language zh, got %s", page.Language)
 	}
 }
 
@@ -60,11 +63,11 @@ func TestSaveAboutPageUpdatesExisting(t *testing.T) {
 	defer cleanup()
 
 	svc := NewPageService(db.DB)
-	if _, err := svc.SaveAboutPage("初始内容"); err != nil {
+	if _, err := svc.SaveAboutPage("初始内容", "zh"); err != nil {
 		t.Fatalf("failed to seed about page: %v", err)
 	}
 
-	updated, err := svc.SaveAboutPage("更新后的内容")
+	updated, err := svc.SaveAboutPage("更新后的内容", "zh")
 	if err != nil {
 		t.Fatalf("SaveAboutPage returned error: %v", err)
 	}
@@ -79,7 +82,29 @@ func TestSaveAboutPageRejectsEmptyContent(t *testing.T) {
 	defer cleanup()
 
 	svc := NewPageService(db.DB)
-	if _, err := svc.SaveAboutPage("\n\t "); err == nil {
+	if _, err := svc.SaveAboutPage("\n\t ", "zh"); err == nil {
 		t.Fatal("expected error for empty content")
+	}
+}
+
+func TestSaveAboutPageSeparatesLanguages(t *testing.T) {
+	cleanup := setupPageServiceTestDB(t)
+	defer cleanup()
+
+	svc := NewPageService(db.DB)
+	zhPage, err := svc.SaveAboutPage("中文内容", "zh")
+	if err != nil {
+		t.Fatalf("save zh page: %v", err)
+	}
+	enPage, err := svc.SaveAboutPage("English Content", "en")
+	if err != nil {
+		t.Fatalf("save en page: %v", err)
+	}
+
+	if zhPage.Language == enPage.Language {
+		t.Fatalf("expected different languages, got %s", zhPage.Language)
+	}
+	if zhPage.Slug != "about" || enPage.Slug != "about" {
+		t.Fatalf("expected both pages to share slug about")
 	}
 }

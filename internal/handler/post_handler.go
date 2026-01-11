@@ -18,25 +18,29 @@ import (
 const defaultUserID = 1
 
 type postPayload struct {
-	Title       string `json:"title"`
-	Content     string `json:"content"`
-	Summary     string `json:"summary"`
-	TagIDs      []uint `json:"tag_ids"`
-	CoverURL    string `json:"cover_url"`
-	CoverWidth  int    `json:"cover_width"`
-	CoverHeight int    `json:"cover_height"`
+	Title              string `json:"title"`
+	Content            string `json:"content"`
+	Summary            string `json:"summary"`
+	TagIDs             []uint `json:"tag_ids"`
+	CoverURL           string `json:"cover_url"`
+	CoverWidth         int    `json:"cover_width"`
+	CoverHeight        int    `json:"cover_height"`
+	Language           string `json:"language"`
+	TranslationGroupID uint   `json:"translation_group_id"`
 }
 
 func (p postPayload) toInput(userID uint) service.PostInput {
 	return service.PostInput{
-		Title:       p.Title,
-		Content:     p.Content,
-		Summary:     p.Summary,
-		TagIDs:      p.TagIDs,
-		UserID:      userID,
-		CoverURL:    p.CoverURL,
-		CoverWidth:  p.CoverWidth,
-		CoverHeight: p.CoverHeight,
+		Title:              p.Title,
+		Content:            p.Content,
+		Summary:            p.Summary,
+		TagIDs:             p.TagIDs,
+		UserID:             userID,
+		CoverURL:           p.CoverURL,
+		CoverWidth:         p.CoverWidth,
+		CoverHeight:        p.CoverHeight,
+		Language:           p.Language,
+		TranslationGroupID: p.TranslationGroupID,
 	}
 }
 

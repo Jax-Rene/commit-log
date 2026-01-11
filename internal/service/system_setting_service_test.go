@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/locale"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -81,6 +82,49 @@ func TestSystemSettingServiceDefaults(t *testing.T) {
 	if !settings.GalleryEnabled {
 		t.Fatalf("expected gallery to be enabled by default")
 	}
+	if settings.PreferredLanguage != locale.LanguageChinese {
+		t.Fatalf("expected preferred language %q, got %q", locale.LanguageChinese, settings.PreferredLanguage)
+	}
+}
+
+func TestSystemSettingServicePreferredLanguageExplicit(t *testing.T) {
+	cleanup := setupSystemSettingTestDB(t)
+	defer cleanup()
+
+	svc := NewSystemSettingService(db.DB)
+	language, ok, err := svc.PreferredLanguage()
+	if err != nil {
+		t.Fatalf("preferred language failed: %v", err)
+	}
+	if ok || language != "" {
+		t.Fatalf("expected no preferred language, got %q (ok=%v)", language, ok)
+	}
+
+	if _, err := svc.UpdateSettings(SystemSettingsInput{PreferredLanguage: "en"}); err != nil {
+		t.Fatalf("update preferred language failed: %v", err)
+	}
+
+	language, ok, err = svc.PreferredLanguage()
+	if err != nil {
+		t.Fatalf("preferred language failed: %v", err)
+	}
+	if !ok || language != locale.LanguageEnglish {
+		t.Fatalf("expected preferred language %q (ok=true), got %q (ok=%v)", locale.LanguageEnglish, language, ok)
+	}
+}
+
+func TestSystemSettingServiceGetSettingsWithoutDB(t *testing.T) {
+	svc := NewSystemSettingService(nil)
+	settings, err := svc.GetSettings()
+	if err != nil {
+		t.Fatalf("get settings failed: %v", err)
+	}
+	if settings.SiteName != defaultSiteName {
+		t.Fatalf("expected default site name %q, got %q", defaultSiteName, settings.SiteName)
+	}
+	if settings.PreferredLanguage != locale.LanguageChinese {
+		t.Fatalf("expected preferred language %q, got %q", locale.LanguageChinese, settings.PreferredLanguage)
+	}
 }
 
 func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
@@ -89,22 +133,23 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 
 	svc := NewSystemSettingService(db.DB)
 	input := SystemSettingsInput{
-		SiteName:         " CommitLog 社区 ",
-		SiteLogoURL:      "https://example.com/logo.png",
-		SiteLogoURLLight: "https://example.com/logo-light.png",
-		SiteLogoURLDark:  "https://example.com/logo-dark.png",
-		SiteDescription:  " 致力于分享 AI 工程实战 ",
-		SiteKeywords:     "AI, 工程, 博客, AI",
-		SiteSocialImage:  "https://example.com/og.png",
-		AdminFooterText:  "后台页脚",
-		PublicFooterText: "前台页脚",
-		GallerySubtitle:  " Shot by Hasselblad X2D / iPhone 16 ",
-		AIProvider:       "deepseek",
-		OpenAIAPIKey:     "sk-xxxx",
-		DeepSeekAPIKey:   "ds-12345",
-		GalleryEnabled:   boolPtr(false),
-		AISummaryPrompt:  " 摘要提示 ",
-		AIRewritePrompt:  " 重写提示 ",
+		SiteName:          " CommitLog 社区 ",
+		SiteLogoURL:       "https://example.com/logo.png",
+		SiteLogoURLLight:  "https://example.com/logo-light.png",
+		SiteLogoURLDark:   "https://example.com/logo-dark.png",
+		SiteDescription:   " 致力于分享 AI 工程实战 ",
+		SiteKeywords:      "AI, 工程, 博客, AI",
+		SiteSocialImage:   "https://example.com/og.png",
+		AdminFooterText:   "后台页脚",
+		PublicFooterText:  "前台页脚",
+		GallerySubtitle:   " Shot by Hasselblad X2D / iPhone 16 ",
+		PreferredLanguage: "en",
+		AIProvider:        "deepseek",
+		OpenAIAPIKey:      "sk-xxxx",
+		DeepSeekAPIKey:    "ds-12345",
+		GalleryEnabled:    boolPtr(false),
+		AISummaryPrompt:   " 摘要提示 ",
+		AIRewritePrompt:   " 重写提示 ",
 	}
 
 	saved, err := svc.UpdateSettings(input)
@@ -141,6 +186,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	}
 	if saved.GallerySubtitle != "Shot by Hasselblad X2D / iPhone 16" {
 		t.Fatalf("expected gallery subtitle sanitized, got %q", saved.GallerySubtitle)
+	}
+	if saved.PreferredLanguage != locale.LanguageEnglish {
+		t.Fatalf("expected preferred language %q, got %q", locale.LanguageEnglish, saved.PreferredLanguage)
 	}
 
 	fetched, err := svc.GetSettings()
@@ -192,6 +240,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	}
 	if fetched.GallerySubtitle != "Shot by Hasselblad X2D / iPhone 16" {
 		t.Fatalf("expected gallery subtitle %q, got %q", "Shot by Hasselblad X2D / iPhone 16", fetched.GallerySubtitle)
+	}
+	if fetched.PreferredLanguage != locale.LanguageEnglish {
+		t.Fatalf("expected preferred language %q, got %q", locale.LanguageEnglish, fetched.PreferredLanguage)
 	}
 }
 

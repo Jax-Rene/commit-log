@@ -1,4 +1,4 @@
-{{define "post_card"}} {{- $post := .Post -}}
+{{define "post_card"}} {{- $post := .Post -}} {{- $lang := .Language -}}
 <article
     data-post-card
     class="rounded-3xl bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/80"
@@ -11,7 +11,7 @@
         >
             <img
                 src="{{$post.CoverURL}}"
-                alt="{{$post.Title}} 封面"
+                alt="{{printf (tr $lang "%s cover" "%s 封面") $post.Title}}"
                 loading="lazy"
                 class="absolute inset-0 h-full w-full object-cover"
             />
@@ -39,7 +39,11 @@
         >
             <span>{{formatDate $post.PublishedAt}}</span>
             {{if gt $post.ReadingTime 0}}
-            <span>· {{$post.ReadingTime}} 分钟阅读</span>
+            <span
+                >·
+                {{printf (tr $lang "%d min read" "%d 分钟阅读")
+                $post.ReadingTime}}</span
+            >
             {{end}}
         </div>
         {{if $post.Tags}}

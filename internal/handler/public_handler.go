@@ -16,6 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/locale"
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -40,8 +41,9 @@ const (
 )
 
 type tagStat struct {
-	Name  string
-	Count int
+	Name        string
+	Description string
+	Count       int
 }
 
 type searchSuggestion struct {
@@ -55,12 +57,14 @@ func (a *API) ShowHome(c *gin.Context) {
 	search := strings.TrimSpace(c.Query("search"))
 	tags := c.QueryArray("tags")
 	page := parsePositiveInt(c.DefaultQuery("page", "1"), 1)
+	language := a.requestLocale(c).Language
 
 	filter := service.PostFilter{
 		Search:   search,
 		TagNames: tags,
 		Page:     page,
 		PerPage:  6,
+		Language: language,
 	}
 
 	publications, err := a.posts.ListPublished(filter)
@@ -73,7 +77,7 @@ func (a *API) ShowHome(c *gin.Context) {
 		return
 	}
 
-	tagOptions := a.buildTagStats()
+	tagOptions := a.buildTagStats(language)
 
 	queryParams := buildQueryParams(search, tags)
 	metaDescription := ""
@@ -138,11 +142,13 @@ func (a *API) SearchSuggestions(c *gin.Context) {
 		c.String(http.StatusOK, "")
 		return
 	}
+	language := a.requestLocale(c).Language
 
 	filter := service.PostFilter{
-		Search:  search,
-		Page:    1,
-		PerPage: 5,
+		Search:   search,
+		Page:     1,
+		PerPage:  5,
+		Language: language,
 	}
 
 	publications, err := a.posts.ListPublished(filter)
@@ -178,12 +184,14 @@ func (a *API) LoadMorePosts(c *gin.Context) {
 
 	search := strings.TrimSpace(c.Query("search"))
 	tags := c.QueryArray("tags")
+	language := a.requestLocale(c).Language
 
 	filter := service.PostFilter{
 		Search:   search,
 		TagNames: tags,
 		Page:     page,
 		PerPage:  6,
+		Language: language,
 	}
 
 	publications, err := a.posts.ListPublished(filter)
@@ -210,10 +218,33 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		return
 	}
 
-	publication, err := a.posts.LatestPublication(uint(id))
+	language := a.requestLocale(c).Language
+	publication, err := a.posts.LatestPublicationForLanguage(uint(id), language)
 	if err != nil {
 		if errors.Is(err, service.ErrPublicationNotFound) {
-			c.AbortWithStatus(http.StatusNotFound)
+			post, postErr := a.posts.Get(uint(id))
+			if postErr != nil {
+				if errors.Is(postErr, service.ErrPostNotFound) {
+					c.AbortWithStatus(http.StatusNotFound)
+				} else {
+					c.AbortWithStatus(http.StatusInternalServerError)
+				}
+				return
+			}
+			groupID := post.TranslationGroupID
+			if groupID == 0 {
+				groupID = post.ID
+			}
+			translated, translationErr := a.posts.LatestPublicationByTranslationGroup(groupID, language)
+			if translationErr == nil {
+				c.Redirect(http.StatusFound, fmt.Sprintf("/posts/%d", translated.PostID))
+				return
+			}
+			if errors.Is(translationErr, service.ErrPublicationNotFound) {
+				c.AbortWithStatus(http.StatusNotFound)
+				return
+			}
+			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -312,7 +343,8 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 
 // ShowTagArchive lists tags and related published post counts.
 func (a *API) ShowTagArchive(c *gin.Context) {
-	stats := a.buildTagStats()
+	language := a.requestLocale(c).Language
+	stats := a.buildTagStats(language)
 	tagNames := make([]string, 0, len(stats))
 	for _, stat := range stats {
 		if trimmed := strings.TrimSpace(stat.Name); trimmed != "" {
@@ -370,21 +402,29 @@ func (a *API) ShowAbout(c *gin.Context) {
 	canonical := "/about"
 
 	contacts := a.visibleContacts(c)
+	language := a.requestLocale(c).Language
 
-	page, err := a.pages.GetBySlug("about")
+	page, err := a.pages.GetBySlug("about", language)
 	if err != nil {
 		fallbackContent := "暂无简介，稍后再来看看。"
+		if language == locale.LanguageEnglish {
+			fallbackContent = "No intro yet. Please check back later."
+		}
 		description := truncateRunes(markdownToPlainText(fallbackContent), 160)
+		keywords := []string{"关于", "个人简介"}
+		if language == locale.LanguageEnglish {
+			keywords = []string{"about", "profile"}
+		}
 		a.renderHTML(c, http.StatusOK, "about.html", gin.H{
 			"title": "关于",
 			"page": gin.H{
 				"Title": "About Me",
 			},
-			"content":         template.HTML("<p class=\"text-sm text-slate-600\">暂无简介，稍后再来看看。</p>"),
+			"content":         template.HTML("<p class=\"text-sm text-slate-600\">" + htmlstd.EscapeString(fallbackContent) + "</p>"),
 			"year":            now.Year(),
 			"contacts":        contacts,
 			"metaDescription": description,
-			"metaKeywords":    []string{"关于", "个人简介"},
+			"metaKeywords":    keywords,
 			"metaType":        "profile",
 			"canonical":       canonical,
 		})
@@ -398,6 +438,9 @@ func (a *API) ShowAbout(c *gin.Context) {
 
 	description := buildPageDescription(page)
 	keywords := []string{"关于", strings.TrimSpace(page.Title)}
+	if language == locale.LanguageEnglish {
+		keywords = []string{"about", strings.TrimSpace(page.Title)}
+	}
 
 	payload := gin.H{
 		"title":     page.Title,
@@ -446,7 +489,8 @@ func (a *API) ShowRobots(c *gin.Context) {
 
 // ShowSitemap exposes a simple XML sitemap for published resources.
 func (a *API) ShowSitemap(c *gin.Context) {
-	publications, err := a.posts.ListAllPublished()
+	language := a.requestLocale(c).Language
+	publications, err := a.posts.ListAllPublished(language)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "")
 		return
@@ -507,7 +551,8 @@ func (a *API) ShowSitemap(c *gin.Context) {
 
 // ShowRSS exposes a simple RSS feed for published posts.
 func (a *API) ShowRSS(c *gin.Context) {
-	publications, err := a.posts.ListAllPublished()
+	pref := a.requestLocale(c)
+	publications, err := a.posts.ListAllPublished(pref.Language)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "")
 		return
@@ -532,7 +577,7 @@ func (a *API) ShowRSS(c *gin.Context) {
 	builder.WriteString(fmt.Sprintf("  <title>%s</title>\n", htmlstd.EscapeString(title)))
 	builder.WriteString(fmt.Sprintf("  <link>%s</link>\n", htmlstd.EscapeString(homeURL)))
 	builder.WriteString(fmt.Sprintf("  <description>%s</description>\n", htmlstd.EscapeString(description)))
-	builder.WriteString("  <language>zh-CN</language>\n")
+	builder.WriteString(fmt.Sprintf("  <language>%s</language>\n", pref.HTMLLang))
 	builder.WriteString(fmt.Sprintf("  <lastBuildDate>%s</lastBuildDate>\n", lastBuildDate))
 	builder.WriteString("  <generator>CommitLog</generator>\n")
 
@@ -666,8 +711,8 @@ func (a *API) visibleContacts(c *gin.Context) []db.ProfileContact {
 	return contacts
 }
 
-func (a *API) buildTagStats() []tagStat {
-	usages, err := a.tags.PublishedUsage()
+func (a *API) buildTagStats(language string) []tagStat {
+	usages, err := a.tags.PublishedUsage(language)
 	if err != nil {
 		return nil
 	}

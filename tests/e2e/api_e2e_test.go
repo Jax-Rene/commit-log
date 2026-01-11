@@ -165,7 +165,7 @@ func newE2ESuite(t *testing.T) *e2eSuite {
 
 	pageSvc := service.NewPageService(db.DB)
 	aboutContent := "## About Me\n这是 E2E 关于页面的测试内容。"
-	if _, err := pageSvc.SaveAboutPage(aboutContent); err != nil {
+	if _, err := pageSvc.SaveAboutPage(aboutContent, "zh"); err != nil {
 		t.Fatalf("failed to seed about page: %v", err)
 	}
 

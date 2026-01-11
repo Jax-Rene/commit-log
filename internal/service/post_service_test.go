@@ -400,6 +400,60 @@ func TestPostService_ListPublishedOrderedByPublishTime(t *testing.T) {
 	}
 }
 
+func TestPostService_ListPublishedFiltersByLanguage(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "lang-tester"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	createPost := func(language, title string) *db.Post {
+		post, err := svc.Create(PostInput{
+			Content:     "# " + title + "\n内容",
+			Summary:     title + " 摘要",
+			UserID:      user.ID,
+			Language:    language,
+			CoverURL:    "https://example.com/cover.jpg",
+			CoverWidth:  1200,
+			CoverHeight: 800,
+		})
+		if err != nil {
+			t.Fatalf("create post: %v", err)
+		}
+		if _, err := svc.Publish(post.ID, user.ID, nil); err != nil {
+			t.Fatalf("publish post: %v", err)
+		}
+		return post
+	}
+
+	zhPost := createPost("zh", "中文文章")
+	enPost := createPost("en", "English Post")
+
+	zhList, err := svc.ListPublished(PostFilter{Page: 1, PerPage: 10, Language: "zh"})
+	if err != nil {
+		t.Fatalf("list published zh: %v", err)
+	}
+	if zhList.Total != 1 || len(zhList.Publications) != 1 {
+		t.Fatalf("expected 1 zh publication, got %d", zhList.Total)
+	}
+	if zhList.Publications[0].PostID != zhPost.ID {
+		t.Fatalf("expected zh post id %d, got %d", zhPost.ID, zhList.Publications[0].PostID)
+	}
+
+	enList, err := svc.ListPublished(PostFilter{Page: 1, PerPage: 10, Language: "en"})
+	if err != nil {
+		t.Fatalf("list published en: %v", err)
+	}
+	if enList.Total != 1 || len(enList.Publications) != 1 {
+		t.Fatalf("expected 1 en publication, got %d", enList.Total)
+	}
+	if enList.Publications[0].PostID != enPost.ID {
+		t.Fatalf("expected en post id %d, got %d", enPost.ID, enList.Publications[0].PostID)
+	}
+}
+
 func TestPostService_PublishWithCustomPublishedAt(t *testing.T) {
 	gdb := setupPostServiceTestDB(t)
 	svc := NewPostService(gdb)

@@ -1,6 +1,6 @@
 {{define "base"}}
 <!doctype html>
-<html lang="zh-CN" class="scroll-smooth">
+<html lang="{{if .lang}}{{.lang}}{{else}}zh-CN{{end}}" class="scroll-smooth">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -131,7 +131,7 @@
                                 type="search"
                                 name="search"
                                 value="{{.search}}"
-                                placeholder="搜索文章"
+                                placeholder="{{tr .language "Search posts" "搜索文章"}}"
                                 autocomplete="off"
                                 data-search-suggest-input
                                 hx-get="/search/suggestions"
@@ -166,17 +166,36 @@
                             <div
                                 class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-500 shadow-lg dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400"
                             >
-                                搜索中…
+                                {{tr .language "Searching…" "搜索中…"}}
                             </div>
                         </template>
                         <template id="search-suggestions-error">
                             <div
                                 class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-600 shadow-lg dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
                             >
-                                搜索失败，请稍后重试。
+                                {{tr .language "Search failed. Please try again." "搜索失败，请稍后重试。"}}
                             </div>
                         </template>
                     </form>
+                </div>
+                <div
+                    class="flex items-center justify-end text-xs font-medium text-slate-500 dark:text-slate-400 sm:hidden"
+                >
+                    {{if eq .language "en"}}
+                    <a
+                        href="{{index .languageSwitch "zh"}}"
+                        class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
+                        aria-label="{{tr .language "Switch to Chinese" "切换到中文"}}"
+                        >中文</a
+                    >
+                    {{else}}
+                    <a
+                        href="{{index .languageSwitch "en"}}"
+                        class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
+                        aria-label="{{tr .language "Switch to English" "切换到英文"}}"
+                        >EN</a
+                    >
+                    {{end}}
                 </div>
 
                 <div
@@ -185,7 +204,7 @@
                     <a
                         href="/about"
                         class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
-                        >About Me</a
+                        >{{tr .language "About Me" "关于我"}}</a
                     >
                     <span class="mx-3 text-slate-300 dark:text-slate-600"
                         >/</span
@@ -202,7 +221,25 @@
                     <a
                         href="/gallery"
                         class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
-                        >Gallery</a
+                        >{{tr .language "Gallery" "作品集"}}</a
+                    >
+                    {{end}}
+                    <span class="mx-3 text-slate-300 dark:text-slate-600"
+                        >/</span
+                    >
+                    {{if eq .language "en"}}
+                    <a
+                        href="{{index .languageSwitch "zh"}}"
+                        class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
+                        aria-label="{{tr .language "Switch to Chinese" "切换到中文"}}"
+                        >中文</a
+                    >
+                    {{else}}
+                    <a
+                        href="{{index .languageSwitch "en"}}"
+                        class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
+                        aria-label="{{tr .language "Switch to English" "切换到英文"}}"
+                        >EN</a
                     >
                     {{end}}
                 </div>

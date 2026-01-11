@@ -1,4 +1,4 @@
-{{define "contact_links.html"}}
+{{define "contact_links.html"}} {{- $lang := .Language -}}
 {{if and .Contacts (gt (len .Contacts) 0)}}
 <section class="p-6">
 	<div class="flex flex-col gap-2 text-center">
@@ -16,8 +16,8 @@
                         <span class="sr-only">{{profileContactTitle .Label .Value}}</span>
                         <span class="h-5 w-5" aria-hidden="true">{{profileIcon .Icon}}</span>
                         <div class="pointer-events-none absolute inset-x-auto left-1/2 bottom-full z-[9999] mb-3 hidden min-w-[12rem] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 p-3 text-center text-xs text-slate-500 shadow-2xl backdrop-blur-sm group-hover:block dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-300">
-                                <p class="mb-2 font-medium text-slate-700 dark:text-slate-100">扫码添加微信</p>
-                                <img src="{{.Link}}" alt="微信二维码" loading="lazy" class="mx-auto h-48 w-48 rounded-xl border border-slate-200 bg-white object-contain dark:border-slate-700" />
+                                <p class="mb-2 font-medium text-slate-700 dark:text-slate-100">{{tr $lang "Scan to add on WeChat" "扫码添加微信"}}</p>
+                                <img src="{{.Link}}" alt="{{tr $lang "WeChat QR code" "微信二维码"}}" loading="lazy" class="mx-auto h-48 w-48 rounded-xl border border-slate-200 bg-white object-contain dark:border-slate-700" />
                         </div>
                 </div>
                 {{else if .Link}}

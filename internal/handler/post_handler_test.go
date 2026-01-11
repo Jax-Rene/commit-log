@@ -107,7 +107,7 @@ func setupTestDB(t *testing.T) (*API, func()) {
 
 	db.DB = gdb
 
-        return NewAPI(db.DB, "web/static/uploads", "/static/uploads", ""), func() {
+	return NewAPI(db.DB, "web/static/uploads", "/static/uploads", ""), func() {
 		sqlDB, err := db.DB.DB()
 		if err == nil {
 			sqlDB.Close()

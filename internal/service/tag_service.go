@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/locale"
 	"gorm.io/gorm"
 )
 
@@ -56,7 +57,7 @@ func (s *TagService) ListWithPosts() ([]db.Tag, error) {
 }
 
 // PublishedUsage 返回已发布文章中标签的使用统计
-func (s *TagService) PublishedUsage() ([]TagUsage, error) {
+func (s *TagService) PublishedUsage(language string) ([]TagUsage, error) {
 	var rows []struct {
 		ID    uint
 		Name  string
@@ -71,6 +72,10 @@ func (s *TagService) PublishedUsage() ([]TagUsage, error) {
 		Where("posts.status = ?", "published").
 		Group("tags.id, tags.name").
 		Order("tags.name asc")
+
+	if normalized := locale.NormalizeLanguage(language); normalized != "" {
+		query = query.Where("posts.language = ?", normalized)
+	}
 
 	if err := query.Scan(&rows).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

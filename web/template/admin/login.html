@@ -22,20 +22,20 @@
                 <div class="absolute -inset-2 bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 rounded-3xl blur-xl opacity-50"></div>
             </div>
             <h1 class="text-4xl font-display font-bold text-white mt-6 mb-2">Commit Log</h1>
-            <p class="text-slate-300 text-lg">我的个人成长记录</p>
+            <p class="text-slate-300 text-lg">{{tr .language "My personal growth log" "我的个人成长记录"}}</p>
         </div>
 
         <!-- 毛玻璃登录卡片 -->
         <div class="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8">
             <div class="text-center mb-8">
-                <h2 class="text-2xl font-display font-semibold text-white mb-2">欢迎回来</h2>
+                <h2 class="text-2xl font-display font-semibold text-white mb-2">{{tr .language "Welcome back" "欢迎回来"}}</h2>
             </div>
 
             <!-- 登录表单 -->
             <form id="login-form" class="space-y-6" action="/admin/login" method="POST">
                 <!-- 用户名输入 -->
                 <div class="space-y-2">
-                    <label for="username" class="text-sm font-medium text-slate-300">用户名</label>
+                    <label for="username" class="text-sm font-medium text-slate-300">{{tr .language "Username" "用户名"}}</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,14 +46,14 @@
                                name="username" 
                                type="text" 
                                required
-                               placeholder="请输入用户名"
+                               placeholder="{{tr .language "Enter your username" "请输入用户名"}}"
                                class="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200">
                     </div>
                 </div>
 
                 <!-- 密码输入 -->
                 <div class="space-y-2">
-                    <label for="password" class="text-sm font-medium text-slate-300">密码</label>
+                    <label for="password" class="text-sm font-medium text-slate-300">{{tr .language "Password" "密码"}}</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,7 +64,7 @@
                                name="password" 
                                type="password" 
                                required
-                               placeholder="请输入密码"
+                               placeholder="{{tr .language "Enter your password" "请输入密码"}}"
                                class="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200">
                     </div>
                 </div>
@@ -76,7 +76,7 @@
                                name="remember"
                                value="1"
                                class="w-4 h-4 bg-white/10 border border-white/20 rounded text-blue-400 focus:ring-blue-400">
-                        <span class="ml-2 text-sm text-slate-300">记住我</span>
+                        <span class="ml-2 text-sm text-slate-300">{{tr .language "Remember me" "记住我"}}</span>
                     </label>
                 </div>
 
@@ -87,7 +87,7 @@
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
                         </svg>
-                        登录
+                        {{tr .language "Log in" "登录"}}
                     </span>
                 </button>
             </form>
@@ -95,7 +95,7 @@
 
         <!-- 底部装饰 -->
         <div class="text-center mt-8">
-            <p class="text-slate-400 text-sm">{{.site.name}} • 我的成长足迹</p>
+            <p class="text-slate-400 text-sm">{{.site.name}} • {{tr .language "My growth journey" "我的成长足迹"}}</p>
         </div>
     </div>
 </div>

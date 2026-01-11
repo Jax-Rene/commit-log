@@ -62,6 +62,28 @@ func Init(databasePath string) error {
 		}
 	}
 
+	if migrator.HasIndex(&Page{}, "idx_pages_slug") {
+		if dropErr := migrator.DropIndex(&Page{}, "idx_pages_slug"); dropErr != nil {
+			return dropErr
+		}
+	}
+
+	if err := DB.Model(&Post{}).
+		Where("language = '' OR language IS NULL").
+		Update("language", "zh").Error; err != nil {
+		return err
+	}
+	if err := DB.Model(&Post{}).
+		Where("translation_group_id IS NULL OR translation_group_id = 0").
+		Update("translation_group_id", gorm.Expr("id")).Error; err != nil {
+		return err
+	}
+	if err := DB.Model(&Page{}).
+		Where("language = '' OR language IS NULL").
+		Update("language", "zh").Error; err != nil {
+		return err
+	}
+
 	return nil
 }
 

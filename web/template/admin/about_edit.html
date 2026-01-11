@@ -1,45 +1,57 @@
 {{template "base" .}}
 
 {{define "content"}}
-<div class="space-y-10" x-data="aboutForm({{printf "%q" .content}}, {{printf "%q" .updatedAt}})" x-init="init()">
+<div class="space-y-10" x-data="aboutForm({{printf "%q" .content}}, {{printf "%q" .updatedAt}}, {{printf "%q" .language}})" x-init="init()">
 	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
 		<div>
-			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">编辑About Me</h1>
-			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">使用 Markdown 撰写个人介绍，支持实时预览。</p>
-			<p class="mt-1 text-xs text-slate-400 dark:text-slate-500" x-show="updatedAt" x-cloak>最近保存：<span x-text="updatedAt"></span></p>
+			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">{{tr .language "Edit About Me" "编辑关于我"}}</h1>
+			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{tr .language "Write in Markdown with live preview." "使用 Markdown 撰写个人介绍，支持实时预览。"}}</p>
+			<p class="mt-1 text-xs text-slate-400 dark:text-slate-500" x-show="updatedAt" x-cloak>{{tr .language "Last saved:" "最近保存："}}<span x-text="updatedAt"></span></p>
 		</div>
-		<a href="/about" target="_blank" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">查看前台页面</a>
+		<div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+			<label class="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+				<span>{{tr .language "Language" "语言"}}</span>
+				<select x-model="language" @change="switchLanguage()" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30">
+					<option value="zh">{{tr .language "Chinese" "中文"}}</option>
+					<option value="en">{{tr .language "English" "英文"}}</option>
+				</select>
+			</label>
+			<a href="/about" target="_blank" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">{{tr .language "View public page" "查看前台页面"}}</a>
+		</div>
 	</header>
 
 	{{if .error}}
-	<div class="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-600 dark:border-rose-500/50 dark:bg-rose-500/10 dark:text-rose-200">{{.error}}</div>
+	<div class="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-600 dark:border-rose-500/50 dark:bg-rose-500/10 dark:text-rose-200">
+		{{if eq .language "en"}}Failed to load About content. Please try again.{{else}}{{.error}}{{end}}
+	</div>
 	{{end}}
 
 	<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
 		<label class="flex flex-col gap-2">
-			<span class="text-sm font-medium text-slate-700 dark:text-slate-200">About Me内容<span class="ml-1 text-rose-500">*</span></span>
-			<p class="text-xs text-slate-500 dark:text-slate-400">支持 Markdown 语法，建议包含个人背景、擅长方向与联系渠道。</p>
+			<span class="text-sm font-medium text-slate-700 dark:text-slate-200">{{tr .language "About Me content" "关于我内容"}}<span class="ml-1 text-rose-500">*</span></span>
+			<p class="text-xs text-slate-500 dark:text-slate-400">{{tr .language "Supports Markdown. Include background, strengths, and contact info." "支持 Markdown 语法，建议包含个人背景、擅长方向与联系渠道。"}}</p>
 			<textarea id="about-content" class="hidden">{{- .content -}}</textarea>
 		</label>
 	</section>
 
 	<section class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
 		<div class="space-y-1">
-			<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">操作</h2>
-			<p class="text-xs text-slate-500 dark:text-slate-400">先预览确认排版，再保存到数据库。</p>
+			<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{tr .language "Actions" "操作"}}</h2>
+			<p class="text-xs text-slate-500 dark:text-slate-400">{{tr .language "Preview the layout, then save to the database." "先预览确认排版，再保存到数据库。"}}</p>
 		</div>
 		<div class="flex flex-col gap-3 sm:flex-row">
-			<button type="button" @click="preview()" class="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">预览</button>
+			<button type="button" @click="preview()" class="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">{{tr .language "Preview" "预览"}}</button>
 			<button type="button" @click="submit()" :disabled="loading" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/80">
-				<span x-show="!loading">保存</span>
-				<span x-show="loading">保存中...</span>
+				<span x-show="!loading">{{tr .language "Save" "保存"}}</span>
+				<span x-show="loading">{{tr .language "Saving..." "保存中..."}}</span>
 			</button>
 		</div>
 	</section>
 </div>
 
 <script>
-	function aboutForm(initialContent, initialUpdatedAt) {
+	function aboutForm(initialContent, initialUpdatedAt, initialLanguage) {
+		const preferServerMessage = {{if eq .language "zh"}}true{{else}}false{{end}};
 		return {
 			editor: null,
 			fullscreenWatcher: null,
@@ -48,6 +60,7 @@
 				content: initialContent ? initialContent : ''
 			},
 			updatedAt: initialUpdatedAt ? initialUpdatedAt : '',
+			language: initialLanguage ? initialLanguage : 'zh',
 
 			init() {
 				this.initializeEditor();
@@ -113,7 +126,7 @@
 			submit() {
 				const content = this.editor ? this.editor.value() : this.form.content;
 				if (!content || !content.trim()) {
-					window.AdminUI.toast({ message: '请填写About Me内容', type: 'warning' });
+					window.AdminUI.toast({ message: {{toJSON (tr .language "Please fill in the About Me content" "请填写关于我内容")}}, type: 'warning' });
 					return;
 				}
 
@@ -121,17 +134,21 @@
 				fetch('/admin/api/pages/about', {
 					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ content })
+					body: JSON.stringify({ content, language: this.language })
 				})
 					.then(response => response.json())
 					.then(data => {
 						if (data.error) {
-							window.AdminUI.toast({ message: data.error, type: 'error' });
+							const fallback = {{toJSON (tr .language "Save failed. Please try again." "保存失败，请稍后重试")}};
+							const message = (preferServerMessage && data.error) ? data.error : fallback;
+							window.AdminUI.toast({ message, type: 'error' });
 							return;
 						}
-						if (data.message) {
+						if (data.message || !data.error) {
+							const fallback = {{toJSON (tr .language "About page updated" "关于页面已更新")}};
+							const message = (preferServerMessage && data.message) ? data.message : fallback;
 							this.form.content = content;
-							window.AdminUI.toast({ message: data.message, type: 'success' });
+							window.AdminUI.toast({ message, type: 'success' });
 							this.updatedAt = data.page && data.page.updatedAt ? data.page.updatedAt : this.updatedAt;
 							if (this.editor && this.editor.clearAutosavedValue) {
 								this.editor.clearAutosavedValue();
@@ -139,11 +156,17 @@
 						}
 					})
 					.catch(() => {
-						window.AdminUI.toast({ message: '保存失败，请稍后重试', type: 'error' });
+						window.AdminUI.toast({ message: {{toJSON (tr .language "Save failed. Please try again." "保存失败，请稍后重试")}}, type: 'error' });
 					})
 					.finally(() => {
 						this.loading = false;
 					});
+			},
+
+			switchLanguage() {
+				const url = new URL(window.location.href);
+				url.searchParams.set('lang', this.language);
+				window.location.href = url.toString();
 			},
 
 			preview() {
@@ -153,7 +176,7 @@
 				previewWindow.document.write(`
 					<html>
 					<head>
-						<title>预览 · About Me</title>
+						<title>{{tr .language "Preview · About Me" "预览 · 关于我"}}</title>
                                                 <link rel="stylesheet" href="/static/dist/assets/input.css">
                                                 <link rel="stylesheet" href="/static/dist/assets/admin.css">
 						<style>
@@ -172,7 +195,7 @@
                                                 <script>window.hljs = window.hljs || (window.opener && window.opener.hljs);</script>
 					</head>
 					<body>
-						<h1>About Me</h1>
+						<h1>{{tr .language "About Me" "关于我"}}</h1>
 						<div>${parsed}</div>
                                                 <script>
                                                         const highlight = window.hljs || (window.opener && window.opener.hljs);

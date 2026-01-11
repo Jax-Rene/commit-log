@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/locale"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -33,26 +34,28 @@ const (
 	defaultPublicFooter    = "激发创造，延迟满足"
 	defaultGalleryEnabled  = true
 	defaultGallerySubtitle = "Shot by Lumix S5M2 / OnePlus 13"
+	defaultPreferredLang   = locale.LanguageChinese
 )
 
 // SystemSettings 描述后台可配置的系统信息。
 type SystemSettings struct {
-	SiteName         string
-	SiteLogoURL      string
-	SiteLogoURLLight string
-	SiteLogoURLDark  string
-	SiteDescription  string
-	SiteKeywords     string
-	SiteSocialImage  string
-	AIProvider       string
-	OpenAIAPIKey     string
-	DeepSeekAPIKey   string
-	AdminFooterText  string
-	PublicFooterText string
-	AISummaryPrompt  string
-	AIRewritePrompt  string
-	GallerySubtitle  string
-	GalleryEnabled   bool
+	SiteName          string
+	SiteLogoURL       string
+	SiteLogoURLLight  string
+	SiteLogoURLDark   string
+	SiteDescription   string
+	SiteKeywords      string
+	SiteSocialImage   string
+	PreferredLanguage string
+	AIProvider        string
+	OpenAIAPIKey      string
+	DeepSeekAPIKey    string
+	AdminFooterText   string
+	PublicFooterText  string
+	AISummaryPrompt   string
+	AIRewritePrompt   string
+	GallerySubtitle   string
+	GalleryEnabled    bool
 }
 
 // ErrAIAPIKeyMissing 表示未提供必需的 AI 平台 API Key。
@@ -63,22 +66,23 @@ var ErrOpenAIAPIKeyMissing = ErrAIAPIKeyMissing
 
 // SystemSettingsInput 用于更新系统设置。
 type SystemSettingsInput struct {
-	SiteName         string
-	SiteLogoURL      string
-	SiteLogoURLLight string
-	SiteLogoURLDark  string
-	SiteDescription  string
-	SiteKeywords     string
-	SiteSocialImage  string
-	AIProvider       string
-	OpenAIAPIKey     string
-	DeepSeekAPIKey   string
-	AdminFooterText  string
-	PublicFooterText string
-	AISummaryPrompt  string
-	AIRewritePrompt  string
-	GallerySubtitle  string
-	GalleryEnabled   *bool
+	SiteName          string
+	SiteLogoURL       string
+	SiteLogoURLLight  string
+	SiteLogoURLDark   string
+	SiteDescription   string
+	SiteKeywords      string
+	SiteSocialImage   string
+	PreferredLanguage string
+	AIProvider        string
+	OpenAIAPIKey      string
+	DeepSeekAPIKey    string
+	AdminFooterText   string
+	PublicFooterText  string
+	AISummaryPrompt   string
+	AIRewritePrompt   string
+	GallerySubtitle   string
+	GalleryEnabled    *bool
 }
 
 // SystemSettingService 提供系统设置的读取与更新能力。
@@ -114,6 +118,7 @@ var settingKeys = []string{
 	db.SettingKeySiteAdminFooter,
 	db.SettingKeySitePublicFooter,
 	db.SettingKeyGallerySubtitle,
+	db.SettingKeyPreferredLanguage,
 	db.SettingKeyAIProvider,
 	db.SettingKeyOpenAIAPIKey,
 	db.SettingKeyDeepSeekAPIKey,
@@ -125,16 +130,21 @@ var settingKeys = []string{
 // GetSettings 读取系统设置，如未设置将返回默认值。
 func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 	result := SystemSettings{
-		SiteName:         defaultSiteName,
-		SiteDescription:  defaultSiteDescription,
-		SiteKeywords:     NormalizeKeywords(defaultSiteKeywords),
-		AIProvider:       AIProviderOpenAI,
-		AdminFooterText:  defaultAdminFooter,
-		PublicFooterText: defaultPublicFooter,
-		AISummaryPrompt:  defaultSummarySystemPrompt,
-		AIRewritePrompt:  defaultRewriteSystemPrompt,
-		GallerySubtitle:  defaultGallerySubtitle,
-		GalleryEnabled:   defaultGalleryEnabled,
+		SiteName:          defaultSiteName,
+		SiteDescription:   defaultSiteDescription,
+		SiteKeywords:      NormalizeKeywords(defaultSiteKeywords),
+		PreferredLanguage: defaultPreferredLang,
+		AIProvider:        AIProviderOpenAI,
+		AdminFooterText:   defaultAdminFooter,
+		PublicFooterText:  defaultPublicFooter,
+		AISummaryPrompt:   defaultSummarySystemPrompt,
+		AIRewritePrompt:   defaultRewriteSystemPrompt,
+		GallerySubtitle:   defaultGallerySubtitle,
+		GalleryEnabled:    defaultGalleryEnabled,
+	}
+
+	if s == nil || s.db == nil {
+		return result, nil
 	}
 
 	var records []db.SystemSetting
@@ -164,6 +174,10 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 			}
 		case db.SettingKeySiteSocialImage:
 			result.SiteSocialImage = strings.TrimSpace(record.Value)
+		case db.SettingKeyPreferredLanguage:
+			if preferred := locale.NormalizeLanguage(record.Value); preferred != "" {
+				result.PreferredLanguage = preferred
+			}
 		case db.SettingKeySiteAdminFooter:
 			if strings.TrimSpace(record.Value) != "" {
 				result.AdminFooterText = record.Value
@@ -220,6 +234,9 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 	if strings.TrimSpace(result.SiteKeywords) == "" {
 		result.SiteKeywords = NormalizeKeywords(defaultSiteKeywords)
 	}
+	if locale.NormalizeLanguage(result.PreferredLanguage) == "" {
+		result.PreferredLanguage = defaultPreferredLang
+	}
 	if strings.TrimSpace(result.AISummaryPrompt) == "" {
 		result.AISummaryPrompt = defaultSummarySystemPrompt
 	}
@@ -228,6 +245,27 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 	}
 
 	return result, nil
+}
+
+// PreferredLanguage returns the explicitly saved preferred language, if any.
+func (s *SystemSettingService) PreferredLanguage() (string, bool, error) {
+	if s == nil || s.db == nil {
+		return "", false, nil
+	}
+
+	var record db.SystemSetting
+	if err := s.db.Select("value").Where("key = ?", db.SettingKeyPreferredLanguage).Take(&record).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", false, nil
+		}
+		return "", false, fmt.Errorf("load preferred language: %w", err)
+	}
+
+	language := locale.NormalizeLanguage(record.Value)
+	if language == "" {
+		return "", false, nil
+	}
+	return language, true, nil
 }
 
 // UpdateSettings 保存系统设置，未填写站点名称时回退默认值。
@@ -241,24 +279,29 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 	if input.GalleryEnabled != nil {
 		galleryEnabled = *input.GalleryEnabled
 	}
+	preferredLanguage := locale.NormalizeLanguage(input.PreferredLanguage)
+	if preferredLanguage == "" {
+		preferredLanguage = defaultPreferredLang
+	}
 
 	sanitized := SystemSettings{
-		SiteName:         strings.TrimSpace(input.SiteName),
-		SiteLogoURL:      strings.TrimSpace(input.SiteLogoURL),
-		SiteLogoURLLight: strings.TrimSpace(input.SiteLogoURLLight),
-		SiteLogoURLDark:  strings.TrimSpace(input.SiteLogoURLDark),
-		SiteDescription:  strings.TrimSpace(input.SiteDescription),
-		SiteKeywords:     NormalizeKeywords(input.SiteKeywords),
-		SiteSocialImage:  strings.TrimSpace(input.SiteSocialImage),
-		AIProvider:       provider,
-		OpenAIAPIKey:     strings.TrimSpace(input.OpenAIAPIKey),
-		DeepSeekAPIKey:   strings.TrimSpace(input.DeepSeekAPIKey),
-		AdminFooterText:  strings.TrimSpace(input.AdminFooterText),
-		PublicFooterText: strings.TrimSpace(input.PublicFooterText),
-		AISummaryPrompt:  strings.TrimSpace(input.AISummaryPrompt),
-		AIRewritePrompt:  strings.TrimSpace(input.AIRewritePrompt),
-		GallerySubtitle:  strings.TrimSpace(input.GallerySubtitle),
-		GalleryEnabled:   galleryEnabled,
+		SiteName:          strings.TrimSpace(input.SiteName),
+		SiteLogoURL:       strings.TrimSpace(input.SiteLogoURL),
+		SiteLogoURLLight:  strings.TrimSpace(input.SiteLogoURLLight),
+		SiteLogoURLDark:   strings.TrimSpace(input.SiteLogoURLDark),
+		SiteDescription:   strings.TrimSpace(input.SiteDescription),
+		SiteKeywords:      NormalizeKeywords(input.SiteKeywords),
+		SiteSocialImage:   strings.TrimSpace(input.SiteSocialImage),
+		PreferredLanguage: preferredLanguage,
+		AIProvider:        provider,
+		OpenAIAPIKey:      strings.TrimSpace(input.OpenAIAPIKey),
+		DeepSeekAPIKey:    strings.TrimSpace(input.DeepSeekAPIKey),
+		AdminFooterText:   strings.TrimSpace(input.AdminFooterText),
+		PublicFooterText:  strings.TrimSpace(input.PublicFooterText),
+		AISummaryPrompt:   strings.TrimSpace(input.AISummaryPrompt),
+		AIRewritePrompt:   strings.TrimSpace(input.AIRewritePrompt),
+		GallerySubtitle:   strings.TrimSpace(input.GallerySubtitle),
+		GalleryEnabled:    galleryEnabled,
 	}
 
 	if sanitized.SiteName == "" {
@@ -321,6 +364,9 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeySiteSocialImage, sanitized.SiteSocialImage); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeyPreferredLanguage, sanitized.PreferredLanguage); err != nil {
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeySiteAdminFooter, sanitized.AdminFooterText); err != nil {

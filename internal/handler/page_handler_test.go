@@ -30,7 +30,7 @@ func TestUpdateAboutPageCreatesRecord(t *testing.T) {
 	}
 
 	var count int64
-	db.DB.Model(&db.Page{}).Where("slug = ?", "about").Count(&count)
+	db.DB.Model(&db.Page{}).Where("slug = ? AND language = ?", "about", "zh").Count(&count)
 	if count != 1 {
 		t.Fatalf("expected about page to be created, found %d", count)
 	}

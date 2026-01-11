@@ -1,12 +1,12 @@
 {{define "base"}}
 <!doctype html>
-<html lang="zh-CN" class="scroll-smooth">
+<html lang="{{if .lang}}{{.lang}}{{else}}zh-CN{{end}}" class="scroll-smooth">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="color-scheme" content="light dark" />
         <title>{{.title}} - {{.site.name}}</title>
-        <meta name="description" content="{{.site.name}} 管理后台" />
+        <meta name="description" content="{{.site.name}} {{tr .language "Admin Console" "管理后台"}}" />
         {{if .site.avatar}}
         <link rel="icon" href="{{.site.avatar}}" />
         {{end}}
@@ -86,7 +86,7 @@
                             >{{.site.name}}</span
                         >
                         <span class="text-xs text-slate-500 dark:text-slate-400"
-                            >管理后台系统</span
+                            >{{tr .language "Admin Console" "管理后台系统"}}</span
                         >
                     </span>
                 </a>
@@ -97,14 +97,14 @@
                         <a
                             href="/admin/dashboard"
                             class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
-                            >仪表盘</a
+                            >{{tr .language "Dashboard" "仪表盘"}}</a
                         >
                     </li>
                     <li>
                         <a
                             href="/admin/system/settings"
                             class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
-                            >系统设置</a
+                            >{{tr .language "System Settings" "系统设置"}}</a
                         >
                     </li>
                     <li>
@@ -112,7 +112,7 @@
                             href="/"
                             class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
                             target="_blank"
-                            >查看网站</a
+                            >{{tr .language "View Site" "查看网站"}}</a
                         >
                     </li>
                 </ul>
@@ -120,7 +120,7 @@
                     <a
                         href="/admin/logout"
                         class="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-                        >退出登录</a
+                        >{{tr .language "Log Out" "退出登录"}}</a
                     >
                 </div>
             </nav>
@@ -255,7 +255,7 @@
                             type="button"
                             class="rounded-full p-1 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:text-slate-500 dark:hover:text-slate-200 dark:focus:ring-slate-700/60"
                             @click="dismiss(toast.id)"
-                            aria-label="关闭提示"
+                            aria-label="{{tr .language "Dismiss notification" "关闭提示"}}"
                         >
                             <svg
                                 viewBox="0 0 20 20"
@@ -297,7 +297,7 @@
                     type="button"
                     class="absolute right-4 top-4 rounded-full p-1 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:text-slate-500 dark:hover:text-slate-200 dark:focus:ring-slate-700/60"
                     @click="cancel()"
-                    aria-label="关闭弹窗"
+                    aria-label="{{tr .language "Close dialog" "关闭弹窗"}}"
                 >
                     <svg
                         viewBox="0 0 20 20"
@@ -316,7 +316,7 @@
                     <div class="space-y-2">
                         <h3
                             class="text-lg font-semibold text-slate-900 dark:text-slate-100"
-                            x-text="dialog.title || '提示'"
+                            x-text="dialog.title || {{toJSON (tr .language "Notice" "提示")}}"
                         ></h3>
                         <p
                             class="text-sm leading-relaxed text-slate-600 dark:text-slate-300"
@@ -334,14 +334,14 @@
                             type="button"
                             class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100 dark:focus:ring-slate-700/60"
                             @click="cancel()"
-                            x-text="dialog.cancelText || '取消'"
+                            x-text="dialog.cancelText || {{toJSON (tr .language "Cancel" "取消")}}"
                         ></button>
                         <button
                             type="button"
                             class="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2"
                             :class="confirmClass(dialog.tone)"
                             @click="confirm()"
-                            x-text="dialog.confirmText || '确认'"
+                            x-text="dialog.confirmText || {{toJSON (tr .language "Confirm" "确认")}}"
                         ></button>
                     </div>
                 </div>
@@ -414,13 +414,13 @@
                     defaultTitle(type) {
                         switch (type) {
                             case "success":
-                                return "操作成功";
+                                return {{toJSON (tr .language "Success" "操作成功")}};
                             case "error":
-                                return "发生错误";
+                                return {{toJSON (tr .language "Something went wrong" "发生错误")}};
                             case "warning":
-                                return "温馨提示";
+                                return {{toJSON (tr .language "Heads up" "温馨提示")}};
                             default:
-                                return "提示";
+                                return {{toJSON (tr .language "Notice" "提示")}};
                         }
                     },
                 }));

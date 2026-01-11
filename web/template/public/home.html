@@ -46,14 +46,14 @@
             style="row-gap: calc(1.5rem);"
         >
             {{if $hasPosts}} {{range .posts}} {{template "post_card" (dict
-            "Post" .)}} {{end}} {{end}}
+            "Post" . "Language" $.language)}} {{end}} {{end}}
         </div>
 
         {{if not $hasPosts}}
         <div
             class="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-12 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-400"
         >
-            暂时没有符合条件的文章，换个关键词试试吧。
+            {{tr .language "No posts match yet. Try another keyword." "暂时没有符合条件的文章，换个关键词试试吧。"}}
         </div>
         {{end}} {{if $hasPosts}} {{if .hasMore}}
         <div
@@ -66,14 +66,14 @@
             <div
                 class="flex justify-center py-8 text-sm text-slate-500 dark:text-slate-400"
             >
-                加载中…
+                {{tr .language "Loading…" "加载中…"}}
             </div>
         </div>
         {{else}}
         <div
             class="py-8 text-center text-sm text-slate-400 dark:text-slate-500"
         >
-            已经到底啦 ✨
+            {{tr .language "You're all caught up ✨" "已经到底啦 ✨"}}
         </div>
         {{end}} {{end}}
     </div>

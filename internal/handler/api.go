@@ -148,6 +148,23 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 		}
 	}
 
+	localePref := a.requestLocale(c)
+	if _, exists := payload["lang"]; !exists && localePref.HTMLLang != "" {
+		payload["lang"] = localePref.HTMLLang
+	}
+	if _, exists := payload["language"]; !exists && localePref.Language != "" {
+		payload["language"] = localePref.Language
+	}
+	if _, exists := payload["languageSwitch"]; !exists {
+		payload["languageSwitch"] = buildLanguageSwitch(c)
+	}
+	if title, ok := payload["title"].(string); ok {
+		payload["title"] = localizeFixedTitle(localePref.Language, strings.TrimSpace(title))
+	}
+	if metaTitle, ok := payload["metaTitle"].(string); ok {
+		payload["metaTitle"] = localizeFixedTitle(localePref.Language, strings.TrimSpace(metaTitle))
+	}
+
 	siteDefaults := map[string]interface{}{
 		"name":            view.Name,
 		"logoUrl":         view.LogoLight,
@@ -486,7 +503,9 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 		setIfMissing("ogImage", image)
 	}
 	setIfMissing("robots", robots)
-	setIfMissing("locale", "zh_CN")
+	if localePref.Locale != "" {
+		setIfMissing("locale", localePref.Locale)
+	}
 	setIfMissing("twitterCard", twitterCard)
 	setIfMissing("twitterTitle", twitterTitle)
 	setIfMissing("twitterDescription", twitterDescription)
@@ -514,6 +533,14 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 // RenderHTML 在向模板渲染时自动附加系统设置中的站点名称与 Logo 信息。
 func (a *API) RenderHTML(c *gin.Context, status int, template string, data gin.H) {
 	a.renderHTML(c, status, template, data)
+}
+
+// RequestLanguage exposes the resolved request language for external callers.
+func (a *API) RequestLanguage(c *gin.Context) string {
+	if a == nil || c == nil {
+		return ""
+	}
+	return a.requestLocale(c).Language
 }
 
 func (a *API) detectScheme(c *gin.Context) string {
