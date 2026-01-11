@@ -49,11 +49,14 @@ func TestSystemSettingServiceDefaults(t *testing.T) {
 	if settings.SiteName != "CommitLog" {
 		t.Fatalf("expected default site name CommitLog, got %s", settings.SiteName)
 	}
+	if settings.SiteNameZh != "CommitLog" || settings.SiteNameEn != "CommitLog" {
+		t.Fatalf("expected localized site name defaults to CommitLog, got zh=%q en=%q", settings.SiteNameZh, settings.SiteNameEn)
+	}
 	if settings.SiteDescription != defaultSiteDescription {
 		t.Fatalf("expected default site description %q, got %q", defaultSiteDescription, settings.SiteDescription)
 	}
-	if settings.SiteKeywords != NormalizeKeywords(defaultSiteKeywords) {
-		t.Fatalf("expected default keywords %q, got %q", NormalizeKeywords(defaultSiteKeywords), settings.SiteKeywords)
+	if settings.SiteDescriptionZh != defaultSiteDescription || settings.SiteDescriptionEn != defaultSiteDescription {
+		t.Fatalf("expected localized site description defaults to %q, got zh=%q en=%q", defaultSiteDescription, settings.SiteDescriptionZh, settings.SiteDescriptionEn)
 	}
 	if settings.SiteLogoURL != "" || settings.SiteLogoURLLight != "" || settings.SiteLogoURLDark != "" || settings.OpenAIAPIKey != "" || settings.DeepSeekAPIKey != "" {
 		t.Fatalf("expected keys to be empty, got %#v", settings)
@@ -64,8 +67,14 @@ func TestSystemSettingServiceDefaults(t *testing.T) {
 	if settings.AdminFooterText != "日拱一卒，功不唐捐" {
 		t.Fatalf("unexpected admin footer default: %q", settings.AdminFooterText)
 	}
+	if settings.AdminFooterTextZh != "日拱一卒，功不唐捐" || settings.AdminFooterTextEn == "" {
+		t.Fatalf("unexpected localized admin footer defaults: zh=%q en=%q", settings.AdminFooterTextZh, settings.AdminFooterTextEn)
+	}
 	if settings.PublicFooterText != "激发创造，延迟满足" {
 		t.Fatalf("unexpected public footer default: %q", settings.PublicFooterText)
+	}
+	if settings.PublicFooterTextZh != "激发创造，延迟满足" || settings.PublicFooterTextEn == "" {
+		t.Fatalf("unexpected localized public footer defaults: zh=%q en=%q", settings.PublicFooterTextZh, settings.PublicFooterTextEn)
 	}
 	if settings.AIProvider != AIProviderOpenAI {
 		t.Fatalf("expected default provider openai, got %s", settings.AIProvider)
@@ -78,6 +87,9 @@ func TestSystemSettingServiceDefaults(t *testing.T) {
 	}
 	if settings.GallerySubtitle != defaultGallerySubtitle {
 		t.Fatalf("unexpected gallery subtitle default: %q", settings.GallerySubtitle)
+	}
+	if settings.GallerySubtitleZh != defaultGallerySubtitle || settings.GallerySubtitleEn != defaultGallerySubtitle {
+		t.Fatalf("unexpected localized gallery subtitle defaults: zh=%q en=%q", settings.GallerySubtitleZh, settings.GallerySubtitleEn)
 	}
 	if !settings.GalleryEnabled {
 		t.Fatalf("expected gallery to be enabled by default")
@@ -133,23 +145,32 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 
 	svc := NewSystemSettingService(db.DB)
 	input := SystemSettingsInput{
-		SiteName:          " CommitLog 社区 ",
-		SiteLogoURL:       "https://example.com/logo.png",
-		SiteLogoURLLight:  "https://example.com/logo-light.png",
-		SiteLogoURLDark:   "https://example.com/logo-dark.png",
-		SiteDescription:   " 致力于分享 AI 工程实战 ",
-		SiteKeywords:      "AI, 工程, 博客, AI",
-		SiteSocialImage:   "https://example.com/og.png",
-		AdminFooterText:   "后台页脚",
-		PublicFooterText:  "前台页脚",
-		GallerySubtitle:   " Shot by Hasselblad X2D / iPhone 16 ",
-		PreferredLanguage: "en",
-		AIProvider:        "deepseek",
-		OpenAIAPIKey:      "sk-xxxx",
-		DeepSeekAPIKey:    "ds-12345",
-		GalleryEnabled:    boolPtr(false),
-		AISummaryPrompt:   " 摘要提示 ",
-		AIRewritePrompt:   " 重写提示 ",
+		SiteName:           " CommitLog 社区 ",
+		SiteNameZh:         " 提交日志 ",
+		SiteNameEn:         " CommitLog Community ",
+		SiteLogoURL:        "https://example.com/logo.png",
+		SiteLogoURLLight:   "https://example.com/logo-light.png",
+		SiteLogoURLDark:    "https://example.com/logo-dark.png",
+		SiteDescription:    " 致力于分享 AI 工程实战 ",
+		SiteDescriptionZh:  " 中文描述 ",
+		SiteDescriptionEn:  " Description EN ",
+		SiteSocialImage:    "https://example.com/og.png",
+		AdminFooterText:    "后台页脚",
+		AdminFooterTextZh:  " 后台页脚中文 ",
+		AdminFooterTextEn:  " Admin footer ",
+		PublicFooterText:   "前台页脚",
+		PublicFooterTextZh: " 前台页脚中文 ",
+		PublicFooterTextEn: " Public footer ",
+		GallerySubtitle:    " Shot by Hasselblad X2D / iPhone 16 ",
+		GallerySubtitleZh:  " 中文副标题 ",
+		GallerySubtitleEn:  " Subtitle EN ",
+		PreferredLanguage:  "en",
+		AIProvider:         "deepseek",
+		OpenAIAPIKey:       "sk-xxxx",
+		DeepSeekAPIKey:     "ds-12345",
+		GalleryEnabled:     boolPtr(false),
+		AISummaryPrompt:    " 摘要提示 ",
+		AIRewritePrompt:    " 重写提示 ",
 	}
 
 	saved, err := svc.UpdateSettings(input)
@@ -160,11 +181,14 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if saved.SiteName != "CommitLog 社区" {
 		t.Fatalf("expected sanitized site name, got %q", saved.SiteName)
 	}
+	if saved.SiteNameZh != "提交日志" || saved.SiteNameEn != "CommitLog Community" {
+		t.Fatalf("expected localized site names to be sanitized, got zh=%q en=%q", saved.SiteNameZh, saved.SiteNameEn)
+	}
 	if saved.SiteDescription != "致力于分享 AI 工程实战" {
 		t.Fatalf("expected sanitized description, got %q", saved.SiteDescription)
 	}
-	if saved.SiteKeywords != "AI, 工程, 博客" {
-		t.Fatalf("expected normalized keywords, got %q", saved.SiteKeywords)
+	if saved.SiteDescriptionZh != "中文描述" || saved.SiteDescriptionEn != "Description EN" {
+		t.Fatalf("expected localized description sanitized, got zh=%q en=%q", saved.SiteDescriptionZh, saved.SiteDescriptionEn)
 	}
 	if saved.SiteSocialImage != "https://example.com/og.png" {
 		t.Fatalf("expected social image %q, got %q", input.SiteSocialImage, saved.SiteSocialImage)
@@ -187,6 +211,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if saved.GallerySubtitle != "Shot by Hasselblad X2D / iPhone 16" {
 		t.Fatalf("expected gallery subtitle sanitized, got %q", saved.GallerySubtitle)
 	}
+	if saved.GallerySubtitleZh != "中文副标题" || saved.GallerySubtitleEn != "Subtitle EN" {
+		t.Fatalf("expected localized gallery subtitle sanitized, got zh=%q en=%q", saved.GallerySubtitleZh, saved.GallerySubtitleEn)
+	}
 	if saved.PreferredLanguage != locale.LanguageEnglish {
 		t.Fatalf("expected preferred language %q, got %q", locale.LanguageEnglish, saved.PreferredLanguage)
 	}
@@ -208,8 +235,8 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if fetched.SiteDescription != "致力于分享 AI 工程实战" {
 		t.Fatalf("expected description %q, got %q", "致力于分享 AI 工程实战", fetched.SiteDescription)
 	}
-	if fetched.SiteKeywords != "AI, 工程, 博客" {
-		t.Fatalf("expected keywords %q, got %q", "AI, 工程, 博客", fetched.SiteKeywords)
+	if fetched.SiteDescriptionZh != "中文描述" || fetched.SiteDescriptionEn != "Description EN" {
+		t.Fatalf("expected localized description, got zh=%q en=%q", fetched.SiteDescriptionZh, fetched.SiteDescriptionEn)
 	}
 	if fetched.SiteSocialImage != "https://example.com/og.png" {
 		t.Fatalf("expected social image %q, got %q", "https://example.com/og.png", fetched.SiteSocialImage)
@@ -217,8 +244,14 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if fetched.AdminFooterText != input.AdminFooterText {
 		t.Fatalf("expected admin footer %q, got %q", input.AdminFooterText, fetched.AdminFooterText)
 	}
+	if fetched.AdminFooterTextZh != "后台页脚中文" || fetched.AdminFooterTextEn != "Admin footer" {
+		t.Fatalf("expected localized admin footer, got zh=%q en=%q", fetched.AdminFooterTextZh, fetched.AdminFooterTextEn)
+	}
 	if fetched.PublicFooterText != input.PublicFooterText {
 		t.Fatalf("expected public footer %q, got %q", input.PublicFooterText, fetched.PublicFooterText)
+	}
+	if fetched.PublicFooterTextZh != "前台页脚中文" || fetched.PublicFooterTextEn != "Public footer" {
+		t.Fatalf("expected localized public footer, got zh=%q en=%q", fetched.PublicFooterTextZh, fetched.PublicFooterTextEn)
 	}
 	if fetched.AIProvider != AIProviderDeepSeek {
 		t.Fatalf("expected provider %q, got %q", AIProviderDeepSeek, fetched.AIProvider)
@@ -241,6 +274,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if fetched.GallerySubtitle != "Shot by Hasselblad X2D / iPhone 16" {
 		t.Fatalf("expected gallery subtitle %q, got %q", "Shot by Hasselblad X2D / iPhone 16", fetched.GallerySubtitle)
 	}
+	if fetched.GallerySubtitleZh != "中文副标题" || fetched.GallerySubtitleEn != "Subtitle EN" {
+		t.Fatalf("expected localized gallery subtitle, got zh=%q en=%q", fetched.GallerySubtitleZh, fetched.GallerySubtitleEn)
+	}
 	if fetched.PreferredLanguage != locale.LanguageEnglish {
 		t.Fatalf("expected preferred language %q, got %q", locale.LanguageEnglish, fetched.PreferredLanguage)
 	}
@@ -261,9 +297,6 @@ func TestSystemSettingServiceFallbackSiteName(t *testing.T) {
 	}
 	if saved.SiteDescription != defaultSiteDescription {
 		t.Fatalf("expected description fallback to %q, got %q", defaultSiteDescription, saved.SiteDescription)
-	}
-	if saved.SiteKeywords != NormalizeKeywords(defaultSiteKeywords) {
-		t.Fatalf("expected keywords fallback to %q, got %q", NormalizeKeywords(defaultSiteKeywords), saved.SiteKeywords)
 	}
 	if saved.SiteSocialImage != "" {
 		t.Fatalf("expected social image fallback to empty string, got %q", saved.SiteSocialImage)

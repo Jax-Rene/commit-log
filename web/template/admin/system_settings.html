@@ -47,36 +47,80 @@
             </p>
         </header>
         <div class="grid grid-cols-1 gap-6">
-            <label class="flex flex-col gap-2">
-                <span
-                    class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                    >{{tr .language "Site name" "站点名称"}}<span class="ml-1 text-rose-500">*</span></span
-                >
-                <input
-                    type="text"
-                    x-model="form.siteName"
-                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                    placeholder="{{tr .language "e.g. CommitLog" "例如：CommitLog"}}"
-                />
+            <div class="space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                        >{{tr .language "Site name" "站点名称"}}<span class="ml-1 text-rose-500">*</span></span
+                    >
+                    <span class="text-xs text-slate-400 dark:text-slate-500"
+                        >{{tr .language "Configure both languages" "分别配置中英文"}}</span
+                    >
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="flex flex-col gap-2">
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300"
+                            >{{tr .language "Chinese" "中文"}}</span
+                        >
+                        <input
+                            type="text"
+                            x-model="form.siteNameZh"
+                            class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                            placeholder="{{tr .language "e.g. CommitLog" "例如：CommitLog"}}"
+                        />
+                    </label>
+                    <label class="flex flex-col gap-2">
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300"
+                            >{{tr .language "English" "英文"}}</span
+                        >
+                        <input
+                            type="text"
+                            x-model="form.siteNameEn"
+                            class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                            placeholder="{{tr .language "e.g. CommitLog" "e.g. CommitLog"}}"
+                        />
+                    </label>
+                </div>
                 <span class="text-xs text-slate-500 dark:text-slate-400"
-                    >{{tr .language "Used in browser titles and admin navigation." "用于浏览器标题、后台导航等位置。"}}</span
+                    >{{tr .language "Used in browser titles and navigation." "用于浏览器标题、前后台导航等位置。"}}</span
                 >
-            </label>
-            <label class="flex flex-col gap-2">
-                <span
-                    class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                    >{{tr .language "Site description" "站点描述"}}<span class="ml-1 text-rose-500">*</span></span
-                >
-                <textarea
-                    x-model="form.siteDescription"
-                    rows="3"
-                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                    placeholder="{{tr .language "Briefly describe the blog focus and value (80-160 chars)." "简要介绍博客定位与价值主张，建议 80-160 字。"}}"
-                ></textarea>
+            </div>
+            <div class="space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                        >{{tr .language "Site description" "站点描述"}}<span class="ml-1 text-rose-500">*</span></span
+                    >
+                    <span class="text-xs text-slate-400 dark:text-slate-500"
+                        >{{tr .language "Configure both languages" "分别配置中英文"}}</span
+                    >
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="flex flex-col gap-2">
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300"
+                            >{{tr .language "Chinese" "中文"}}</span
+                        >
+                        <textarea
+                            x-model="form.siteDescriptionZh"
+                            rows="3"
+                            class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                            placeholder="{{tr .language "Briefly describe the blog focus and value (80-160 chars)." "简要介绍博客定位与价值主张，建议 80-160 字。"}}"
+                        ></textarea>
+                    </label>
+                    <label class="flex flex-col gap-2">
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300"
+                            >{{tr .language "English" "英文"}}</span
+                        >
+                        <textarea
+                            x-model="form.siteDescriptionEn"
+                            rows="3"
+                            class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                            placeholder="{{tr .language "Briefly describe the blog focus and value (80-160 chars)." "Briefly describe the blog focus and value (80-160 chars)."}}"
+                        ></textarea>
+                    </label>
+                </div>
                 <span class="text-xs text-slate-500 dark:text-slate-400"
                     >{{tr .language "Used as default SEO and social summary when page-specific copy is missing." "搜索引擎摘要与社交分享默认文案，会出现在未填写专属描述的页面。"}}</span
                 >
-            </label>
+            </div>
             <label class="flex flex-col gap-2">
                 <span
                     class="text-sm font-medium text-slate-700 dark:text-slate-200"
@@ -91,21 +135,6 @@
                 </select>
                 <span class="text-xs text-slate-500 dark:text-slate-400"
                     >{{tr .language "Sets the default site language and overrides region/browser detection (visitors can switch manually)." "保存后将作为站点默认语言，覆盖地区/浏览器识别（访客可手动切换）。"}}</span
-                >
-            </label>
-            <label class="flex flex-col gap-2">
-                <span
-                    class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                    >{{tr .language "Default keywords" "默认关键词"}}</span
-                >
-                <input
-                    type="text"
-                    x-model="form.siteKeywords"
-                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                    placeholder="{{tr .language "e.g. AI, Full-stack, Blog" "例如：AI, 全栈工程师, 博客"}}"
-                />
-                <span class="text-xs text-slate-500 dark:text-slate-400"
-                    >{{tr .language "Separate with commas, spaces, or semicolons; duplicates are removed automatically." "使用逗号、空格或分号分隔，系统会自动去重与规范格式。"}}</span
                 >
             </label>
             <div class="space-y-2">
@@ -317,36 +346,73 @@
                     </div>
                 </div>
                 <div class="mt-4">
-                    <label class="flex flex-col gap-2">
-                        <span
-                            class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                            >{{tr .language "Admin footer" "后台页脚文案"}}</span
-                        >
-                        <input
-                            type="text"
-                            x-model="form.adminFooterText"
-                            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                            placeholder="{{tr .language "e.g. Grow a little every day" "例如：日拱一卒，功不唐捐"}}"
-                        />
-                        <span class="text-xs text-slate-500 dark:text-slate-400"
-                            >{{tr .language "Shown in the admin footer. Add a team motto or note." "展示于后台页面底部，可填写团队座右铭或提示语。"}}</span
-                        >
-                    </label>
-                    <label class="flex flex-col gap-2 mt-2">
-                        <span
-                            class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                            >{{tr .language "Public footer" "前台页脚文案"}}</span
-                        >
-                        <input
-                            type="text"
-                            x-model="form.publicFooterText"
-                            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                            placeholder="{{tr .language "e.g. Create with purpose" "例如：激发创造，延迟满足"}}"
-                        />
-                        <span class="text-xs text-slate-500 dark:text-slate-400"
-                            >{{tr .language "Shown in the public footer for slogans or copyright." "展示于前台页脚，可用于呈现品牌口号或版权信息。"}}</span
-                        >
-                    </label>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                                >{{tr .language "Admin footer" "后台页脚文案"}}</span
+                            >
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <label class="flex flex-col gap-2">
+                                    <span class="text-xs font-medium text-slate-600 dark:text-slate-300"
+                                        >{{tr .language "Chinese" "中文"}}</span
+                                    >
+                                    <input
+                                        type="text"
+                                        x-model="form.adminFooterTextZh"
+                                        class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                                        placeholder="{{tr .language "e.g. Daily progress, lasting impact" "例如：日拱一卒，功不唐捐"}}"
+                                    />
+                                </label>
+                                <label class="flex flex-col gap-2">
+                                    <span class="text-xs font-medium text-slate-600 dark:text-slate-300"
+                                        >{{tr .language "English" "英文"}}</span
+                                    >
+                                    <input
+                                        type="text"
+                                        x-model="form.adminFooterTextEn"
+                                        class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                                        placeholder="{{tr .language "e.g. Grow a little every day" "e.g. Grow a little every day"}}"
+                                    />
+                                </label>
+                            </div>
+                            <span class="text-xs text-slate-500 dark:text-slate-400"
+                                >{{tr .language "Shown in the admin footer." "展示于后台页面底部。"}}</span
+                            >
+                        </div>
+
+                        <div class="space-y-2">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                                >{{tr .language "Public footer" "前台页脚文案"}}</span
+                            >
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <label class="flex flex-col gap-2">
+                                    <span class="text-xs font-medium text-slate-600 dark:text-slate-300"
+                                        >{{tr .language "Chinese" "中文"}}</span
+                                    >
+                                    <input
+                                        type="text"
+                                        x-model="form.publicFooterTextZh"
+                                        class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                                        placeholder="{{tr .language "e.g. Create with purpose" "例如：激发创造，延迟满足"}}"
+                                    />
+                                </label>
+                                <label class="flex flex-col gap-2">
+                                    <span class="text-xs font-medium text-slate-600 dark:text-slate-300"
+                                        >{{tr .language "English" "英文"}}</span
+                                    >
+                                    <input
+                                        type="text"
+                                        x-model="form.publicFooterTextEn"
+                                        class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                                        placeholder="{{tr .language "e.g. Create with purpose" "e.g. Create with purpose"}}"
+                                    />
+                                </label>
+                            </div>
+                            <span class="text-xs text-slate-500 dark:text-slate-400"
+                                >{{tr .language "Shown in the public footer for slogans or copyright." "展示于前台页脚，可用于呈现品牌口号或版权信息。"}}</span
+                            >
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -364,28 +430,45 @@
             <h2
                 class="text-lg font-semibold text-slate-900 dark:text-slate-100"
             >
-                {{tr .language "Gallery settings" "Gallery 设置"}}
+                {{tr .language "Gallery settings" "摄影集设置"}}
             </h2>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-                {{tr .language "Manage gallery display info and public nav visibility." "管理作品集展示信息与前台入口开关。"}}
+                {{tr .language "Manage gallery display info and public nav visibility." "管理摄影集展示信息与前台入口开关。"}}
             </p>
         </header>
         <div class="space-y-6">
-            <label class="flex flex-col gap-2">
-                <span
-                    class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                    >{{tr .language "Gallery subtitle" "Gallery 副标题"}}</span
+            <div class="space-y-2">
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                    >{{tr .language "Gallery subtitle" "摄影集副标题"}}</span
                 >
-                <input
-                    type="text"
-                    x-model="form.gallerySubtitle"
-                    class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                    placeholder="{{tr .language "e.g. Shot by Lumix S5M2 / OnePlus 13" "例如：Shot by Lumix S5M2 / OnePlus 13"}}"
-                />
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="flex flex-col gap-2">
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300"
+                            >{{tr .language "Chinese" "中文"}}</span
+                        >
+                        <input
+                            type="text"
+                            x-model="form.gallerySubtitleZh"
+                            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                            placeholder="{{tr .language "e.g. Shot by Lumix S5M2 / OnePlus 13" "例如：Shot by Lumix S5M2 / OnePlus 13"}}"
+                        />
+                    </label>
+                    <label class="flex flex-col gap-2">
+                        <span class="text-xs font-medium text-slate-600 dark:text-slate-300"
+                            >{{tr .language "English" "英文"}}</span
+                        >
+                        <input
+                            type="text"
+                            x-model="form.gallerySubtitleEn"
+                            class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                            placeholder="{{tr .language "e.g. Shot by Lumix S5M2 / OnePlus 13" "e.g. Shot by Lumix S5M2 / OnePlus 13"}}"
+                        />
+                    </label>
+                </div>
                 <span class="text-xs text-slate-500 dark:text-slate-400"
-                    >{{tr .language "Shown under the Gallery page title." "展示在 Gallery 页面标题下方。"}}</span
+                    >{{tr .language "Shown under the Gallery page title." "展示在摄影集页面标题下方。"}}</span
                 >
-            </label>
+            </div>
             <div
                 class="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60"
             >
@@ -394,10 +477,10 @@
                         <p
                             class="text-sm font-medium text-slate-700 dark:text-slate-200"
                         >
-                            {{tr .language "Enable Gallery" "启用 Gallery"}}
+                            {{tr .language "Enable Gallery" "启用摄影集"}}
                         </p>
                         <p class="text-xs text-slate-500 dark:text-slate-400">
-                            {{tr .language "Shows Gallery in public navigation." "开启后前台导航显示 Gallery 入口。"}}
+                            {{tr .language "Shows Gallery in public navigation." "开启后前台导航显示摄影集入口。"}}
                         </p>
                     </div>
                     <label
@@ -478,7 +561,7 @@
                         <label class="flex flex-col gap-2">
                             <span
                                 class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                                >OpenAI API Key</span
+                                >{{tr .language "OpenAI API Key" "OpenAI API Key"}}</span
                             >
                             <div class="flex items-center gap-2">
                                 <input
@@ -512,7 +595,7 @@
                         <label class="flex flex-col gap-2">
                             <span
                                 class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                                >DeepSeek API Key</span
+                                >{{tr .language "DeepSeek API Key" "DeepSeek API Key"}}</span
                             >
                             <div class="flex items-center gap-2">
                                 <input
@@ -629,7 +712,7 @@
         const preferServerMessage = {{if eq .language "zh"}}true{{else}}false{{end}};
         const i18n = {
             tabBasic: {{toJSON (tr .language "Basic information" "基础信息")}},
-            tabGallery: {{toJSON (tr .language "Gallery" "Gallery")}},
+            tabGallery: {{toJSON (tr .language "Gallery" "摄影集")}},
             tabContacts: {{toJSON (tr .language "Contacts" "联系方式")}},
             tabAI: {{toJSON (tr .language "AI services" "AI 服务")}},
             loadSettingsFailed: {{toJSON (tr .language "Failed to load system settings" "加载系统设置失败")}},
@@ -646,35 +729,44 @@
             settingsSaved: {{toJSON (tr .language "Settings saved" "系统设置已保存")}},
             saveFailed: {{toJSON (tr .language "Save failed. Please try again." "保存失败，请稍后重试")}},
         };
-        return {
-            loading: false,
-            showApiKey: false,
-            showDeepSeekKey: false,
-            aiTesting: false,
+	        return {
+	            loading: false,
+	            showApiKey: false,
+	            showDeepSeekKey: false,
+	            aiTesting: false,
             tabs: [
                 { id: "basic", label: i18n.tabBasic },
                 { id: "gallery", label: i18n.tabGallery },
                 { id: "contacts", label: i18n.tabContacts },
                 { id: "ai", label: i18n.tabAI },
             ],
-            activeTab: "basic",
-            form: {
-                siteName: "",
-                siteLogoUrl: "",
-                siteLogoUrlLight: "",
-                siteLogoUrlDark: "",
-                siteDescription: "",
-                siteKeywords: "",
-                siteSocialImage: "",
-                preferredLanguage: "zh",
-                adminFooterText: "",
-                publicFooterText: "",
-                gallerySubtitle: "",
-                galleryEnabled: true,
-                aiProvider: "openai",
-                openaiApiKey: "",
-                deepseekApiKey: "",
-                aiSummaryPrompt: "",
+	            activeTab: "basic",
+	            form: {
+	                siteName: "",
+	                siteNameZh: "",
+	                siteNameEn: "",
+	                siteLogoUrl: "",
+	                siteLogoUrlLight: "",
+	                siteLogoUrlDark: "",
+	                siteDescription: "",
+	                siteDescriptionZh: "",
+	                siteDescriptionEn: "",
+	                siteSocialImage: "",
+	                preferredLanguage: "zh",
+	                adminFooterText: "",
+	                adminFooterTextZh: "",
+	                adminFooterTextEn: "",
+	                publicFooterText: "",
+	                publicFooterTextZh: "",
+	                publicFooterTextEn: "",
+	                gallerySubtitle: "",
+	                gallerySubtitleZh: "",
+	                gallerySubtitleEn: "",
+	                galleryEnabled: true,
+	                aiProvider: "openai",
+	                openaiApiKey: "",
+	                deepseekApiKey: "",
+	                aiSummaryPrompt: "",
                 aiRewritePrompt: "",
             },
             logoUploadingLight: false,
@@ -936,15 +1028,19 @@
                     this.aiTesting = false;
                 }
             },
-            submit() {
-                if (!this.form.siteName.trim()) {
-                    window.AdminUI.toast({
-                        message: i18n.siteNameRequired,
-                        type: "warning",
-                    });
-                    return;
-                }
-                if (!this.form.siteDescription.trim()) {
+	            submit() {
+	                if (!this.form.siteNameZh.trim() && !this.form.siteNameEn.trim() && !this.form.siteName.trim()) {
+	                    window.AdminUI.toast({
+	                        message: i18n.siteNameRequired,
+	                        type: "warning",
+	                    });
+	                    return;
+	                }
+                if (
+                    !this.form.siteDescriptionZh.trim() &&
+                    !this.form.siteDescriptionEn.trim() &&
+                    !this.form.siteDescription.trim()
+                ) {
                     window.AdminUI.toast({
                         message: i18n.siteDescriptionRequired,
                         type: "warning",
@@ -968,25 +1064,43 @@
                 }
                 this.normalizeProvider();
                 this.loading = true;
-                fetch("/admin/api/system/settings", {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        siteName: this.form.siteName,
-                        siteLogoUrl: this.form.siteLogoUrlLight,
-                        siteLogoUrlLight: this.form.siteLogoUrlLight,
-                        siteLogoUrlDark: this.form.siteLogoUrlDark,
-                        siteDescription: this.form.siteDescription,
-                        siteKeywords: this.form.siteKeywords,
-                        siteSocialImage: this.form.siteSocialImage,
-                        preferredLanguage: this.form.preferredLanguage,
-                        adminFooterText: this.form.adminFooterText,
-                        publicFooterText: this.form.publicFooterText,
-                        gallerySubtitle: this.form.gallerySubtitle,
-                        galleryEnabled: this.form.galleryEnabled,
-                        aiProvider: this.form.aiProvider,
-                        openaiApiKey: this.form.openaiApiKey,
-                        deepseekApiKey: this.form.deepseekApiKey,
+	                fetch("/admin/api/system/settings", {
+	                    method: "PUT",
+	                    headers: { "Content-Type": "application/json" },
+	                    body: JSON.stringify({
+	                        siteName: this.form.siteNameZh || this.form.siteNameEn || this.form.siteName,
+	                        siteNameZh: this.form.siteNameZh,
+	                        siteNameEn: this.form.siteNameEn,
+	                        siteLogoUrl: this.form.siteLogoUrlLight,
+	                        siteLogoUrlLight: this.form.siteLogoUrlLight,
+	                        siteLogoUrlDark: this.form.siteLogoUrlDark,
+	                        siteDescription: this.form.siteDescriptionZh || this.form.siteDescriptionEn || this.form.siteDescription,
+	                        siteDescriptionZh: this.form.siteDescriptionZh,
+	                        siteDescriptionEn: this.form.siteDescriptionEn,
+	                        siteSocialImage: this.form.siteSocialImage,
+	                        preferredLanguage: this.form.preferredLanguage,
+	                        adminFooterText:
+	                            this.form.adminFooterTextZh ||
+	                            this.form.adminFooterTextEn ||
+	                            this.form.adminFooterText,
+	                        adminFooterTextZh: this.form.adminFooterTextZh,
+	                        adminFooterTextEn: this.form.adminFooterTextEn,
+	                        publicFooterText:
+	                            this.form.publicFooterTextZh ||
+	                            this.form.publicFooterTextEn ||
+	                            this.form.publicFooterText,
+	                        publicFooterTextZh: this.form.publicFooterTextZh,
+	                        publicFooterTextEn: this.form.publicFooterTextEn,
+	                        gallerySubtitle:
+	                            this.form.gallerySubtitleZh ||
+	                            this.form.gallerySubtitleEn ||
+	                            this.form.gallerySubtitle,
+	                        gallerySubtitleZh: this.form.gallerySubtitleZh,
+	                        gallerySubtitleEn: this.form.gallerySubtitleEn,
+	                        galleryEnabled: this.form.galleryEnabled,
+	                        aiProvider: this.form.aiProvider,
+	                        openaiApiKey: this.form.openaiApiKey,
+	                        deepseekApiKey: this.form.deepseekApiKey,
                         aiSummaryPrompt: this.form.aiSummaryPrompt,
                         aiRewritePrompt: this.form.aiRewritePrompt,
                     }),

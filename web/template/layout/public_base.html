@@ -12,13 +12,11 @@
             {{$site.name}}{{else}}{{$seo.title}}{{end}}{{else if
             $site.name}}{{$site.name}}{{else}}CommitLog{{end}}
         </title>
-        {{with $seo.description}}
-        <meta name="description" content="{{.}}" />
-        {{end}} {{with $seo.keywords}}
-        <meta name="keywords" content="{{.}}" />
-        {{end}} {{with $seo.robots}}
-        <meta name="robots" content="{{.}}" />
-        {{end}} {{if $site.avatar}}
+	        {{with $seo.description}}
+	        <meta name="description" content="{{.}}" />
+	        {{end}} {{with $seo.robots}}
+	        <meta name="robots" content="{{.}}" />
+	        {{end}} {{if $site.avatar}}
         <link rel="icon" href="{{$site.avatar}}" />
         {{end}} {{with $seo.canonical}}
         <link rel="canonical" href="{{.}}" />
@@ -201,33 +199,33 @@
                 <div
                     class="hidden flex-1 items-center justify-end text-sm font-medium text-slate-600 dark:text-slate-400 sm:flex"
                 >
-                    <a
-                        href="/about"
-                        class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
-                        >{{tr .language "About Me" "关于我"}}</a
-                    >
-                    <span class="mx-3 text-slate-300 dark:text-slate-600"
-                        >/</span
-                    >
-                    <a
-                        href="/rss.xml"
-                        class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
-                        >RSS</a
-                    >
-                    {{if .site.galleryEnabled}}
-                    <span class="mx-3 text-slate-300 dark:text-slate-600"
-                        >/</span
-                    >
-                    <a
-                        href="/gallery"
-                        class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
-                        >{{tr .language "Gallery" "作品集"}}</a
-                    >
-                    {{end}}
-                    <span class="mx-3 text-slate-300 dark:text-slate-600"
-                        >/</span
-                    >
-                    {{if eq .language "en"}}
+					<a
+						href="/about"
+						class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
+						>{{tr .language "About Me" "关于我"}}</a
+					>
+					<span class="mx-3 text-slate-300 dark:text-slate-600"
+						>/</span
+					>
+					{{if .site.galleryEnabled}}
+					<a
+						href="/gallery"
+						class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
+						>{{tr .language "Gallery" "作品集"}}</a
+					>
+					<span class="mx-3 text-slate-300 dark:text-slate-600"
+						>/</span
+					>
+					{{end}}
+					<a
+						href="/rss.xml"
+						class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
+						>RSS</a
+					>
+					<span class="mx-3 text-slate-300 dark:text-slate-600"
+						>/</span
+					>
+					{{if eq .language "en"}}
                     <a
                         href="{{index .languageSwitch "zh"}}"
                         class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"

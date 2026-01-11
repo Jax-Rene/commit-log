@@ -43,23 +43,32 @@ func (a *API) ShowSystemSettings(c *gin.Context) {
 }
 
 type systemSettingsRequest struct {
-	SiteName          string `json:"siteName"`
-	SiteLogoURL       string `json:"siteLogoUrl"`
-	SiteLogoURLLight  string `json:"siteLogoUrlLight"`
-	SiteLogoURLDark   string `json:"siteLogoUrlDark"`
-	SiteDescription   string `json:"siteDescription"`
-	SiteKeywords      string `json:"siteKeywords"`
-	SiteSocialImage   string `json:"siteSocialImage"`
-	PreferredLanguage string `json:"preferredLanguage"`
-	AIProvider        string `json:"aiProvider"`
-	OpenAIAPIKey      string `json:"openaiApiKey"`
-	DeepSeekAPIKey    string `json:"deepseekApiKey"`
-	AdminFooterText   string `json:"adminFooterText"`
-	PublicFooterText  string `json:"publicFooterText"`
-	GallerySubtitle   string `json:"gallerySubtitle"`
-	AISummaryPrompt   string `json:"aiSummaryPrompt"`
-	AIRewritePrompt   string `json:"aiRewritePrompt"`
-	GalleryEnabled    *bool  `json:"galleryEnabled"`
+	SiteName           string `json:"siteName"`
+	SiteNameZh         string `json:"siteNameZh"`
+	SiteNameEn         string `json:"siteNameEn"`
+	SiteLogoURL        string `json:"siteLogoUrl"`
+	SiteLogoURLLight   string `json:"siteLogoUrlLight"`
+	SiteLogoURLDark    string `json:"siteLogoUrlDark"`
+	SiteDescription    string `json:"siteDescription"`
+	SiteDescriptionZh  string `json:"siteDescriptionZh"`
+	SiteDescriptionEn  string `json:"siteDescriptionEn"`
+	SiteSocialImage    string `json:"siteSocialImage"`
+	PreferredLanguage  string `json:"preferredLanguage"`
+	AIProvider         string `json:"aiProvider"`
+	OpenAIAPIKey       string `json:"openaiApiKey"`
+	DeepSeekAPIKey     string `json:"deepseekApiKey"`
+	AdminFooterText    string `json:"adminFooterText"`
+	AdminFooterTextZh  string `json:"adminFooterTextZh"`
+	AdminFooterTextEn  string `json:"adminFooterTextEn"`
+	PublicFooterText   string `json:"publicFooterText"`
+	PublicFooterTextZh string `json:"publicFooterTextZh"`
+	PublicFooterTextEn string `json:"publicFooterTextEn"`
+	GallerySubtitle    string `json:"gallerySubtitle"`
+	GallerySubtitleZh  string `json:"gallerySubtitleZh"`
+	GallerySubtitleEn  string `json:"gallerySubtitleEn"`
+	AISummaryPrompt    string `json:"aiSummaryPrompt"`
+	AIRewritePrompt    string `json:"aiRewritePrompt"`
+	GalleryEnabled     *bool  `json:"galleryEnabled"`
 }
 
 type aiTestRequest struct {
@@ -99,45 +108,63 @@ func (a *API) UpdateSystemSettings(c *gin.Context) {
 
 func (r systemSettingsRequest) toInput() service.SystemSettingsInput {
 	return service.SystemSettingsInput{
-		SiteName:          r.SiteName,
-		SiteLogoURL:       r.SiteLogoURL,
-		SiteLogoURLLight:  r.SiteLogoURLLight,
-		SiteLogoURLDark:   r.SiteLogoURLDark,
-		SiteDescription:   r.SiteDescription,
-		SiteKeywords:      r.SiteKeywords,
-		SiteSocialImage:   r.SiteSocialImage,
-		PreferredLanguage: r.PreferredLanguage,
-		AIProvider:        r.AIProvider,
-		OpenAIAPIKey:      r.OpenAIAPIKey,
-		DeepSeekAPIKey:    r.DeepSeekAPIKey,
-		AdminFooterText:   r.AdminFooterText,
-		PublicFooterText:  r.PublicFooterText,
-		GallerySubtitle:   r.GallerySubtitle,
-		AISummaryPrompt:   r.AISummaryPrompt,
-		AIRewritePrompt:   r.AIRewritePrompt,
-		GalleryEnabled:    r.GalleryEnabled,
+		SiteName:           r.SiteName,
+		SiteNameZh:         r.SiteNameZh,
+		SiteNameEn:         r.SiteNameEn,
+		SiteLogoURL:        r.SiteLogoURL,
+		SiteLogoURLLight:   r.SiteLogoURLLight,
+		SiteLogoURLDark:    r.SiteLogoURLDark,
+		SiteDescription:    r.SiteDescription,
+		SiteDescriptionZh:  r.SiteDescriptionZh,
+		SiteDescriptionEn:  r.SiteDescriptionEn,
+		SiteSocialImage:    r.SiteSocialImage,
+		PreferredLanguage:  r.PreferredLanguage,
+		AIProvider:         r.AIProvider,
+		OpenAIAPIKey:       r.OpenAIAPIKey,
+		DeepSeekAPIKey:     r.DeepSeekAPIKey,
+		AdminFooterText:    r.AdminFooterText,
+		AdminFooterTextZh:  r.AdminFooterTextZh,
+		AdminFooterTextEn:  r.AdminFooterTextEn,
+		PublicFooterText:   r.PublicFooterText,
+		PublicFooterTextZh: r.PublicFooterTextZh,
+		PublicFooterTextEn: r.PublicFooterTextEn,
+		GallerySubtitle:    r.GallerySubtitle,
+		GallerySubtitleZh:  r.GallerySubtitleZh,
+		GallerySubtitleEn:  r.GallerySubtitleEn,
+		AISummaryPrompt:    r.AISummaryPrompt,
+		AIRewritePrompt:    r.AIRewritePrompt,
+		GalleryEnabled:     r.GalleryEnabled,
 	}
 }
 
 func systemSettingsPayload(settings service.SystemSettings) gin.H {
 	return gin.H{
-		"siteName":          settings.SiteName,
-		"siteLogoUrl":       settings.SiteLogoURL,
-		"siteLogoUrlLight":  settings.SiteLogoURLLight,
-		"siteLogoUrlDark":   settings.SiteLogoURLDark,
-		"siteDescription":   settings.SiteDescription,
-		"siteKeywords":      settings.SiteKeywords,
-		"siteSocialImage":   settings.SiteSocialImage,
-		"preferredLanguage": settings.PreferredLanguage,
-		"aiProvider":        settings.AIProvider,
-		"openaiApiKey":      settings.OpenAIAPIKey,
-		"deepseekApiKey":    settings.DeepSeekAPIKey,
-		"adminFooterText":   settings.AdminFooterText,
-		"publicFooterText":  settings.PublicFooterText,
-		"gallerySubtitle":   settings.GallerySubtitle,
-		"aiSummaryPrompt":   settings.AISummaryPrompt,
-		"aiRewritePrompt":   settings.AIRewritePrompt,
-		"galleryEnabled":    settings.GalleryEnabled,
+		"siteName":           settings.SiteName,
+		"siteNameZh":         settings.SiteNameZh,
+		"siteNameEn":         settings.SiteNameEn,
+		"siteLogoUrl":        settings.SiteLogoURL,
+		"siteLogoUrlLight":   settings.SiteLogoURLLight,
+		"siteLogoUrlDark":    settings.SiteLogoURLDark,
+		"siteDescription":    settings.SiteDescription,
+		"siteDescriptionZh":  settings.SiteDescriptionZh,
+		"siteDescriptionEn":  settings.SiteDescriptionEn,
+		"siteSocialImage":    settings.SiteSocialImage,
+		"preferredLanguage":  settings.PreferredLanguage,
+		"aiProvider":         settings.AIProvider,
+		"openaiApiKey":       settings.OpenAIAPIKey,
+		"deepseekApiKey":     settings.DeepSeekAPIKey,
+		"adminFooterText":    settings.AdminFooterText,
+		"adminFooterTextZh":  settings.AdminFooterTextZh,
+		"adminFooterTextEn":  settings.AdminFooterTextEn,
+		"publicFooterText":   settings.PublicFooterText,
+		"publicFooterTextZh": settings.PublicFooterTextZh,
+		"publicFooterTextEn": settings.PublicFooterTextEn,
+		"gallerySubtitle":    settings.GallerySubtitle,
+		"gallerySubtitleZh":  settings.GallerySubtitleZh,
+		"gallerySubtitleEn":  settings.GallerySubtitleEn,
+		"aiSummaryPrompt":    settings.AISummaryPrompt,
+		"aiRewritePrompt":    settings.AIRewritePrompt,
+		"galleryEnabled":     settings.GalleryEnabled,
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/commitlog/internal/locale"
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -38,7 +39,6 @@ type siteViewModel struct {
 	AdminFooter     string
 	PublicFooter    string
 	Description     string
-	Keywords        string
 	SocialImage     string
 	GallerySubtitle string
 	GalleryEnabled  bool
@@ -87,16 +87,46 @@ func (a *API) siteSettings(c *gin.Context) siteViewModel {
 		c.Error(err)
 	}
 
+	pref := a.requestLocale(c)
+	localized := func(zh, en, fallback string) string {
+		zh = strings.TrimSpace(zh)
+		en = strings.TrimSpace(en)
+		fallback = strings.TrimSpace(fallback)
+		switch locale.NormalizeLanguage(pref.Language) {
+		case locale.LanguageEnglish:
+			if en != "" {
+				return en
+			}
+			if zh != "" {
+				return zh
+			}
+		case locale.LanguageChinese:
+			if zh != "" {
+				return zh
+			}
+			if en != "" {
+				return en
+			}
+		default:
+			if zh != "" {
+				return zh
+			}
+			if en != "" {
+				return en
+			}
+		}
+		return fallback
+	}
+
 	view := siteViewModel{
-		Name:            strings.TrimSpace(settings.SiteName),
+		Name:            localized(settings.SiteNameZh, settings.SiteNameEn, settings.SiteName),
 		LogoLight:       strings.TrimSpace(settings.SiteLogoURLLight),
 		LogoDark:        strings.TrimSpace(settings.SiteLogoURLDark),
-		AdminFooter:     strings.TrimSpace(settings.AdminFooterText),
-		PublicFooter:    strings.TrimSpace(settings.PublicFooterText),
-		Description:     strings.TrimSpace(settings.SiteDescription),
-		Keywords:        strings.TrimSpace(settings.SiteKeywords),
+		AdminFooter:     localized(settings.AdminFooterTextZh, settings.AdminFooterTextEn, settings.AdminFooterText),
+		PublicFooter:    localized(settings.PublicFooterTextZh, settings.PublicFooterTextEn, settings.PublicFooterText),
+		Description:     localized(settings.SiteDescriptionZh, settings.SiteDescriptionEn, settings.SiteDescription),
 		SocialImage:     strings.TrimSpace(settings.SiteSocialImage),
-		GallerySubtitle: strings.TrimSpace(settings.GallerySubtitle),
+		GallerySubtitle: localized(settings.GallerySubtitleZh, settings.GallerySubtitleEn, settings.GallerySubtitle),
 		GalleryEnabled:  settings.GalleryEnabled,
 	}
 	if view.Name == "" {
@@ -126,9 +156,6 @@ func (a *API) siteSettings(c *gin.Context) siteViewModel {
 	}
 	if view.Description == "" {
 		view.Description = "AI 全栈工程师的技术与成长记录"
-	}
-	if view.Keywords == "" {
-		view.Keywords = service.NormalizeKeywords(view.Name)
 	}
 
 	c.Set(siteSettingsContextKey, view)
@@ -174,7 +201,6 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 		"adminFooter":     view.AdminFooter,
 		"publicFooter":    view.PublicFooter,
 		"description":     view.Description,
-		"keywords":        view.Keywords,
 		"gallerySubtitle": view.GallerySubtitle,
 		"galleryEnabled":  view.GalleryEnabled,
 	}
@@ -230,9 +256,6 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 	}
 	if _, exists := payload["siteDescription"]; !exists {
 		payload["siteDescription"] = view.Description
-	}
-	if _, exists := payload["siteKeywords"]; !exists {
-		payload["siteKeywords"] = view.Keywords
 	}
 	if _, exists := payload["siteSocialImage"]; !exists {
 		if view.SocialImage != "" {
@@ -296,28 +319,6 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 	if description == "" {
 		description = view.Description
 	}
-
-	var keywords string
-	if raw, exists := payload["metaKeywords"]; exists {
-		switch value := raw.(type) {
-		case []string:
-			keywords = strings.Join(value, ",")
-		case []interface{}:
-			collected := make([]string, 0, len(value))
-			for _, item := range value {
-				if token := toString(item); token != "" {
-					collected = append(collected, token)
-				}
-			}
-			keywords = strings.Join(collected, ",")
-		default:
-			keywords = toString(value)
-		}
-	}
-	if keywords == "" {
-		keywords = view.Keywords
-	}
-	keywords = service.NormalizeKeywords(keywords)
 
 	image := toString(payload["metaImage"])
 	if image == "" {
@@ -455,9 +456,6 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 			"description":     description,
 			"potentialAction": map[string]interface{}{"@type": "SearchAction", "target": searchTarget, "query-input": "required name=search_term_string"},
 		}
-		if keywords != "" {
-			siteData["keywords"] = keywords
-		}
 		if data, err := json.Marshal(siteData); err == nil {
 			siteJSON = string(data)
 		}
@@ -490,9 +488,6 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 	setIfMissing("title", pageTitle)
 	setIfMissing("fullTitle", fullTitle)
 	setIfMissing("description", description)
-	if keywords != "" {
-		setIfMissing("keywords", keywords)
-	}
 	setIfMissing("canonical", canonicalURL)
 	setIfMissing("ogTitle", ogTitle)
 	setIfMissing("ogDescription", description)

@@ -2,7 +2,7 @@ package db
 
 import "gorm.io/gorm"
 
-// GalleryImage 定义摄影作品集图片模型
+// GalleryImage 定义摄影摄影集图片模型
 type GalleryImage struct {
 	gorm.Model
 	Title       string

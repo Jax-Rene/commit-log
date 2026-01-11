@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/locale"
@@ -29,9 +28,10 @@ var supportedAIProviders = []string{AIProviderOpenAI, AIProviderDeepSeek}
 const (
 	defaultSiteName        = "CommitLog"
 	defaultSiteDescription = "AI 全栈工程师的技术与成长记录"
-	defaultSiteKeywords    = "AI, 全栈工程师, 博客"
 	defaultAdminFooter     = "日拱一卒，功不唐捐"
+	defaultAdminFooterEn   = "Grow a little every day"
 	defaultPublicFooter    = "激发创造，延迟满足"
+	defaultPublicFooterEn  = "Create with purpose"
 	defaultGalleryEnabled  = true
 	defaultGallerySubtitle = "Shot by Lumix S5M2 / OnePlus 13"
 	defaultPreferredLang   = locale.LanguageChinese
@@ -39,23 +39,32 @@ const (
 
 // SystemSettings 描述后台可配置的系统信息。
 type SystemSettings struct {
-	SiteName          string
-	SiteLogoURL       string
-	SiteLogoURLLight  string
-	SiteLogoURLDark   string
-	SiteDescription   string
-	SiteKeywords      string
-	SiteSocialImage   string
-	PreferredLanguage string
-	AIProvider        string
-	OpenAIAPIKey      string
-	DeepSeekAPIKey    string
-	AdminFooterText   string
-	PublicFooterText  string
-	AISummaryPrompt   string
-	AIRewritePrompt   string
-	GallerySubtitle   string
-	GalleryEnabled    bool
+	SiteName           string
+	SiteNameZh         string
+	SiteNameEn         string
+	SiteLogoURL        string
+	SiteLogoURLLight   string
+	SiteLogoURLDark    string
+	SiteDescription    string
+	SiteDescriptionZh  string
+	SiteDescriptionEn  string
+	SiteSocialImage    string
+	PreferredLanguage  string
+	AIProvider         string
+	OpenAIAPIKey       string
+	DeepSeekAPIKey     string
+	AdminFooterText    string
+	AdminFooterTextZh  string
+	AdminFooterTextEn  string
+	PublicFooterText   string
+	PublicFooterTextZh string
+	PublicFooterTextEn string
+	AISummaryPrompt    string
+	AIRewritePrompt    string
+	GallerySubtitle    string
+	GallerySubtitleZh  string
+	GallerySubtitleEn  string
+	GalleryEnabled     bool
 }
 
 // ErrAIAPIKeyMissing 表示未提供必需的 AI 平台 API Key。
@@ -66,23 +75,32 @@ var ErrOpenAIAPIKeyMissing = ErrAIAPIKeyMissing
 
 // SystemSettingsInput 用于更新系统设置。
 type SystemSettingsInput struct {
-	SiteName          string
-	SiteLogoURL       string
-	SiteLogoURLLight  string
-	SiteLogoURLDark   string
-	SiteDescription   string
-	SiteKeywords      string
-	SiteSocialImage   string
-	PreferredLanguage string
-	AIProvider        string
-	OpenAIAPIKey      string
-	DeepSeekAPIKey    string
-	AdminFooterText   string
-	PublicFooterText  string
-	AISummaryPrompt   string
-	AIRewritePrompt   string
-	GallerySubtitle   string
-	GalleryEnabled    *bool
+	SiteName           string
+	SiteNameZh         string
+	SiteNameEn         string
+	SiteLogoURL        string
+	SiteLogoURLLight   string
+	SiteLogoURLDark    string
+	SiteDescription    string
+	SiteDescriptionZh  string
+	SiteDescriptionEn  string
+	SiteSocialImage    string
+	PreferredLanguage  string
+	AIProvider         string
+	OpenAIAPIKey       string
+	DeepSeekAPIKey     string
+	AdminFooterText    string
+	AdminFooterTextZh  string
+	AdminFooterTextEn  string
+	PublicFooterText   string
+	PublicFooterTextZh string
+	PublicFooterTextEn string
+	AISummaryPrompt    string
+	AIRewritePrompt    string
+	GallerySubtitle    string
+	GallerySubtitleZh  string
+	GallerySubtitleEn  string
+	GalleryEnabled     *bool
 }
 
 // SystemSettingService 提供系统设置的读取与更新能力。
@@ -109,15 +127,24 @@ type httpDoer interface {
 
 var settingKeys = []string{
 	db.SettingKeySiteName,
+	db.SettingKeySiteNameZh,
+	db.SettingKeySiteNameEn,
 	db.SettingKeySiteLogoURL,
 	db.SettingKeySiteLogoURLLight,
 	db.SettingKeySiteLogoURLDark,
 	db.SettingKeySiteDescription,
-	db.SettingKeySiteKeywords,
+	db.SettingKeySiteDescriptionZh,
+	db.SettingKeySiteDescriptionEn,
 	db.SettingKeySiteSocialImage,
 	db.SettingKeySiteAdminFooter,
+	db.SettingKeySiteAdminFooterZh,
+	db.SettingKeySiteAdminFooterEn,
 	db.SettingKeySitePublicFooter,
+	db.SettingKeySitePublicFooterZh,
+	db.SettingKeySitePublicFooterEn,
 	db.SettingKeyGallerySubtitle,
+	db.SettingKeyGallerySubtitleZh,
+	db.SettingKeyGallerySubtitleEn,
 	db.SettingKeyPreferredLanguage,
 	db.SettingKeyAIProvider,
 	db.SettingKeyOpenAIAPIKey,
@@ -130,17 +157,26 @@ var settingKeys = []string{
 // GetSettings 读取系统设置，如未设置将返回默认值。
 func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 	result := SystemSettings{
-		SiteName:          defaultSiteName,
-		SiteDescription:   defaultSiteDescription,
-		SiteKeywords:      NormalizeKeywords(defaultSiteKeywords),
-		PreferredLanguage: defaultPreferredLang,
-		AIProvider:        AIProviderOpenAI,
-		AdminFooterText:   defaultAdminFooter,
-		PublicFooterText:  defaultPublicFooter,
-		AISummaryPrompt:   defaultSummarySystemPrompt,
-		AIRewritePrompt:   defaultRewriteSystemPrompt,
-		GallerySubtitle:   defaultGallerySubtitle,
-		GalleryEnabled:    defaultGalleryEnabled,
+		SiteName:           defaultSiteName,
+		SiteNameZh:         defaultSiteName,
+		SiteNameEn:         defaultSiteName,
+		SiteDescription:    defaultSiteDescription,
+		SiteDescriptionZh:  defaultSiteDescription,
+		SiteDescriptionEn:  defaultSiteDescription,
+		PreferredLanguage:  defaultPreferredLang,
+		AIProvider:         AIProviderOpenAI,
+		AdminFooterText:    defaultAdminFooter,
+		AdminFooterTextZh:  defaultAdminFooter,
+		AdminFooterTextEn:  defaultAdminFooterEn,
+		PublicFooterText:   defaultPublicFooter,
+		PublicFooterTextZh: defaultPublicFooter,
+		PublicFooterTextEn: defaultPublicFooterEn,
+		AISummaryPrompt:    defaultSummarySystemPrompt,
+		AIRewritePrompt:    defaultRewriteSystemPrompt,
+		GallerySubtitle:    defaultGallerySubtitle,
+		GallerySubtitleZh:  defaultGallerySubtitle,
+		GallerySubtitleEn:  defaultGallerySubtitle,
+		GalleryEnabled:     defaultGalleryEnabled,
 	}
 
 	if s == nil || s.db == nil {
@@ -158,6 +194,14 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 			if strings.TrimSpace(record.Value) != "" {
 				result.SiteName = record.Value
 			}
+		case db.SettingKeySiteNameZh:
+			if strings.TrimSpace(record.Value) != "" {
+				result.SiteNameZh = record.Value
+			}
+		case db.SettingKeySiteNameEn:
+			if strings.TrimSpace(record.Value) != "" {
+				result.SiteNameEn = record.Value
+			}
 		case db.SettingKeySiteLogoURL:
 			result.SiteLogoURL = record.Value
 		case db.SettingKeySiteLogoURLLight:
@@ -168,9 +212,13 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
 				result.SiteDescription = trimmed
 			}
-		case db.SettingKeySiteKeywords:
+		case db.SettingKeySiteDescriptionZh:
 			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
-				result.SiteKeywords = NormalizeKeywords(trimmed)
+				result.SiteDescriptionZh = trimmed
+			}
+		case db.SettingKeySiteDescriptionEn:
+			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
+				result.SiteDescriptionEn = trimmed
 			}
 		case db.SettingKeySiteSocialImage:
 			result.SiteSocialImage = strings.TrimSpace(record.Value)
@@ -182,13 +230,37 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 			if strings.TrimSpace(record.Value) != "" {
 				result.AdminFooterText = record.Value
 			}
+		case db.SettingKeySiteAdminFooterZh:
+			if strings.TrimSpace(record.Value) != "" {
+				result.AdminFooterTextZh = record.Value
+			}
+		case db.SettingKeySiteAdminFooterEn:
+			if strings.TrimSpace(record.Value) != "" {
+				result.AdminFooterTextEn = record.Value
+			}
 		case db.SettingKeySitePublicFooter:
 			if strings.TrimSpace(record.Value) != "" {
 				result.PublicFooterText = record.Value
 			}
+		case db.SettingKeySitePublicFooterZh:
+			if strings.TrimSpace(record.Value) != "" {
+				result.PublicFooterTextZh = record.Value
+			}
+		case db.SettingKeySitePublicFooterEn:
+			if strings.TrimSpace(record.Value) != "" {
+				result.PublicFooterTextEn = record.Value
+			}
 		case db.SettingKeyGallerySubtitle:
 			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
 				result.GallerySubtitle = trimmed
+			}
+		case db.SettingKeyGallerySubtitleZh:
+			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
+				result.GallerySubtitleZh = trimmed
+			}
+		case db.SettingKeyGallerySubtitleEn:
+			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
+				result.GallerySubtitleEn = trimmed
 			}
 		case db.SettingKeyAIProvider:
 			if provider := normalizeAIProvider(record.Value); provider != "" {
@@ -231,8 +303,20 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 	if strings.TrimSpace(result.SiteDescription) == "" {
 		result.SiteDescription = defaultSiteDescription
 	}
-	if strings.TrimSpace(result.SiteKeywords) == "" {
-		result.SiteKeywords = NormalizeKeywords(defaultSiteKeywords)
+	if strings.TrimSpace(result.SiteDescriptionZh) == "" {
+		result.SiteDescriptionZh = result.SiteDescription
+	}
+	if strings.TrimSpace(result.SiteDescriptionEn) == "" {
+		result.SiteDescriptionEn = result.SiteDescription
+	}
+	if strings.TrimSpace(result.SiteName) == "" {
+		result.SiteName = defaultSiteName
+	}
+	if strings.TrimSpace(result.SiteNameZh) == "" {
+		result.SiteNameZh = result.SiteName
+	}
+	if strings.TrimSpace(result.SiteNameEn) == "" {
+		result.SiteNameEn = result.SiteName
 	}
 	if locale.NormalizeLanguage(result.PreferredLanguage) == "" {
 		result.PreferredLanguage = defaultPreferredLang
@@ -242,6 +326,33 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 	}
 	if strings.TrimSpace(result.AIRewritePrompt) == "" {
 		result.AIRewritePrompt = defaultRewriteSystemPrompt
+	}
+	if strings.TrimSpace(result.AdminFooterText) == "" {
+		result.AdminFooterText = defaultAdminFooter
+	}
+	if strings.TrimSpace(result.AdminFooterTextZh) == "" {
+		result.AdminFooterTextZh = result.AdminFooterText
+	}
+	if strings.TrimSpace(result.AdminFooterTextEn) == "" {
+		result.AdminFooterTextEn = defaultAdminFooterEn
+	}
+	if strings.TrimSpace(result.PublicFooterText) == "" {
+		result.PublicFooterText = defaultPublicFooter
+	}
+	if strings.TrimSpace(result.PublicFooterTextZh) == "" {
+		result.PublicFooterTextZh = result.PublicFooterText
+	}
+	if strings.TrimSpace(result.PublicFooterTextEn) == "" {
+		result.PublicFooterTextEn = defaultPublicFooterEn
+	}
+	if strings.TrimSpace(result.GallerySubtitle) == "" {
+		result.GallerySubtitle = defaultGallerySubtitle
+	}
+	if strings.TrimSpace(result.GallerySubtitleZh) == "" {
+		result.GallerySubtitleZh = result.GallerySubtitle
+	}
+	if strings.TrimSpace(result.GallerySubtitleEn) == "" {
+		result.GallerySubtitleEn = result.GallerySubtitle
 	}
 
 	return result, nil
@@ -284,28 +395,98 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 		preferredLanguage = defaultPreferredLang
 	}
 
+	siteNameZh := strings.TrimSpace(input.SiteNameZh)
+	siteNameEn := strings.TrimSpace(input.SiteNameEn)
+	siteName := strings.TrimSpace(input.SiteName)
+	if siteName == "" {
+		if siteNameZh != "" {
+			siteName = siteNameZh
+		} else {
+			siteName = siteNameEn
+		}
+	}
+
+	adminFooterZh := strings.TrimSpace(input.AdminFooterTextZh)
+	adminFooterEn := strings.TrimSpace(input.AdminFooterTextEn)
+	adminFooter := strings.TrimSpace(input.AdminFooterText)
+	if adminFooter == "" {
+		if adminFooterZh != "" {
+			adminFooter = adminFooterZh
+		} else {
+			adminFooter = adminFooterEn
+		}
+	}
+
+	publicFooterZh := strings.TrimSpace(input.PublicFooterTextZh)
+	publicFooterEn := strings.TrimSpace(input.PublicFooterTextEn)
+	publicFooter := strings.TrimSpace(input.PublicFooterText)
+	if publicFooter == "" {
+		if publicFooterZh != "" {
+			publicFooter = publicFooterZh
+		} else {
+			publicFooter = publicFooterEn
+		}
+	}
+
+	siteDescriptionZh := strings.TrimSpace(input.SiteDescriptionZh)
+	siteDescriptionEn := strings.TrimSpace(input.SiteDescriptionEn)
+	siteDescription := strings.TrimSpace(input.SiteDescription)
+	if siteDescription == "" {
+		if siteDescriptionZh != "" {
+			siteDescription = siteDescriptionZh
+		} else {
+			siteDescription = siteDescriptionEn
+		}
+	}
+
+	gallerySubtitleZh := strings.TrimSpace(input.GallerySubtitleZh)
+	gallerySubtitleEn := strings.TrimSpace(input.GallerySubtitleEn)
+	gallerySubtitle := strings.TrimSpace(input.GallerySubtitle)
+	if gallerySubtitle == "" {
+		if gallerySubtitleZh != "" {
+			gallerySubtitle = gallerySubtitleZh
+		} else {
+			gallerySubtitle = gallerySubtitleEn
+		}
+	}
+
 	sanitized := SystemSettings{
-		SiteName:          strings.TrimSpace(input.SiteName),
-		SiteLogoURL:       strings.TrimSpace(input.SiteLogoURL),
-		SiteLogoURLLight:  strings.TrimSpace(input.SiteLogoURLLight),
-		SiteLogoURLDark:   strings.TrimSpace(input.SiteLogoURLDark),
-		SiteDescription:   strings.TrimSpace(input.SiteDescription),
-		SiteKeywords:      NormalizeKeywords(input.SiteKeywords),
-		SiteSocialImage:   strings.TrimSpace(input.SiteSocialImage),
-		PreferredLanguage: preferredLanguage,
-		AIProvider:        provider,
-		OpenAIAPIKey:      strings.TrimSpace(input.OpenAIAPIKey),
-		DeepSeekAPIKey:    strings.TrimSpace(input.DeepSeekAPIKey),
-		AdminFooterText:   strings.TrimSpace(input.AdminFooterText),
-		PublicFooterText:  strings.TrimSpace(input.PublicFooterText),
-		AISummaryPrompt:   strings.TrimSpace(input.AISummaryPrompt),
-		AIRewritePrompt:   strings.TrimSpace(input.AIRewritePrompt),
-		GallerySubtitle:   strings.TrimSpace(input.GallerySubtitle),
-		GalleryEnabled:    galleryEnabled,
+		SiteName:           siteName,
+		SiteNameZh:         siteNameZh,
+		SiteNameEn:         siteNameEn,
+		SiteLogoURL:        strings.TrimSpace(input.SiteLogoURL),
+		SiteLogoURLLight:   strings.TrimSpace(input.SiteLogoURLLight),
+		SiteLogoURLDark:    strings.TrimSpace(input.SiteLogoURLDark),
+		SiteDescription:    siteDescription,
+		SiteDescriptionZh:  siteDescriptionZh,
+		SiteDescriptionEn:  siteDescriptionEn,
+		SiteSocialImage:    strings.TrimSpace(input.SiteSocialImage),
+		PreferredLanguage:  preferredLanguage,
+		AIProvider:         provider,
+		OpenAIAPIKey:       strings.TrimSpace(input.OpenAIAPIKey),
+		DeepSeekAPIKey:     strings.TrimSpace(input.DeepSeekAPIKey),
+		AdminFooterText:    adminFooter,
+		AdminFooterTextZh:  adminFooterZh,
+		AdminFooterTextEn:  adminFooterEn,
+		PublicFooterText:   publicFooter,
+		PublicFooterTextZh: publicFooterZh,
+		PublicFooterTextEn: publicFooterEn,
+		AISummaryPrompt:    strings.TrimSpace(input.AISummaryPrompt),
+		AIRewritePrompt:    strings.TrimSpace(input.AIRewritePrompt),
+		GallerySubtitle:    gallerySubtitle,
+		GallerySubtitleZh:  gallerySubtitleZh,
+		GallerySubtitleEn:  gallerySubtitleEn,
+		GalleryEnabled:     galleryEnabled,
 	}
 
 	if sanitized.SiteName == "" {
 		sanitized.SiteName = defaultSiteName
+	}
+	if sanitized.SiteNameZh == "" {
+		sanitized.SiteNameZh = sanitized.SiteName
+	}
+	if sanitized.SiteNameEn == "" {
+		sanitized.SiteNameEn = sanitized.SiteName
 	}
 	if sanitized.SiteLogoURLLight == "" {
 		sanitized.SiteLogoURLLight = sanitized.SiteLogoURL
@@ -325,17 +506,38 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 	if sanitized.SiteDescription == "" {
 		sanitized.SiteDescription = defaultSiteDescription
 	}
-	if sanitized.SiteKeywords == "" {
-		sanitized.SiteKeywords = NormalizeKeywords(defaultSiteKeywords)
+	if sanitized.SiteDescriptionZh == "" {
+		sanitized.SiteDescriptionZh = sanitized.SiteDescription
+	}
+	if sanitized.SiteDescriptionEn == "" {
+		sanitized.SiteDescriptionEn = sanitized.SiteDescription
 	}
 	if sanitized.AdminFooterText == "" {
 		sanitized.AdminFooterText = defaultAdminFooter
 	}
+	if sanitized.AdminFooterTextZh == "" {
+		sanitized.AdminFooterTextZh = sanitized.AdminFooterText
+	}
+	if sanitized.AdminFooterTextEn == "" {
+		sanitized.AdminFooterTextEn = defaultAdminFooterEn
+	}
 	if sanitized.PublicFooterText == "" {
 		sanitized.PublicFooterText = defaultPublicFooter
 	}
+	if sanitized.PublicFooterTextZh == "" {
+		sanitized.PublicFooterTextZh = sanitized.PublicFooterText
+	}
+	if sanitized.PublicFooterTextEn == "" {
+		sanitized.PublicFooterTextEn = defaultPublicFooterEn
+	}
 	if sanitized.GallerySubtitle == "" {
 		sanitized.GallerySubtitle = defaultGallerySubtitle
+	}
+	if sanitized.GallerySubtitleZh == "" {
+		sanitized.GallerySubtitleZh = sanitized.GallerySubtitle
+	}
+	if sanitized.GallerySubtitleEn == "" {
+		sanitized.GallerySubtitleEn = sanitized.GallerySubtitle
 	}
 	if sanitized.AISummaryPrompt == "" {
 		sanitized.AISummaryPrompt = defaultSummarySystemPrompt
@@ -346,6 +548,12 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		if err := upsertSetting(tx, db.SettingKeySiteName, sanitized.SiteName); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySiteNameZh, sanitized.SiteNameZh); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySiteNameEn, sanitized.SiteNameEn); err != nil {
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeySiteLogoURL, sanitized.SiteLogoURL); err != nil {
@@ -360,7 +568,10 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 		if err := upsertSetting(tx, db.SettingKeySiteDescription, sanitized.SiteDescription); err != nil {
 			return err
 		}
-		if err := upsertSetting(tx, db.SettingKeySiteKeywords, sanitized.SiteKeywords); err != nil {
+		if err := upsertSetting(tx, db.SettingKeySiteDescriptionZh, sanitized.SiteDescriptionZh); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySiteDescriptionEn, sanitized.SiteDescriptionEn); err != nil {
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeySiteSocialImage, sanitized.SiteSocialImage); err != nil {
@@ -372,10 +583,28 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 		if err := upsertSetting(tx, db.SettingKeySiteAdminFooter, sanitized.AdminFooterText); err != nil {
 			return err
 		}
+		if err := upsertSetting(tx, db.SettingKeySiteAdminFooterZh, sanitized.AdminFooterTextZh); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySiteAdminFooterEn, sanitized.AdminFooterTextEn); err != nil {
+			return err
+		}
 		if err := upsertSetting(tx, db.SettingKeySitePublicFooter, sanitized.PublicFooterText); err != nil {
 			return err
 		}
+		if err := upsertSetting(tx, db.SettingKeySitePublicFooterZh, sanitized.PublicFooterTextZh); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySitePublicFooterEn, sanitized.PublicFooterTextEn); err != nil {
+			return err
+		}
 		if err := upsertSetting(tx, db.SettingKeyGallerySubtitle, sanitized.GallerySubtitle); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeyGallerySubtitleZh, sanitized.GallerySubtitleZh); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeyGallerySubtitleEn, sanitized.GallerySubtitleEn); err != nil {
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeyAIProvider, sanitized.AIProvider); err != nil {
@@ -403,47 +632,6 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 	}
 
 	return sanitized, nil
-}
-
-// NormalizeKeywords 将关键词字符串规范化为使用逗号分隔、去重的格式。
-func NormalizeKeywords(input string) string {
-	return normalizeKeywords(input)
-}
-
-func normalizeKeywords(input string) string {
-	trimmed := strings.TrimSpace(input)
-	if trimmed == "" {
-		return ""
-	}
-
-	tokens := strings.FieldsFunc(trimmed, func(r rune) bool {
-		switch r {
-		case ',', '，', ';', '；':
-			return true
-		default:
-			return unicode.IsSpace(r)
-		}
-	})
-	if len(tokens) == 0 {
-		return ""
-	}
-
-	seen := make(map[string]struct{}, len(tokens))
-	normalized := make([]string, 0, len(tokens))
-	for _, token := range tokens {
-		candidate := strings.TrimSpace(token)
-		if candidate == "" {
-			continue
-		}
-		lower := strings.ToLower(candidate)
-		if _, exists := seen[lower]; exists {
-			continue
-		}
-		seen[lower] = struct{}{}
-		normalized = append(normalized, candidate)
-	}
-
-	return strings.Join(normalized, ", ")
 }
 
 func upsertSetting(tx *gorm.DB, key, value string) error {

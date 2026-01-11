@@ -503,7 +503,6 @@ func (s *e2eSuite) testAdminAPIs(t *testing.T) {
 		"siteLogoUrlLight": "https://example.com/logo-light.png",
 		"siteLogoUrlDark":  "https://example.com/logo-dark.png",
 		"siteDescription":  "端到端测试站点",
-		"siteKeywords":     "e2e,commitlog",
 		"siteSocialImage":  "https://example.com/social.png",
 		"aiProvider":       "openai",
 		"openaiApiKey":     "",

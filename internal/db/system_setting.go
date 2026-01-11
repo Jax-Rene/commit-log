@@ -17,6 +17,10 @@ func (SystemSetting) TableName() string {
 const (
 	// SettingKeySiteName 表示站点名称。
 	SettingKeySiteName = "site_name"
+	// SettingKeySiteNameZh 表示中文站点名称。
+	SettingKeySiteNameZh = "site_name_zh"
+	// SettingKeySiteNameEn 表示英文站点名称。
+	SettingKeySiteNameEn = "site_name_en"
 	// SettingKeySiteLogoURL 表示站点 Logo 链接。
 	SettingKeySiteLogoURL = "site_logo_url"
 	// SettingKeySiteLogoURLLight 表示浅色模式下的站点 Logo 链接。
@@ -25,8 +29,10 @@ const (
 	SettingKeySiteLogoURLDark = "site_logo_url_dark"
 	// SettingKeySiteDescription 表示站点默认描述文案。
 	SettingKeySiteDescription = "site_description"
-	// SettingKeySiteKeywords 表示站点默认关键词列表。
-	SettingKeySiteKeywords = "site_keywords"
+	// SettingKeySiteDescriptionZh 表示中文站点默认描述文案。
+	SettingKeySiteDescriptionZh = "site_description_zh"
+	// SettingKeySiteDescriptionEn 表示英文站点默认描述文案。
+	SettingKeySiteDescriptionEn = "site_description_en"
 	// SettingKeySiteSocialImage 表示站点社交分享默认配图。
 	SettingKeySiteSocialImage = "site_social_image"
 	// SettingKeyOpenAIAPIKey 表示 OpenAI API Key。
@@ -41,10 +47,22 @@ const (
 	SettingKeyAIRewritePrompt = "ai_rewrite_prompt"
 	// SettingKeySiteAdminFooter 表示后台页脚文案。
 	SettingKeySiteAdminFooter = "site_admin_footer"
+	// SettingKeySiteAdminFooterZh 表示中文后台页脚文案。
+	SettingKeySiteAdminFooterZh = "site_admin_footer_zh"
+	// SettingKeySiteAdminFooterEn 表示英文后台页脚文案。
+	SettingKeySiteAdminFooterEn = "site_admin_footer_en"
 	// SettingKeySitePublicFooter 表示前台页脚文案。
 	SettingKeySitePublicFooter = "site_public_footer"
+	// SettingKeySitePublicFooterZh 表示中文前台页脚文案。
+	SettingKeySitePublicFooterZh = "site_public_footer_zh"
+	// SettingKeySitePublicFooterEn 表示英文前台页脚文案。
+	SettingKeySitePublicFooterEn = "site_public_footer_en"
 	// SettingKeyGallerySubtitle 表示 Gallery 页面副标题。
 	SettingKeyGallerySubtitle = "gallery_subtitle"
+	// SettingKeyGallerySubtitleZh 表示中文 Gallery 页面副标题。
+	SettingKeyGallerySubtitleZh = "gallery_subtitle_zh"
+	// SettingKeyGallerySubtitleEn 表示英文 Gallery 页面副标题。
+	SettingKeyGallerySubtitleEn = "gallery_subtitle_en"
 	// SettingKeyGalleryEnabled 表示是否启用 Gallery。
 	SettingKeyGalleryEnabled = "gallery_enabled"
 	// SettingKeyPreferredLanguage 表示站点首选语言。

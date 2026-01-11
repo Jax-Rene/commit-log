@@ -37,7 +37,7 @@ func (a *API) ShowGalleryManagement(c *gin.Context) {
 	if err != nil {
 		a.renderHTML(c, http.StatusInternalServerError, "gallery_manage.html", gin.H{
 			"title": "摄影作品",
-			"error": "加载作品集失败",
+			"error": "加载摄影集失败",
 		})
 		return
 	}
@@ -52,7 +52,7 @@ func (a *API) ShowGalleryManagement(c *gin.Context) {
 func (a *API) ListGalleryImages(c *gin.Context) {
 	items, err := a.galleries.ListAll()
 	if err != nil {
-		respondError(c, http.StatusInternalServerError, "获取作品集失败")
+		respondError(c, http.StatusInternalServerError, "获取摄影集失败")
 		return
 	}
 
@@ -141,13 +141,13 @@ func (a *API) ShowGallery(c *gin.Context) {
 	if err != nil {
 		a.renderHTML(c, http.StatusInternalServerError, "gallery.html", gin.H{
 			"title": "摄影作品",
-			"error": "加载作品集失败，请稍后重试",
+			"error": "加载摄影集失败，请稍后重试",
 			"year":  time.Now().Year(),
 		})
 		return
 	}
 
-	metaDescription := "摄影作品集，记录镜头下的光影与故事。"
+	metaDescription := "摄影摄影集，记录镜头下的光影与故事。"
 	payload := gin.H{
 		"title":           "摄影作品",
 		"items":           result.Items,
@@ -158,7 +158,7 @@ func (a *API) ShowGallery(c *gin.Context) {
 		"metaType":        "website",
 		"year":            time.Now().Year(),
 		"metaDescription": metaDescription,
-		"metaKeywords":    []string{"摄影", "作品集", "Gallery"},
+		"metaKeywords":    []string{"摄影", "摄影集", "Gallery"},
 	}
 
 	a.renderHTML(c, http.StatusOK, "gallery.html", payload)
