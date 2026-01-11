@@ -20,6 +20,12 @@ type TagService struct {
 	db *gorm.DB
 }
 
+// TagTranslationInput captures localized fields for a tag.
+type TagTranslationInput struct {
+	Language string
+	Name     string
+}
+
 // TagUsage 描述标签的使用次数
 type TagUsage struct {
 	ID    uint
@@ -32,6 +38,17 @@ func NewTagService(gdb *gorm.DB) *TagService {
 	return &TagService{db: gdb}
 }
 
+func (s *TagService) Get(id uint) (*db.Tag, error) {
+	var tag db.Tag
+	if err := s.db.Preload("Translations").First(&tag, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrTagNotFound
+		}
+		return nil, err
+	}
+	return &tag, nil
+}
+
 // List returns tags ordered by name.
 func (s *TagService) List() ([]db.Tag, error) {
 	var tags []db.Tag
@@ -41,6 +58,7 @@ func (s *TagService) List() ([]db.Tag, error) {
 		Joins("LEFT JOIN post_tags ON post_tags.tag_id = tags.id").
 		Group("tags.id").
 		Order("tags.name asc").
+		Preload("Translations").
 		Find(&tags).Error; err != nil {
 		return nil, err
 	}
@@ -50,10 +68,82 @@ func (s *TagService) List() ([]db.Tag, error) {
 // ListWithPosts returns tags with their associated posts sorted by creation time.
 func (s *TagService) ListWithPosts() ([]db.Tag, error) {
 	var tags []db.Tag
-	if err := s.db.Preload("Posts").Order("created_at desc").Find(&tags).Error; err != nil {
+	if err := s.db.Preload("Posts").Preload("Translations").Order("created_at desc").Find(&tags).Error; err != nil {
 		return nil, err
 	}
 	return tags, nil
+}
+
+func (s *TagService) UpsertTranslation(tagID uint, input TagTranslationInput) (*db.TagTranslation, error) {
+	if tagID == 0 {
+		return nil, errors.New("tag id is required")
+	}
+	language := locale.NormalizeLanguage(input.Language)
+	if language == "" {
+		return nil, errors.New("translation language is required")
+	}
+	name := strings.TrimSpace(input.Name)
+	if name == "" {
+		return nil, errors.New("translation name is required")
+	}
+
+	var tag db.Tag
+	if err := s.db.First(&tag, tagID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrTagNotFound
+		}
+		return nil, err
+	}
+
+	translation := db.TagTranslation{
+		TagID:    tagID,
+		Language: language,
+		Name:     name,
+	}
+
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		var existing db.TagTranslation
+		err := tx.Where("tag_id = ? AND language = ?", tagID, language).First(&existing).Error
+		switch {
+		case err == nil:
+			existing.Name = translation.Name
+			if saveErr := tx.Save(&existing).Error; saveErr != nil {
+				return saveErr
+			}
+			translation = existing
+			return nil
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			return tx.Create(&translation).Error
+		default:
+			return err
+		}
+	}); err != nil {
+		return nil, err
+	}
+
+	return &translation, nil
+}
+
+func (s *TagService) TranslationMap(tagIDs []uint) (map[uint]map[string]db.TagTranslation, error) {
+	if len(tagIDs) == 0 {
+		return map[uint]map[string]db.TagTranslation{}, nil
+	}
+	var translations []db.TagTranslation
+	if err := s.db.Where("tag_id IN ?", tagIDs).Find(&translations).Error; err != nil {
+		return nil, err
+	}
+	result := make(map[uint]map[string]db.TagTranslation)
+	for _, translation := range translations {
+		language := locale.NormalizeLanguage(translation.Language)
+		if language == "" {
+			continue
+		}
+		if _, ok := result[translation.TagID]; !ok {
+			result[translation.TagID] = make(map[string]db.TagTranslation)
+		}
+		result[translation.TagID][language] = translation
+	}
+	return result, nil
 }
 
 // PublishedUsage 返回已发布文章中标签的使用统计

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,4 +28,20 @@ func parseUintParam(c *gin.Context, key string) (uint, error) {
 		return 0, fmt.Errorf("invalid %s", key)
 	}
 	return uint(id), nil
+}
+
+func parseUintQuerySlice(values []string) []uint {
+	ids := make([]uint, 0, len(values))
+	for _, raw := range values {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" {
+			continue
+		}
+		parsed, err := strconv.ParseUint(trimmed, 10, 32)
+		if err != nil {
+			continue
+		}
+		ids = append(ids, uint(parsed))
+	}
+	return ids
 }

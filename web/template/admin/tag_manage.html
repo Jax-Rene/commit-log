@@ -23,10 +23,16 @@
 					<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{tr .language "Create tag" "创建标签"}}</h2>
 					<p class="text-xs text-slate-500 dark:text-slate-400">{{tr .language "Tag names must be unique. Use 2-8 Chinese characters or a short English word." "标签名称需保持唯一，建议使用 2-8 个汉字或简洁英文单词。"}}</p>
 				</header>
-				<label class="flex flex-col gap-2">
-					<span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{tr .language "Tag name" "标签名称"}}</span>
-					<input x-ref="createInput" type="text" x-model="form.name" @keyup.enter="create()" placeholder="{{tr .language "e.g. Product Design / Go / Reading" "例如：产品设计 / Go / 阅读清单"}}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" :disabled="creating" />
-				</label>
+				<div class="grid gap-3 sm:grid-cols-2">
+					<label class="flex flex-col gap-2">
+						<span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{tr .language "Chinese name" "中文名称"}}</span>
+						<input x-ref="createInput" type="text" x-model="form.nameZh" @keyup.enter="create()" placeholder="{{tr .language "e.g. 产品设计" "例如：产品设计"}}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" :disabled="creating" />
+					</label>
+					<label class="flex flex-col gap-2">
+						<span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{tr .language "English name" "英文名称"}}</span>
+						<input type="text" x-model="form.nameEn" @keyup.enter="create()" placeholder="{{tr .language "e.g. Product" "例如：Product"}}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder-slate-500 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" :disabled="creating" />
+					</label>
+				</div>
 				<div class="flex items-center justify-end gap-2">
 					<button type="button" class="rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100" @click="closeCreate()" :disabled="creating">{{tr .language "Cancel" "取消"}}</button>
 					<button type="button" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/70" @click="create()" :disabled="creating">
@@ -63,15 +69,26 @@
 				<div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/70 sm:flex-row sm:items-center sm:justify-between">
 					<div class="space-y-2">
 						<div x-show="editingId !== tag.id">
-							<h3 class="text-base font-semibold text-slate-900 dark:text-slate-100" x-text="tag.name"></h3>
+							<h3 class="text-base font-semibold text-slate-900 dark:text-slate-100" x-text="tag.displayName"></h3>
+							<p class="text-[11px] text-slate-400 dark:text-slate-500">
+								ID <span x-text="tag.id"></span>
+								<span x-show="tag.translations?.zh?.name"> · {{tr .language "ZH" "中文"}}: <span x-text="tag.translations.zh.name"></span></span>
+								<span x-show="tag.translations?.en?.name"> · {{tr .language "EN" "英文"}}: <span x-text="tag.translations.en.name"></span></span>
+							</p>
 							<p class="text-xs text-slate-500 dark:text-slate-400">{{tr .language "Created" "创建于"}} <span x-text="formatDate(tag.createdAt)"></span> · {{tr .language "Updated" "更新于"}} <span x-text="formatDate(tag.updatedAt)"></span></p>
 						</div>
 						<div x-show="editingId === tag.id" x-cloak class="space-y-2">
-							<label class="flex flex-col gap-2">
-								<span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{tr .language "Tag name" "标签名称"}}</span>
-								<input type="text" x-model="editForm.name" @keyup.enter="update()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
-							</label>
-							<p class="text-xs text-slate-500 dark:text-slate-400">{{tr .language "Edits apply to all linked posts." "修改后将同步应用到所有关联文章。"}}</p>
+							<div class="grid gap-3 sm:grid-cols-2">
+								<label class="flex flex-col gap-2">
+									<span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{tr .language "Chinese name" "中文名称"}}</span>
+									<input type="text" x-model="editForm.nameZh" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
+								</label>
+								<label class="flex flex-col gap-2">
+									<span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{tr .language "English name" "英文名称"}}</span>
+									<input type="text" x-model="editForm.nameEn" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
+								</label>
+							</div>
+							<p class="text-xs text-slate-500 dark:text-slate-400">{{tr .language "Edits update display names only; linked posts use tag ID." "这里只修改多语言展示名；关联文章使用 Tag ID，不受影响。"}}</p>
 						</div>
 					</div>
 					<div class="flex flex-wrap items-center gap-2">
@@ -106,6 +123,7 @@
 		function tagManager(initialTags) {
 			const sortLocale = {{toJSON (tr .language "en" "zh-Hans")}};
 			const dateLocale = {{toJSON (tr .language "en-US" "zh-CN")}};
+			const currentLanguage = {{toJSON .language}};
 			const preferServerMessage = {{if eq .language "zh"}}true{{else}}false{{end}};
 			return {
 				loading: false,
@@ -116,11 +134,13 @@
 				showCreateDialog: false,
 				tags: [],
 				form: {
-					name: ''
+					nameZh: '',
+					nameEn: ''
 				},
 				editForm: {
 					id: null,
-					name: ''
+					nameZh: '',
+					nameEn: ''
 				},
 
 				init() {
@@ -128,7 +148,8 @@
 				},
 
 				openCreate() {
-					this.form.name = '';
+					this.form.nameZh = '';
+					this.form.nameEn = '';
 					this.showCreateDialog = true;
 					this.$nextTick(() => {
 						const input = this.$refs.createInput;
@@ -140,7 +161,8 @@
 
 				closeCreate() {
 					this.showCreateDialog = false;
-					this.form.name = '';
+					this.form.nameZh = '';
+					this.form.nameEn = '';
 				},
 
 				normalize(items) {
@@ -153,9 +175,39 @@
 			},
 
 			mapTag(item) {
+				const translations = {};
+				const rawTranslations = item.Translations ?? item.translations ?? [];
+				if (Array.isArray(rawTranslations)) {
+					rawTranslations.forEach(t => {
+						const lang = (t.Language ?? t.language ?? '').trim();
+						if (!lang) return;
+						translations[lang] = {
+							name: (t.Name ?? t.name ?? '').trim()
+						};
+					});
+				} else if (rawTranslations && typeof rawTranslations === 'object') {
+					Object.keys(rawTranslations).forEach(lang => {
+						const t = rawTranslations[lang] || {};
+						translations[lang] = {
+							name: (t.name ?? t.Name ?? '').trim()
+						};
+					});
+				}
+
+				const fallbackName = (item.Name ?? item.name ?? '').trim();
+				const picked = (translations[currentLanguage] && translations[currentLanguage].name)
+					? translations[currentLanguage].name
+					: (translations.zh && translations.zh.name)
+						? translations.zh.name
+						: (translations.en && translations.en.name)
+							? translations.en.name
+							: fallbackName;
+
 				return {
 					id: item.ID ?? item.id,
-					name: item.Name ?? item.name ?? '',
+					name: fallbackName,
+					displayName: picked || fallbackName,
+					translations,
 					createdAt: item.CreatedAt ?? item.createdAt ?? item.created_at ?? '',
 					updatedAt: item.UpdatedAt ?? item.updatedAt ?? item.updated_at ?? '',
 					postCount: Number(item.PostCount ?? item.postCount ?? item.post_count ?? 0)
@@ -183,19 +235,23 @@
 					});
 			},
 
-				create() {
-					const name = (this.form.name || '').trim();
-					if (!name) {
-						this.toastWarning({{toJSON (tr .language "Please enter a tag name" "请填写标签名称")}});
-						return;
-					}
+					create() {
+						const nameZh = (this.form.nameZh || '').trim();
+						const nameEn = (this.form.nameEn || '').trim();
+						if (!nameZh && !nameEn) {
+							this.toastWarning({{toJSON (tr .language "Please enter a tag name" "请填写标签名称")}});
+							return;
+						}
 					this.creating = true;
 					let shouldClose = false;
 					fetch('/admin/api/tags', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ name })
-					})
+							body: JSON.stringify({
+								name_zh: nameZh,
+								name_en: nameEn
+							})
+						})
 						.then(async res => {
 							const data = await res.json().catch(() => ({}));
 							if (!res.ok) {
@@ -223,36 +279,43 @@
 						});
 				},
 
-			startEdit(tag) {
-				this.editingId = tag.id;
-				this.editForm = {
-					id: tag.id,
-					name: tag.name
-				};
-			},
+				startEdit(tag) {
+					this.editingId = tag.id;
+					const zh = tag.translations?.zh || {};
+					const en = tag.translations?.en || {};
+					this.editForm = {
+						id: tag.id,
+						nameZh: zh.name || '',
+						nameEn: en.name || ''
+					};
+				},
 
-			cancelEdit() {
-				this.editingId = null;
-				this.editForm = { id: null, name: '' };
-				this.updatingId = null;
-			},
+				cancelEdit() {
+					this.editingId = null;
+					this.editForm = { id: null, nameZh: '', nameEn: '' };
+					this.updatingId = null;
+				},
 
-			update() {
-				const id = this.editForm.id;
-				const name = (this.editForm.name || '').trim();
-				if (!id) {
-					return;
-				}
-				if (!name) {
+				update() {
+					const id = this.editForm.id;
+					const nameZh = (this.editForm.nameZh || '').trim();
+					const nameEn = (this.editForm.nameEn || '').trim();
+					if (!id) {
+						return;
+					}
+				if (!nameZh && !nameEn) {
 					this.toastWarning({{toJSON (tr .language "Tag name cannot be empty" "标签名称不能为空")}});
 					return;
 				}
 				this.updatingId = id;
-				fetch(`/admin/api/tags/${id}`, {
-					method: 'PUT',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ name })
-				})
+					fetch(`/admin/api/tags/${id}`, {
+						method: 'PUT',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							name_zh: nameZh,
+							name_en: nameEn
+						})
+					})
 					.then(async res => {
 						const data = await res.json().catch(() => ({}));
 						if (!res.ok) {
@@ -262,7 +325,7 @@
 						if (data.tag) {
 							const mapped = this.mapTag(data.tag);
 							this.tags = this.tags.map(item => (item.id === mapped.id ? mapped : item))
-								.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans'));
+								.sort((a, b) => a.name.localeCompare(b.name, sortLocale));
 						}
 						const fallback = {{toJSON (tr .language "Tag updated" "标签更新成功")}};
 						this.toastSuccess((preferServerMessage && data.message) ? data.message : fallback);
@@ -338,8 +401,8 @@
 
 			linkedPostsURL(tag) {
 				const params = new URLSearchParams();
-				if (tag && tag.name) {
-					params.append('tags', tag.name);
+				if (tag && tag.id) {
+					params.append('tags', String(tag.id));
 				}
 				return `/admin/posts?${params.toString()}`;
 			},

@@ -128,14 +128,14 @@
 					{{tr .language "Tag filter" "标签筛选"}}
 				</span>
 				<div class="flex flex-wrap gap-3">
-					{{range $tag := .allTags}}
-					<label class="inline-flex items-center gap-2">
-						<input type="checkbox" name="tags" value="{{$tag.Name}}" class="peer sr-only" {{range $selected := $.tags}}{{if eq $selected $tag.Name}}checked{{end}}{{end}}>
-						<span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 transition-colors peer-checked:border-slate-400 peer-checked:bg-slate-100 peer-checked:text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:peer-checked:border-slate-500 dark:peer-checked:bg-slate-800 dark:peer-checked:text-slate-100">{{$tag.Name}}</span>
-					</label>
-					{{end}}
+						{{range $tag := .allTags}}
+						<label class="inline-flex items-center gap-2">
+							<input type="checkbox" name="tags" value="{{printf "%d" $tag.ID}}" class="peer sr-only" {{range $selected := $.tags}}{{if eq $selected (printf "%d" $tag.ID)}}checked{{end}}{{end}}>
+							<span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 transition-colors peer-checked:border-slate-400 peer-checked:bg-slate-100 peer-checked:text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:peer-checked:border-slate-500 dark:peer-checked:bg-slate-800 dark:peer-checked:text-slate-100">{{$tag.Name}}</span>
+						</label>
+						{{end}}
+					</div>
 				</div>
-			</div>
 
 			<div class="flex justify-end gap-3">
 				<button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">

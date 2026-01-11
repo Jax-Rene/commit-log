@@ -3,13 +3,18 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strings"
 
+	"github.com/commitlog/internal/db"
+	"github.com/commitlog/internal/locale"
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
 type tagRequest struct {
-	Name string `json:"name" binding:"required"`
+	Name   string `json:"name"`
+	NameZh string `json:"name_zh"`
+	NameEn string `json:"name_en"`
 }
 
 // ShowTagManagement renders the admin page for managing tags.
@@ -37,12 +42,23 @@ func (a *API) GetTags(c *gin.Context) {
 
 	response := make([]gin.H, 0, len(tags))
 	for _, tag := range tags {
+		translations := gin.H{}
+		for _, translation := range tag.Translations {
+			language := locale.NormalizeLanguage(translation.Language)
+			if language == "" {
+				continue
+			}
+			translations[language] = gin.H{
+				"name": translation.Name,
+			}
+		}
 		response = append(response, gin.H{
-			"id":         tag.ID,
-			"name":       tag.Name,
-			"created_at": tag.CreatedAt,
-			"updated_at": tag.UpdatedAt,
-			"post_count": tag.PostCount,
+			"id":           tag.ID,
+			"name":         tag.Name,
+			"created_at":   tag.CreatedAt,
+			"updated_at":   tag.UpdatedAt,
+			"post_count":   tag.PostCount,
+			"translations": translations,
 		})
 	}
 
@@ -55,8 +71,23 @@ func (a *API) CreateTag(c *gin.Context) {
 	if !bindJSON(c, &req, "标签名称不能为空") {
 		return
 	}
+	name := strings.TrimSpace(req.Name)
+	nameZh := strings.TrimSpace(req.NameZh)
+	nameEn := strings.TrimSpace(req.NameEn)
+	if name == "" && nameZh == "" && nameEn == "" {
+		respondError(c, http.StatusBadRequest, "标签名称不能为空")
+		return
+	}
+	keyName := name
+	if keyName == "" {
+		if nameZh != "" {
+			keyName = nameZh
+		} else {
+			keyName = nameEn
+		}
+	}
 
-	tag, err := a.tags.Create(req.Name)
+	tag, err := a.tags.Create(keyName)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrTagExists):
@@ -69,6 +100,31 @@ func (a *API) CreateTag(c *gin.Context) {
 		return
 	}
 
+	requestLang := a.requestLocale(c).Language
+	if nameZh != "" {
+		_, _ = a.tags.UpsertTranslation(tag.ID, service.TagTranslationInput{
+			Language: "zh",
+			Name:     nameZh,
+		})
+	}
+	if nameEn != "" {
+		_, _ = a.tags.UpsertTranslation(tag.ID, service.TagTranslationInput{
+			Language: "en",
+			Name:     nameEn,
+		})
+	}
+	if nameZh == "" && nameEn == "" && name != "" {
+		_, _ = a.tags.UpsertTranslation(tag.ID, service.TagTranslationInput{
+			Language: requestLang,
+			Name:     name,
+		})
+	}
+
+	if refreshed, refreshErr := a.tags.Get(tag.ID); refreshErr == nil {
+		tag = refreshed
+	} else {
+		c.Error(refreshErr)
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "标签创建成功", "tag": tag})
 }
 
@@ -85,7 +141,22 @@ func (a *API) UpdateTag(c *gin.Context) {
 		return
 	}
 
-	tag, err := a.tags.Update(id, req.Name)
+	name := strings.TrimSpace(req.Name)
+	nameZh := strings.TrimSpace(req.NameZh)
+	nameEn := strings.TrimSpace(req.NameEn)
+	requestLang := a.requestLocale(c).Language
+	if name == "" && nameZh == "" && nameEn == "" {
+		respondError(c, http.StatusBadRequest, "标签名称不能为空")
+		return
+	}
+
+	// Backward-compatible: if only `name` is provided, update the tag key as before.
+	var tag *db.Tag
+	if name != "" && nameZh == "" && nameEn == "" {
+		tag, err = a.tags.Update(id, name)
+	} else {
+		tag, err = a.tags.Get(id)
+	}
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrTagExists):
@@ -98,6 +169,30 @@ func (a *API) UpdateTag(c *gin.Context) {
 		return
 	}
 
+	if nameZh != "" {
+		_, _ = a.tags.UpsertTranslation(tag.ID, service.TagTranslationInput{
+			Language: "zh",
+			Name:     nameZh,
+		})
+	}
+	if nameEn != "" {
+		_, _ = a.tags.UpsertTranslation(tag.ID, service.TagTranslationInput{
+			Language: "en",
+			Name:     nameEn,
+		})
+	}
+	if nameZh == "" && nameEn == "" && name != "" {
+		_, _ = a.tags.UpsertTranslation(tag.ID, service.TagTranslationInput{
+			Language: requestLang,
+			Name:     name,
+		})
+	}
+
+	if refreshed, refreshErr := a.tags.Get(tag.ID); refreshErr == nil {
+		tag = refreshed
+	} else {
+		c.Error(refreshErr)
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "标签更新成功", "tag": tag})
 }
 

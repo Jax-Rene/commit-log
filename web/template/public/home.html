@@ -22,13 +22,13 @@
                     <input
                         type="checkbox"
                         name="tags"
-                        value="{{$tag.Name}}"
+                        value="{{$tag.Key}}"
                         class="tag-filter-input sr-only"
                         {{range
                         $.tags}}{{if
                         eq
                         .
-                        $tag.Name}}checked{{end}}{{end}}
+                        $tag.Key}}checked{{end}}{{end}}
                     />
                     <span class="tag-filter-pill">{{$tag.Name}}</span>
                 </label>

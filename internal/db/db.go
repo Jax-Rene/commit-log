@@ -37,6 +37,7 @@ func Init(databasePath string) error {
 		&Post{},
 		&PostPublication{},
 		&Tag{},
+		&TagTranslation{},
 		&Page{},
 		&GalleryImage{},
 		&ProfileContact{},
@@ -64,6 +65,12 @@ func Init(databasePath string) error {
 
 	if migrator.HasIndex(&Page{}, "idx_pages_slug") {
 		if dropErr := migrator.DropIndex(&Page{}, "idx_pages_slug"); dropErr != nil {
+			return dropErr
+		}
+	}
+
+	if migrator.HasColumn(&TagTranslation{}, "description") {
+		if dropErr := migrator.DropColumn(&TagTranslation{}, "description"); dropErr != nil {
 			return dropErr
 		}
 	}

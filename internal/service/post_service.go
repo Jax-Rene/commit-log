@@ -33,7 +33,7 @@ type PostFilter struct {
 	Search    string
 	Status    string
 	Language  string
-	TagNames  []string
+	TagIDs    []uint
 	StartDate *time.Time
 	EndDate   *time.Time
 	Sort      string
@@ -371,7 +371,7 @@ func (s *PostService) LatestPublication(postID uint) (*db.PostPublication, error
 // LatestPublicationForLanguage 返回指定语言的文章发布快照
 func (s *PostService) LatestPublicationForLanguage(postID uint, language string) (*db.PostPublication, error) {
 	var publication db.PostPublication
-	query := s.db.Preload("Tags").
+	query := s.db.Preload("Tags.Translations").
 		Preload("User").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.id = ?", postID)
@@ -391,7 +391,7 @@ func (s *PostService) LatestPublicationForLanguage(postID uint, language string)
 // LatestPublicationByTranslationGroup 返回同一翻译组内指定语言的发布快照
 func (s *PostService) LatestPublicationByTranslationGroup(groupID uint, language string) (*db.PostPublication, error) {
 	var publication db.PostPublication
-	query := s.db.Preload("Tags").
+	query := s.db.Preload("Tags.Translations").
 		Preload("User").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.translation_group_id = ?", groupID)
@@ -431,7 +431,7 @@ func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, 
 
 	var publications []db.PostPublication
 	dataQuery := s.db.Model(&db.PostPublication{}).
-		Preload("Tags").
+		Preload("Tags.Translations").
 		Preload("User").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.status = ?", "published")
@@ -462,7 +462,7 @@ func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, 
 // ListAllPublished 返回所有文章的最新发布快照
 func (s *PostService) ListAllPublished(language string) ([]db.PostPublication, error) {
 	var publications []db.PostPublication
-	query := s.db.Preload("Tags").
+	query := s.db.Preload("Tags.Translations").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.status = ?", "published")
 	if normalized := normalizeFilterLanguage(language); normalized != "" {
@@ -533,12 +533,10 @@ func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeSta
 		query = query.Where("posts.language = ?", language)
 	}
 
-	if len(filter.TagNames) > 0 {
-		subQuery := s.db.Model(&db.Post{}).
-			Select("posts.id").
-			Joins("JOIN post_tags ON posts.id = post_tags.post_id").
-			Joins("JOIN tags ON tags.id = post_tags.tag_id").
-			Where("tags.name IN ?", filter.TagNames).
+	if len(filter.TagIDs) > 0 {
+		subQuery := s.db.Table("post_tags").
+			Select("post_tags.post_id").
+			Where("post_tags.tag_id IN ?", filter.TagIDs).
 			Distinct()
 
 		query = query.Where("posts.id IN (?)", subQuery)
@@ -567,12 +565,11 @@ func (s *PostService) applyPublicationFilters(query *gorm.DB, filter PostFilter)
 		query = query.Where("posts.language = ?", language)
 	}
 
-	if len(filter.TagNames) > 0 {
-		subQuery := s.db.Model(&db.PostPublication{}).
-			Select("post_publications.id").
-			Joins("JOIN post_publication_tags ON post_publication_tags.post_publication_id = post_publications.id").
-			Joins("JOIN tags ON tags.id = post_publication_tags.tag_id").
-			Where("tags.name IN ?", filter.TagNames)
+	if len(filter.TagIDs) > 0 {
+		subQuery := s.db.Table("post_publication_tags").
+			Select("post_publication_tags.post_publication_id").
+			Where("post_publication_tags.tag_id IN ?", filter.TagIDs).
+			Distinct()
 
 		query = query.Where("post_publications.id IN (?)", subQuery)
 	}

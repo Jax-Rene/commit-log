@@ -71,7 +71,7 @@ func setupAdminHandlerTestDB(t *testing.T) (*gorm.DB, func()) {
 		t.Fatalf("failed to open test db: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.Post{}, &db.Tag{}, &db.SystemSetting{}); err != nil {
+	if err := gdb.AutoMigrate(&db.Post{}, &db.Tag{}, &db.TagTranslation{}, &db.SystemSetting{}); err != nil {
 		t.Fatalf("failed to migrate test db: %v", err)
 	}
 

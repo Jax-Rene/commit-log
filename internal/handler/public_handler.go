@@ -41,9 +41,9 @@ const (
 )
 
 type tagStat struct {
-	Name        string
-	Description string
-	Count       int
+	Key   string
+	Name  string
+	Count int
 }
 
 type searchSuggestion struct {
@@ -55,13 +55,14 @@ type searchSuggestion struct {
 // ShowHome renders the public home page with filters and masonry layout.
 func (a *API) ShowHome(c *gin.Context) {
 	search := strings.TrimSpace(c.Query("search"))
-	tags := c.QueryArray("tags")
+	tagKeys := c.QueryArray("tags")
+	tagIDs := parseUintQuerySlice(tagKeys)
 	page := parsePositiveInt(c.DefaultQuery("page", "1"), 1)
 	language := a.requestLocale(c).Language
 
 	filter := service.PostFilter{
 		Search:   search,
-		TagNames: tags,
+		TagIDs:   tagIDs,
 		Page:     page,
 		PerPage:  6,
 		Language: language,
@@ -76,41 +77,56 @@ func (a *API) ShowHome(c *gin.Context) {
 		})
 		return
 	}
+	localizePublicationTagNamesInPlace(publications.Publications, language)
 
 	tagOptions := a.buildTagStats(language)
 
-	queryParams := buildQueryParams(search, tags)
+	queryParams := buildQueryParams(search, tagKeys)
 	metaDescription := ""
-	metaKeywords := make([]string, 0, len(tags)+1)
+	metaKeywords := make([]string, 0, len(tagKeys)+1)
 	noindex := false
+	tagNameByKey := make(map[string]string, len(tagOptions))
+	for _, option := range tagOptions {
+		if option.Key != "" {
+			tagNameByKey[option.Key] = option.Name
+		}
+	}
+	tagDisplayNames := make([]string, 0, len(tagKeys))
+	for _, key := range tagKeys {
+		if name, ok := tagNameByKey[key]; ok {
+			tagDisplayNames = append(tagDisplayNames, name)
+		} else {
+			tagDisplayNames = append(tagDisplayNames, key)
+		}
+	}
 
 	if search != "" {
 		metaDescription = fmt.Sprintf("搜索“%s”的结果，共 %d 篇文章。", search, publications.Total)
 		metaKeywords = append(metaKeywords, search)
 		noindex = true
 	}
-	if len(tags) > 0 {
-		tagDesc := fmt.Sprintf("当前筛选标签：%s。", strings.Join(tags, "、"))
+	if len(tagKeys) > 0 {
+		tagDesc := fmt.Sprintf("当前筛选标签：%s。", strings.Join(tagDisplayNames, "、"))
 		if metaDescription == "" {
 			metaDescription = tagDesc
 		} else {
 			metaDescription = strings.TrimSpace(metaDescription + " " + tagDesc)
 		}
-		metaKeywords = append(metaKeywords, tags...)
+		metaKeywords = append(metaKeywords, tagDisplayNames...)
 	}
 	if publications.Page > 1 && metaDescription == "" {
 		metaDescription = fmt.Sprintf("第 %d 页文章列表。", publications.Page)
 	}
 
 	canonical := ""
-	if search == "" && len(tags) == 0 && page == 1 {
+	if search == "" && len(tagKeys) == 0 && page == 1 {
 		canonical = "/"
 	}
 
 	payload := gin.H{
 		"title":       "首页",
 		"search":      search,
-		"tags":        tags,
+		"tags":        tagKeys,
 		"tagOptions":  tagOptions,
 		"posts":       publications.Publications,
 		"page":        publications.Page,
@@ -156,6 +172,7 @@ func (a *API) SearchSuggestions(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "")
 		return
 	}
+	localizePublicationTagNamesInPlace(publications.Publications, language)
 
 	suggestions := make([]searchSuggestion, 0, len(publications.Publications))
 	for _, publication := range publications.Publications {
@@ -183,12 +200,13 @@ func (a *API) LoadMorePosts(c *gin.Context) {
 	}
 
 	search := strings.TrimSpace(c.Query("search"))
-	tags := c.QueryArray("tags")
+	tagKeys := c.QueryArray("tags")
+	tagIDs := parseUintQuerySlice(tagKeys)
 	language := a.requestLocale(c).Language
 
 	filter := service.PostFilter{
 		Search:   search,
-		TagNames: tags,
+		TagIDs:   tagIDs,
 		Page:     page,
 		PerPage:  6,
 		Language: language,
@@ -206,7 +224,7 @@ func (a *API) LoadMorePosts(c *gin.Context) {
 		"posts":       publications.Publications,
 		"hasMore":     hasMore,
 		"nextPage":    page + 1,
-		"queryParams": buildQueryParams(search, tags),
+		"queryParams": buildQueryParams(search, tagKeys),
 	})
 }
 
@@ -249,6 +267,9 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		}
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
+	}
+	if publication != nil {
+		localizeTagSliceInPlace(publication.Tags, language)
 	}
 
 	postID := publication.PostID
@@ -717,10 +738,47 @@ func (a *API) buildTagStats(language string) []tagStat {
 		return nil
 	}
 
+	tagIDs := make([]uint, 0, len(usages))
+	for _, usage := range usages {
+		if usage.ID != 0 && usage.Count > 0 {
+			tagIDs = append(tagIDs, usage.ID)
+		}
+	}
+	translations, err := a.tags.TranslationMap(tagIDs)
+	if err != nil {
+		return nil
+	}
+	normalizedLanguage := locale.NormalizeLanguage(language)
+
 	stats := make([]tagStat, 0, len(usages))
 	for _, usage := range usages {
 		if usage.Count > 0 {
-			stats = append(stats, tagStat{Name: usage.Name, Count: int(usage.Count)})
+			displayName := usage.Name
+			if localized, ok := translations[usage.ID]; ok {
+				if translation, ok := localized[normalizedLanguage]; ok {
+					if strings.TrimSpace(translation.Name) != "" {
+						displayName = strings.TrimSpace(translation.Name)
+					}
+				} else if normalizedLanguage == locale.LanguageEnglish {
+					if translation, ok := localized[locale.LanguageChinese]; ok {
+						if strings.TrimSpace(translation.Name) != "" {
+							displayName = strings.TrimSpace(translation.Name)
+						}
+					}
+				} else if normalizedLanguage == locale.LanguageChinese {
+					if translation, ok := localized[locale.LanguageEnglish]; ok {
+						if strings.TrimSpace(translation.Name) != "" {
+							displayName = strings.TrimSpace(translation.Name)
+						}
+					}
+				}
+			}
+
+			stats = append(stats, tagStat{
+				Key:   fmt.Sprintf("%d", usage.ID),
+				Name:  displayName,
+				Count: int(usage.Count),
+			})
 		}
 	}
 

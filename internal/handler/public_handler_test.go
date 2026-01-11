@@ -34,7 +34,7 @@ func setupPublicTestDB(t *testing.T) func() {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.PostPublication{}, &db.Tag{}, &db.Page{}, &db.ProfileContact{}, &db.PostStatistic{}, &db.PostVisit{}, &db.SystemSetting{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.PostPublication{}, &db.Tag{}, &db.TagTranslation{}, &db.Page{}, &db.ProfileContact{}, &db.PostStatistic{}, &db.PostVisit{}, &db.SystemSetting{}); err != nil {
 		t.Fatalf("failed to migrate database: %v", err)
 	}
 
@@ -215,6 +215,55 @@ func TestShowHomeUsesCountryLanguage(t *testing.T) {
 	}
 	if strings.Contains(enResp.Body.String(), zhPost.Summary) {
 		t.Fatalf("expected en response to exclude zh content")
+	}
+}
+
+func TestShowHomeLocalizesPostCardTagNames(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	post := seedPublishedPostWithLanguage(t, "English Post", "Content", "en")
+
+	tag := db.Tag{Name: "产品"}
+	if err := db.DB.Create(&tag).Error; err != nil {
+		t.Fatalf("failed to seed tag: %v", err)
+	}
+	if err := db.DB.Create(&db.TagTranslation{TagID: tag.ID, Language: "zh", Name: "产品"}).Error; err != nil {
+		t.Fatalf("failed to seed zh tag translation: %v", err)
+	}
+	if err := db.DB.Create(&db.TagTranslation{TagID: tag.ID, Language: "en", Name: "Product"}).Error; err != nil {
+		t.Fatalf("failed to seed en tag translation: %v", err)
+	}
+
+	if err := db.DB.Model(&post).Association("Tags").Append(&tag); err != nil {
+		t.Fatalf("failed to associate post tag: %v", err)
+	}
+	if post.LatestPublicationID == nil || *post.LatestPublicationID == 0 {
+		t.Fatalf("expected post to have latest publication id")
+	}
+	var publication db.PostPublication
+	if err := db.DB.First(&publication, *post.LatestPublicationID).Error; err != nil {
+		t.Fatalf("failed to load publication: %v", err)
+	}
+	if err := db.DB.Model(&publication).Association("Tags").Append(&tag); err != nil {
+		t.Fatalf("failed to associate publication tag: %v", err)
+	}
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/?lang=en", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "Product") {
+		t.Fatalf("expected response to include localized tag name")
+	}
+	if strings.Contains(body, "产品") {
+		t.Fatalf("expected response to not include tag key name when lang=en")
 	}
 }
 

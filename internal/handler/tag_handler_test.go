@@ -152,8 +152,9 @@ func TestGetTagsReturnsSortedList(t *testing.T) {
 
 	var resp struct {
 		Tags []struct {
-			ID   uint   `json:"id"`
-			Name string `json:"name"`
+			ID           uint                   `json:"id"`
+			Name         string                 `json:"name"`
+			Translations map[string]interface{} `json:"translations"`
 		}
 	}
 
@@ -167,5 +168,98 @@ func TestGetTagsReturnsSortedList(t *testing.T) {
 
 	if resp.Tags[0].Name != "Alpha" || resp.Tags[1].Name != "Zed" {
 		t.Fatalf("expected tags to be sorted ascending: %v", resp.Tags)
+	}
+
+	if resp.Tags[0].Translations == nil || resp.Tags[1].Translations == nil {
+		t.Fatalf("expected translations map to be present")
+	}
+}
+
+func TestCreateTagCreatesTranslations(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	payload := map[string]any{
+		"name_zh": "产品",
+		"name_en": "Product",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/tags", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.CreateTag(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var tag db.Tag
+	if err := db.DB.Where("name = ?", "产品").First(&tag).Error; err != nil {
+		t.Fatalf("expected tag to be created: %v", err)
+	}
+
+	var zh db.TagTranslation
+	if err := db.DB.Where("tag_id = ? AND language = ?", tag.ID, "zh").First(&zh).Error; err != nil {
+		t.Fatalf("expected zh translation: %v", err)
+	}
+	if zh.Name != "产品" {
+		t.Fatalf("unexpected zh translation: %+v", zh)
+	}
+
+	var en db.TagTranslation
+	if err := db.DB.Where("tag_id = ? AND language = ?", tag.ID, "en").First(&en).Error; err != nil {
+		t.Fatalf("expected en translation: %v", err)
+	}
+	if en.Name != "Product" {
+		t.Fatalf("unexpected en translation: %+v", en)
+	}
+}
+
+func TestUpdateTagUpdatesTranslations(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	tag := db.Tag{Name: "Key"}
+	if err := db.DB.Create(&tag).Error; err != nil {
+		t.Fatalf("failed to seed tag: %v", err)
+	}
+
+	payload := map[string]any{
+		"name_zh": "标签",
+		"name_en": "Tag",
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPut, "/admin/api/tags/"+strconv.Itoa(int(tag.ID)), bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(int(tag.ID))}}
+
+	api.UpdateTag(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var zh db.TagTranslation
+	if err := db.DB.Where("tag_id = ? AND language = ?", tag.ID, "zh").First(&zh).Error; err != nil {
+		t.Fatalf("expected zh translation: %v", err)
+	}
+	if zh.Name != "标签" {
+		t.Fatalf("unexpected zh translation: %+v", zh)
+	}
+
+	var en db.TagTranslation
+	if err := db.DB.Where("tag_id = ? AND language = ?", tag.ID, "en").First(&en).Error; err != nil {
+		t.Fatalf("expected en translation: %v", err)
+	}
+	if en.Name != "Tag" {
+		t.Fatalf("unexpected en translation: %+v", en)
 	}
 }

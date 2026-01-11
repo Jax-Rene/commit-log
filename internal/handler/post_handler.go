@@ -403,6 +403,7 @@ func (a *API) RewritePostSelection(c *gin.Context) {
 
 // ShowPostList 渲染文章管理列表页面
 func (a *API) ShowPostList(c *gin.Context) {
+	language := a.requestLocale(c).Language
 	page := 1
 	if p, err := strconv.Atoi(c.DefaultQuery("page", "1")); err == nil && p > 0 {
 		page = p
@@ -411,7 +412,8 @@ func (a *API) ShowPostList(c *gin.Context) {
 	perPage := 10
 	search := c.Query("search")
 	status := c.Query("status")
-	tagNames := c.QueryArray("tags")
+	tagKeys := c.QueryArray("tags")
+	tagIDs := parseUintQuerySlice(tagKeys)
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
 	sort := c.Query("sort")
@@ -432,7 +434,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 	filter := service.PostFilter{
 		Search:    search,
 		Status:    status,
-		TagNames:  tagNames,
+		TagIDs:    tagIDs,
 		StartDate: startPtr,
 		EndDate:   endPtr,
 		Sort:      sort,
@@ -482,6 +484,8 @@ func (a *API) ShowPostList(c *gin.Context) {
 		})
 		return
 	}
+	tagNamesByID := localizeTagSliceInPlace(tags, language)
+	localizePostTagNamesInPlace(list.Posts, tagNamesByID)
 
 	pages := make([]int, 0, list.TotalPages)
 	for i := 1; i <= list.TotalPages; i++ {
@@ -504,7 +508,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 	if sort != "" {
 		params.Set("sort", sort)
 	}
-	for _, tag := range tagNames {
+	for _, tag := range tagKeys {
 		params.Add("tags", tag)
 	}
 
@@ -519,7 +523,7 @@ func (a *API) ShowPostList(c *gin.Context) {
 		"allTags":        tags,
 		"search":         search,
 		"status":         status,
-		"tags":           tagNames,
+		"tags":           tagKeys,
 		"sort":           sort,
 		"startDate":      startDate,
 		"endDate":        endDate,
@@ -537,14 +541,28 @@ func (a *API) ShowPostList(c *gin.Context) {
 }
 
 func (a *API) postEditPageData(c *gin.Context) gin.H {
+	language := a.requestLocale(c).Language
+	localizedTagNameByID := map[uint]string{}
 	data := gin.H{
 		"title":    "创建文章",
-		"allTags":  []db.Tag{},
+		"allTags":  []gin.H{},
 		"tagError": "",
 	}
 
 	if tags, err := a.tags.List(); err == nil {
-		data["allTags"] = tags
+		localizedTags := make([]gin.H, 0, len(tags))
+		for _, tag := range tags {
+			displayName := localizedTagName(tag, language)
+			if displayName == "" {
+				displayName = tag.Name
+			}
+			localizedTagNameByID[tag.ID] = displayName
+			localizedTags = append(localizedTags, gin.H{
+				"ID":   tag.ID,
+				"Name": displayName,
+			})
+		}
+		data["allTags"] = localizedTags
 	} else {
 		c.Error(err)
 		data["tagError"] = "加载标签失败，请稍后重试"
@@ -555,6 +573,11 @@ func (a *API) postEditPageData(c *gin.Context) gin.H {
 			post, err := a.posts.Get(uint(id))
 			if err == nil {
 				data["title"] = "编辑文章"
+				for i := range post.Tags {
+					if displayName, exists := localizedTagNameByID[post.Tags[i].ID]; exists && displayName != "" {
+						post.Tags[i].Name = displayName
+					}
+				}
 				data["post"] = post
 				if publication, pubErr := a.posts.LatestPublication(post.ID); pubErr == nil {
 					data["latestPublication"] = publication

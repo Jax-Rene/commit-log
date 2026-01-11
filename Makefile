@@ -17,6 +17,10 @@ test:
 generate-test-data:
 	go run scripts/generate_test_data.go
 
+# 一次性迁移：补齐标签多语言展示（tag_translations）
+migrate-tag-translations:
+	go run ./scripts/migrate_tag_translations -db commitlog.db -langs zh,en
+
 # 生产环境构建：docker 编译，主要用于模拟生产环境
 docker-build:
 	docker compose -f docker-compose.dev.yml build

@@ -22,7 +22,7 @@ func setupPostServiceTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Tag{}, &db.Post{}, &db.PostPublication{}, &db.PostStatistic{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Tag{}, &db.TagTranslation{}, &db.Post{}, &db.PostPublication{}, &db.PostStatistic{}); err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 	return gdb
@@ -312,7 +312,7 @@ func TestPostService_PublishFlow(t *testing.T) {
 	}
 
 	// Tag filter
-	filtered, err := svc.ListPublished(PostFilter{Page: 1, PerPage: 10, TagNames: []string{"Go"}})
+	filtered, err := svc.ListPublished(PostFilter{Page: 1, PerPage: 10, TagIDs: []uint{tag.ID}})
 	if err != nil {
 		t.Fatalf("list published with tag: %v", err)
 	}
@@ -320,7 +320,7 @@ func TestPostService_PublishFlow(t *testing.T) {
 		t.Fatalf("expected total 1 with tag filter, got %d", filtered.Total)
 	}
 
-	filteredNone, err := svc.ListPublished(PostFilter{Page: 1, PerPage: 10, TagNames: []string{"Unknown"}})
+	filteredNone, err := svc.ListPublished(PostFilter{Page: 1, PerPage: 10, TagIDs: []uint{tag.ID + 9999}})
 	if err != nil {
 		t.Fatalf("list published with unknown tag: %v", err)
 	}

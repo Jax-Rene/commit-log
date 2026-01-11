@@ -10,12 +10,12 @@
 	{{if .tags}}
 	<section class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 		{{range .tags}}
-		<a href="/?tags={{.Name}}" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-transform hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/80 dark:hover:border-blue-400/40">
+		<a href="/?tags={{.Key}}" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-transform hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/80 dark:hover:border-blue-400/40">
 			<div class="flex items-center justify-between">
 				<span class="text-base font-semibold text-slate-900 dark:text-slate-100">{{.Name}}</span>
 				<span class="text-xs text-slate-400 dark:text-slate-500">{{printf (tr $.language "%d posts" "%d 篇文章") .Count}}</span>
 			</div>
-			<p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">{{if .Description}}{{truncate .Description 80}}{{else}}{{tr $.language "No description" "暂无描述"}}{{end}}</p>
+			<p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">{{tr $.language "View posts in this topic" "查看该主题文章"}}</p>
 		</a>
 		{{end}}
 	</section>
