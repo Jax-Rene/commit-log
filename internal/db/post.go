@@ -52,6 +52,26 @@ type PostPublication struct {
 	Title string `gorm:"-"`
 }
 
+// PostDraftVersion 存储草稿保存时的快照数据
+type PostDraftVersion struct {
+	gorm.Model
+	PostID      uint
+	Post        Post
+	Content     string
+	ContentHash string
+	Summary     string
+	ReadingTime int
+	CoverURL    string
+	CoverWidth  int
+	CoverHeight int
+	UserID      uint
+	User        User
+	Version     int
+	Tags        []Tag `gorm:"many2many:post_draft_version_tags;"`
+	// Title 与 Post.Title 一样由 Content 动态生成
+	Title string `gorm:"-"`
+}
+
 // PopulateDerivedFields 根据内容动态生成标题等衍生信息。
 func (p *Post) PopulateDerivedFields() {
 	p.Title = DeriveTitleFromContent(p.Content)
@@ -71,6 +91,17 @@ func (pp *PostPublication) PopulateDerivedFields() {
 // AfterFind 在查询后填充衍生字段。
 func (pp *PostPublication) AfterFind(tx *gorm.DB) error {
 	pp.PopulateDerivedFields()
+	return nil
+}
+
+// PopulateDerivedFields 根据内容动态生成标题等衍生信息。
+func (pv *PostDraftVersion) PopulateDerivedFields() {
+	pv.Title = DeriveTitleFromContent(pv.Content)
+}
+
+// AfterFind 在查询后填充衍生字段。
+func (pv *PostDraftVersion) AfterFind(tx *gorm.DB) error {
+	pv.PopulateDerivedFields()
 	return nil
 }
 
