@@ -323,6 +323,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 			{
 				api.GET("/posts", handlers.GetPosts)
 				api.GET("/posts/:id", handlers.GetPost)
+				api.GET("/posts/:id/draft-versions", handlers.ListDraftVersions)
 				api.POST("/posts", handlers.CreatePost)
 				api.POST("/posts/summary", handlers.GeneratePostSummary)
 				api.POST("/posts/optimize", handlers.OptimizePostContent)

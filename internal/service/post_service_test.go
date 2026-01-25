@@ -22,7 +22,7 @@ func setupPostServiceTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Tag{}, &db.Post{}, &db.PostPublication{}, &db.PostStatistic{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Tag{}, &db.Post{}, &db.PostPublication{}, &db.PostDraftVersion{}, &db.PostStatistic{}); err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 	return gdb
@@ -326,6 +326,103 @@ func TestPostService_PublishFlow(t *testing.T) {
 	}
 	if filteredNone.Total != 0 || len(filteredNone.Publications) != 0 {
 		t.Fatalf("expected no publications for unknown tag")
+	}
+}
+
+func TestPostService_DraftVersionsKeepLatestTen(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "draft-versioner"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	post, err := svc.Create(PostInput{
+		Content: "# v1\n内容",
+		Summary: "s1",
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+
+	for i := 2; i <= 12; i++ {
+		content := fmt.Sprintf("# v%d\n内容", i)
+		summary := fmt.Sprintf("s%d", i)
+		if _, err := svc.Update(post.ID, PostInput{
+			Content: content,
+			Summary: summary,
+			UserID:  user.ID,
+		}); err != nil {
+			t.Fatalf("update post version %d: %v", i, err)
+		}
+	}
+
+	versions, err := svc.ListDraftVersions(post.ID, 0)
+	if err != nil {
+		t.Fatalf("list draft versions: %v", err)
+	}
+	if len(versions) != 10 {
+		t.Fatalf("expected 10 draft versions, got %d", len(versions))
+	}
+	if versions[0].Version != 12 {
+		t.Fatalf("expected latest version 12, got %d", versions[0].Version)
+	}
+	last := versions[len(versions)-1]
+	if last.Version != 3 {
+		t.Fatalf("expected oldest kept version 3, got %d", last.Version)
+	}
+}
+
+func TestPostService_DraftVersionSkipsWhenContentUnchanged(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "draft-skipper"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	post, err := svc.Create(PostInput{
+		Content: "# v1\n内容",
+		Summary: "s1",
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+
+	if _, err := svc.Update(post.ID, PostInput{
+		Content: "# v1\n内容",
+		Summary: "s1",
+		UserID:  user.ID,
+	}); err != nil {
+		t.Fatalf("update post with same content: %v", err)
+	}
+
+	versions, err := svc.ListDraftVersions(post.ID, 0)
+	if err != nil {
+		t.Fatalf("list draft versions: %v", err)
+	}
+	if len(versions) != 1 {
+		t.Fatalf("expected 1 draft version, got %d", len(versions))
+	}
+
+	if _, err := svc.Update(post.ID, PostInput{
+		Content: "# v2\n内容",
+		Summary: "s2",
+		UserID:  user.ID,
+	}); err != nil {
+		t.Fatalf("update post with new content: %v", err)
+	}
+
+	versions, err = svc.ListDraftVersions(post.ID, 0)
+	if err != nil {
+		t.Fatalf("list draft versions after change: %v", err)
+	}
+	if len(versions) != 2 {
+		t.Fatalf("expected 2 draft versions, got %d", len(versions))
 	}
 }
 

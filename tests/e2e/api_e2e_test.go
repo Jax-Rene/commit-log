@@ -103,6 +103,7 @@ func newE2ESuite(t *testing.T) *e2eSuite {
 		&db.User{},
 		&db.Post{},
 		&db.PostPublication{},
+		&db.PostDraftVersion{},
 		&db.Tag{},
 		&db.Page{},
 		&db.ProfileContact{},
