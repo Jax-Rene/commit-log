@@ -43,22 +43,23 @@ func (a *API) ShowSystemSettings(c *gin.Context) {
 }
 
 type systemSettingsRequest struct {
-	SiteName         string `json:"siteName"`
-	SiteLogoURL      string `json:"siteLogoUrl"`
-	SiteLogoURLLight string `json:"siteLogoUrlLight"`
-	SiteLogoURLDark  string `json:"siteLogoUrlDark"`
-	SiteDescription  string `json:"siteDescription"`
-	SiteKeywords     string `json:"siteKeywords"`
-	SiteSocialImage  string `json:"siteSocialImage"`
-	AIProvider       string `json:"aiProvider"`
-	OpenAIAPIKey     string `json:"openaiApiKey"`
-	DeepSeekAPIKey   string `json:"deepseekApiKey"`
-	AdminFooterText  string `json:"adminFooterText"`
-	PublicFooterText string `json:"publicFooterText"`
-	GallerySubtitle  string `json:"gallerySubtitle"`
-	AISummaryPrompt  string `json:"aiSummaryPrompt"`
-	AIRewritePrompt  string `json:"aiRewritePrompt"`
-	GalleryEnabled   *bool  `json:"galleryEnabled"`
+	SiteName         string              `json:"siteName"`
+	SiteLogoURL      string              `json:"siteLogoUrl"`
+	SiteLogoURLLight string              `json:"siteLogoUrlLight"`
+	SiteLogoURLDark  string              `json:"siteLogoUrlDark"`
+	SiteDescription  string              `json:"siteDescription"`
+	SiteKeywords     string              `json:"siteKeywords"`
+	SiteSocialImage  string              `json:"siteSocialImage"`
+	AIProvider       string              `json:"aiProvider"`
+	OpenAIAPIKey     string              `json:"openaiApiKey"`
+	DeepSeekAPIKey   string              `json:"deepseekApiKey"`
+	AdminFooterText  string              `json:"adminFooterText"`
+	PublicFooterText string              `json:"publicFooterText"`
+	GallerySubtitle  string              `json:"gallerySubtitle"`
+	AISummaryPrompt  string              `json:"aiSummaryPrompt"`
+	AIRewritePrompt  string              `json:"aiRewritePrompt"`
+	GalleryEnabled   *bool               `json:"galleryEnabled"`
+	NavButtons       []service.NavButton `json:"navButtons"`
 }
 
 type aiTestRequest struct {
@@ -114,6 +115,7 @@ func (r systemSettingsRequest) toInput() service.SystemSettingsInput {
 		AISummaryPrompt:  r.AISummaryPrompt,
 		AIRewritePrompt:  r.AIRewritePrompt,
 		GalleryEnabled:   r.GalleryEnabled,
+		NavButtons:       r.NavButtons,
 	}
 }
 
@@ -135,6 +137,7 @@ func systemSettingsPayload(settings service.SystemSettings) gin.H {
 		"aiSummaryPrompt":  settings.AISummaryPrompt,
 		"aiRewritePrompt":  settings.AIRewritePrompt,
 		"galleryEnabled":   settings.GalleryEnabled,
+		"navButtons":       settings.NavButtons,
 	}
 }
 

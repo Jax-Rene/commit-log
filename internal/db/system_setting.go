@@ -47,4 +47,6 @@ const (
 	SettingKeyGallerySubtitle = "gallery_subtitle"
 	// SettingKeyGalleryEnabled 表示是否启用 Gallery。
 	SettingKeyGalleryEnabled = "gallery_enabled"
+	// SettingKeyNavButtons 表示前台顶部导航按钮配置。
+	SettingKeyNavButtons = "nav_buttons"
 )

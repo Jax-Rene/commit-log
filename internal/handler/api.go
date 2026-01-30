@@ -42,6 +42,13 @@ type siteViewModel struct {
 	SocialImage     string
 	GallerySubtitle string
 	GalleryEnabled  bool
+	NavButtons      []navButtonView
+}
+
+type navButtonView struct {
+	Title  string
+	URL    string
+	NewTab bool
 }
 
 const siteSettingsContextKey = "__site_settings"
@@ -98,6 +105,7 @@ func (a *API) siteSettings(c *gin.Context) siteViewModel {
 		SocialImage:     strings.TrimSpace(settings.SiteSocialImage),
 		GallerySubtitle: strings.TrimSpace(settings.GallerySubtitle),
 		GalleryEnabled:  settings.GalleryEnabled,
+		NavButtons:      buildNavButtons(settings),
 	}
 	if view.Name == "" {
 		view.Name = "CommitLog"
@@ -135,6 +143,49 @@ func (a *API) siteSettings(c *gin.Context) siteViewModel {
 	return view
 }
 
+func buildNavButtons(settings service.SystemSettings) []navButtonView {
+	buttons := make([]navButtonView, 0, len(settings.NavButtons))
+	for _, item := range settings.NavButtons {
+		switch item.Type {
+		case service.NavButtonTypeAbout:
+			buttons = append(buttons, navButtonView{
+				Title: pickNavButtonTitle(item.Title, "About Me"),
+				URL:   "/about",
+			})
+		case service.NavButtonTypeRSS:
+			buttons = append(buttons, navButtonView{
+				Title: pickNavButtonTitle(item.Title, "RSS"),
+				URL:   "/rss.xml",
+			})
+		case service.NavButtonTypeGallery:
+			if !settings.GalleryEnabled {
+				continue
+			}
+			buttons = append(buttons, navButtonView{
+				Title: pickNavButtonTitle(item.Title, "Gallery"),
+				URL:   "/gallery",
+			})
+		case service.NavButtonTypeCustom:
+			if strings.TrimSpace(item.Title) == "" || strings.TrimSpace(item.URL) == "" {
+				continue
+			}
+			buttons = append(buttons, navButtonView{
+				Title:  strings.TrimSpace(item.Title),
+				URL:    strings.TrimSpace(item.URL),
+				NewTab: true,
+			})
+		}
+	}
+	return buttons
+}
+
+func pickNavButtonTitle(candidate, fallback string) string {
+	if strings.TrimSpace(candidate) != "" {
+		return strings.TrimSpace(candidate)
+	}
+	return fallback
+}
+
 func (a *API) renderHTML(c *gin.Context, status int, templateName string, data gin.H) {
 	view := a.siteSettings(c)
 
@@ -160,6 +211,7 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 		"keywords":        view.Keywords,
 		"gallerySubtitle": view.GallerySubtitle,
 		"galleryEnabled":  view.GalleryEnabled,
+		"navButtons":      view.NavButtons,
 	}
 	if view.SocialImage != "" {
 		siteDefaults["socialImage"] = a.absoluteURL(c, view.SocialImage)

@@ -182,27 +182,17 @@
                 <div
                     class="hidden flex-1 items-center justify-end text-sm font-medium text-slate-600 dark:text-slate-400 sm:flex"
                 >
-                    <a
-                        href="/about"
-                        class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
-                        >About Me</a
-                    >
+                    {{range $index, $item := .site.navButtons}}
+                    {{if $index}}
                     <span class="mx-3 text-slate-300 dark:text-slate-600"
                         >/</span
                     >
+                    {{end}}
                     <a
-                        href="/rss.xml"
+                        href="{{$item.URL}}"
                         class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
-                        >RSS</a
-                    >
-                    {{if .site.galleryEnabled}}
-                    <span class="mx-3 text-slate-300 dark:text-slate-600"
-                        >/</span
-                    >
-                    <a
-                        href="/gallery"
-                        class="transition-colors hover:text-slate-900 dark:hover:text-slate-200"
-                        >Gallery</a
+                        {{if $item.NewTab}}target="_blank" rel="noopener noreferrer"{{end}}
+                        >{{$item.Title}}</a
                     >
                     {{end}}
                 </div>

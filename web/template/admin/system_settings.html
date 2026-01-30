@@ -339,6 +339,174 @@
     </section>
 
     <section
+        id="nav"
+        role="tabpanel"
+        aria-labelledby="tab-nav"
+        x-show="activeTab === 'nav'"
+        x-transition
+        class="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80"
+    >
+        <header class="space-y-1">
+            <h2
+                class="text-lg font-semibold text-slate-900 dark:text-slate-100"
+            >
+                顶部导航
+            </h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                配置首页顶部按钮的展示顺序与跳转地址。
+            </p>
+        </header>
+        <div class="space-y-4">
+            <template x-if="form.navButtons.length === 0">
+                <div
+                    class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-6 text-sm text-slate-500 dark:border-slate-700/80 dark:bg-slate-900/50 dark:text-slate-400"
+                >
+                    暂无导航按钮，请从下方添加。
+                </div>
+            </template>
+            <div class="space-y-3">
+                <template x-for="(button, index) in form.navButtons" :key="`nav-${index}`">
+                    <div
+                        class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/70 md:flex-row md:items-center"
+                    >
+                        <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
+                            <label class="flex flex-col gap-2 md:w-44">
+                                <span
+                                    class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                                    >类型</span
+                                >
+                                <select
+                                    x-model="button.type"
+                                    @change="syncNavButtonLabel(index)"
+                                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                                >
+                                    <template x-for="option in navButtonOptions()" :key="option.value">
+                                        <option
+                                            :value="option.value"
+                                            :disabled="!canUseNavButtonType(option.value, index)"
+                                            x-text="option.label"
+                                        ></option>
+                                    </template>
+                                </select>
+                            </label>
+                            <template x-if="button.type === 'custom'">
+                                <div class="flex flex-1 flex-col gap-3 md:flex-row md:items-center">
+                                    <label class="flex flex-1 flex-col gap-2">
+                                        <span
+                                            class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                                            >展示标题</span
+                                        >
+                                        <input
+                                            type="text"
+                                            x-model="button.title"
+                                            class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                                            placeholder="例如：作品集"
+                                        />
+                                    </label>
+                                    <label class="flex flex-1 flex-col gap-2">
+                                        <span
+                                            class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                                            >跳转链接</span
+                                        >
+                                        <input
+                                            type="text"
+                                            x-model="button.url"
+                                            class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                                            placeholder="https://"
+                                        />
+                                    </label>
+                                </div>
+                            </template>
+                            <template x-if="button.type !== 'custom'">
+                                <div class="flex flex-1 flex-col gap-1 text-sm text-slate-500 dark:text-slate-400">
+                                    <span class="font-medium text-slate-700 dark:text-slate-200" x-text="navButtonLabel(button.type)"></span>
+                                    <span class="text-xs">系统内置导航入口，可拖动调整顺序。</span>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                class="rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-blue-200 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"
+                                @click="moveNavButton(index, -1)"
+                                :disabled="index === 0"
+                            >
+                                上移
+                            </button>
+                            <button
+                                type="button"
+                                class="rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-blue-200 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"
+                                @click="moveNavButton(index, 1)"
+                                :disabled="index === form.navButtons.length - 1"
+                            >
+                                下移
+                            </button>
+                            <button
+                                type="button"
+                                class="rounded-lg border border-rose-200 px-2.5 py-2 text-xs font-medium text-rose-600 transition-colors hover:border-rose-300 hover:text-rose-700 dark:border-rose-500/40 dark:text-rose-200 dark:hover:border-rose-400/60"
+                                @click="removeNavButton(index)"
+                            >
+                                删除
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                <div class="flex flex-col gap-4 md:flex-row md:items-end">
+                    <label class="flex flex-1 flex-col gap-2">
+                        <span class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">新增类型</span>
+                        <select
+                            x-model="newNavButtonType"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                        >
+                            <template x-for="option in navButtonOptions()" :key="`add-${option.value}`">
+                                <option
+                                    :value="option.value"
+                                    :disabled="!canAddNavButtonType(option.value)"
+                                    x-text="option.label"
+                                ></option>
+                            </template>
+                        </select>
+                    </label>
+                    <template x-if="newNavButtonType === 'custom'">
+                        <div class="flex flex-[2] flex-col gap-3 md:flex-row md:items-end">
+                            <label class="flex flex-1 flex-col gap-2">
+                                <span class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">展示标题</span>
+                                <input
+                                    type="text"
+                                    x-model="newNavButtonTitle"
+                                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                                    placeholder="例如：社区"
+                                />
+                            </label>
+                            <label class="flex flex-1 flex-col gap-2">
+                                <span class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">跳转链接</span>
+                                <input
+                                    type="text"
+                                    x-model="newNavButtonURL"
+                                    class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                                    placeholder="https://"
+                                />
+                            </label>
+                        </div>
+                    </template>
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+                        @click="addNavButton()"
+                    >
+                        添加按钮
+                    </button>
+                </div>
+                <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                    自定义按钮将以新窗口打开链接，About Me、RSS、Gallery 仅允许配置 1 个。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section
         id="gallery"
         role="tabpanel"
         aria-labelledby="tab-gallery"
@@ -622,8 +790,12 @@
             showApiKey: false,
             showDeepSeekKey: false,
             aiTesting: false,
+            newNavButtonType: "custom",
+            newNavButtonTitle: "",
+            newNavButtonURL: "",
             tabs: [
                 { id: "basic", label: "基础信息" },
+                { id: "nav", label: "顶部导航" },
                 { id: "gallery", label: "Gallery" },
                 { id: "contacts", label: "联系方式" },
                 { id: "ai", label: "AI 服务" },
@@ -641,6 +813,7 @@
                 publicFooterText: "",
                 gallerySubtitle: "",
                 galleryEnabled: true,
+                navButtons: [],
                 aiProvider: "openai",
                 openaiApiKey: "",
                 deepseekApiKey: "",
@@ -707,6 +880,9 @@
                         }
                         if (data.settings) {
                             this.form = Object.assign(this.form, data.settings);
+                            if (!Array.isArray(this.form.navButtons)) {
+                                this.form.navButtons = [];
+                            }
                             this.applyLogoFallbacks();
                             this.normalizeProvider();
                         }
@@ -853,6 +1029,99 @@
                 const meta = this.providerMeta();
                 this.form[meta.keyField] = "";
             },
+            navButtonOptions() {
+                return [
+                    { value: "about", label: "About Me" },
+                    { value: "rss", label: "RSS" },
+                    { value: "gallery", label: "Gallery" },
+                    { value: "custom", label: "自定义" },
+                ];
+            },
+            navButtonLabel(type) {
+                const mapping = {
+                    about: "About Me",
+                    rss: "RSS",
+                    gallery: "Gallery",
+                    custom: "自定义",
+                };
+                return mapping[type] || "自定义";
+            },
+            countNavButtonType(type, currentIndex = null) {
+                return this.form.navButtons.filter((item, idx) => {
+                    if (currentIndex !== null && idx === currentIndex) {
+                        return false;
+                    }
+                    return item.type === type;
+                }).length;
+            },
+            canUseNavButtonType(type, currentIndex) {
+                if (type === "custom") {
+                    return true;
+                }
+                return this.countNavButtonType(type, currentIndex) === 0;
+            },
+            canAddNavButtonType(type) {
+                if (type === "custom") {
+                    return true;
+                }
+                return this.countNavButtonType(type) === 0;
+            },
+            syncNavButtonLabel(index) {
+                const target = this.form.navButtons[index];
+                if (!target) {
+                    return;
+                }
+                if (target.type !== "custom") {
+                    target.title = this.navButtonLabel(target.type);
+                    target.url = "";
+                }
+            },
+            addNavButton() {
+                const type = this.newNavButtonType;
+                if (!this.canAddNavButtonType(type)) {
+                    window.AdminUI.toast({
+                        message: "该类型已存在，请调整顺序或删除后再添加",
+                        type: "warning",
+                    });
+                    return;
+                }
+                if (type === "custom") {
+                    const title = this.newNavButtonTitle.trim();
+                    const url = this.newNavButtonURL.trim();
+                    if (!title || !url) {
+                        window.AdminUI.toast({
+                            message: "请填写自定义按钮标题与链接",
+                            type: "warning",
+                        });
+                        return;
+                    }
+                    this.form.navButtons.push({ type, title, url });
+                    this.newNavButtonTitle = "";
+                    this.newNavButtonURL = "";
+                    return;
+                }
+                this.form.navButtons.push({
+                    type,
+                    title: this.navButtonLabel(type),
+                    url: "",
+                });
+            },
+            removeNavButton(index) {
+                this.form.navButtons.splice(index, 1);
+            },
+            moveNavButton(index, direction) {
+                const nextIndex = index + direction;
+                if (
+                    nextIndex < 0 ||
+                    nextIndex >= this.form.navButtons.length
+                ) {
+                    return;
+                }
+                const updated = [...this.form.navButtons];
+                const [item] = updated.splice(index, 1);
+                updated.splice(nextIndex, 0, item);
+                this.form.navButtons = updated;
+            },
             async testAI() {
                 this.normalizeProvider();
                 const meta = this.providerMeta();
@@ -931,6 +1200,17 @@
                     return;
                 }
                 this.normalizeProvider();
+                for (const button of this.form.navButtons) {
+                    if (button.type === "custom") {
+                        if (!button.title?.trim() || !button.url?.trim()) {
+                            window.AdminUI.toast({
+                                message: "请补全自定义按钮标题与链接",
+                                type: "warning",
+                            });
+                            return;
+                        }
+                    }
+                }
                 this.loading = true;
                 fetch("/admin/api/system/settings", {
                     method: "PUT",
@@ -947,6 +1227,7 @@
                         publicFooterText: this.form.publicFooterText,
                         gallerySubtitle: this.form.gallerySubtitle,
                         galleryEnabled: this.form.galleryEnabled,
+                        navButtons: this.form.navButtons,
                         aiProvider: this.form.aiProvider,
                         openaiApiKey: this.form.openaiApiKey,
                         deepseekApiKey: this.form.deepseekApiKey,
