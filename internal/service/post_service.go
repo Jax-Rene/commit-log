@@ -452,11 +452,13 @@ func (s *PostService) saveWithTags(post *db.Post, tagIDs []uint) (*db.Post, erro
 }
 
 func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeStatus bool) *gorm.DB {
-	if filter.Search != "" {
-		search := "%" + filter.Search + "%"
+	if tokens := splitSearchTokens(filter.Search); len(tokens) > 0 {
 		alias := "posts"
 		titleExpr := derivedTitleQueryExpr(alias)
-		query = query.Where(fmt.Sprintf("(%s LIKE ? OR %s.content LIKE ? OR %s.summary LIKE ?)", titleExpr, alias, alias), search, search, search)
+		for _, token := range tokens {
+			search := "%" + token + "%"
+			query = query.Where(fmt.Sprintf("(%s LIKE ? OR %s.content LIKE ? OR %s.summary LIKE ?)", titleExpr, alias, alias), search, search, search)
+		}
 	}
 
 	if includeStatus && filter.Status != "" {
@@ -486,11 +488,13 @@ func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeSta
 }
 
 func (s *PostService) applyPublicationFilters(query *gorm.DB, filter PostFilter) *gorm.DB {
-	if filter.Search != "" {
-		search := "%" + filter.Search + "%"
+	if tokens := splitSearchTokens(filter.Search); len(tokens) > 0 {
 		alias := "post_publications"
 		titleExpr := derivedTitleQueryExpr(alias)
-		query = query.Where(fmt.Sprintf("(%s LIKE ? OR %s.content LIKE ? OR %s.summary LIKE ?)", titleExpr, alias, alias), search, search, search)
+		for _, token := range tokens {
+			search := "%" + token + "%"
+			query = query.Where(fmt.Sprintf("(%s LIKE ? OR %s.content LIKE ? OR %s.summary LIKE ?)", titleExpr, alias, alias), search, search, search)
+		}
 	}
 
 	if len(filter.TagNames) > 0 {
@@ -567,4 +571,8 @@ func derivedTitleQueryExpr(alias string) string {
 	line := fmt.Sprintf("CASE WHEN instr(%s.content, char(10)) > 0 THEN substr(%s.content, 1, instr(%s.content, char(10)) - 1) ELSE %s.content END", alias, alias, alias, alias)
 	trimmed := fmt.Sprintf("TRIM(RTRIM(LTRIM(TRIM(%s), '#'), '#'))", line)
 	return trimmed
+}
+
+func splitSearchTokens(search string) []string {
+	return strings.Fields(search)
 }

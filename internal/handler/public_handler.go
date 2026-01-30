@@ -40,8 +40,9 @@ const (
 )
 
 type tagStat struct {
-	Name  string
-	Count int
+	Name        string
+	Description string
+	Count       int
 }
 
 type searchSuggestion struct {
@@ -139,10 +140,13 @@ func (a *API) SearchSuggestions(c *gin.Context) {
 		return
 	}
 
+	page := parsePositiveInt(c.DefaultQuery("page", "1"), 1)
+	const perPage = 5
+
 	filter := service.PostFilter{
 		Search:  search,
-		Page:    1,
-		PerPage: 5,
+		Page:    page,
+		PerPage: perPage,
 	}
 
 	publications, err := a.posts.ListPublished(filter)
@@ -161,10 +165,25 @@ func (a *API) SearchSuggestions(c *gin.Context) {
 		})
 	}
 
+	hasMore := page < publications.TotalPages
+	nextPage := page + 1
+
+	if page > 1 {
+		a.renderHTML(c, http.StatusOK, "search_suggestions_items.html", gin.H{
+			"search":   search,
+			"results":  suggestions,
+			"hasMore":  hasMore,
+			"nextPage": nextPage,
+		})
+		return
+	}
+
 	a.renderHTML(c, http.StatusOK, "search_suggestions.html", gin.H{
-		"search":  search,
-		"results": suggestions,
-		"total":   publications.Total,
+		"search":   search,
+		"results":  suggestions,
+		"total":    publications.Total,
+		"hasMore":  hasMore,
+		"nextPage": nextPage,
 	})
 }
 
