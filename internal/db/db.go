@@ -35,6 +35,7 @@ func Init(databasePath string) error {
 	if err = DB.AutoMigrate(
 		&User{},
 		&Post{},
+		&PostDraftVersion{},
 		&PostPublication{},
 		&Tag{},
 		&Page{},
