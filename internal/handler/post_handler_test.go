@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/service"
@@ -112,6 +113,72 @@ func setupTestDB(t *testing.T) (*API, func()) {
 		if err == nil {
 			sqlDB.Close()
 		}
+	}
+}
+
+func TestContinueDraftRedirectsToLatestDraft(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	first, err := api.posts.Create(service.PostInput{
+		Content: "# 第一篇\n内容",
+		UserID:  1,
+	})
+	if err != nil {
+		t.Fatalf("create first draft: %v", err)
+	}
+
+	second, err := api.posts.Create(service.PostInput{
+		Content: "# 第二篇\n内容",
+		UserID:  1,
+	})
+	if err != nil {
+		t.Fatalf("create second draft: %v", err)
+	}
+
+	later := time.Now().Add(2 * time.Hour)
+	if err := api.db.Model(&db.Post{}).
+		Where("id = ?", first.ID).
+		UpdateColumn("updated_at", later).Error; err != nil {
+		t.Fatalf("update first draft updated_at: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/posts/continue", nil)
+
+	api.ContinueDraft(c)
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected status %d, got %d", http.StatusFound, w.Code)
+	}
+
+	expected := fmt.Sprintf("/admin/posts/%d/edit", first.ID)
+	if location := w.Header().Get("Location"); location != expected {
+		t.Fatalf("expected redirect to %s, got %s", expected, location)
+	}
+
+	if first.ID == second.ID {
+		t.Fatalf("expected distinct drafts for redirect check")
+	}
+}
+
+func TestContinueDraftRedirectsToNewWhenNoDraft(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/admin/posts/continue", nil)
+
+	api.ContinueDraft(c)
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected status %d, got %d", http.StatusFound, w.Code)
+	}
+
+	if location := w.Header().Get("Location"); location != "/admin/posts/new" {
+		t.Fatalf("expected redirect to /admin/posts/new, got %s", location)
 	}
 }
 

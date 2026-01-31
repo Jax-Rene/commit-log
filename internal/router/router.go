@@ -77,6 +77,9 @@ func newTemplateRegistry() *templateRegistry {
 				}
 				return t.Format("2006-01-02")
 			},
+			"relativeTime": func(t time.Time) string {
+				return formatRelativeTime(time.Now(), t)
+			},
 			"firstImage": func(content string) string {
 				match := imagePattern.FindStringSubmatch(content)
 				if len(match) >= 2 {
@@ -311,6 +314,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 			auth.GET("/dashboard", handlers.ShowDashboard)
 			auth.GET("/posts", handlers.ShowPostList)
 			auth.GET("/posts/new", handlers.ShowPostEdit)
+			auth.GET("/posts/continue", handlers.ContinueDraft)
 			auth.GET("/posts/:id/edit", handlers.ShowPostEdit)
 			auth.GET("/gallery", handlers.ShowGalleryManagement)
 			auth.GET("/tags", handlers.ShowTagManagement)
@@ -428,4 +432,54 @@ func prefersJSON(c *gin.Context) bool {
 
 	contentType := strings.ToLower(c.ContentType())
 	return strings.Contains(contentType, "application/json")
+}
+
+func formatRelativeTime(now time.Time, t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+
+	if now.Before(t) {
+		return "刚刚"
+	}
+
+	diff := now.Sub(t)
+	if diff < time.Minute {
+		return "刚刚"
+	}
+	if diff < time.Hour {
+		minutes := int(diff.Minutes())
+		if minutes < 1 {
+			minutes = 1
+		}
+		return fmt.Sprintf("%d分钟前", minutes)
+	}
+	if diff < 24*time.Hour {
+		hours := int(diff.Hours())
+		if hours < 1 {
+			hours = 1
+		}
+		return fmt.Sprintf("%d小时前", hours)
+	}
+
+	days := int(diff.Hours() / 24)
+	if days < 1 {
+		days = 1
+	}
+	if days < 30 {
+		return fmt.Sprintf("%d天前", days)
+	}
+	if days < 365 {
+		months := days / 30
+		if months < 1 {
+			months = 1
+		}
+		return fmt.Sprintf("%d个月前", months)
+	}
+
+	years := days / 365
+	if years < 1 {
+		years = 1
+	}
+	return fmt.Sprintf("%d年前", years)
 }

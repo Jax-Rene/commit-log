@@ -129,6 +129,109 @@ func TestPostService_ListDefaultsToCreatedDesc(t *testing.T) {
 	}
 }
 
+func TestPostService_LatestDraftReturnsMostRecentEdit(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "latest-draft"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	first, err := svc.Create(PostInput{
+		Content: "# 第一稿\n内容",
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("create first draft: %v", err)
+	}
+
+	second, err := svc.Create(PostInput{
+		Content: "# 第二稿\n内容",
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("create second draft: %v", err)
+	}
+
+	later := time.Now().Add(2 * time.Hour)
+	if err := gdb.Model(&db.Post{}).
+		Where("id = ?", first.ID).
+		UpdateColumn("updated_at", later).Error; err != nil {
+		t.Fatalf("update first draft updated_at: %v", err)
+	}
+
+	latest, err := svc.LatestDraft(user.ID)
+	if err != nil {
+		t.Fatalf("latest draft: %v", err)
+	}
+	if latest.ID != first.ID {
+		t.Fatalf("expected latest draft %d, got %d", first.ID, latest.ID)
+	}
+	if latest.ID == second.ID {
+		t.Fatalf("expected latest draft to ignore created time ordering")
+	}
+}
+
+func TestPostService_LatestDraftFiltersByUser(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "primary"}
+	other := db.User{Username: "secondary"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	if err := gdb.Create(&other).Error; err != nil {
+		t.Fatalf("create other user: %v", err)
+	}
+
+	userDraft, err := svc.Create(PostInput{
+		Content: "# 用户草稿\n内容",
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("create user draft: %v", err)
+	}
+
+	otherDraft, err := svc.Create(PostInput{
+		Content: "# 其他草稿\n内容",
+		UserID:  other.ID,
+	})
+	if err != nil {
+		t.Fatalf("create other draft: %v", err)
+	}
+
+	later := time.Now().Add(3 * time.Hour)
+	if err := gdb.Model(&db.Post{}).
+		Where("id = ?", otherDraft.ID).
+		UpdateColumn("updated_at", later).Error; err != nil {
+		t.Fatalf("update other draft updated_at: %v", err)
+	}
+
+	latest, err := svc.LatestDraft(user.ID)
+	if err != nil {
+		t.Fatalf("latest draft: %v", err)
+	}
+	if latest.ID != userDraft.ID {
+		t.Fatalf("expected user latest draft %d, got %d", userDraft.ID, latest.ID)
+	}
+}
+
+func TestPostService_LatestDraftReturnsNotFoundWhenEmpty(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "empty-draft"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	if _, err := svc.LatestDraft(user.ID); !errors.Is(err, ErrPostNotFound) {
+		t.Fatalf("expected ErrPostNotFound, got %v", err)
+	}
+}
+
 func TestPostService_ListPublishedSplitsSearchTokens(t *testing.T) {
 	gdb := setupPostServiceTestDB(t)
 	svc := NewPostService(gdb)
@@ -460,6 +563,75 @@ func TestPostService_DraftVersionSkipsWhenContentUnchanged(t *testing.T) {
 	}
 	if len(versions) != 2 {
 		t.Fatalf("expected 2 draft versions, got %d", len(versions))
+	}
+}
+
+func TestPostService_DraftVersionGroupsBySession(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "session-writer"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	post, err := svc.Create(PostInput{
+		Content:        "# v1\n内容",
+		Summary:        "s1",
+		UserID:         user.ID,
+		DraftSessionID: "session-a",
+	})
+	if err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+
+	if _, err := svc.Update(post.ID, PostInput{
+		Content:        "# v2\n内容",
+		Summary:        "s2",
+		UserID:         user.ID,
+		DraftSessionID: "session-a",
+	}); err != nil {
+		t.Fatalf("update post in same session: %v", err)
+	}
+
+	versions, err := svc.ListDraftVersions(post.ID, 0)
+	if err != nil {
+		t.Fatalf("list draft versions: %v", err)
+	}
+	if len(versions) != 1 {
+		t.Fatalf("expected 1 draft version for same session, got %d", len(versions))
+	}
+	if versions[0].Content != "# v2\n内容" {
+		t.Fatalf("expected latest content in session, got %q", versions[0].Content)
+	}
+	if versions[0].SessionID != "session-a" {
+		t.Fatalf("expected session id session-a, got %q", versions[0].SessionID)
+	}
+
+	if _, err := svc.Update(post.ID, PostInput{
+		Content:        "# v3\n内容",
+		Summary:        "s3",
+		UserID:         user.ID,
+		DraftSessionID: "session-b",
+	}); err != nil {
+		t.Fatalf("update post in new session: %v", err)
+	}
+
+	versions, err = svc.ListDraftVersions(post.ID, 0)
+	if err != nil {
+		t.Fatalf("list draft versions after new session: %v", err)
+	}
+	if len(versions) != 2 {
+		t.Fatalf("expected 2 draft versions after new session, got %d", len(versions))
+	}
+	if versions[0].SessionID != "session-b" {
+		t.Fatalf("expected latest session id session-b, got %q", versions[0].SessionID)
+	}
+	if versions[0].Version != 2 {
+		t.Fatalf("expected new version number 2, got %d", versions[0].Version)
+	}
+	if versions[1].SessionID != "session-a" {
+		t.Fatalf("expected previous session id session-a, got %q", versions[1].SessionID)
 	}
 }
 

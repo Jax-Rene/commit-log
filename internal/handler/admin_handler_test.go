@@ -18,7 +18,10 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-type stubHTMLRender struct{}
+type stubHTMLRender struct {
+	lastName string
+	lastData interface{}
+}
 
 type stubHTMLInstance struct {
 	name string
@@ -26,6 +29,8 @@ type stubHTMLInstance struct {
 }
 
 func (r *stubHTMLRender) Instance(name string, data interface{}) render.Render {
+	r.lastName = name
+	r.lastData = data
 	return &stubHTMLInstance{name: name, data: data}
 }
 
@@ -71,7 +76,7 @@ func setupAdminHandlerTestDB(t *testing.T) (*gorm.DB, func()) {
 		t.Fatalf("failed to open test db: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.Post{}, &db.Tag{}, &db.SystemSetting{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.SystemSetting{}); err != nil {
 		t.Fatalf("failed to migrate test db: %v", err)
 	}
 
@@ -92,12 +97,14 @@ func TestShowDashboardUsesSevenDayTrend(t *testing.T) {
 	stubAnalytics := &analyticsStub{}
 	api := &API{
 		db:        gdb,
+		posts:     service.NewPostService(gdb),
 		system:    service.NewSystemSettingService(gdb),
 		analytics: stubAnalytics,
 	}
 
 	router := gin.New()
-	router.HTMLRender = &stubHTMLRender{}
+	renderer := &stubHTMLRender{}
+	router.HTMLRender = renderer
 	router.Use(sessions.Sessions("commitlog_session", cookie.NewStore([]byte("test-secret"))))
 	router.GET("/admin/dashboard", api.ShowDashboard)
 
@@ -113,5 +120,79 @@ func TestShowDashboardUsesSevenDayTrend(t *testing.T) {
 	}
 	if stubAnalytics.trendHours != 168 {
 		t.Fatalf("expected HourlyTrafficTrend hours=168, got %d", stubAnalytics.trendHours)
+	}
+}
+
+func TestShowDashboardIncludesLatestDraft(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	gdb, cleanup := setupAdminHandlerTestDB(t)
+	t.Cleanup(cleanup)
+
+	user := db.User{Username: "dash-user"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	first := db.Post{
+		Content: "# 第一篇\n内容",
+		Status:  "draft",
+		UserID:  user.ID,
+	}
+	second := db.Post{
+		Content: "# 第二篇\n内容",
+		Status:  "draft",
+		UserID:  user.ID,
+	}
+	if err := gdb.Create(&first).Error; err != nil {
+		t.Fatalf("failed to create first draft: %v", err)
+	}
+	if err := gdb.Create(&second).Error; err != nil {
+		t.Fatalf("failed to create second draft: %v", err)
+	}
+
+	later := time.Now().Add(2 * time.Hour)
+	if err := gdb.Model(&db.Post{}).
+		Where("id = ?", first.ID).
+		UpdateColumn("updated_at", later).Error; err != nil {
+		t.Fatalf("failed to update first draft timestamp: %v", err)
+	}
+
+	api := &API{
+		db:     gdb,
+		posts:  service.NewPostService(gdb),
+		system: service.NewSystemSettingService(gdb),
+	}
+
+	router := gin.New()
+	renderer := &stubHTMLRender{}
+	router.HTMLRender = renderer
+	router.Use(sessions.Sessions("commitlog_session", cookie.NewStore([]byte("test-secret"))))
+	router.GET("/admin/dashboard", api.ShowDashboard)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/admin/dashboard", nil)
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, recorder.Code)
+	}
+
+	payload, ok := renderer.lastData.(gin.H)
+	if !ok {
+		t.Fatalf("expected render payload to be gin.H, got %T", renderer.lastData)
+	}
+
+	latestRaw, exists := payload["latestDraft"]
+	if !exists || latestRaw == nil {
+		t.Fatalf("expected latestDraft in payload")
+	}
+
+	latest, ok := latestRaw.(*db.Post)
+	if !ok {
+		t.Fatalf("expected latestDraft to be *db.Post, got %T", latestRaw)
+	}
+	if latest.ID != first.ID {
+		t.Fatalf("expected latest draft %d, got %d", first.ID, latest.ID)
 	}
 }

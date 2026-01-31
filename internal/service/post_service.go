@@ -65,14 +65,15 @@ type PublicationListResult struct {
 
 // PostInput represents fields accepted when creating or updating a post.
 type PostInput struct {
-	Title       string
-	Content     string
-	Summary     string
-	TagIDs      []uint
-	UserID      uint
-	CoverURL    string
-	CoverWidth  int
-	CoverHeight int
+	Title          string
+	Content        string
+	Summary        string
+	TagIDs         []uint
+	UserID         uint
+	CoverURL       string
+	CoverWidth     int
+	CoverHeight    int
+	DraftSessionID string
 }
 
 // NewPostService creates a PostService instance.
@@ -122,7 +123,7 @@ func (s *PostService) Create(input PostInput) (*db.Post, error) {
 		ReadingTime: calculateReadingTime(input.Content),
 	}
 
-	return s.saveWithTags(&post, input.TagIDs, input.UserID)
+	return s.saveWithTags(&post, input.TagIDs, input.UserID, input.DraftSessionID)
 }
 
 // Update applies updates to an existing post.
@@ -147,7 +148,7 @@ func (s *PostService) Update(id uint, input PostInput) (*db.Post, error) {
 	existing.CoverHeight = coverHeight
 	existing.ReadingTime = calculateReadingTime(input.Content)
 
-	post, err := s.saveWithTags(&existing, input.TagIDs, input.UserID)
+	post, err := s.saveWithTags(&existing, input.TagIDs, input.UserID, input.DraftSessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -358,6 +359,25 @@ func (s *PostService) LatestPublication(postID uint) (*db.PostPublication, error
 	return &publication, nil
 }
 
+// LatestDraft 返回指定用户最近编辑的草稿。
+func (s *PostService) LatestDraft(userID uint) (*db.Post, error) {
+	query := s.db.Preload("Tags").Preload("User").Where("status = ?", "draft")
+	if userID > 0 {
+		query = query.Where("user_id = ?", userID)
+	}
+
+	var post db.Post
+	if err := query.Order("updated_at desc, id desc").First(&post).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrPostNotFound
+		}
+		return nil, err
+	}
+
+	post.PopulateDerivedFields()
+	return &post, nil
+}
+
 // ListPublished 返回最新发布的文章快照列表
 func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, error) {
 	result := &PublicationListResult{Page: filter.Page, PerPage: filter.PerPage}
@@ -455,7 +475,7 @@ func (s *PostService) ListDraftVersions(postID uint, limit int) ([]db.PostDraftV
 	return versions, nil
 }
 
-func (s *PostService) saveWithTags(post *db.Post, tagIDs []uint, userID uint) (*db.Post, error) {
+func (s *PostService) saveWithTags(post *db.Post, tagIDs []uint, userID uint, draftSessionID string) (*db.Post, error) {
 	return post, s.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(post).Error; err != nil {
 			return err
@@ -481,29 +501,44 @@ func (s *PostService) saveWithTags(post *db.Post, tagIDs []uint, userID uint) (*
 		}
 
 		post.PopulateDerivedFields()
-		if err := s.recordDraftVersion(tx, post, userID); err != nil {
+		if err := s.recordDraftVersion(tx, post, userID, draftSessionID); err != nil {
 			return err
 		}
 		return nil
 	})
 }
 
-func (s *PostService) recordDraftVersion(tx *gorm.DB, post *db.Post, userID uint) error {
+func (s *PostService) recordDraftVersion(tx *gorm.DB, post *db.Post, userID uint, draftSessionID string) error {
 	if tx == nil || post == nil {
 		return errors.New("draft version requires valid post and transaction")
 	}
 
 	contentHash := hashDraftContent(post.Content)
-	var latest db.PostDraftVersion
-	if err := tx.Select("id", "content_hash").
-		Where("post_id = ?", post.ID).
-		Order("created_at desc, id desc").
-		First(&latest).Error; err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
+	sessionID := strings.TrimSpace(draftSessionID)
+
+	if sessionID != "" {
+		var latest db.PostDraftVersion
+		if err := tx.Where("post_id = ?", post.ID).
+			Order("created_at desc, id desc").
+			First(&latest).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+		} else if latest.SessionID == sessionID {
+			return s.updateDraftVersion(tx, &latest, post, userID, contentHash, sessionID)
 		}
-	} else if latest.ContentHash == contentHash {
-		return nil
+	} else {
+		var latest db.PostDraftVersion
+		if err := tx.Select("id", "content_hash").
+			Where("post_id = ?", post.ID).
+			Order("created_at desc, id desc").
+			First(&latest).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+		} else if latest.ContentHash == contentHash {
+			return nil
+		}
 	}
 
 	resolvedUserID := userID
@@ -523,6 +558,7 @@ func (s *PostService) recordDraftVersion(tx *gorm.DB, post *db.Post, userID uint
 		PostID:      post.ID,
 		Content:     post.Content,
 		ContentHash: contentHash,
+		SessionID:   sessionID,
 		Summary:     post.Summary,
 		ReadingTime: calculateReadingTime(post.Content),
 		CoverURL:    post.CoverURL,
@@ -560,6 +596,39 @@ func (s *PostService) recordDraftVersion(tx *gorm.DB, post *db.Post, userID uint
 	}
 
 	if err := tx.Exec("DELETE FROM post_draft_version_tags WHERE post_draft_version_id IN ?", staleIDs).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *PostService) updateDraftVersion(tx *gorm.DB, draft *db.PostDraftVersion, post *db.Post, userID uint, contentHash, sessionID string) error {
+	if draft == nil {
+		return errors.New("draft version requires valid draft")
+	}
+
+	resolvedUserID := userID
+	if resolvedUserID == 0 {
+		resolvedUserID = post.UserID
+	}
+
+	updates := map[string]interface{}{
+		"content":      post.Content,
+		"content_hash": contentHash,
+		"session_id":   sessionID,
+		"summary":      post.Summary,
+		"reading_time": calculateReadingTime(post.Content),
+		"cover_url":    post.CoverURL,
+		"cover_width":  post.CoverWidth,
+		"cover_height": post.CoverHeight,
+		"user_id":      resolvedUserID,
+	}
+
+	if err := tx.Model(draft).Updates(updates).Error; err != nil {
+		return err
+	}
+
+	if err := tx.Model(draft).Association("Tags").Replace(post.Tags); err != nil {
 		return err
 	}
 

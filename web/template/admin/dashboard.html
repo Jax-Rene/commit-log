@@ -3,145 +3,171 @@
     <section
         class="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 shadow-xl transition-colors dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900"
     >
-        <div
-            class="flex flex-col gap-8 p-8 lg:flex-row lg:items-center lg:justify-between"
-        >
-            <div class="space-y-4 text-white">
-                <div
-                    class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-slate-100"
-                >
-                    <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-                    <span>仪表盘 · 最新概览</span>
-                </div>
-                <div class="space-y-2">
-                    <p class="text-sm text-slate-200">
-                        欢迎回来，{{if
-                        .username}}{{.username}}{{else}}管理员{{end}}
-                    </p>
-                    <h1 class="text-3xl font-semibold leading-tight">
-                        用更现代的后台掌控创作与数据
-                    </h1>
-                    <p class="max-w-2xl text-sm text-slate-200/80">
-                        在这里快速查看站点表现、热门内容与核心入口，让每一次发布都更有把握。
-                    </p>
-                </div>
-                <div class="flex flex-wrap items-center gap-3">
-                    <a
-                        href="/admin/posts/new"
-                        class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-lg shadow-slate-900/20 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-xl"
+        <div class="space-y-6 p-8">
+            <div
+                class="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between"
+            >
+                <div class="space-y-4 text-white">
+                    <div
+                        class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-slate-100"
                     >
-                        <span
-                            class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-slate-900 text-xs text-white"
-                            >＋</span
+                        <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                        <span>仪表盘 · 最新概览</span>
+                    </div>
+                    <div class="space-y-2">
+                        <p class="text-sm text-slate-200">
+                            欢迎回来，{{if
+                            .username}}{{.username}}{{else}}管理员{{end}}
+                        </p>
+                        <h1 class="text-3xl font-semibold leading-tight">
+                            用更现代的后台掌控创作与数据
+                        </h1>
+                        <p class="max-w-2xl text-sm text-slate-200/80">
+                            在这里快速查看站点表现、热门内容与核心入口，让每一次发布都更有把握。
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <a
+                            href="/admin/posts/new"
+                            class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-lg shadow-slate-900/20 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-xl"
                         >
-                        <span>开始新文章</span>
-                    </a>
-                    <a
-                        href="/admin/posts"
-                        class="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/10"
-                    >
-                        <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            class="h-4 w-4 opacity-80"
+                            <span
+                                class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-slate-900 text-xs text-white"
+                                >＋</span
+                            >
+                            <span>开始新文章</span>
+                        </a>
+                        <a
+                            href="/admin/posts"
+                            class="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/10"
                         >
-                            <path
-                                d="M8 12h8"
-                                stroke-width="1.5"
-                                stroke-linecap="round"
-                            ></path>
-                            <path
-                                d="M8 8h8"
-                                stroke-width="1.5"
-                                stroke-linecap="round"
-                            ></path>
-                            <path
-                                d="M8 16h5"
-                                stroke-width="1.5"
-                                stroke-linecap="round"
-                            ></path>
-                            <rect
-                                x="4.75"
-                                y="5.75"
-                                width="14.5"
-                                height="12.5"
-                                rx="2"
-                                stroke-width="1.5"
-                            ></rect>
-                        </svg>
-                        <span>管理内容</span>
-                    </a>
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                class="h-4 w-4 opacity-80"
+                            >
+                                <path
+                                    d="M8 12h8"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"
+                                ></path>
+                                <path
+                                    d="M8 8h8"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"
+                                ></path>
+                                <path
+                                    d="M8 16h5"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"
+                                ></path>
+                                <rect
+                                    x="4.75"
+                                    y="5.75"
+                                    width="14.5"
+                                    height="12.5"
+                                    rx="2"
+                                    stroke-width="1.5"
+                                ></rect>
+                            </svg>
+                            <span>管理内容</span>
+                        </a>
+                    </div>
                 </div>
-            </div>
 
-            <div class="grid w-full max-w-2xl grid-cols-2 gap-4 md:grid-cols-3">
-                <div
-                    class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/10 p-4 text-white shadow-lg shadow-slate-900/10"
-                >
+                <div class="grid w-full max-w-2xl grid-cols-2 gap-4 md:grid-cols-3">
                     <div
-                        class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-200/80"
+                        class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/10 p-4 text-white shadow-lg shadow-slate-900/10"
                     >
-                        <span>文章</span>
-                        <span
-                            class="rounded-full bg-white/15 px-2 py-0.5 text-[11px]"
-                            >总计</span
-                        >
-                    </div>
-                    <div class="flex items-end justify-between">
-                        <p class="text-3xl font-semibold">{{.postCount}}</p>
-                        <span class="text-xs text-emerald-200">持续创作</span>
-                    </div>
-                </div>
-                <div
-                    class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-white shadow-lg shadow-slate-900/10"
-                >
-                    <div
-                        class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-200/80"
-                    >
-                        <span>标签</span>
-                        <span
-                            class="rounded-full bg-white/15 px-2 py-0.5 text-[11px]"
-                            >结构</span
-                        >
-                    </div>
-                    <div class="flex items-end justify-between">
-                        <p class="text-3xl font-semibold">{{.tagCount}}</p>
-                        <span class="text-xs text-slate-200/80">主题脉络</span>
-                    </div>
-                </div>
-                <div
-                    class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-white shadow-lg shadow-slate-900/10 md:col-span-1"
-                >
-                    <div
-                        class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-200/80"
-                    >
-                        <span>流量</span>
-                        <span
-                            class="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[11px] text-emerald-100"
-                            >实时</span
-                        >
-                    </div>
-                    <div class="space-y-1 text-sm">
                         <div
-                            class="flex items-center justify-between text-slate-200"
+                            class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-200/80"
                         >
-                            <span>PV</span>
-                            <span class="font-semibold"
-                                >{{.overview.TotalPageViews}}</span
+                            <span>文章</span>
+                            <span
+                                class="rounded-full bg-white/15 px-2 py-0.5 text-[11px]"
+                                >总计</span
                             >
                         </div>
+                        <div class="flex items-end justify-between">
+                            <p class="text-3xl font-semibold">{{.postCount}}</p>
+                            <span class="text-xs text-emerald-200">持续创作</span>
+                        </div>
+                    </div>
+                    <div
+                        class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-white shadow-lg shadow-slate-900/10"
+                    >
                         <div
-                            class="flex items-center justify-between text-slate-200"
+                            class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-200/80"
                         >
-                            <span>UV</span>
-                            <span class="font-semibold"
-                                >{{.overview.TotalUniqueVisitors}}</span
+                            <span>标签</span>
+                            <span
+                                class="rounded-full bg-white/15 px-2 py-0.5 text-[11px]"
+                                >结构</span
                             >
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <p class="text-3xl font-semibold">{{.tagCount}}</p>
+                            <span class="text-xs text-slate-200/80">主题脉络</span>
+                        </div>
+                    </div>
+                    <div
+                        class="flex flex-col gap-3 rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-white shadow-lg shadow-slate-900/10 md:col-span-1"
+                    >
+                        <div
+                            class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-200/80"
+                        >
+                            <span>流量</span>
+                            <span
+                                class="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[11px] text-emerald-100"
+                                >实时</span
+                            >
+                        </div>
+                        <div class="space-y-1 text-sm">
+                            <div
+                                class="flex items-center justify-between text-slate-200"
+                            >
+                                <span>PV</span>
+                                <span class="font-semibold"
+                                    >{{.overview.TotalPageViews}}</span
+                                >
+                            </div>
+                            <div
+                                class="flex items-center justify-between text-slate-200"
+                            >
+                                <span>UV</span>
+                                <span class="font-semibold"
+                                    >{{.overview.TotalUniqueVisitors}}</span
+                                >
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            {{if .latestDraft}}
+            <div
+                class="rounded-2xl border-white/10 bg-white/5 px-4 py-3 text-xs text-slate-200/80"
+            >
+                <div class="flex flex-nowrap items-center gap-2">
+                    <span
+                        class="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-slate-100"
+                        >最近草稿</span
+                    >
+                    <span class="min-w-0 flex-1 truncate text-sm font-semibold text-white">
+                        {{if .latestDraft.Title}}{{.latestDraft.Title}}{{else}}未命名草稿{{end}}
+                    </span>
+                    <span class="shrink-0 text-[11px] text-slate-200/70"
+                        title='{{.latestDraft.UpdatedAt.Format "2006-01-02 15:04"}}'
+                        >更新于 {{relativeTime .latestDraft.UpdatedAt}}</span
+                    >
+                    <a
+                        href="/admin/posts/continue"
+                        class="shrink-0 text-[11px] font-semibold text-white/90 underline decoration-white/40 underline-offset-4 transition hover:decoration-white"
+                        >继续编辑</a
+                    >
+                </div>
+            </div>
+            {{end}}
         </div>
     </section>
 
