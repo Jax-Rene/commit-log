@@ -37,7 +37,6 @@ func Init(databasePath string) error {
 		&Post{},
 		&PostDraftVersion{},
 		&PostPublication{},
-		&PostDraftVersion{},
 		&Tag{},
 		&Page{},
 		&GalleryImage{},
