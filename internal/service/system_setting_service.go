@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -35,6 +36,26 @@ const (
 	defaultGallerySubtitle = "Shot by Lumix S5M2 / OnePlus 13"
 )
 
+const (
+	NavButtonTypeAbout   = "about"
+	NavButtonTypeRSS     = "rss"
+	NavButtonTypeGallery = "gallery"
+	NavButtonTypeCustom  = "custom"
+)
+
+var defaultNavButtons = []NavButton{
+	{Type: NavButtonTypeAbout},
+	{Type: NavButtonTypeRSS},
+	{Type: NavButtonTypeGallery},
+}
+
+// NavButton 描述前台顶部导航按钮配置。
+type NavButton struct {
+	Type  string `json:"type"`
+	Title string `json:"title,omitempty"`
+	URL   string `json:"url,omitempty"`
+}
+
 // SystemSettings 描述后台可配置的系统信息。
 type SystemSettings struct {
 	SiteName         string
@@ -53,6 +74,7 @@ type SystemSettings struct {
 	AIRewritePrompt  string
 	GallerySubtitle  string
 	GalleryEnabled   bool
+	NavButtons       []NavButton
 }
 
 // ErrAIAPIKeyMissing 表示未提供必需的 AI 平台 API Key。
@@ -79,6 +101,7 @@ type SystemSettingsInput struct {
 	AIRewritePrompt  string
 	GallerySubtitle  string
 	GalleryEnabled   *bool
+	NavButtons       []NavButton
 }
 
 // SystemSettingService 提供系统设置的读取与更新能力。
@@ -120,6 +143,7 @@ var settingKeys = []string{
 	db.SettingKeyAISummaryPrompt,
 	db.SettingKeyAIRewritePrompt,
 	db.SettingKeyGalleryEnabled,
+	db.SettingKeyNavButtons,
 }
 
 // GetSettings 读取系统设置，如未设置将返回默认值。
@@ -135,6 +159,7 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 		AIRewritePrompt:  defaultRewriteSystemPrompt,
 		GallerySubtitle:  defaultGallerySubtitle,
 		GalleryEnabled:   defaultGalleryEnabled,
+		NavButtons:       normalizeNavButtons(defaultNavButtons),
 	}
 
 	var records []db.SystemSetting
@@ -196,6 +221,10 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 			if parsed, err := strconv.ParseBool(strings.TrimSpace(record.Value)); err == nil {
 				result.GalleryEnabled = parsed
 			}
+		case db.SettingKeyNavButtons:
+			if parsed := parseNavButtons(record.Value); len(parsed) > 0 {
+				result.NavButtons = parsed
+			}
 		}
 	}
 
@@ -225,6 +254,9 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 	}
 	if strings.TrimSpace(result.AIRewritePrompt) == "" {
 		result.AIRewritePrompt = defaultRewriteSystemPrompt
+	}
+	if len(result.NavButtons) == 0 {
+		result.NavButtons = normalizeNavButtons(defaultNavButtons)
 	}
 
 	return result, nil
@@ -259,6 +291,7 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 		AIRewritePrompt:  strings.TrimSpace(input.AIRewritePrompt),
 		GallerySubtitle:  strings.TrimSpace(input.GallerySubtitle),
 		GalleryEnabled:   galleryEnabled,
+		NavButtons:       normalizeNavButtons(input.NavButtons),
 	}
 
 	if sanitized.SiteName == "" {
@@ -299,6 +332,9 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 	}
 	if sanitized.AIRewritePrompt == "" {
 		sanitized.AIRewritePrompt = defaultRewriteSystemPrompt
+	}
+	if len(sanitized.NavButtons) == 0 {
+		sanitized.NavButtons = normalizeNavButtons(defaultNavButtons)
 	}
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
@@ -350,6 +386,13 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 		if err := upsertSetting(tx, db.SettingKeyGalleryEnabled, strconv.FormatBool(sanitized.GalleryEnabled)); err != nil {
 			return err
 		}
+		navButtonsJSON, err := json.Marshal(sanitized.NavButtons)
+		if err != nil {
+			return fmt.Errorf("marshal nav buttons: %w", err)
+		}
+		if err := upsertSetting(tx, db.SettingKeyNavButtons, string(navButtonsJSON)); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {
@@ -398,6 +441,72 @@ func normalizeKeywords(input string) string {
 	}
 
 	return strings.Join(normalized, ", ")
+}
+
+func parseNavButtons(raw string) []NavButton {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return nil
+	}
+	var decoded []NavButton
+	if err := json.Unmarshal([]byte(trimmed), &decoded); err != nil {
+		return nil
+	}
+	return normalizeNavButtons(decoded)
+}
+
+func normalizeNavButtons(input []NavButton) []NavButton {
+	if len(input) == 0 {
+		return nil
+	}
+
+	seen := map[string]struct{}{}
+	result := make([]NavButton, 0, len(input))
+
+	for _, item := range input {
+		buttonType := strings.ToLower(strings.TrimSpace(item.Type))
+		switch buttonType {
+		case NavButtonTypeAbout, NavButtonTypeRSS, NavButtonTypeGallery:
+			if _, exists := seen[buttonType]; exists {
+				continue
+			}
+			seen[buttonType] = struct{}{}
+			title := strings.TrimSpace(item.Title)
+			if title == "" {
+				title = defaultNavButtonTitle(buttonType)
+			}
+			result = append(result, NavButton{
+				Type:  buttonType,
+				Title: title,
+			})
+		case NavButtonTypeCustom:
+			title := strings.TrimSpace(item.Title)
+			url := strings.TrimSpace(item.URL)
+			if title == "" || url == "" {
+				continue
+			}
+			result = append(result, NavButton{
+				Type:  buttonType,
+				Title: title,
+				URL:   url,
+			})
+		}
+	}
+
+	return result
+}
+
+func defaultNavButtonTitle(buttonType string) string {
+	switch buttonType {
+	case NavButtonTypeAbout:
+		return "About Me"
+	case NavButtonTypeRSS:
+		return "RSS"
+	case NavButtonTypeGallery:
+		return "Gallery"
+	default:
+		return ""
+	}
 }
 
 func upsertSetting(tx *gorm.DB, key, value string) error {

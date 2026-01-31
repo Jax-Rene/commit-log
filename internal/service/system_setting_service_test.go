@@ -81,6 +81,14 @@ func TestSystemSettingServiceDefaults(t *testing.T) {
 	if !settings.GalleryEnabled {
 		t.Fatalf("expected gallery to be enabled by default")
 	}
+	if len(settings.NavButtons) != 3 {
+		t.Fatalf("expected default nav buttons, got %#v", settings.NavButtons)
+	}
+	if settings.NavButtons[0].Type != NavButtonTypeAbout ||
+		settings.NavButtons[1].Type != NavButtonTypeRSS ||
+		settings.NavButtons[2].Type != NavButtonTypeGallery {
+		t.Fatalf("unexpected nav button defaults: %#v", settings.NavButtons)
+	}
 }
 
 func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
@@ -103,8 +111,16 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 		OpenAIAPIKey:     "sk-xxxx",
 		DeepSeekAPIKey:   "ds-12345",
 		GalleryEnabled:   boolPtr(false),
-		AISummaryPrompt:  " 摘要提示 ",
-		AIRewritePrompt:  " 重写提示 ",
+		NavButtons: []NavButton{
+			{Type: NavButtonTypeCustom, Title: " 文档 ", URL: " https://example.com/docs "},
+			{Type: NavButtonTypeRSS},
+			{Type: NavButtonTypeAbout},
+			{Type: NavButtonTypeAbout},
+			{Type: "invalid"},
+			{Type: NavButtonTypeGallery},
+		},
+		AISummaryPrompt: " 摘要提示 ",
+		AIRewritePrompt: " 重写提示 ",
 	}
 
 	saved, err := svc.UpdateSettings(input)
@@ -141,6 +157,21 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	}
 	if saved.GallerySubtitle != "Shot by Hasselblad X2D / iPhone 16" {
 		t.Fatalf("expected gallery subtitle sanitized, got %q", saved.GallerySubtitle)
+	}
+	if len(saved.NavButtons) != 4 {
+		t.Fatalf("expected sanitized nav buttons, got %#v", saved.NavButtons)
+	}
+	if saved.NavButtons[0].Type != NavButtonTypeCustom || saved.NavButtons[0].Title != "文档" || saved.NavButtons[0].URL != "https://example.com/docs" {
+		t.Fatalf("unexpected custom nav button: %#v", saved.NavButtons[0])
+	}
+	if saved.NavButtons[1].Type != NavButtonTypeRSS || saved.NavButtons[1].Title != "RSS" {
+		t.Fatalf("unexpected rss nav button: %#v", saved.NavButtons[1])
+	}
+	if saved.NavButtons[2].Type != NavButtonTypeAbout || saved.NavButtons[2].Title != "About Me" {
+		t.Fatalf("unexpected about nav button: %#v", saved.NavButtons[2])
+	}
+	if saved.NavButtons[3].Type != NavButtonTypeGallery || saved.NavButtons[3].Title != "Gallery" {
+		t.Fatalf("unexpected gallery nav button: %#v", saved.NavButtons[3])
 	}
 
 	fetched, err := svc.GetSettings()
@@ -193,6 +224,12 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if fetched.GallerySubtitle != "Shot by Hasselblad X2D / iPhone 16" {
 		t.Fatalf("expected gallery subtitle %q, got %q", "Shot by Hasselblad X2D / iPhone 16", fetched.GallerySubtitle)
 	}
+	if len(fetched.NavButtons) != 4 {
+		t.Fatalf("expected fetched nav buttons, got %#v", fetched.NavButtons)
+	}
+	if fetched.NavButtons[0].Type != NavButtonTypeCustom || fetched.NavButtons[0].Title != "文档" || fetched.NavButtons[0].URL != "https://example.com/docs" {
+		t.Fatalf("unexpected fetched custom nav button: %#v", fetched.NavButtons[0])
+	}
 }
 
 func TestSystemSettingServiceFallbackSiteName(t *testing.T) {
@@ -231,6 +268,9 @@ func TestSystemSettingServiceFallbackSiteName(t *testing.T) {
 	}
 	if saved.GallerySubtitle != defaultGallerySubtitle {
 		t.Fatalf("expected gallery subtitle fallback to default, got %q", saved.GallerySubtitle)
+	}
+	if len(saved.NavButtons) != 3 {
+		t.Fatalf("expected nav buttons fallback to default, got %#v", saved.NavButtons)
 	}
 }
 

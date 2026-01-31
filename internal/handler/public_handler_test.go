@@ -12,6 +12,7 @@ import (
 
 	"github.com/commitlog/internal/db"
 	"github.com/commitlog/internal/router"
+	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -33,7 +34,20 @@ func setupPublicTestDB(t *testing.T) func() {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.PostPublication{}, &db.Tag{}, &db.Page{}, &db.ProfileContact{}, &db.PostStatistic{}, &db.PostVisit{}, &db.SystemSetting{}); err != nil {
+	if err := gdb.AutoMigrate(
+		&db.User{},
+		&db.Post{},
+		&db.PostDraftVersion{},
+		&db.PostPublication{},
+		&db.Tag{},
+		&db.Page{},
+		&db.ProfileContact{},
+		&db.PostStatistic{},
+		&db.PostVisit{},
+		&db.SiteHourlySnapshot{},
+		&db.SiteHourlyVisitor{},
+		&db.SystemSetting{},
+	); err != nil {
 		t.Fatalf("failed to migrate database: %v", err)
 	}
 
@@ -201,6 +215,26 @@ func TestLoadMorePostsHandlesPagination(t *testing.T) {
 	}
 }
 
+func TestSearchSuggestionsRendersResults(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	post := seedPublishedPost(t, "工程师标题", "# 工程师\n内容")
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/search/suggestions?search=工程师", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	if !strings.Contains(w.Body.String(), "/posts/"+strconv.Itoa(int(post.ID))) {
+		t.Fatalf("expected suggestions to include post link")
+	}
+}
+
 func TestShowPostDetailRejectsDraft(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
@@ -298,6 +332,45 @@ func TestShowAboutHidesSummary(t *testing.T) {
 	}
 	if strings.Contains(body[bodyStart:], "不应显示摘要") {
 		t.Fatalf("expected about page to hide summary in visible content")
+	}
+}
+
+func TestShowTagArchiveRendersTags(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	tag := db.Tag{Name: "Go"}
+	if err := db.DB.Create(&tag).Error; err != nil {
+		t.Fatalf("failed to create tag: %v", err)
+	}
+
+	svc := service.NewPostService(db.DB)
+	post, err := svc.Create(service.PostInput{
+		Content:     "# 测试文章\n内容",
+		Summary:     "摘要",
+		TagIDs:      []uint{tag.ID},
+		UserID:      1,
+		CoverURL:    "https://example.com/cover.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+	})
+	if err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	if _, err := svc.Publish(post.ID, 1, nil); err != nil {
+		t.Fatalf("publish post: %v", err)
+	}
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/tags", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), tag.Name) {
+		t.Fatalf("expected response to include tag name")
 	}
 }
 

@@ -129,6 +129,43 @@ func TestPostService_ListDefaultsToCreatedDesc(t *testing.T) {
 	}
 }
 
+func TestPostService_ListPublishedSplitsSearchTokens(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "search-split"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	post, err := svc.Create(PostInput{
+		Content:     "# Hello\nWorld in body",
+		Summary:     "摘要",
+		UserID:      user.ID,
+		CoverURL:    "https://example.com/cover.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+	})
+	if err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	if _, err := svc.Publish(post.ID, user.ID, nil); err != nil {
+		t.Fatalf("publish post: %v", err)
+	}
+
+	list, err := svc.ListPublished(PostFilter{
+		Search:  "Hello World",
+		Page:    1,
+		PerPage: 10,
+	})
+	if err != nil {
+		t.Fatalf("list published posts: %v", err)
+	}
+	if len(list.Publications) != 1 {
+		t.Fatalf("expected 1 publication, got %d", len(list.Publications))
+	}
+}
+
 func TestPostService_ListSortsByHot(t *testing.T) {
 	gdb := setupPostServiceTestDB(t)
 	svc := NewPostService(gdb)

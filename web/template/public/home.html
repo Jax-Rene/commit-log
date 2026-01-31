@@ -30,7 +30,14 @@
                         .
                         $tag.Name}}checked{{end}}{{end}}
                     />
-                    <span class="tag-filter-pill">{{$tag.Name}}</span>
+                    <span class="tag-filter-pill">
+                        <span>{{$tag.Name}}</span>
+                        <span
+                            class="ml-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500"
+                        >
+                            · {{$tag.Count}}
+                        </span>
+                    </span>
                 </label>
                 {{end}}
             </div>

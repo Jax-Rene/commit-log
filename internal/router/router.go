@@ -201,7 +201,7 @@ func (r *templateRegistry) LoadTemplates(path string) {
 	for _, partial := range partialTemplates {
 		templateName := filepath.Base(partial)
 		files := append([]string{}, componentTemplates...)
-		files = append(files, partial)
+		files = append(files, partialTemplates...)
 		tmpl := template.New(templateName).Funcs(r.funcMap)
 		r.templates[templateName] = template.Must(tmpl.ParseFiles(files...))
 	}
