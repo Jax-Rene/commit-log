@@ -177,8 +177,17 @@ function getInitialMarkdown() {
   return "# ";
 }
 
-const DEFAULT_CHANGE_POLL_INTERVAL = 1000;
-const DEFAULT_AUTOSAVE_INTERVAL = 30000;
+const DEFAULT_CHANGE_POLL_INTERVAL = 3000;
+const DEFAULT_AUTOSAVE_INTERVAL = 60000;
+
+function generateDraftSessionId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `session-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
+}
 
 function createToast() {
   if (window.AdminUI && typeof window.AdminUI.toast === "function") {
@@ -1808,6 +1817,11 @@ class PostDraftController {
     this.initialData = initialData || {};
     this.postData = this.normalizePost(initialData.post);
     this.latestPublication = initialData.latestPublication || null;
+    const sessionCandidate = coerceString(
+      pickProperty(initialData, ["draft_session_id", "draftSessionId"], ""),
+      "",
+    ).trim();
+    this.draftSessionId = sessionCandidate || generateDraftSessionId();
     this.postId = this.resolvePostId(this.postData);
     this.eventTarget = typeof window !== "undefined" ? window : null;
     this.loading = false;
@@ -2480,6 +2494,7 @@ class PostDraftController {
       cover_url: coverUrl,
       cover_width: coverWidth,
       cover_height: coverHeight,
+      draft_session_id: this.draftSessionId,
     };
   }
 

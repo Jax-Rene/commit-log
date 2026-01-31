@@ -59,6 +59,7 @@ type PostDraftVersion struct {
 	Post        Post
 	Content     string
 	ContentHash string
+	SessionID   string `gorm:"index;size:64"`
 	Summary     string
 	ReadingTime int
 	CoverURL    string

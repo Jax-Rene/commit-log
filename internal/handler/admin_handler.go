@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -99,13 +100,23 @@ func (a *API) ShowDashboard(c *gin.Context) {
 		}
 	}
 
+	var latestDraft *db.Post
+	if a.posts != nil {
+		if draft, err := a.posts.LatestDraft(a.currentUserID(c)); err == nil {
+			latestDraft = draft
+		} else if !errors.Is(err, service.ErrPostNotFound) {
+			c.Error(err)
+		}
+	}
+
 	a.renderHTML(c, http.StatusOK, "dashboard.html", gin.H{
-		"title":     "管理面板",
-		"username":  username,
-		"postCount": postCount,
-		"tagCount":  tagCount,
-		"overview":  overview,
-		"trend":     hourlyTrend,
+		"title":       "管理面板",
+		"username":    username,
+		"postCount":   postCount,
+		"tagCount":    tagCount,
+		"overview":    overview,
+		"trend":       hourlyTrend,
+		"latestDraft": latestDraft,
 	})
 }
 

@@ -473,6 +473,12 @@ test("utility helpers normalize values", () => {
   );
 });
 
+test("default autosave intervals throttle draft updates", () => {
+  const { api } = loadMilkdownTestingModule();
+  assert.strictEqual(api.DEFAULT_CHANGE_POLL_INTERVAL, 3000);
+  assert.strictEqual(api.DEFAULT_AUTOSAVE_INTERVAL, 60000);
+});
+
 test("cloneValue falls back when structuredClone unavailable", () => {
   const { api, context } = loadMilkdownTestingModule({
     structuredClone: undefined,
@@ -653,6 +659,26 @@ test("resetToLatestPublication syncs published snapshot and marks draft dirty", 
   assert.ok(
     toasts.length === 0 || toasts.every((payload) => payload.type !== "error"),
   );
+});
+
+test("buildPayload includes draft session id", () => {
+  const { api } = loadMilkdownTestingModule();
+  const { PostDraftController } = api;
+  const crepe = {
+    editor: {},
+    getMarkdown() {
+      return "# 标题\n\n内容";
+    },
+    setMarkdown() {
+      return true;
+    },
+  };
+  const controller = new PostDraftController(crepe, {
+    post: { Content: "# 标题\n\n内容" },
+    draft_session_id: "session-123",
+  });
+  const payload = controller.buildPayload("# 标题\n\n内容");
+  assert.strictEqual(payload.draft_session_id, "session-123");
 });
 
 test("callout marker parsing extracts emoji and trailing text", () => {

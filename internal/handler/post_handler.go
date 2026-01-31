@@ -18,25 +18,27 @@ import (
 const defaultUserID = 1
 
 type postPayload struct {
-	Title       string `json:"title"`
-	Content     string `json:"content"`
-	Summary     string `json:"summary"`
-	TagIDs      []uint `json:"tag_ids"`
-	CoverURL    string `json:"cover_url"`
-	CoverWidth  int    `json:"cover_width"`
-	CoverHeight int    `json:"cover_height"`
+	Title          string `json:"title"`
+	Content        string `json:"content"`
+	Summary        string `json:"summary"`
+	TagIDs         []uint `json:"tag_ids"`
+	CoverURL       string `json:"cover_url"`
+	CoverWidth     int    `json:"cover_width"`
+	CoverHeight    int    `json:"cover_height"`
+	DraftSessionID string `json:"draft_session_id"`
 }
 
 func (p postPayload) toInput(userID uint) service.PostInput {
 	return service.PostInput{
-		Title:       p.Title,
-		Content:     p.Content,
-		Summary:     p.Summary,
-		TagIDs:      p.TagIDs,
-		UserID:      userID,
-		CoverURL:    p.CoverURL,
-		CoverWidth:  p.CoverWidth,
-		CoverHeight: p.CoverHeight,
+		Title:          p.Title,
+		Content:        p.Content,
+		Summary:        p.Summary,
+		TagIDs:         p.TagIDs,
+		UserID:         userID,
+		CoverURL:       p.CoverURL,
+		CoverWidth:     p.CoverWidth,
+		CoverHeight:    p.CoverHeight,
+		DraftSessionID: p.DraftSessionID,
 	}
 }
 
@@ -599,6 +601,22 @@ func (a *API) postEditPageData(c *gin.Context) gin.H {
 // ShowPostEdit 渲染文章编辑页面（Milkdown 版本）
 func (a *API) ShowPostEdit(c *gin.Context) {
 	a.renderHTML(c, http.StatusOK, "post_edit.html", a.postEditPageData(c))
+}
+
+// ContinueDraft 跳转到最近编辑的草稿。
+func (a *API) ContinueDraft(c *gin.Context) {
+	draft, err := a.posts.LatestDraft(a.currentUserID(c))
+	if err != nil {
+		if errors.Is(err, service.ErrPostNotFound) {
+			c.Redirect(http.StatusFound, "/admin/posts/new")
+			return
+		}
+		c.Error(err)
+		c.Redirect(http.StatusFound, "/admin/posts/new")
+		return
+	}
+
+	c.Redirect(http.StatusFound, fmt.Sprintf("/admin/posts/%d/edit", draft.ID))
 }
 
 func (a *API) currentUserID(c *gin.Context) uint {

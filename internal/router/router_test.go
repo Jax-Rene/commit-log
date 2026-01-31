@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/commitlog/internal/db"
 	"github.com/gin-gonic/gin"
@@ -33,5 +34,33 @@ func TestSetupRouterServesUploadsAlias(t *testing.T) {
 	}
 	if rr.Body.String() != string(fileContent) {
 		t.Fatalf("unexpected body, got %q", rr.Body.String())
+	}
+}
+
+func TestFormatRelativeTime(t *testing.T) {
+	now := time.Date(2025, 12, 1, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		input    time.Time
+		expected string
+	}{
+		{name: "zero", input: time.Time{}, expected: ""},
+		{name: "seconds", input: now.Add(-30 * time.Second), expected: "刚刚"},
+		{name: "minutes", input: now.Add(-5 * time.Minute), expected: "5分钟前"},
+		{name: "hours", input: now.Add(-2 * time.Hour), expected: "2小时前"},
+		{name: "days", input: now.Add(-72 * time.Hour), expected: "3天前"},
+		{name: "months", input: now.Add(-60 * 24 * time.Hour), expected: "2个月前"},
+		{name: "years", input: now.Add(-3 * 365 * 24 * time.Hour), expected: "3年前"},
+		{name: "future", input: now.Add(2 * time.Minute), expected: "刚刚"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := formatRelativeTime(now, tt.input)
+			if got != tt.expected {
+				t.Fatalf("expected %q, got %q", tt.expected, got)
+			}
+		})
 	}
 }
