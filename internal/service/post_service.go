@@ -1,6 +1,8 @@
 package service
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"regexp"
@@ -21,6 +23,8 @@ var (
 	imagePattern           = regexp.MustCompile(`!\[[^\]]*\]\([^\)]+\)`)
 	bareURLPattern         = regexp.MustCompile(`https?://\S+`)
 )
+
+const maxDraftVersions = 10
 
 // PostService wraps post related database operations.
 type PostService struct {
@@ -118,7 +122,7 @@ func (s *PostService) Create(input PostInput) (*db.Post, error) {
 		ReadingTime: calculateReadingTime(input.Content),
 	}
 
-	return s.saveWithTags(&post, input.TagIDs)
+	return s.saveWithTags(&post, input.TagIDs, input.UserID)
 }
 
 // Update applies updates to an existing post.
@@ -143,7 +147,7 @@ func (s *PostService) Update(id uint, input PostInput) (*db.Post, error) {
 	existing.CoverHeight = coverHeight
 	existing.ReadingTime = calculateReadingTime(input.Content)
 
-	post, err := s.saveWithTags(&existing, input.TagIDs)
+	post, err := s.saveWithTags(&existing, input.TagIDs, input.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -421,7 +425,37 @@ func (s *PostService) ListAllPublished() ([]db.PostPublication, error) {
 	return publications, nil
 }
 
-func (s *PostService) saveWithTags(post *db.Post, tagIDs []uint) (*db.Post, error) {
+// ListDraftVersions 返回指定文章的草稿历史版本。
+func (s *PostService) ListDraftVersions(postID uint, limit int) ([]db.PostDraftVersion, error) {
+	if postID == 0 {
+		return nil, ErrPostNotFound
+	}
+
+	if err := s.db.Select("id").First(&db.Post{}, postID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrPostNotFound
+		}
+		return nil, err
+	}
+
+	if limit <= 0 || limit > maxDraftVersions {
+		limit = maxDraftVersions
+	}
+
+	var versions []db.PostDraftVersion
+	if err := s.db.Preload("Tags").
+		Preload("User").
+		Where("post_id = ?", postID).
+		Order("created_at desc, id desc").
+		Limit(limit).
+		Find(&versions).Error; err != nil {
+		return nil, err
+	}
+
+	return versions, nil
+}
+
+func (s *PostService) saveWithTags(post *db.Post, tagIDs []uint, userID uint) (*db.Post, error) {
 	return post, s.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(post).Error; err != nil {
 			return err
@@ -447,8 +481,94 @@ func (s *PostService) saveWithTags(post *db.Post, tagIDs []uint) (*db.Post, erro
 		}
 
 		post.PopulateDerivedFields()
+		if err := s.recordDraftVersion(tx, post, userID); err != nil {
+			return err
+		}
 		return nil
 	})
+}
+
+func (s *PostService) recordDraftVersion(tx *gorm.DB, post *db.Post, userID uint) error {
+	if tx == nil || post == nil {
+		return errors.New("draft version requires valid post and transaction")
+	}
+
+	contentHash := hashDraftContent(post.Content)
+	var latest db.PostDraftVersion
+	if err := tx.Select("id", "content_hash").
+		Where("post_id = ?", post.ID).
+		Order("created_at desc, id desc").
+		First(&latest).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+	} else if latest.ContentHash == contentHash {
+		return nil
+	}
+
+	resolvedUserID := userID
+	if resolvedUserID == 0 {
+		resolvedUserID = post.UserID
+	}
+
+	var maxVersion int64
+	if err := tx.Model(&db.PostDraftVersion{}).
+		Where("post_id = ?", post.ID).
+		Select("COALESCE(MAX(version), 0)").
+		Scan(&maxVersion).Error; err != nil {
+		return err
+	}
+
+	draft := db.PostDraftVersion{
+		PostID:      post.ID,
+		Content:     post.Content,
+		ContentHash: contentHash,
+		Summary:     post.Summary,
+		ReadingTime: calculateReadingTime(post.Content),
+		CoverURL:    post.CoverURL,
+		CoverWidth:  post.CoverWidth,
+		CoverHeight: post.CoverHeight,
+		UserID:      resolvedUserID,
+		Version:     int(maxVersion) + 1,
+	}
+
+	if err := tx.Create(&draft).Error; err != nil {
+		return err
+	}
+
+	if len(post.Tags) > 0 {
+		if err := tx.Model(&draft).Association("Tags").Replace(post.Tags); err != nil {
+			return err
+		}
+	}
+
+	var staleIDs []uint
+	if err := tx.Model(&db.PostDraftVersion{}).
+		Where("post_id = ?", post.ID).
+		Order("created_at desc, id desc").
+		Offset(maxDraftVersions).
+		Pluck("id", &staleIDs).Error; err != nil {
+		return err
+	}
+
+	if len(staleIDs) == 0 {
+		return nil
+	}
+
+	if err := tx.Where("id IN ?", staleIDs).Delete(&db.PostDraftVersion{}).Error; err != nil {
+		return err
+	}
+
+	if err := tx.Exec("DELETE FROM post_draft_version_tags WHERE post_draft_version_id IN ?", staleIDs).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func hashDraftContent(content string) string {
+	sum := md5.Sum([]byte(content))
+	return hex.EncodeToString(sum[:])
 }
 
 func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeStatus bool) *gorm.DB {

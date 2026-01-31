@@ -72,6 +72,34 @@ func (a *API) GetPost(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"post": post})
 }
 
+// ListDraftVersions 获取文章草稿历史版本
+func (a *API) ListDraftVersions(c *gin.Context) {
+	id, err := parseUintParam(c, "id")
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "无效的文章ID")
+		return
+	}
+
+	limit := 10
+	if rawLimit := strings.TrimSpace(c.Query("limit")); rawLimit != "" {
+		if parsed, parseErr := strconv.Atoi(rawLimit); parseErr == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	versions, err := a.posts.ListDraftVersions(id, limit)
+	if err != nil {
+		if errors.Is(err, service.ErrPostNotFound) {
+			respondError(c, http.StatusNotFound, "文章不存在")
+			return
+		}
+		respondError(c, http.StatusInternalServerError, "获取草稿版本失败")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"draft_versions": versions})
+}
+
 // CreatePost 创建新文章
 func (a *API) CreatePost(c *gin.Context) {
 	var payload postPayload

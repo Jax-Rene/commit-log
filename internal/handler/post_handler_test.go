@@ -97,7 +97,7 @@ func setupTestDB(t *testing.T) (*API, func()) {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.Page{}, &db.ProfileContact{}, &db.SystemSetting{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.PostDraftVersion{}, &db.Tag{}, &db.Page{}, &db.ProfileContact{}, &db.SystemSetting{}); err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 
@@ -107,7 +107,7 @@ func setupTestDB(t *testing.T) (*API, func()) {
 
 	db.DB = gdb
 
-        return NewAPI(db.DB, "web/static/uploads", "/static/uploads", ""), func() {
+	return NewAPI(db.DB, "web/static/uploads", "/static/uploads", ""), func() {
 		sqlDB, err := db.DB.DB()
 		if err == nil {
 			sqlDB.Close()
@@ -279,6 +279,55 @@ func TestPublishPostDoesNotAutoGenerateSummary(t *testing.T) {
 	}
 	if summary, _ := publicationData["Summary"].(string); summary != "" {
 		t.Fatalf("expected publication summary to stay empty, got %q", summary)
+	}
+}
+
+func TestListDraftVersions(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	svc := service.NewPostService(db.DB)
+
+	post, err := svc.Create(service.PostInput{
+		Content: "# v1\n内容",
+		Summary: "s1",
+		UserID:  1,
+	})
+	if err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+
+	if _, err := svc.Update(post.ID, service.PostInput{
+		Content: "# v2\n内容",
+		Summary: "s2",
+		UserID:  1,
+	}); err != nil {
+		t.Fatalf("update post: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/admin/api/posts/%d/draft-versions", post.ID), nil)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Params = gin.Params{{Key: "id", Value: fmt.Sprintf("%d", post.ID)}}
+
+	api.ListDraftVersions(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var response map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	raw, ok := response["draft_versions"].([]any)
+	if !ok {
+		t.Fatalf("expected draft_versions list in response")
+	}
+	if len(raw) != 2 {
+		t.Fatalf("expected 2 draft versions, got %d", len(raw))
 	}
 }
 
