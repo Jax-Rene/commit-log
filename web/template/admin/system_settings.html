@@ -500,7 +500,7 @@
                     </button>
                 </div>
                 <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                    自定义按钮将以新窗口打开链接，About Me、RSS、Gallery 仅允许配置 1 个。
+                    自定义按钮将以新窗口打开链接，About Me、RSS、Gallery、Dashboard 仅允许配置 1 个，Dashboard 仅在登录状态显示。
                 </p>
             </div>
         </div>
@@ -1034,6 +1034,7 @@
                     { value: "about", label: "About Me" },
                     { value: "rss", label: "RSS" },
                     { value: "gallery", label: "Gallery" },
+                    { value: "dashboard", label: "Dashboard" },
                     { value: "custom", label: "自定义" },
                 ];
             },
@@ -1042,6 +1043,7 @@
                     about: "About Me",
                     rss: "RSS",
                     gallery: "Gallery",
+                    dashboard: "Dashboard",
                     custom: "自定义",
                 };
                 return mapping[type] || "自定义";

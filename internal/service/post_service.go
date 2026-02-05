@@ -756,6 +756,11 @@ func calculateReadingTime(content string) int {
 	return minutes
 }
 
+// CalculateReadingTime exposes the reading time estimator for other packages.
+func CalculateReadingTime(content string) int {
+	return calculateReadingTime(content)
+}
+
 func derivedTitleQueryExpr(alias string) string {
 	line := fmt.Sprintf("CASE WHEN instr(%s.content, char(10)) > 0 THEN substr(%s.content, 1, instr(%s.content, char(10)) - 1) ELSE %s.content END", alias, alias, alias, alias)
 	trimmed := fmt.Sprintf("TRIM(RTRIM(LTRIM(TRIM(%s), '#'), '#'))", line)

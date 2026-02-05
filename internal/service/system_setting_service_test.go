@@ -118,6 +118,7 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 			{Type: NavButtonTypeAbout},
 			{Type: "invalid"},
 			{Type: NavButtonTypeGallery},
+			{Type: NavButtonTypeDashboard},
 		},
 		AISummaryPrompt: " 摘要提示 ",
 		AIRewritePrompt: " 重写提示 ",
@@ -158,7 +159,7 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if saved.GallerySubtitle != "Shot by Hasselblad X2D / iPhone 16" {
 		t.Fatalf("expected gallery subtitle sanitized, got %q", saved.GallerySubtitle)
 	}
-	if len(saved.NavButtons) != 4 {
+	if len(saved.NavButtons) != 5 {
 		t.Fatalf("expected sanitized nav buttons, got %#v", saved.NavButtons)
 	}
 	if saved.NavButtons[0].Type != NavButtonTypeCustom || saved.NavButtons[0].Title != "文档" || saved.NavButtons[0].URL != "https://example.com/docs" {
@@ -172,6 +173,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	}
 	if saved.NavButtons[3].Type != NavButtonTypeGallery || saved.NavButtons[3].Title != "Gallery" {
 		t.Fatalf("unexpected gallery nav button: %#v", saved.NavButtons[3])
+	}
+	if saved.NavButtons[4].Type != NavButtonTypeDashboard || saved.NavButtons[4].Title != "Dashboard" {
+		t.Fatalf("unexpected dashboard nav button: %#v", saved.NavButtons[4])
 	}
 
 	fetched, err := svc.GetSettings()
@@ -224,11 +228,14 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	if fetched.GallerySubtitle != "Shot by Hasselblad X2D / iPhone 16" {
 		t.Fatalf("expected gallery subtitle %q, got %q", "Shot by Hasselblad X2D / iPhone 16", fetched.GallerySubtitle)
 	}
-	if len(fetched.NavButtons) != 4 {
+	if len(fetched.NavButtons) != 5 {
 		t.Fatalf("expected fetched nav buttons, got %#v", fetched.NavButtons)
 	}
 	if fetched.NavButtons[0].Type != NavButtonTypeCustom || fetched.NavButtons[0].Title != "文档" || fetched.NavButtons[0].URL != "https://example.com/docs" {
 		t.Fatalf("unexpected fetched custom nav button: %#v", fetched.NavButtons[0])
+	}
+	if fetched.NavButtons[4].Type != NavButtonTypeDashboard || fetched.NavButtons[4].Title != "Dashboard" {
+		t.Fatalf("unexpected fetched dashboard nav button: %#v", fetched.NavButtons[4])
 	}
 }
 
