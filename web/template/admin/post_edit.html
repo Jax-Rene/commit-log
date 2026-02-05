@@ -133,6 +133,7 @@
         padding-left: 20px !important;
     }
 
+
     @media (min-width: 768px) {
         #milkdown-app > div > .ProseMirror {
             padding: 1rem 1.25rem 1.75rem;
@@ -528,6 +529,32 @@
                             ></path>
                         </svg>
                         <span>草稿版本</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2 font-medium text-slate-600 transition hover:border-blue-200 hover:text-blue-600 disabled:cursor-not-allowed disabled:text-slate-300 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/60 dark:hover:text-blue-200 dark:disabled:text-slate-600"
+                        @click="openArticlePreviewPage()"
+                    >
+                        <svg
+                            class="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1.5"
+                                d="M2.5 12s3.75-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.75 6.5-9.5 6.5-9.5-6.5-9.5-6.5Z"
+                            ></path>
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1.5"
+                                d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+                            ></path>
+                        </svg>
+                        <span>文章预览</span>
                     </button>
                     <div
                         class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-slate-600 shadow-sm dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-slate-200"
@@ -1384,6 +1411,23 @@
         </div>
     </div>
 
+    <form
+        x-ref="articlePreviewForm"
+        action="/admin/posts/preview"
+        method="POST"
+        target="_blank"
+        class="hidden"
+    >
+        <input type="hidden" name="title" />
+        <input type="hidden" name="content" />
+        <input type="hidden" name="summary" />
+        <input type="hidden" name="tags" />
+        <input type="hidden" name="cover_url" />
+        <input type="hidden" name="cover_width" />
+        <input type="hidden" name="cover_height" />
+        <input type="hidden" name="published_at" />
+    </form>
+
     <div
         x-show="draftHistoryOpen"
         x-cloak
@@ -2196,6 +2240,7 @@
                         );
                         this.handlePublicationUpdate = null;
                     }
+                    void this.destroyDraftPreview();
                     void this.destroyOptimizationPreview("source");
                     void this.destroyOptimizationPreview("optimized");
                 };
@@ -2305,6 +2350,77 @@
                 this.draftSelected = null;
                 this.draftVersionsError = "";
                 void this.destroyDraftPreview();
+            },
+            openArticlePreviewPage() {
+                const controller = this.ensureController();
+                const getMarkdown = window.MilkdownV2?.getMarkdown;
+                const content =
+                    typeof getMarkdown === "function"
+                        ? getMarkdown()
+                        : sanitizeString(controller?.postData?.Content ?? "");
+                const trimmed = sanitizeString(content).trim();
+                if (!trimmed) {
+                    toast({
+                        message: "暂无可预览的正文，请先填写内容。",
+                        type: "warning",
+                    });
+                    return;
+                }
+
+                const form = this.$refs?.articlePreviewForm;
+                if (!form) {
+                    toast({
+                        message: "预览表单未就绪，请刷新后重试。",
+                        type: "error",
+                    });
+                    return;
+                }
+
+                const publishOptions = this.buildPublishOptions();
+                if (publishOptions === null) {
+                    toast({
+                        message: "发布时间格式无效，请修正后再预览。",
+                        type: "warning",
+                    });
+                    return;
+                }
+
+                const derivedTitle = this.deriveTitleFromContent(trimmed);
+                const fallbackTitle = sanitizeString(
+                    controller?.postData?.Title ??
+                        controller?.postData?.title ??
+                        "",
+                ).trim();
+                const title = derivedTitle || fallbackTitle;
+                const summary = sanitizeString(
+                    this.metadata?.summary ?? "",
+                ).trim();
+                const tags = this.normalizeTags(this.metadata?.tags ?? []).map(
+                    (tag) => ({
+                        id: tag.id,
+                        name: tag.name,
+                        slug: tag.slug,
+                    }),
+                );
+                const cover = this.metadata?.cover || {};
+
+                form.querySelector('[name="title"]').value = title;
+                form.querySelector('[name="content"]').value = trimmed;
+                form.querySelector('[name="summary"]').value = summary;
+                form.querySelector('[name="tags"]').value =
+                    JSON.stringify(tags);
+                form.querySelector('[name="cover_url"]').value =
+                    sanitizeString(cover.url ?? "");
+                form.querySelector('[name="cover_width"]').value =
+                    sanitizeNumber(cover.width ?? 0);
+                form.querySelector('[name="cover_height"]').value =
+                    sanitizeNumber(cover.height ?? 0);
+                form.querySelector('[name="published_at"]').value =
+                    sanitizeString(publishOptions?.publishedAt ?? "");
+
+                this.closeStatisticsMenu();
+                this.collapseQuickActions();
+                form.submit();
             },
             async refreshDraftVersions() {
                 if (this.draftVersionsLoading) {

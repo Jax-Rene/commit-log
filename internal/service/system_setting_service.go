@@ -37,10 +37,11 @@ const (
 )
 
 const (
-	NavButtonTypeAbout   = "about"
-	NavButtonTypeRSS     = "rss"
-	NavButtonTypeGallery = "gallery"
-	NavButtonTypeCustom  = "custom"
+	NavButtonTypeAbout     = "about"
+	NavButtonTypeRSS       = "rss"
+	NavButtonTypeGallery   = "gallery"
+	NavButtonTypeDashboard = "dashboard"
+	NavButtonTypeCustom    = "custom"
 )
 
 var defaultNavButtons = []NavButton{
@@ -466,7 +467,7 @@ func normalizeNavButtons(input []NavButton) []NavButton {
 	for _, item := range input {
 		buttonType := strings.ToLower(strings.TrimSpace(item.Type))
 		switch buttonType {
-		case NavButtonTypeAbout, NavButtonTypeRSS, NavButtonTypeGallery:
+		case NavButtonTypeAbout, NavButtonTypeRSS, NavButtonTypeGallery, NavButtonTypeDashboard:
 			if _, exists := seen[buttonType]; exists {
 				continue
 			}
@@ -504,6 +505,8 @@ func defaultNavButtonTitle(buttonType string) string {
 		return "RSS"
 	case NavButtonTypeGallery:
 		return "Gallery"
+	case NavButtonTypeDashboard:
+		return "Dashboard"
 	default:
 		return ""
 	}

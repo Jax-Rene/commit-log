@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -13,6 +15,7 @@ import (
 	"github.com/commitlog/internal/service"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 const defaultUserID = 1
@@ -26,6 +29,17 @@ type postPayload struct {
 	CoverWidth     int    `json:"cover_width"`
 	CoverHeight    int    `json:"cover_height"`
 	DraftSessionID string `json:"draft_session_id"`
+}
+
+type postPreviewPayload struct {
+	Title       string `form:"title"`
+	Content     string `form:"content"`
+	Summary     string `form:"summary"`
+	Tags        string `form:"tags"`
+	CoverURL    string `form:"cover_url"`
+	CoverWidth  int    `form:"cover_width"`
+	CoverHeight int    `form:"cover_height"`
+	PublishedAt string `form:"published_at"`
 }
 
 func (p postPayload) toInput(userID uint) service.PostInput {
@@ -601,6 +615,153 @@ func (a *API) postEditPageData(c *gin.Context) gin.H {
 // ShowPostEdit 渲染文章编辑页面（Milkdown 版本）
 func (a *API) ShowPostEdit(c *gin.Context) {
 	a.renderHTML(c, http.StatusOK, "post_edit.html", a.postEditPageData(c))
+}
+
+// PreviewPost renders a published-like preview page for current draft content.
+func (a *API) PreviewPost(c *gin.Context) {
+	var payload postPreviewPayload
+	if err := c.ShouldBind(&payload); err != nil {
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	content := strings.TrimSpace(payload.Content)
+	summary := strings.TrimSpace(payload.Summary)
+
+	tags, tagErr := parsePreviewTags(payload.Tags)
+	if tagErr != nil {
+		c.Error(fmt.Errorf("parse preview tags: %w", tagErr))
+	}
+
+	publishedAt, timeErr := parsePreviewPublishedAt(payload.PublishedAt)
+	if timeErr != nil {
+		c.Error(fmt.Errorf("parse preview published_at: %w", timeErr))
+	}
+	if publishedAt.IsZero() {
+		publishedAt = time.Now()
+	}
+
+	preview := &db.PostPublication{
+		Model: gorm.Model{
+			CreatedAt: publishedAt,
+			UpdatedAt: publishedAt,
+		},
+		Content:     content,
+		Summary:     summary,
+		ReadingTime: service.CalculateReadingTime(content),
+		CoverURL:    strings.TrimSpace(payload.CoverURL),
+		CoverWidth:  payload.CoverWidth,
+		CoverHeight: payload.CoverHeight,
+		PublishedAt: publishedAt,
+		Tags:        tags,
+	}
+	preview.PopulateDerivedFields()
+	preview = clonePublicationForView(preview)
+
+	htmlContent, err := renderMarkdown(preview.Content)
+	if err != nil {
+		a.renderHTML(c, http.StatusInternalServerError, "post_detail.html", gin.H{
+			"title":     "文章预览",
+			"error":     "渲染内容失败",
+			"year":      time.Now().Year(),
+			"noindex":   true,
+			"post":      preview,
+			"content":   template.HTML(""),
+			"pageViews": 0,
+		})
+		return
+	}
+
+	contacts := a.visibleContacts(c)
+	site := a.siteSettings(c)
+	description := buildPublicationDescription(preview)
+	tagNames := collectTagNames(preview.Tags)
+	canonicalPath := "/admin/posts/preview"
+	canonicalURL := a.absoluteURL(c, canonicalPath)
+
+	metaImage := ""
+	if cover := strings.TrimSpace(preview.CoverURL); cover != "" {
+		metaImage = a.absoluteURL(c, cover)
+	}
+
+	logoURL := ""
+	if site.LogoLight != "" {
+		logoURL = a.absoluteURL(c, site.LogoLight)
+	} else if site.LogoDark != "" {
+		logoURL = a.absoluteURL(c, site.LogoDark)
+	}
+
+	jsonLD := buildPublicationJSONLD(preview, canonicalURL, site.Name, description, metaImage, logoURL, tagNames)
+
+	payloadData := gin.H{
+		"title":           preview.Title,
+		"post":            preview,
+		"content":         htmlContent,
+		"contacts":        contacts,
+		"pageViews":       0,
+		"uniqueVisitors":  0,
+		"year":            time.Now().Year(),
+		"metaType":        "article",
+		"metaPublishedAt": preview.PublishedAt,
+		"metaModifiedAt":  preview.UpdatedAt,
+		"canonical":       canonicalPath,
+		"noindex":         true,
+	}
+	if description != "" {
+		payloadData["metaDescription"] = description
+	}
+	if len(tagNames) > 0 {
+		payloadData["metaKeywords"] = tagNames
+	}
+	if metaImage != "" {
+		payloadData["metaImage"] = metaImage
+	}
+	if jsonLD != "" {
+		payloadData["seoJSONLD"] = jsonLD
+	}
+
+	a.renderHTML(c, http.StatusOK, "post_detail.html", payloadData)
+}
+
+type previewTag struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+func parsePreviewTags(raw string) ([]db.Tag, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return nil, nil
+	}
+	var tags []previewTag
+	if err := json.Unmarshal([]byte(trimmed), &tags); err != nil {
+		return nil, err
+	}
+	normalized := make([]db.Tag, 0, len(tags))
+	for _, tag := range tags {
+		name := strings.TrimSpace(tag.Name)
+		if name == "" {
+			continue
+		}
+		normalized = append(normalized, db.Tag{
+			Model: gorm.Model{ID: tag.ID},
+			Name:  name,
+		})
+	}
+	return normalized, nil
+}
+
+func parsePreviewPublishedAt(raw string) (time.Time, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return time.Time{}, nil
+	}
+	parsed, err := time.Parse(time.RFC3339, trimmed)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return parsed, nil
 }
 
 // ContinueDraft 跳转到最近编辑的草稿。

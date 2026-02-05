@@ -316,6 +316,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 			auth.GET("/posts/new", handlers.ShowPostEdit)
 			auth.GET("/posts/continue", handlers.ContinueDraft)
 			auth.GET("/posts/:id/edit", handlers.ShowPostEdit)
+			auth.POST("/posts/preview", handlers.PreviewPost)
 			auth.GET("/gallery", handlers.ShowGalleryManagement)
 			auth.GET("/tags", handlers.ShowTagManagement)
 			auth.GET("/about", handlers.ShowAboutEditor)

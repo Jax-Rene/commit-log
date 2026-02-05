@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/commitlog/internal/service"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -105,7 +106,7 @@ func (a *API) siteSettings(c *gin.Context) siteViewModel {
 		SocialImage:     strings.TrimSpace(settings.SiteSocialImage),
 		GallerySubtitle: strings.TrimSpace(settings.GallerySubtitle),
 		GalleryEnabled:  settings.GalleryEnabled,
-		NavButtons:      buildNavButtons(settings),
+		NavButtons:      buildNavButtons(settings, isLoggedIn(c)),
 	}
 	if view.Name == "" {
 		view.Name = "CommitLog"
@@ -143,7 +144,7 @@ func (a *API) siteSettings(c *gin.Context) siteViewModel {
 	return view
 }
 
-func buildNavButtons(settings service.SystemSettings) []navButtonView {
+func buildNavButtons(settings service.SystemSettings, loggedIn bool) []navButtonView {
 	buttons := make([]navButtonView, 0, len(settings.NavButtons))
 	for _, item := range settings.NavButtons {
 		switch item.Type {
@@ -165,6 +166,14 @@ func buildNavButtons(settings service.SystemSettings) []navButtonView {
 				Title: pickNavButtonTitle(item.Title, "Gallery"),
 				URL:   "/gallery",
 			})
+		case service.NavButtonTypeDashboard:
+			if !loggedIn {
+				continue
+			}
+			buttons = append(buttons, navButtonView{
+				Title: pickNavButtonTitle(item.Title, "Dashboard"),
+				URL:   "/admin/dashboard",
+			})
 		case service.NavButtonTypeCustom:
 			if strings.TrimSpace(item.Title) == "" || strings.TrimSpace(item.URL) == "" {
 				continue
@@ -177,6 +186,14 @@ func buildNavButtons(settings service.SystemSettings) []navButtonView {
 		}
 	}
 	return buttons
+}
+
+func isLoggedIn(c *gin.Context) bool {
+	if _, exists := c.Get(sessions.DefaultKey); !exists {
+		return false
+	}
+	session := sessions.Default(c)
+	return session.Get("user_id") != nil
 }
 
 func pickNavButtonTitle(candidate, fallback string) string {

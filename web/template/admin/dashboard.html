@@ -191,27 +191,83 @@
             <div
                 class="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-300"
             >
-                <div class="flex items-center gap-2">
-                    <span class="h-2 w-2 rounded-full bg-blue-500"></span>
-                    <span class="font-medium text-slate-700 dark:text-slate-200"
-                        >PV</span
+                <div
+                    class="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-950/40"
+                >
+                    <div class="flex items-center gap-2">
+                        <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                        <span
+                            class="font-medium text-slate-700 dark:text-slate-200"
+                            >PV</span
+                        >
+                    </div>
+                    <div
+                        class="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400"
                     >
-                    <span
-                        class="text-base font-semibold text-slate-900 dark:text-slate-100"
-                        x-text="latest.pageViews"
-                        >0</span
-                    >
+                        <span class="inline-flex items-baseline gap-1">
+                            <span class="uppercase tracking-wide">Last</span>
+                            <span
+                                class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                                x-text="formatCount(pvStats.last)"
+                                >0</span
+                            >
+                        </span>
+                        <span class="inline-flex items-baseline gap-1">
+                            <span class="uppercase tracking-wide">Avg</span>
+                            <span
+                                class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                                x-text="formatCount(pvStats.avg)"
+                                >0</span
+                            >
+                        </span>
+                        <span class="inline-flex items-baseline gap-1">
+                            <span class="uppercase tracking-wide">Max</span>
+                            <span
+                                class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                                x-text="formatCount(pvStats.max)"
+                                >0</span
+                            >
+                        </span>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                    <span class="font-medium text-slate-700 dark:text-slate-200"
-                        >UV</span
+                <div
+                    class="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-950/40"
+                >
+                    <div class="flex items-center gap-2">
+                        <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                        <span
+                            class="font-medium text-slate-700 dark:text-slate-200"
+                            >UV</span
+                        >
+                    </div>
+                    <div
+                        class="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400"
                     >
-                    <span
-                        class="text-base font-semibold text-slate-900 dark:text-slate-100"
-                        x-text="latest.uniqueVisitors"
-                        >0</span
-                    >
+                        <span class="inline-flex items-baseline gap-1">
+                            <span class="uppercase tracking-wide">Last</span>
+                            <span
+                                class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                                x-text="formatCount(uvStats.last)"
+                                >0</span
+                            >
+                        </span>
+                        <span class="inline-flex items-baseline gap-1">
+                            <span class="uppercase tracking-wide">Avg</span>
+                            <span
+                                class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                                x-text="formatCount(uvStats.avg)"
+                                >0</span
+                            >
+                        </span>
+                        <span class="inline-flex items-baseline gap-1">
+                            <span class="uppercase tracking-wide">Max</span>
+                            <span
+                                class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                                x-text="formatCount(uvStats.max)"
+                                >0</span
+                            >
+                        </span>
+                    </div>
                 </div>
                 <div
                     class="text-xs text-slate-400 dark:text-slate-500"
@@ -692,11 +748,34 @@
                     this.latest.hour,
                 )}`;
             },
+            get pvStats() {
+                return this.computeSeriesStats(this.pv, this.latest.pageViews);
+            },
+            get uvStats() {
+                return this.computeSeriesStats(
+                    this.uv,
+                    this.latest.uniqueVisitors,
+                );
+            },
             get hoverPoint() {
                 if (this.hoverIndex === null) {
                     return null;
                 }
                 return this.dotPoints[this.hoverIndex] || null;
+            },
+            computeSeriesStats(series, fallback) {
+                const values = Array.isArray(series)
+                    ? series.map((value) => Number(value) || 0)
+                    : [];
+                if (!values.length) {
+                    const lastValue = Number(fallback) || 0;
+                    return { last: lastValue, avg: lastValue, max: lastValue };
+                }
+                const last = values[values.length - 1] || 0;
+                const sum = values.reduce((acc, value) => acc + value, 0);
+                const avg = sum / values.length;
+                const max = Math.max(...values);
+                return { last, avg, max };
             },
             formatHour(date) {
                 this.ensureFormatters();
