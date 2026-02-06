@@ -12,6 +12,10 @@ type tagRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
+type tagReorderRequest struct {
+	IDs []uint `json:"ids"`
+}
+
 // ShowTagManagement renders the admin page for managing tags.
 func (a *API) ShowTagManagement(c *gin.Context) {
 	tags, err := a.tags.List()
@@ -40,6 +44,7 @@ func (a *API) GetTags(c *gin.Context) {
 		response = append(response, gin.H{
 			"id":         tag.ID,
 			"name":       tag.Name,
+			"sort_order": tag.SortOrder,
 			"created_at": tag.CreatedAt,
 			"updated_at": tag.UpdatedAt,
 			"post_count": tag.PostCount,
@@ -122,4 +127,26 @@ func (a *API) DeleteTag(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "标签删除成功"})
+}
+
+// ReorderTags updates tag order.
+func (a *API) ReorderTags(c *gin.Context) {
+	var req tagReorderRequest
+	if !bindJSON(c, &req, "排序数据格式不正确") {
+		return
+	}
+
+	if err := a.tags.Reorder(req.IDs); err != nil {
+		switch {
+		case errors.Is(err, service.ErrTagOrder):
+			respondError(c, http.StatusBadRequest, "排序数据无效")
+		case errors.Is(err, service.ErrTagNotFound):
+			respondError(c, http.StatusNotFound, "标签不存在")
+		default:
+			respondError(c, http.StatusInternalServerError, "更新标签顺序失败")
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "标签顺序更新成功"})
 }

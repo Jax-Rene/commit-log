@@ -215,6 +215,32 @@
       }));
   }
 
+  function resolveBucketSize(bucketSize, length) {
+    const size = Math.floor(toNumber(bucketSize));
+    if (size > 0) {
+      return size;
+    }
+    return length > 0 ? length : 1;
+  }
+
+  function computeWindowStats(values, bucketSize) {
+    const safeValues = Array.isArray(values) ? values.map(toNumber) : [];
+    if (safeValues.length === 0) {
+      return { avg: 0, max: 0 };
+    }
+
+    const size = resolveBucketSize(bucketSize, safeValues.length);
+    const totals = [];
+    for (let index = 0; index < safeValues.length; index += size) {
+      const slice = safeValues.slice(index, index + size);
+      const total = slice.reduce((acc, value) => acc + value, 0);
+      totals.push(total);
+    }
+
+    const sum = totals.reduce((acc, value) => acc + value, 0);
+    return { avg: sum / totals.length, max: Math.max(...totals) };
+  }
+
   return {
     computeDotPoints,
     computeTooltipPosition,
@@ -223,5 +249,6 @@
     computeValueY,
     computeXAxisTicks,
     computeYAxisTicks,
+    computeWindowStats,
   };
 });

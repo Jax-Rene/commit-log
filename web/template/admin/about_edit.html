@@ -32,7 +32,7 @@
 			<button type="button" @click="preview()" class="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">预览</button>
 			<button type="button" @click="submit()" :disabled="loading" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/80">
 				<span x-show="!loading">保存</span>
-				<span x-show="loading">保存中...</span>
+				<span x-show="loading" class="ui-loading ui-loading-sm">保存中...</span>
 			</button>
 		</div>
 	</section>

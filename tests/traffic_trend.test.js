@@ -9,6 +9,7 @@ const {
   computeValueY,
   computeXAxisTicks,
   computeYAxisTicks,
+  computeWindowStats,
 } = require("../web/static/js/traffic_trend");
 
 test("computeDotPoints builds dot coordinates with chart scale", () => {
@@ -127,4 +128,25 @@ test("computeYAxisTicks handles zero max", () => {
   const ticks = computeYAxisTicks(0, chart, 1);
 
   assert.deepEqual(ticks, [{ value: 0, y: 180 }]);
+});
+
+test("computeWindowStats buckets values into daily totals", () => {
+  const values = [
+    ...Array.from({ length: 24 }, () => 1),
+    ...Array.from({ length: 24 }, () => 2),
+  ];
+
+  const stats = computeWindowStats(values, 24);
+
+  assert.equal(stats.avg, 36);
+  assert.equal(stats.max, 48);
+});
+
+test("computeWindowStats handles partial buckets", () => {
+  const values = [...Array.from({ length: 24 }, () => 1), 5, 5, 5];
+
+  const stats = computeWindowStats(values, 24);
+
+  assert.equal(stats.avg, 19.5);
+  assert.equal(stats.max, 24);
 });

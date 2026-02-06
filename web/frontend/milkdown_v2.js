@@ -27,7 +27,73 @@ const INLINE_AI_CHAT_ICON = `
   </svg>
 `;
 
+const VIDEO_EMBED_ALLOW =
+  "accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+const BILIBILI_IFRAME_SANDBOX =
+  "allow-scripts allow-same-origin allow-presentation";
+const VIDEO_EMBED_LOADING_CLASS = "is-loading";
+const VIDEO_EMBED_READY_CLASS = "is-ready";
+const VIDEO_EMBED_PLATFORMS = {
+  youtube: { label: "YouTube", aspect: "16:9" },
+  bilibili: { label: "B 站", aspect: "16:9" },
+  douyin: { label: "抖音", aspect: "9:16" },
+};
+
 let inlineAIToolbarHandler = null;
+
+function markVideoEmbedReady(container) {
+  if (!container || !container.classList) {
+    return;
+  }
+  container.classList.remove(VIDEO_EMBED_LOADING_CLASS);
+  container.classList.add(VIDEO_EMBED_READY_CLASS);
+}
+
+function bindVideoEmbedLoading(container) {
+  if (
+    !container ||
+    !container.classList ||
+    typeof container.querySelector !== "function"
+  ) {
+    return;
+  }
+  const iframe = container.querySelector("iframe");
+  if (!iframe) {
+    markVideoEmbedReady(container);
+    return;
+  }
+
+  if (!container.dataset) {
+    container.dataset = {};
+  }
+  if (container.dataset.videoEmbedLoadingBound === "true") {
+    return;
+  }
+  container.dataset.videoEmbedLoadingBound = "true";
+  container.classList.remove(VIDEO_EMBED_READY_CLASS);
+  container.classList.add(VIDEO_EMBED_LOADING_CLASS);
+
+  const onReady = () => {
+    markVideoEmbedReady(container);
+  };
+
+  iframe.addEventListener("load", onReady, { once: true });
+  iframe.addEventListener("error", onReady, { once: true });
+}
+
+function initializeVideoEmbedLoadingState(root = document) {
+  if (!root || typeof root.querySelectorAll !== "function") {
+    return 0;
+  }
+  const containers = root.querySelectorAll("[data-video-embed]");
+  if (!containers || typeof containers.forEach !== "function") {
+    return 0;
+  }
+  containers.forEach((container) => {
+    bindVideoEmbedLoading(container);
+  });
+  return containers.length;
+}
 
 function ensureStyles() {
   styleUrls.forEach((href, index) => {
@@ -82,6 +148,8 @@ function applyMarkdownToInstance(
         ctx && typeof ctx.get === "function" ? ctx.get(editorViewCtx) : null;
       if (view) {
         convertBlockquoteCallouts(view);
+        convertParagraphVideoEmbeds(view);
+        initializeVideoEmbedLoadingState(view.dom);
       }
     });
     return true;
@@ -139,7 +207,14 @@ async function createReadOnlyViewer({
     features: normalizePreviewFeatures(features),
     featureConfigs,
   });
-  usePlugins(preview.editor, [math, calloutSchema, calloutRemark, calloutView]);
+  usePlugins(preview.editor, [
+    math,
+    videoEmbedSchema,
+    videoEmbedRemark,
+    calloutSchema,
+    calloutRemark,
+    calloutView,
+  ]);
   ensureSetMarkdown(preview, { flush: true, silent: true });
   if (typeof preview.setReadonly === "function") {
     preview.setReadonly(true);
@@ -156,6 +231,7 @@ async function createReadOnlyViewer({
       console.warn("[milkdown] 预览内容设置失败", error);
     }
   }
+  initializeVideoEmbedLoadingState(mount);
   return preview;
 }
 
@@ -230,6 +306,250 @@ function deriveTitleFromMarkdown(content) {
     trimmed = trimmed.replace(/#+$/, "").trim();
   }
   return trimmed;
+}
+
+function parseVideoEmbedSource(value) {
+  let raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) {
+    return null;
+  }
+  if (raw.startsWith("<") && raw.endsWith(">")) {
+    raw = raw.slice(1, -1).trim();
+  }
+  if (!raw) {
+    return null;
+  }
+  raw = normalizeVideoURL(raw);
+  const parsed = safeParseUrl(raw);
+  if (!parsed) {
+    return null;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return null;
+  }
+  return (
+    parseYouTubeEmbed(parsed, raw) ||
+    parseBilibiliEmbed(parsed, raw) ||
+    parseDouyinEmbed(parsed, raw)
+  );
+}
+
+function safeParseUrl(value) {
+  try {
+    return new URL(value);
+  } catch (error) {
+    return null;
+  }
+}
+
+function normalizeVideoURL(value) {
+  if (typeof value !== "string" || !value) {
+    return value;
+  }
+  const lower = value.toLowerCase();
+  if (lower.startsWith("http://") || lower.startsWith("https://")) {
+    return value;
+  }
+  const knownPrefixes = [
+    "douyin.com/",
+    "www.douyin.com/",
+    "iesdouyin.com/",
+    "www.iesdouyin.com/",
+    "v.douyin.com/",
+    "bilibili.com/",
+    "www.bilibili.com/",
+    "youtube.com/",
+    "www.youtube.com/",
+    "youtu.be/",
+  ];
+  if (knownPrefixes.some((prefix) => lower.startsWith(prefix))) {
+    return `https://${value}`;
+  }
+  return value;
+}
+
+function stripLeadingSlash(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  let normalized = value;
+  while (normalized.startsWith("/")) {
+    normalized = normalized.slice(1);
+  }
+  return normalized;
+}
+
+function isHostOrSubdomain(hostname, domain) {
+  const host =
+    typeof hostname === "string" ? hostname.trim().toLowerCase() : "";
+  const expected =
+    typeof domain === "string" ? domain.trim().toLowerCase() : "";
+  if (!host || !expected) {
+    return false;
+  }
+  return host === expected || host.endsWith(`.${expected}`);
+}
+
+function parseYouTubeEmbed(url, source) {
+  const host = url.hostname.toLowerCase();
+  let videoId = "";
+  if (host === "youtu.be") {
+    videoId = stripLeadingSlash(url.pathname).split("/")[0] || "";
+  } else if (isHostOrSubdomain(host, "youtube.com")) {
+    const path = stripLeadingSlash(url.pathname);
+    if (path === "watch") {
+      videoId = url.searchParams.get("v") || "";
+    } else if (path.startsWith("shorts/")) {
+      videoId = path.replace("shorts/", "").split("/")[0] || "";
+    } else if (path.startsWith("embed/")) {
+      videoId = path.replace("embed/", "").split("/")[0] || "";
+    } else if (path.startsWith("live/")) {
+      videoId = path.replace("live/", "").split("/")[0] || "";
+    }
+  }
+  if (!videoId) {
+    return null;
+  }
+  const embed = new URL(`https://www.youtube.com/embed/${videoId}`);
+  embed.searchParams.set("rel", "0");
+  embed.searchParams.set("modestbranding", "1");
+  embed.searchParams.set("playsinline", "1");
+  const start = parseYouTubeStartSeconds(
+    url.searchParams.get("start") || url.searchParams.get("t") || "",
+  );
+  if (start > 0) {
+    embed.searchParams.set("start", String(start));
+  }
+  return {
+    platform: "youtube",
+    source,
+    embed: embed.toString(),
+    aspect: VIDEO_EMBED_PLATFORMS.youtube.aspect,
+  };
+}
+
+function parseYouTubeStartSeconds(value) {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) {
+    return 0;
+  }
+  if (/^\\d+$/.test(raw)) {
+    const seconds = Number(raw);
+    return Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+  }
+  let total = 0;
+  const matches = raw.match(/(\\d+)(h|m|s)/gi);
+  if (!matches) {
+    return 0;
+  }
+  matches.forEach((chunk) => {
+    const match = /(\\d+)(h|m|s)/i.exec(chunk);
+    if (!match) {
+      return;
+    }
+    const amount = Number(match[1]);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return;
+    }
+    switch (match[2].toLowerCase()) {
+      case "h":
+        total += amount * 3600;
+        break;
+      case "m":
+        total += amount * 60;
+        break;
+      case "s":
+        total += amount;
+        break;
+      default:
+        break;
+    }
+  });
+  return total;
+}
+
+function parseBilibiliEmbed(url, source) {
+  const host = url.hostname.toLowerCase();
+  if (!isHostOrSubdomain(host, "bilibili.com")) {
+    return null;
+  }
+  const segments = stripLeadingSlash(url.pathname).split("/");
+  if (segments[0] !== "video" || !segments[1]) {
+    return null;
+  }
+  const rawId = segments[1];
+  const lower = rawId.toLowerCase();
+  const params = new URLSearchParams();
+  if (lower.startsWith("bv")) {
+    params.set("bvid", rawId);
+  } else if (lower.startsWith("av")) {
+    params.set("aid", lower.replace("av", ""));
+  } else if (/^\\d+$/.test(rawId)) {
+    params.set("aid", rawId);
+  } else {
+    return null;
+  }
+  const page = Number(url.searchParams.get("p"));
+  params.set("page", Number.isFinite(page) && page > 0 ? String(page) : "1");
+  params.set("high_quality", "1");
+  params.set("danmaku", "0");
+  params.set("autoplay", "0");
+  const embed = `https://player.bilibili.com/player.html?${params.toString()}`;
+  return {
+    platform: "bilibili",
+    source,
+    embed,
+    aspect: VIDEO_EMBED_PLATFORMS.bilibili.aspect,
+  };
+}
+
+function parseDouyinEmbed(url, source) {
+  const host = url.hostname.toLowerCase();
+  if (
+    !isHostOrSubdomain(host, "douyin.com") &&
+    !isHostOrSubdomain(host, "iesdouyin.com")
+  ) {
+    return null;
+  }
+  const segments = stripLeadingSlash(url.pathname).split("/");
+  let videoId = "";
+  segments.forEach((segment, index) => {
+    if (segment === "video" && index + 1 < segments.length) {
+      videoId = segments[index + 1];
+    }
+    if (segment.startsWith("modal_id=")) {
+      videoId = segment.replace("modal_id=", "");
+    }
+  });
+  if (!videoId) {
+    videoId = url.searchParams.get("modal_id") || "";
+  }
+  let embed = "";
+  if (videoId) {
+    embed = `https://www.iesdouyin.com/share/video/${videoId}`;
+  } else if (host === "v.douyin.com") {
+    embed = source;
+  } else {
+    return null;
+  }
+  return {
+    platform: "douyin",
+    source,
+    embed,
+    aspect: VIDEO_EMBED_PLATFORMS.douyin.aspect,
+  };
+}
+
+function buildVideoEmbedTitle(platform) {
+  const entry = VIDEO_EMBED_PLATFORMS[platform];
+  if (!entry) {
+    return "视频播放器";
+  }
+  return `${entry.label} 视频播放器`;
+}
+
+function videoEmbedSandboxForPlatform(platform) {
+  return platform === "bilibili" ? BILIBILI_IFRAME_SANDBOX : "";
 }
 
 function synchronizeTitleHeading(markdown, title) {
@@ -642,6 +962,49 @@ function handleMarkdownTablePaste(view, event) {
   return true;
 }
 
+function handleVideoEmbedPaste(view, event) {
+  if (!view || !event || !event.clipboardData) {
+    return false;
+  }
+  const clipboardTypes = Array.from(event.clipboardData.types || []);
+  if (clipboardTypes.includes("application/x-prosemirror-slice")) {
+    return false;
+  }
+  const text = event.clipboardData.getData("text/plain");
+  if (!text) {
+    return false;
+  }
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.includes("\n")) {
+    return false;
+  }
+  if (trimmed.split(/\s+/).length !== 1) {
+    return false;
+  }
+  const embed = parseVideoEmbedSource(trimmed);
+  if (!embed) {
+    return false;
+  }
+  const videoType = view.state?.schema?.nodes?.video_embed;
+  if (!videoType || typeof videoType.create !== "function") {
+    return false;
+  }
+  event.preventDefault();
+  const node = videoType.create({
+    platform: embed.platform,
+    source: embed.source,
+    embed: embed.embed,
+    aspect: embed.aspect,
+  });
+  const transaction = view.state.tr
+    .replaceSelectionWith(node)
+    .scrollIntoView();
+  view.dispatch(transaction);
+  initializeVideoEmbedLoadingState(view.dom);
+  view.focus();
+  return true;
+}
+
 // 预置 Emoji 选项，配合斜杠菜单实现快捷搜索
 const EMOJI_SLASH_ITEMS = [
   { key: "grinning-face", emoji: "😀", label: "微笑 smile happy" },
@@ -878,6 +1241,60 @@ function convertBlockquoteCallouts(view) {
   return false;
 }
 
+function convertParagraphVideoEmbeds(view) {
+  if (!view || !view.state || !view.dispatch) {
+    return false;
+  }
+  const { doc, schema } = view.state;
+  const paragraphType = schema?.nodes?.paragraph;
+  const videoType = schema?.nodes?.video_embed;
+  if (!doc || !paragraphType || !videoType) {
+    return false;
+  }
+  const replacements = [];
+  doc.descendants((node, pos, parent) => {
+    if (parent && parent !== doc) {
+      return;
+    }
+    if (!node || node.type !== paragraphType) {
+      return;
+    }
+    const text = readParagraphText(node).trim();
+    if (!text || text.includes("\n")) {
+      return;
+    }
+    const embed = parseVideoEmbedSource(text);
+    if (!embed) {
+      return;
+    }
+    const videoNode = videoType.create({
+      platform: embed.platform,
+      source: embed.source,
+      embed: embed.embed,
+      aspect: embed.aspect,
+    });
+    replacements.push({
+      from: pos,
+      to: pos + node.nodeSize,
+      node: videoNode,
+    });
+  });
+  if (!replacements.length) {
+    return false;
+  }
+  let tr = view.state.tr;
+  replacements
+    .sort((a, b) => b.from - a.from)
+    .forEach((replacement) => {
+      tr = tr.replaceWith(replacement.from, replacement.to, replacement.node);
+    });
+  if (tr.docChanged) {
+    view.dispatch(tr);
+    return true;
+  }
+  return false;
+}
+
 function transformCalloutBlockquote(node) {
   if (!node || node.type !== "blockquote") {
     return null;
@@ -928,6 +1345,175 @@ function calloutRemarkPlugin() {
     visit(tree);
   };
 }
+
+function extractVideoEmbedNode(node, parent) {
+  const parentType =
+    typeof parent === "string"
+      ? parent
+      : parent && typeof parent.type === "string"
+        ? parent.type
+        : "root";
+  if (parentType !== "root") {
+    return null;
+  }
+  if (!node || node.type !== "paragraph" || !Array.isArray(node.children)) {
+    return null;
+  }
+  if (node.children.length !== 1) {
+    return null;
+  }
+  const child = node.children[0];
+  let urlValue = "";
+  if (child.type === "link" && typeof child.url === "string") {
+    urlValue = child.url;
+  } else if (child.type === "text" && typeof child.value === "string") {
+    urlValue = child.value;
+  }
+  if (!urlValue) {
+    return null;
+  }
+  const embed = parseVideoEmbedSource(urlValue.trim());
+  if (!embed) {
+    return null;
+  }
+  return {
+    type: "video_embed",
+    platform: embed.platform,
+    source: embed.source,
+    embed: embed.embed,
+    aspect: embed.aspect,
+  };
+}
+
+function videoEmbedRemarkPlugin() {
+  return (tree) => {
+    if (!tree || !Array.isArray(tree.children)) {
+      return;
+    }
+    const visit = (parent) => {
+      if (!parent || !Array.isArray(parent.children)) {
+        return;
+      }
+      parent.children = parent.children.map((child) => {
+        const transformed = extractVideoEmbedNode(child, parent);
+        if (transformed) {
+          return transformed;
+        }
+        visit(child);
+        return child;
+      });
+    };
+    visit(tree);
+  };
+}
+
+const videoEmbedSchema = $nodeSchema("video_embed", () => ({
+  group: "block",
+  atom: true,
+  isolating: true,
+  selectable: true,
+  draggable: true,
+  attrs: {
+    platform: { default: "" },
+    source: { default: "" },
+    embed: { default: "" },
+    aspect: { default: VIDEO_EMBED_PLATFORMS.youtube.aspect },
+  },
+  parseDOM: [
+    {
+      tag: "div[data-video-embed]",
+      getAttrs: (dom) => {
+        if (!(dom instanceof HTMLElement)) {
+          return false;
+        }
+        const iframe = dom.querySelector("iframe");
+        return {
+          platform: dom.getAttribute("data-video-platform") || "",
+          source: dom.getAttribute("data-video-source") || "",
+          embed:
+            dom.getAttribute("data-video-embed-src") ||
+            iframe?.getAttribute("src") ||
+            "",
+          aspect:
+            dom.getAttribute("data-video-aspect") ||
+            VIDEO_EMBED_PLATFORMS.youtube.aspect,
+        };
+      },
+    },
+  ],
+  toDOM: (node) => {
+    const platform = node?.attrs?.platform || "";
+    const source = node?.attrs?.source || "";
+    const embed =
+      node?.attrs?.embed ||
+      node?.attrs?.source ||
+      (typeof source === "string" ? source : "");
+    const aspect =
+      node?.attrs?.aspect ||
+      VIDEO_EMBED_PLATFORMS[platform]?.aspect ||
+      VIDEO_EMBED_PLATFORMS.youtube.aspect;
+    const title = buildVideoEmbedTitle(platform);
+    const sandbox = videoEmbedSandboxForPlatform(platform);
+    const iframeAttrs = {
+      src: embed,
+      title,
+      loading: "lazy",
+      allow: VIDEO_EMBED_ALLOW,
+      allowfullscreen: "true",
+      frameborder: "0",
+      referrerpolicy: "strict-origin-when-cross-origin",
+    };
+    if (sandbox) {
+      iframeAttrs.sandbox = sandbox;
+    }
+    return [
+      "div",
+      {
+        "data-video-embed": "true",
+        "data-video-platform": platform,
+        "data-video-aspect": aspect,
+        "data-video-source": source,
+        "data-video-embed-src": embed,
+        class: `video-embed ${VIDEO_EMBED_LOADING_CLASS}`,
+        contenteditable: "false",
+      },
+      [
+        "iframe",
+        iframeAttrs,
+      ],
+    ];
+  },
+  parseMarkdown: {
+    match: ({ type }) => type === "video_embed",
+    runner: (state, node, type) => {
+      state.openNode(type, {
+        platform: node?.platform || "",
+        source: node?.source || "",
+        embed: node?.embed || "",
+        aspect: node?.aspect || VIDEO_EMBED_PLATFORMS.youtube.aspect,
+      });
+      state.closeNode();
+    },
+  },
+  toMarkdown: {
+    match: (node) => node.type.name === "video_embed",
+    runner: (state, node) => {
+      const source =
+        node?.attrs?.source ||
+        node?.attrs?.embed ||
+        node?.attrs?.src ||
+        "";
+      if (!source) {
+        return;
+      }
+      state.openNode("paragraph");
+      state.addNode("text", undefined, source);
+      state.closeNode();
+    },
+  },
+}));
+
+const videoEmbedRemark = $remark("video-embed", () => videoEmbedRemarkPlugin());
 
 const calloutSchema = $nodeSchema("callout", () => ({
   content: "block+",
@@ -1782,6 +2368,9 @@ function applyMilkdownPlugins(editor, toast) {
           ? previous.handlePaste
           : null;
       const handlePaste = (view, event, slice) => {
+        if (handleVideoEmbedPaste(view, event)) {
+          return true;
+        }
         if (handleMarkdownTablePaste(view, event)) {
           return true;
         }
@@ -1798,7 +2387,13 @@ function applyMilkdownPlugins(editor, toast) {
   });
 
   usePlugins(editor, [upload, cursor]);
-  usePlugins(editor, [calloutSchema, calloutRemark, calloutView]);
+  usePlugins(editor, [
+    videoEmbedSchema,
+    videoEmbedRemark,
+    calloutSchema,
+    calloutRemark,
+    calloutView,
+  ]);
   usePlugins(editor, [math]);
   if (typeof window !== "undefined") {
     ensureSlashMenuPlacement();

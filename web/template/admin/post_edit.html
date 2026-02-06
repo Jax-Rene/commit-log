@@ -133,6 +133,102 @@
         padding-left: 20px !important;
     }
 
+    .milkdown-immersive-shell .milkdown .video-embed,
+    .milkdown-preview .milkdown .video-embed,
+    #milkdown-app > div > .ProseMirror .video-embed {
+        position: relative;
+        width: min(100%, 840px);
+        margin: 0 auto;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        background: #000;
+    }
+
+    .milkdown-immersive-shell .milkdown .video-embed::before,
+    .milkdown-immersive-shell .milkdown .video-embed::after,
+    .milkdown-preview .milkdown .video-embed::before,
+    .milkdown-preview .milkdown .video-embed::after,
+    #milkdown-app > div > .ProseMirror .video-embed::before,
+    #milkdown-app > div > .ProseMirror .video-embed::after {
+        content: "";
+        position: absolute;
+        pointer-events: none;
+        transition: opacity 0.24s ease;
+    }
+
+    .milkdown-immersive-shell .milkdown .video-embed::before,
+    .milkdown-preview .milkdown .video-embed::before,
+    #milkdown-app > div > .ProseMirror .video-embed::before {
+        inset: 0;
+        background: #000;
+        z-index: 1;
+    }
+
+    .milkdown-immersive-shell .milkdown .video-embed::after,
+    .milkdown-preview .milkdown .video-embed::after,
+    #milkdown-app > div > .ProseMirror .video-embed::after {
+        top: 50%;
+        left: 50%;
+        width: 2.25rem;
+        height: 2.25rem;
+        margin-top: -1.125rem;
+        margin-left: -1.125rem;
+        border-radius: 9999px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        animation: video-embed-spin 0.9s linear infinite;
+        z-index: 2;
+    }
+
+    .milkdown-immersive-shell .milkdown .video-embed[data-video-aspect="9:16"],
+    .milkdown-preview .milkdown .video-embed[data-video-aspect="9:16"],
+    #milkdown-app > div > .ProseMirror .video-embed[data-video-aspect="9:16"] {
+        aspect-ratio: 9 / 16;
+        max-width: 380px;
+    }
+
+    .milkdown-immersive-shell .milkdown .video-embed iframe,
+    .milkdown-preview .milkdown .video-embed iframe,
+    #milkdown-app > div > .ProseMirror .video-embed iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        opacity: 0;
+        transition: opacity 0.24s ease;
+        z-index: 0;
+    }
+
+    .milkdown-immersive-shell .milkdown .video-embed.is-ready::before,
+    .milkdown-immersive-shell .milkdown .video-embed.is-ready::after,
+    .milkdown-preview .milkdown .video-embed.is-ready::before,
+    .milkdown-preview .milkdown .video-embed.is-ready::after,
+    #milkdown-app > div > .ProseMirror .video-embed.is-ready::before,
+    #milkdown-app > div > .ProseMirror .video-embed.is-ready::after {
+        opacity: 0;
+    }
+
+    .milkdown-immersive-shell .milkdown .video-embed.is-ready iframe,
+    .milkdown-preview .milkdown .video-embed.is-ready iframe,
+    #milkdown-app > div > .ProseMirror .video-embed.is-ready iframe {
+        opacity: 1;
+    }
+
+    @keyframes video-embed-spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .milkdown-immersive-shell .milkdown .video-embed::after,
+        .milkdown-preview .milkdown .video-embed::after,
+        #milkdown-app > div > .ProseMirror .video-embed::after {
+            animation-duration: 1.6s;
+        }
+    }
+
 
     @media (min-width: 768px) {
         #milkdown-app > div > .ProseMirror {
@@ -495,7 +591,7 @@
                             ></path>
                         </svg>
                         <span x-show="!savingDraft">保存草稿</span>
-                        <span x-show="savingDraft">保存中...</span>
+                        <span x-show="savingDraft" class="ui-loading ui-loading-sm">保存中...</span>
                     </button>
                     <button
                         type="button"
@@ -938,7 +1034,7 @@
                             <span x-show="!generatingSummary"
                                 >生成 AI 摘要</span
                             >
-                            <span x-show="generatingSummary">生成中...</span>
+                            <span x-show="generatingSummary" class="ui-loading ui-loading-sm">生成中...</span>
                         </button>
                     </div>
                     <textarea
@@ -1699,6 +1795,7 @@
                             ></path>
                         </svg>
                         <span
+                            :class="inlineAI.loading ? 'ui-loading ui-loading-sm' : ''"
                             x-text="inlineAI.loading ? '生成中…' : '生成改写建议'"
                         ></span>
                     </button>
@@ -1834,7 +1931,7 @@
                     :disabled="uploadingCover"
                 >
                     <span x-show="!uploadingCover">确认裁剪</span>
-                    <span x-show="uploadingCover">上传中...</span>
+                    <span x-show="uploadingCover" class="ui-loading ui-loading-sm">上传中...</span>
                 </button>
             </div>
         </div>
