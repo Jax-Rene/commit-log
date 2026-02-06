@@ -217,7 +217,7 @@ func (s *ProfileService) UpdateContact(id uint, input ProfileContactInput) (*db.
 
 // DeleteContact 删除指定联系信息
 func (s *ProfileService) DeleteContact(id uint) error {
-	if err := s.db.Delete(&db.ProfileContact{}, id).Error; err != nil {
+	if err := s.db.Unscoped().Delete(&db.ProfileContact{}, id).Error; err != nil {
 		return fmt.Errorf("delete profile contact: %w", err)
 	}
 	return nil

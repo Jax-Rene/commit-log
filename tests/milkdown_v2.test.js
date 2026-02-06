@@ -22,6 +22,8 @@ function loadMilkdownTestingModule(overrides = {}) {
       warn() {},
       error() {},
     },
+    URL,
+    URLSearchParams,
     window: { MilkdownV2: {} },
     document: {
       head: { appendChild() {} },
@@ -143,7 +145,7 @@ function loadMilkdownTestingModule(overrides = {}) {
   Object.assign(context, overrides);
   context.globalThis = context;
 
-  const scriptContent = `${sanitized}\n;globalThis.__milkdownTesting = {\n        normalizePreviewFeatures,\n        applyMarkdownToInstance,\n        ensureSetMarkdown,\n        calculateContentMetrics,\n        splitMarkdownTableRow,\n        parseMarkdownTable,\n        buildTableNodeFromMarkdown,\n        handleMarkdownTablePaste,\n        alignmentFromToken,\n        clamp,\n        normalizeSelectionContent,\n        pickProperty,\n        cloneValue,\n        coerceNumber,\n        coerceString,\n        readInlineSelection,\n        applyInlineAIResult,\n        createToast,\n        parseCalloutMarker,\n        buildCalloutMarker,\n        normalizeCalloutEmoji,\n        readParagraphText,\n        buildCalloutNodeFromBlockquote,\n        convertBlockquoteCallouts,\n        DEFAULT_CHANGE_POLL_INTERVAL,\n        DEFAULT_AUTOSAVE_INTERVAL,\n        PostDraftController,\n};`;
+  const scriptContent = `${sanitized}\n;globalThis.__milkdownTesting = {\n        normalizePreviewFeatures,\n        applyMarkdownToInstance,\n        ensureSetMarkdown,\n        calculateContentMetrics,\n        splitMarkdownTableRow,\n        parseMarkdownTable,\n        buildTableNodeFromMarkdown,\n        handleMarkdownTablePaste,\n        handleVideoEmbedPaste,\n        alignmentFromToken,\n        clamp,\n        normalizeSelectionContent,\n        pickProperty,\n        cloneValue,\n        coerceNumber,\n        coerceString,\n        readInlineSelection,\n        applyInlineAIResult,\n        createToast,\n        parseVideoEmbedSource,\n        videoEmbedSandboxForPlatform,\n        extractVideoEmbedNode,\n        buildVideoEmbedTitle,\n        parseCalloutMarker,\n        buildCalloutMarker,\n        normalizeCalloutEmoji,\n        readParagraphText,\n        buildCalloutNodeFromBlockquote,\n        convertBlockquoteCallouts,\n        convertParagraphVideoEmbeds,\n        initializeVideoEmbedLoadingState,\n        DEFAULT_CHANGE_POLL_INTERVAL,\n        DEFAULT_AUTOSAVE_INTERVAL,\n        PostDraftController,\n};`;
 
   const script = new vm.Script(scriptContent, { filename: "milkdown_v2.js" });
   const contextified = vm.createContext(context);
@@ -448,6 +450,62 @@ test("handleMarkdownTablePaste intercepts plain text tables", () => {
   assert.strictEqual(operation.node.type, "table");
 });
 
+test("handleVideoEmbedPaste inserts video embed node", () => {
+  const { api } = loadMilkdownTestingModule();
+  const videoType = {
+    create: (attrs) => ({ type: "video_embed", attrs }),
+  };
+  const tr = {
+    operations: [],
+    replaceSelectionWith(node) {
+      this.operations.push({ type: "replaceSelectionWith", node });
+      return this;
+    },
+    scrollIntoView() {
+      this.operations.push({ type: "scrollIntoView" });
+      return this;
+    },
+  };
+  const view = {
+    state: { schema: { nodes: { video_embed: videoType } }, tr },
+    dispatchCalls: [],
+    dispatch(payload) {
+      this.dispatchCalls.push(payload);
+    },
+    focusCalls: 0,
+    focus() {
+      this.focusCalls += 1;
+    },
+  };
+  const event = {
+    clipboardData: {
+      types: ["text/plain"],
+      getData(type) {
+        if (type === "text/plain") {
+          return "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+        }
+        return "";
+      },
+    },
+    preventDefaultCalled: false,
+    preventDefault() {
+      this.preventDefaultCalled = true;
+    },
+  };
+
+  const handled = api.handleVideoEmbedPaste(view, event);
+  assert.strictEqual(handled, true);
+  assert.strictEqual(event.preventDefaultCalled, true);
+  assert.strictEqual(view.dispatchCalls.length, 1);
+  const operation = tr.operations.find(
+    (op) => op.type === "replaceSelectionWith",
+  );
+  assert.ok(operation);
+  assert.strictEqual(operation.node.type, "video_embed");
+  assert.strictEqual(tr.operations[1].type, "scrollIntoView");
+  assert.strictEqual(view.focusCalls, 1);
+});
+
 test("alignmentFromToken interprets colon placement", () => {
   const { api } = loadMilkdownTestingModule();
   assert.strictEqual(api.alignmentFromToken(":---:"), "center");
@@ -681,6 +739,126 @@ test("buildPayload includes draft session id", () => {
   assert.strictEqual(payload.draft_session_id, "session-123");
 });
 
+test("parseVideoEmbedSource resolves YouTube watch links", () => {
+  const { api } = loadMilkdownTestingModule();
+  const embed = api.parseVideoEmbedSource(
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  );
+  assert.ok(embed);
+  assert.strictEqual(embed.platform, "youtube");
+  assert.ok(embed.embed.includes("https://www.youtube.com/embed/dQw4w9WgXcQ"));
+  assert.ok(embed.embed.includes("modestbranding=1"));
+  assert.ok(embed.embed.includes("rel=0"));
+  assert.ok(embed.embed.includes("playsinline=1"));
+});
+
+test("parseVideoEmbedSource resolves Bilibili video links", () => {
+  const { api } = loadMilkdownTestingModule();
+  const embed = api.parseVideoEmbedSource(
+    "https://www.bilibili.com/video/BV1x5411c7mD",
+  );
+  assert.ok(embed);
+  assert.strictEqual(embed.platform, "bilibili");
+  assert.ok(embed.embed.includes("player.bilibili.com/player.html"));
+  assert.ok(embed.embed.includes("autoplay=0"));
+});
+
+test("videoEmbedSandboxForPlatform returns strict sandbox for bilibili", () => {
+  const { api } = loadMilkdownTestingModule();
+  assert.strictEqual(
+    api.videoEmbedSandboxForPlatform("bilibili"),
+    "allow-scripts allow-same-origin allow-presentation",
+  );
+  assert.strictEqual(api.videoEmbedSandboxForPlatform("youtube"), "");
+});
+
+test("parseVideoEmbedSource resolves Douyin share links", () => {
+  const { api } = loadMilkdownTestingModule();
+  const embed = api.parseVideoEmbedSource(
+    "https://www.iesdouyin.com/share/video/7234567890123456789",
+  );
+  assert.ok(embed);
+  assert.strictEqual(embed.platform, "douyin");
+  assert.ok(embed.embed.includes("iesdouyin.com/share/video/7234567890123456789"));
+});
+
+test("parseVideoEmbedSource resolves Douyin modal_id links", () => {
+  const { api } = loadMilkdownTestingModule();
+  const embed = api.parseVideoEmbedSource(
+    "douyin.com/modal_id=7602245594001771802",
+  );
+  assert.ok(embed);
+  assert.strictEqual(embed.platform, "douyin");
+  assert.ok(embed.embed.includes("iesdouyin.com/share/video/7602245594001771802"));
+});
+
+test("parseVideoEmbedSource supports angle-bracket autolink", () => {
+  const { api } = loadMilkdownTestingModule();
+  const embed = api.parseVideoEmbedSource(
+    "<https://www.youtube.com/watch?v=dQw4w9WgXcQ>",
+  );
+  assert.ok(embed);
+  assert.strictEqual(embed.platform, "youtube");
+});
+
+test("parseVideoEmbedSource rejects lookalike domains", () => {
+  const { api } = loadMilkdownTestingModule();
+  assert.strictEqual(
+    api.parseVideoEmbedSource("https://notyoutube.com/watch?v=dQw4w9WgXcQ"),
+    null,
+  );
+  assert.strictEqual(
+    api.parseVideoEmbedSource("https://notbilibili.com/video/BV1x5411c7mD"),
+    null,
+  );
+  assert.strictEqual(
+    api.parseVideoEmbedSource(
+      "https://notdouyin.com/video/7234567890123456789",
+    ),
+    null,
+  );
+});
+
+test("extractVideoEmbedNode converts a single-url paragraph", () => {
+  const { api } = loadMilkdownTestingModule();
+  const node = {
+    type: "paragraph",
+    children: [
+      { type: "text", value: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+    ],
+  };
+  const embed = api.extractVideoEmbedNode(node);
+  assert.ok(embed);
+  assert.strictEqual(embed.type, "video_embed");
+  assert.strictEqual(embed.platform, "youtube");
+});
+
+test("extractVideoEmbedNode ignores mixed paragraph content", () => {
+  const { api } = loadMilkdownTestingModule();
+  const node = {
+    type: "paragraph",
+    children: [
+      { type: "text", value: "前缀 " },
+      { type: "text", value: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+    ],
+  };
+  const embed = api.extractVideoEmbedNode(node);
+  assert.strictEqual(embed, null);
+});
+
+test("extractVideoEmbedNode skips paragraphs inside list and quote", () => {
+  const { api } = loadMilkdownTestingModule();
+  const node = {
+    type: "paragraph",
+    children: [
+      { type: "text", value: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+    ],
+  };
+
+  assert.strictEqual(api.extractVideoEmbedNode(node, "listItem"), null);
+  assert.strictEqual(api.extractVideoEmbedNode(node, "blockquote"), null);
+});
+
 test("callout marker parsing extracts emoji and trailing text", () => {
   const { api } = loadMilkdownTestingModule();
   const parsed = api.parseCalloutMarker("[!callout] 💡 Q1 总主题");
@@ -839,4 +1017,112 @@ test("convertBlockquoteCallouts replaces matching blockquotes", () => {
   assert.ok(result);
   assert.ok(dispatched);
   assert.strictEqual(dispatched.last.node.type.name, "callout");
+});
+
+test("convertParagraphVideoEmbeds replaces top-level video paragraphs", () => {
+  const { api } = loadMilkdownTestingModule();
+  const paragraphType = { name: "paragraph" };
+  const videoType = {
+    name: "video_embed",
+    create(attrs) {
+      return { type: { name: "video_embed" }, attrs };
+    },
+  };
+  const paragraph = {
+    type: paragraphType,
+    content: { size: 43 },
+    nodeSize: 4,
+    textBetween() {
+      return "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    },
+  };
+  const nestedParagraph = {
+    type: paragraphType,
+    content: { size: 43 },
+    nodeSize: 4,
+    textBetween() {
+      return "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    },
+  };
+  const doc = {
+    descendants(callback) {
+      callback(paragraph, 0, doc);
+      callback(nestedParagraph, 12, { type: { name: "blockquote" } });
+    },
+  };
+  const tr = {
+    docChanged: false,
+    replaceWith(from, to, node) {
+      this.docChanged = true;
+      this.last = { from, to, node };
+      return this;
+    },
+  };
+  let dispatched = null;
+  const view = {
+    state: {
+      doc,
+      schema: { nodes: { paragraph: paragraphType, video_embed: videoType } },
+      tr,
+    },
+    dispatch(payload) {
+      dispatched = payload;
+    },
+  };
+
+  const result = api.convertParagraphVideoEmbeds(view);
+  assert.ok(result);
+  assert.ok(dispatched);
+  assert.strictEqual(dispatched.last.node.type.name, "video_embed");
+  assert.strictEqual(dispatched.last.node.attrs.platform, "youtube");
+});
+
+test("initializeVideoEmbedLoadingState toggles loading classes after iframe load", () => {
+  const { api } = loadMilkdownTestingModule();
+  const classSet = new Set(["video-embed", "is-loading"]);
+  const listeners = new Map();
+  const iframe = {
+    addEventListener(event, handler) {
+      listeners.set(event, handler);
+    },
+  };
+  const container = {
+    dataset: {},
+    classList: {
+      add(name) {
+        classSet.add(name);
+      },
+      remove(name) {
+        classSet.delete(name);
+      },
+      contains(name) {
+        return classSet.has(name);
+      },
+    },
+    querySelector(selector) {
+      if (selector === "iframe") {
+        return iframe;
+      }
+      return null;
+    },
+  };
+  const root = {
+    querySelectorAll(selector) {
+      if (selector === "[data-video-embed]") {
+        return [container];
+      }
+      return [];
+    },
+  };
+
+  const count = api.initializeVideoEmbedLoadingState(root);
+  assert.strictEqual(count, 1);
+  assert.strictEqual(container.dataset.videoEmbedLoadingBound, "true");
+  assert.ok(classSet.has("is-loading"));
+
+  const onLoad = listeners.get("load");
+  assert.strictEqual(typeof onLoad, "function");
+  onLoad();
+  assert.ok(!classSet.has("is-loading"));
+  assert.ok(classSet.has("is-ready"));
 });

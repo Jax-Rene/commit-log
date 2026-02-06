@@ -19,7 +19,6 @@ import (
 	"github.com/commitlog/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
@@ -28,9 +27,9 @@ import (
 var (
 	markdownEngine = goldmark.New(
 		goldmark.WithExtensions(extension.GFM, extension.Linkify, extension.Table),
-		goldmark.WithRendererOptions(html.WithHardWraps(), html.WithXHTML()),
+		goldmark.WithRendererOptions(html.WithHardWraps(), html.WithXHTML(), html.WithUnsafe()),
 	)
-	sanitizer      = bluemonday.UGCPolicy()
+	sanitizer      = buildContentSanitizer()
 	htmlTagPattern = regexp.MustCompile(`<[^>]+>`)
 )
 
@@ -669,7 +668,8 @@ func stripLeadingTitle(title, content string) string {
 
 func renderMarkdown(content string) (template.HTML, error) {
 	var buf bytes.Buffer
-	if err := markdownEngine.Convert([]byte(content), &buf); err != nil {
+	normalized := applyVideoEmbeds(content)
+	if err := markdownEngine.Convert([]byte(normalized), &buf); err != nil {
 		return "", err
 	}
 	safe := sanitizer.SanitizeBytes(buf.Bytes())

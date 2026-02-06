@@ -186,7 +186,7 @@ func (s *PostService) UpdateSummary(id uint, summary string) error {
 
 // Delete removes a post by id.
 func (s *PostService) Delete(id uint) error {
-	if err := s.db.Delete(&db.Post{}, id).Error; err != nil {
+	if err := s.db.Unscoped().Delete(&db.Post{}, id).Error; err != nil {
 		return err
 	}
 	return nil
@@ -591,7 +591,7 @@ func (s *PostService) recordDraftVersion(tx *gorm.DB, post *db.Post, userID uint
 		return nil
 	}
 
-	if err := tx.Where("id IN ?", staleIDs).Delete(&db.PostDraftVersion{}).Error; err != nil {
+	if err := tx.Unscoped().Where("id IN ?", staleIDs).Delete(&db.PostDraftVersion{}).Error; err != nil {
 		return err
 	}
 

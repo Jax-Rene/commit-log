@@ -211,7 +211,7 @@
                                     <span x-show="!logoUploadingLight"
                                         >上传图片</span
                                     >
-                                    <span x-show="logoUploadingLight"
+                                    <span x-show="logoUploadingLight" class="ui-loading ui-loading-sm"
                                         >上传中...</span
                                     >
                                 </button>
@@ -285,7 +285,7 @@
                                     <span x-show="!logoUploadingDark"
                                         >上传图片</span
                                     >
-                                    <span x-show="logoUploadingDark"
+                                    <span x-show="logoUploadingDark" class="ui-loading ui-loading-sm"
                                         >上传中...</span
                                     >
                                 </button>
@@ -742,7 +742,7 @@
                         x-show="!aiTesting"
                         x-text="`测试${providerMeta().label}连通性`"
                     ></span>
-                    <span x-show="aiTesting">测试中...</span>
+                    <span x-show="aiTesting" class="ui-loading ui-loading-sm">测试中...</span>
                 </button>
                 <button
                     type="button"
@@ -777,12 +777,13 @@
             class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/80"
         >
             <span x-show="!loading">保存设置</span>
-            <span x-show="loading">保存中...</span>
+            <span x-show="loading" class="ui-loading ui-loading-sm">保存中...</span>
         </button>
     </section>
 </div>
 
 <script src="/static/js/system_settings_tabs.js"></script>
+<script src="/static/js/system_settings_nav.js"></script>
 <script>
     function systemSettingsForm() {
         return {
@@ -1049,8 +1050,27 @@
                 return mapping[type] || "自定义";
             },
             countNavButtonType(type, currentIndex = null) {
+                const helper = window.SystemSettingsNav;
+                if (
+                    helper &&
+                    typeof helper.countNavButtonType === "function"
+                ) {
+                    return helper.countNavButtonType(
+                        this.form.navButtons,
+                        type,
+                        currentIndex,
+                    );
+                }
+                const normalizedIndex =
+                    currentIndex === null || currentIndex === undefined
+                        ? null
+                        : Number(currentIndex);
                 return this.form.navButtons.filter((item, idx) => {
-                    if (currentIndex !== null && idx === currentIndex) {
+                    if (
+                        normalizedIndex !== null &&
+                        Number.isFinite(normalizedIndex) &&
+                        idx === normalizedIndex
+                    ) {
                         return false;
                     }
                     return item.type === type;
@@ -1059,6 +1079,14 @@
             canUseNavButtonType(type, currentIndex) {
                 if (type === "custom") {
                     return true;
+                }
+                const helper = window.SystemSettingsNav;
+                if (helper && typeof helper.canUseNavButtonType === "function") {
+                    return helper.canUseNavButtonType(
+                        this.form.navButtons,
+                        type,
+                        currentIndex,
+                    );
                 }
                 return this.countNavButtonType(type, currentIndex) === 0;
             },

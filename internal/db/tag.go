@@ -6,6 +6,7 @@ import "gorm.io/gorm"
 type Tag struct {
 	gorm.Model
 	Name           string            `gorm:"unique;not null"`
+	SortOrder      int               `gorm:"default:0" json:"sort_order"`
 	Posts          []Post            `gorm:"many2many:post_tags;"`
 	Publications   []PostPublication `gorm:"many2many:post_publication_tags;"`
 	PostCount      int64             `gorm:"->;column:post_count" json:"post_count"`

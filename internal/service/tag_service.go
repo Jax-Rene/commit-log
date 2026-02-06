@@ -12,6 +12,7 @@ var (
 	ErrTagExists   = errors.New("tag already exists")
 	ErrTagInUse    = errors.New("tag is associated with posts")
 	ErrTagNotFound = errors.New("tag not found")
+	ErrTagOrder    = errors.New("invalid tag order")
 )
 
 // TagService wraps tag related operations.
@@ -31,7 +32,7 @@ func NewTagService(gdb *gorm.DB) *TagService {
 	return &TagService{db: gdb}
 }
 
-// List returns tags ordered by name.
+// List returns tags ordered by configured sort order.
 func (s *TagService) List() ([]db.Tag, error) {
 	var tags []db.Tag
 	if err := s.db.
@@ -39,17 +40,19 @@ func (s *TagService) List() ([]db.Tag, error) {
 		Select("tags.*, COUNT(post_tags.post_id) AS post_count").
 		Joins("LEFT JOIN post_tags ON post_tags.tag_id = tags.id").
 		Group("tags.id").
+		Order("tags.sort_order asc").
 		Order("tags.name asc").
+		Order("tags.id asc").
 		Find(&tags).Error; err != nil {
 		return nil, err
 	}
 	return tags, nil
 }
 
-// ListWithPosts returns tags with their associated posts sorted by creation time.
+// ListWithPosts returns tags with their associated posts in configured order.
 func (s *TagService) ListWithPosts() ([]db.Tag, error) {
 	var tags []db.Tag
-	if err := s.db.Preload("Posts").Order("created_at desc").Find(&tags).Error; err != nil {
+	if err := s.db.Preload("Posts").Order("sort_order asc").Order("name asc").Order("id asc").Find(&tags).Error; err != nil {
 		return nil, err
 	}
 	return tags, nil
@@ -70,7 +73,9 @@ func (s *TagService) PublishedUsage() ([]TagUsage, error) {
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.status = ?", "published").
 		Group("tags.id, tags.name").
-		Order("tags.name asc")
+		Order("tags.sort_order asc").
+		Order("tags.name asc").
+		Order("tags.id asc")
 
 	if err := query.Scan(&rows).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -103,7 +108,12 @@ func (s *TagService) Create(name string) (*db.Tag, error) {
 		return nil, ErrTagExists
 	}
 
-	tag := db.Tag{Name: name}
+	sortOrder, err := s.nextSortOrder()
+	if err != nil {
+		return nil, err
+	}
+
+	tag := db.Tag{Name: name, SortOrder: sortOrder}
 	if err := s.db.Create(&tag).Error; err != nil {
 		return nil, err
 	}
@@ -164,7 +174,38 @@ func (s *TagService) Delete(id uint) error {
 		return ErrTagInUse
 	}
 
-	return s.db.Delete(&tag).Error
+	return s.db.Unscoped().Delete(&tag).Error
+}
+
+// Reorder updates tag sort order based on the provided ids sequence.
+func (s *TagService) Reorder(ids []uint) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	seen := make(map[uint]struct{}, len(ids))
+	for _, id := range ids {
+		if id == 0 {
+			return ErrTagOrder
+		}
+		if _, ok := seen[id]; ok {
+			return ErrTagOrder
+		}
+		seen[id] = struct{}{}
+	}
+
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		for idx, id := range ids {
+			result := tx.Model(&db.Tag{}).Where("id = ?", id).Update("sort_order", idx)
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected == 0 {
+				return ErrTagNotFound
+			}
+		}
+		return nil
+	})
 }
 
 func (s *TagService) postUsageCount(id uint) (int64, error) {
@@ -176,4 +217,12 @@ func (s *TagService) postUsageCount(id uint) (int64, error) {
 		return 0, err
 	}
 	return count, nil
+}
+
+func (s *TagService) nextSortOrder() (int, error) {
+	var maxSort int
+	if err := s.db.Model(&db.Tag{}).Select("COALESCE(MAX(sort_order), -1)").Scan(&maxSort).Error; err != nil {
+		return 0, err
+	}
+	return maxSort + 1, nil
 }

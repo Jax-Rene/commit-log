@@ -344,6 +344,7 @@ func SetupRouter(sessionSecret, uploadDir, uploadURLPath, siteBaseURL string) *g
 
 				api.GET("/tags", handlers.GetTags)
 				api.POST("/tags", handlers.CreateTag)
+				api.PUT("/tags/order", handlers.ReorderTags)
 				api.PUT("/tags/:id", handlers.UpdateTag)
 				api.DELETE("/tags/:id", handlers.DeleteTag)
 				api.PUT("/pages/about", handlers.UpdateAboutPage)

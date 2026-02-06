@@ -13,6 +13,49 @@ Alpine.start();
 let postTocController = null;
 let masonryController = null;
 
+function markVideoEmbedReady(container) {
+        if (!container || !container.classList) {
+                return;
+        }
+        container.classList.remove('is-loading');
+        container.classList.add('is-ready');
+}
+
+function bindVideoEmbedLoading(container) {
+        if (!container || !container.classList || typeof container.querySelector !== 'function') {
+                return;
+        }
+        const iframe = container.querySelector('iframe');
+        if (!iframe) {
+                markVideoEmbedReady(container);
+                return;
+        }
+        if (!container.dataset) {
+                container.dataset = {};
+        }
+        if (container.dataset.videoEmbedLoadingBound === 'true') {
+                return;
+        }
+        container.dataset.videoEmbedLoadingBound = 'true';
+        container.classList.remove('is-ready');
+        container.classList.add('is-loading');
+        const onReady = () => markVideoEmbedReady(container);
+        iframe.addEventListener('load', onReady, { once: true });
+        iframe.addEventListener('error', onReady, { once: true });
+}
+
+function initializeVideoEmbedLoadingState(root = document) {
+        if (!root || typeof root.querySelectorAll !== 'function') {
+                return 0;
+        }
+        const containers = root.querySelectorAll('[data-video-embed]');
+        if (!containers || typeof containers.forEach !== 'function') {
+                return 0;
+        }
+        containers.forEach(container => bindVideoEmbedLoading(container));
+        return containers.length;
+}
+
 function ensurePostToc() {
         if (!document.querySelector('[data-toc-card]')) {
                 return;
@@ -31,6 +74,7 @@ function initMilkdownViewer() {
         const markdownNode = document.getElementById('post-markdown-data');
         const mount = document.querySelector('[data-milkdown-viewer]');
         if (!markdownNode || !mount) {
+                initializeVideoEmbedLoadingState(document);
                 ensurePostToc();
                 return;
         }
@@ -61,6 +105,7 @@ function initMilkdownViewer() {
                 })
                 .then(result => {
                         if (!result) {
+                                initializeVideoEmbedLoadingState(document);
                                 ensurePostToc();
                                 return;
                         }
@@ -69,10 +114,12 @@ function initMilkdownViewer() {
                         if (fallback) {
                                 fallback.classList.add('hidden');
                         }
+                        initializeVideoEmbedLoadingState(mount);
                         ensurePostToc();
                 })
                 .catch(error => {
                         console.error('[milkdown] 加载阅读器失败', error);
+                        initializeVideoEmbedLoadingState(document);
                         ensurePostToc();
                 });
 }
@@ -142,6 +189,7 @@ function setupSearchSuggestions() {
 
 function bootPublic() {
         // 构建只读渲染与目录浮框
+        initializeVideoEmbedLoadingState(document);
         initMilkdownViewer();
         ensurePostToc();
         ensureMasonryGrid();
@@ -154,7 +202,10 @@ if (document.readyState === 'loading') {
         bootPublic();
 }
 
-document.addEventListener('htmx:afterSwap', ensureMasonryGrid);
+document.addEventListener('htmx:afterSwap', event => {
+        ensureMasonryGrid();
+        initializeVideoEmbedLoadingState(event?.target || document);
+});
 
 window.addEventListener('pagehide', () => {
         if (postTocController) {

@@ -374,6 +374,71 @@ func TestShowTagArchiveRendersTags(t *testing.T) {
 	}
 }
 
+func TestShowHomeTagOptionsFollowConfiguredOrder(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	tags := []db.Tag{
+		{Name: "Alpha", SortOrder: 1},
+		{Name: "Zeta", SortOrder: 0},
+	}
+	if err := db.DB.Create(&tags).Error; err != nil {
+		t.Fatalf("failed to seed tags: %v", err)
+	}
+
+	svc := service.NewPostService(db.DB)
+	postA, err := svc.Create(service.PostInput{
+		Content:     "# Alpha post\n内容",
+		Summary:     "Alpha summary",
+		TagIDs:      []uint{tags[0].ID},
+		UserID:      1,
+		CoverURL:    "https://example.com/a.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+	})
+	if err != nil {
+		t.Fatalf("create alpha post: %v", err)
+	}
+	if _, err := svc.Publish(postA.ID, 1, nil); err != nil {
+		t.Fatalf("publish alpha post: %v", err)
+	}
+
+	postZ, err := svc.Create(service.PostInput{
+		Content:     "# Zeta post\n内容",
+		Summary:     "Zeta summary",
+		TagIDs:      []uint{tags[1].ID},
+		UserID:      1,
+		CoverURL:    "https://example.com/z.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+	})
+	if err != nil {
+		t.Fatalf("create zeta post: %v", err)
+	}
+	if _, err := svc.Publish(postZ.ID, 1, nil); err != nil {
+		t.Fatalf("publish zeta post: %v", err)
+	}
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	zetaPos := strings.Index(body, `value="Zeta"`)
+	alphaPos := strings.Index(body, `value="Alpha"`)
+	if zetaPos == -1 || alphaPos == -1 {
+		t.Fatalf("expected both tags in home page")
+	}
+	if zetaPos > alphaPos {
+		t.Fatalf("expected Zeta before Alpha, got body order reversed")
+	}
+}
+
 func TestShowAboutUsesSummaryForMeta(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()

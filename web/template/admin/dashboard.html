@@ -763,6 +763,20 @@
                 }
                 return this.dotPoints[this.hoverIndex] || null;
             },
+            resolveDailyBucketSize() {
+                if (!Array.isArray(this.entries) || this.entries.length < 2) {
+                    return 24;
+                }
+                const first = this.entries[0]?.hour;
+                const second = this.entries[1]?.hour;
+                if (!(first instanceof Date) || !(second instanceof Date)) {
+                    return 24;
+                }
+                const diffMs = Math.abs(second - first);
+                const stepHours = Math.round(diffMs / (60 * 60 * 1000)) || 1;
+                const bucketSize = Math.round(24 / stepHours);
+                return bucketSize > 0 ? bucketSize : 24;
+            },
             computeSeriesStats(series, fallback) {
                 const values = Array.isArray(series)
                     ? series.map((value) => Number(value) || 0)
@@ -772,6 +786,22 @@
                     return { last: lastValue, avg: lastValue, max: lastValue };
                 }
                 const last = values[values.length - 1] || 0;
+                const helper = this.helper;
+                if (
+                    helper &&
+                    typeof helper.computeWindowStats === "function"
+                ) {
+                    const bucketSize = this.resolveDailyBucketSize();
+                    const windowStats = helper.computeWindowStats(
+                        values,
+                        bucketSize,
+                    );
+                    return {
+                        last,
+                        avg: windowStats.avg,
+                        max: windowStats.max,
+                    };
+                }
                 const sum = values.reduce((acc, value) => acc + value, 0);
                 const avg = sum / values.length;
                 const max = Math.max(...values);

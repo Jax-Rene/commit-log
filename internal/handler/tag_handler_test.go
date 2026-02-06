@@ -123,7 +123,7 @@ func TestDeleteTagSuccess(t *testing.T) {
 	}
 
 	var count int64
-	db.DB.Model(&db.Tag{}).Where("id = ?", tag.ID).Count(&count)
+	db.DB.Unscoped().Model(&db.Tag{}).Where("id = ?", tag.ID).Count(&count)
 	if count != 0 {
 		t.Fatalf("expected tag to be deleted, still found %d records", count)
 	}
@@ -133,7 +133,10 @@ func TestGetTagsReturnsSortedList(t *testing.T) {
 	api, cleanup := setupTestDB(t)
 	defer cleanup()
 
-	tags := []db.Tag{{Name: "Zed"}, {Name: "Alpha"}}
+	tags := []db.Tag{
+		{Name: "Alpha", SortOrder: 1},
+		{Name: "Zed", SortOrder: 0},
+	}
 	if err := db.DB.Create(&tags).Error; err != nil {
 		t.Fatalf("failed to seed tags: %v", err)
 	}
@@ -152,8 +155,9 @@ func TestGetTagsReturnsSortedList(t *testing.T) {
 
 	var resp struct {
 		Tags []struct {
-			ID   uint   `json:"id"`
-			Name string `json:"name"`
+			ID        uint   `json:"id"`
+			Name      string `json:"name"`
+			SortOrder int    `json:"sort_order"`
 		}
 	}
 
@@ -165,7 +169,55 @@ func TestGetTagsReturnsSortedList(t *testing.T) {
 		t.Fatalf("expected 2 tags, got %d", len(resp.Tags))
 	}
 
-	if resp.Tags[0].Name != "Alpha" || resp.Tags[1].Name != "Zed" {
-		t.Fatalf("expected tags to be sorted ascending: %v", resp.Tags)
+	if resp.Tags[0].Name != "Zed" || resp.Tags[1].Name != "Alpha" {
+		t.Fatalf("expected tags to follow sort order: %v", resp.Tags)
+	}
+	if resp.Tags[0].SortOrder != 0 || resp.Tags[1].SortOrder != 1 {
+		t.Fatalf("expected sort_order to be returned: %v", resp.Tags)
+	}
+}
+
+func TestReorderTagsSuccess(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	tags := []db.Tag{
+		{Name: "Go", SortOrder: 0},
+		{Name: "Gin", SortOrder: 1},
+		{Name: "Gorm", SortOrder: 2},
+	}
+	if err := db.DB.Create(&tags).Error; err != nil {
+		t.Fatalf("failed to seed tags: %v", err)
+	}
+
+	payload := map[string]any{
+		"ids": []uint{tags[2].ID, tags[0].ID, tags[1].ID},
+	}
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPut, "/admin/api/tags/order", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.ReorderTags(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var ordered []db.Tag
+	if err := db.DB.Order("sort_order asc").Order("id asc").Find(&ordered).Error; err != nil {
+		t.Fatalf("query ordered tags: %v", err)
+	}
+	if len(ordered) != 3 {
+		t.Fatalf("expected 3 tags, got %d", len(ordered))
+	}
+	if ordered[0].Name != "Gorm" || ordered[1].Name != "Go" || ordered[2].Name != "Gin" {
+		t.Fatalf("unexpected order after reorder: %+v", []string{ordered[0].Name, ordered[1].Name, ordered[2].Name})
+	}
+	if ordered[0].SortOrder != 0 || ordered[1].SortOrder != 1 || ordered[2].SortOrder != 2 {
+		t.Fatalf("unexpected sort_order after reorder: %+v", []int{ordered[0].SortOrder, ordered[1].SortOrder, ordered[2].SortOrder})
 	}
 }

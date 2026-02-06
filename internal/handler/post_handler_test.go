@@ -676,7 +676,7 @@ func TestDeletePost(t *testing.T) {
 	}
 
 	var count int64
-	db.DB.Model(&db.Post{}).Where("id = ?", post.ID).Count(&count)
+	db.DB.Unscoped().Model(&db.Post{}).Where("id = ?", post.ID).Count(&count)
 	if count != 0 {
 		t.Fatalf("expected post to be deleted, still found %d records", count)
 	}

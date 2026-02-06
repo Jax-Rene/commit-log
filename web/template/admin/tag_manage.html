@@ -29,7 +29,7 @@
 					<button type="button" class="rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100" @click="closeCreate()" :disabled="creating">取消</button>
 					<button type="button" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/70" @click="create()" :disabled="creating">
 						<span x-show="!creating">创建标签</span>
-						<span x-show="creating">创建中...</span>
+						<span x-show="creating" class="ui-loading ui-loading-sm">创建中...</span>
 					</button>
 				</div>
 			</div>
@@ -37,42 +37,59 @@
 	</div>
 
 	<section class="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-		<header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-			<div class="space-y-1">
-				<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">标签列表</h2>
-				<p class="text-xs text-slate-500 dark:text-slate-400">当前共 <span x-text="tags.length"></span> 个标签，编辑后列表会自动同步。</p>
-			</div>
-			<div class="flex flex-wrap items-center gap-2">
-				<button type="button" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200" @click="refresh()" :disabled="loading">
-					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.023 9.348h4.271V5.077m-16.2 9.575a8.25 8.25 0 0014.198 2.665m2.002-4.285a8.25 8.25 0 00-14.205-2.66M20.294 5.077l-3.633 3.632" />
-					</svg>
-					<span x-show="!loading">刷新列表</span>
-					<span x-show="loading">刷新中...</span>
-				</button>
-			</div>
-		</header>
+			<header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+				<div class="space-y-1">
+					<h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">标签列表</h2>
+					<p class="text-xs text-slate-500 dark:text-slate-400">当前共 <span x-text="tags.length"></span> 个标签，拖拽即可调整首页展示顺序。</p>
+				</div>
+				<div class="flex flex-wrap items-center gap-2">
+					<button type="button" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:text-blue-200" @click="refresh()" :disabled="loading || ordering">
+						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.023 9.348h4.271V5.077m-16.2 9.575a8.25 8.25 0 0014.198 2.665m2.002-4.285a8.25 8.25 0 00-14.205-2.66M20.294 5.077l-3.633 3.632" />
+						</svg>
+						<span x-show="!loading">刷新列表</span>
+						<span x-show="loading" class="ui-loading ui-loading-sm">刷新中...</span>
+					</button>
+					<span x-show="ordering" class="ui-loading ui-loading-sm text-xs text-blue-600 dark:text-blue-300" x-cloak>顺序保存中...</span>
+				</div>
+			</header>
 
-		<div x-show="loading" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>加载中...</div>
+		<div x-show="loading" class="ui-loading ui-loading-block rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>加载中...</div>
 		<div x-show="!loading && tags.length === 0" class="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400" x-cloak>暂未创建标签，先添加一个用于组织内容。</div>
 
-		<div x-show="!loading && tags.length > 0" class="space-y-3" x-cloak>
-			<template x-for="tag in tags" :key="tag.id">
-				<div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/70 sm:flex-row sm:items-center sm:justify-between">
-					<div class="space-y-2">
-						<div x-show="editingId !== tag.id">
-							<h3 class="text-base font-semibold text-slate-900 dark:text-slate-100" x-text="tag.name"></h3>
-							<p class="text-xs text-slate-500 dark:text-slate-400">创建于 <span x-text="formatDate(tag.createdAt)"></span> · 更新于 <span x-text="formatDate(tag.updatedAt)"></span></p>
-						</div>
-						<div x-show="editingId === tag.id" x-cloak class="space-y-2">
+			<div x-show="!loading && tags.length > 0" class="space-y-3" x-cloak>
+				<template x-for="tag in tags" :key="tag.id">
+					<div class="flex flex-col gap-3 rounded-xl p-4 transition-colors sm:flex-row sm:items-center sm:justify-between"
+						:class="{
+							'opacity-70 ring-2 ring-blue-200 dark:ring-blue-500/40': draggingId === tag.id,
+							'ring-2 ring-blue-300 dark:ring-blue-400/50': dragOverId === tag.id
+						}"
+						:draggable="canDrag(tag)"
+						@dragstart="handleDragStart($event, tag)"
+						@dragend="handleDragEnd()"
+						@dragover.prevent="handleDragOver(tag)"
+						@drop.prevent="handleDrop(tag)">
+						<div class="flex items-start gap-3">
+							<div x-show="editingId !== tag.id" x-cloak class="mt-0.5 flex h-8 w-8 shrink-0 cursor-grab items-center justify-center rounded-lg text-slate-400  dark:text-slate-500">
+								<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01" />
+								</svg>
+							</div>
+							<div class="space-y-2">
+							<div x-show="editingId !== tag.id">
+								<h3 class="text-base font-semibold text-slate-900 dark:text-slate-100" x-text="tag.name"></h3>
+								<p class="text-xs text-slate-500 dark:text-slate-400">创建于 <span x-text="formatDate(tag.createdAt)"></span> · 更新于 <span x-text="formatDate(tag.updatedAt)"></span></p>
+							</div>
+							<div x-show="editingId === tag.id" x-cloak class="space-y-2">
 							<label class="flex flex-col gap-2">
 								<span class="text-xs font-medium text-slate-600 dark:text-slate-300">标签名称</span>
 								<input type="text" x-model="editForm.name" @keyup.enter="update()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30" />
 							</label>
 							<p class="text-xs text-slate-500 dark:text-slate-400">修改后将同步应用到所有关联文章。</p>
 						</div>
-					</div>
-					<div class="flex flex-wrap items-center gap-2">
+							</div>
+						</div>
+						<div class="flex flex-wrap items-center gap-2">
 						<a x-show="editingId !== tag.id" x-cloak :href="linkedPostsURL(tag)" :aria-disabled="tag.postCount <= 0" :tabindex="tag.postCount > 0 ? 0 : -1" class="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
 							:class="tag.postCount > 0
 								? 'border-blue-200 text-blue-600 hover:border-blue-300 hover:text-blue-700 dark:border-blue-500/40 dark:text-blue-200 dark:hover:border-blue-400/60'
@@ -82,7 +99,7 @@
 						<div x-show="editingId === tag.id" x-cloak class="flex items-center gap-2">
 							<button type="button" @click="update()" :disabled="updatingId === tag.id" class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/80">
 								<span x-show="updatingId !== tag.id">保存</span>
-								<span x-show="updatingId === tag.id">保存中...</span>
+								<span x-show="updatingId === tag.id" class="ui-loading ui-loading-sm">保存中...</span>
 							</button>
 							<button type="button" @click="cancelEdit()" :disabled="updatingId === tag.id" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">取消</button>
 						</div>
@@ -101,56 +118,68 @@
 </div>
 
 <script>
-		function tagManager(initialTags) {
-			return {
-				loading: false,
-				creating: false,
-				updatingId: null,
-				deletingId: null,
-				editingId: null,
-				showCreateDialog: false,
-				tags: [],
-				form: {
-					name: ''
-				},
-				editForm: {
-					id: null,
-					name: ''
-				},
+	function tagManager(initialTags) {
+		return {
+			loading: false,
+			creating: false,
+			ordering: false,
+			updatingId: null,
+			deletingId: null,
+			editingId: null,
+			draggingId: null,
+			dragOverId: null,
+			showCreateDialog: false,
+			tags: [],
+			form: {
+				name: ''
+			},
+			editForm: {
+				id: null,
+				name: ''
+			},
 
-				init() {
-					this.tags = this.normalize(initialTags);
-				},
+			init() {
+				this.tags = this.normalize(initialTags);
+			},
 
-				openCreate() {
-					this.form.name = '';
-					this.showCreateDialog = true;
-					this.$nextTick(() => {
-						const input = this.$refs.createInput;
-						if (input) {
-							input.focus();
-						}
-					});
-				},
-
-				closeCreate() {
-					this.showCreateDialog = false;
-					this.form.name = '';
-				},
-
-				normalize(items) {
-					if (!Array.isArray(items)) {
-						return [];
+			openCreate() {
+				this.form.name = '';
+				this.showCreateDialog = true;
+				this.$nextTick(() => {
+					const input = this.$refs.createInput;
+					if (input) {
+						input.focus();
 					}
-					return items
-					.map(item => this.mapTag(item))
-					.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans'));
+				});
+			},
+
+			closeCreate() {
+				this.showCreateDialog = false;
+				this.form.name = '';
+			},
+
+			normalize(items) {
+				if (!Array.isArray(items)) {
+					return [];
+				}
+				return this.sortTags(items.map(item => this.mapTag(item)));
+			},
+
+			sortTags(items) {
+				return [...items].sort((a, b) => {
+					const orderDelta = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+					if (orderDelta !== 0) {
+						return orderDelta;
+					}
+					return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'zh-Hans');
+				});
 			},
 
 			mapTag(item) {
 				return {
 					id: item.ID ?? item.id,
 					name: item.Name ?? item.name ?? '',
+					sortOrder: Number(item.SortOrder ?? item.sortOrder ?? item.sort_order ?? 0),
 					createdAt: item.CreatedAt ?? item.createdAt ?? item.created_at ?? '',
 					updatedAt: item.UpdatedAt ?? item.updatedAt ?? item.updated_at ?? '',
 					postCount: Number(item.PostCount ?? item.postCount ?? item.post_count ?? 0)
@@ -177,42 +206,41 @@
 					});
 			},
 
-				create() {
-					const name = (this.form.name || '').trim();
-					if (!name) {
-						this.toastWarning('请填写标签名称');
-						return;
-					}
-					this.creating = true;
-					let shouldClose = false;
-					fetch('/admin/api/tags', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ name })
+			create() {
+				const name = (this.form.name || '').trim();
+				if (!name) {
+					this.toastWarning('请填写标签名称');
+					return;
+				}
+				this.creating = true;
+				let shouldClose = false;
+				fetch('/admin/api/tags', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ name })
+				})
+					.then(async res => {
+						const data = await res.json().catch(() => ({}));
+						if (!res.ok) {
+							throw new Error(data.error || '创建标签失败');
+						}
+						if (data.tag) {
+							const mapped = this.mapTag(data.tag);
+							this.tags = this.sortTags([...this.tags, mapped]);
+						}
+						this.toastSuccess(data.message || '标签创建成功');
+						shouldClose = true;
 					})
-						.then(async res => {
-							const data = await res.json().catch(() => ({}));
-							if (!res.ok) {
-								throw new Error(data.error || '创建标签失败');
-							}
-							if (data.tag) {
-								const mapped = this.mapTag(data.tag);
-								this.tags.push(mapped);
-								this.tags.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans'));
-							}
-							this.toastSuccess(data.message || '标签创建成功');
-							shouldClose = true;
-						})
-						.catch(err => {
-							this.toastError(err.message || '创建标签失败');
-						})
-						.finally(() => {
-							this.creating = false;
-							if (shouldClose) {
-								this.closeCreate();
-							}
-						});
-				},
+					.catch(err => {
+						this.toastError(err.message || '创建标签失败');
+					})
+					.finally(() => {
+						this.creating = false;
+						if (shouldClose) {
+							this.closeCreate();
+						}
+					});
+			},
 
 			startEdit(tag) {
 				this.editingId = tag.id;
@@ -251,8 +279,9 @@
 						}
 						if (data.tag) {
 							const mapped = this.mapTag(data.tag);
-							this.tags = this.tags.map(item => (item.id === mapped.id ? mapped : item))
-								.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans'));
+							this.tags = this.sortTags(
+								this.tags.map(item => (item.id === mapped.id ? mapped : item))
+							);
 						}
 						this.toastSuccess(data.message || '标签更新成功');
 						this.cancelEdit();
@@ -292,7 +321,7 @@
 						if (!res.ok) {
 							throw new Error(data.error || '删除标签失败');
 						}
-						this.tags = this.tags.filter(item => item.id !== tag.id);
+						this.tags = this.sortTags(this.tags.filter(item => item.id !== tag.id));
 						this.toastSuccess(data.message || '标签删除成功');
 					})
 					.catch(err => {
@@ -300,6 +329,103 @@
 					})
 					.finally(() => {
 						this.deletingId = null;
+					});
+			},
+
+			canDrag(tag) {
+				if (!tag || !tag.id) {
+					return false;
+				}
+				if (this.ordering || this.loading) {
+					return false;
+				}
+				return this.editingId !== tag.id;
+			},
+
+			handleDragStart(event, tag) {
+				if (!this.canDrag(tag)) {
+					event.preventDefault();
+					return;
+				}
+
+				this.draggingId = tag.id;
+				this.dragOverId = null;
+				if (event.dataTransfer) {
+					event.dataTransfer.effectAllowed = 'move';
+					event.dataTransfer.setData('text/plain', String(tag.id));
+				}
+			},
+
+			handleDragOver(tag) {
+				if (!this.draggingId || !tag || tag.id === this.draggingId) {
+					return;
+				}
+				this.dragOverId = tag.id;
+			},
+
+			handleDrop(tag) {
+				if (!tag || !this.draggingId) {
+					this.handleDragEnd();
+					return;
+				}
+				if (tag.id === this.draggingId) {
+					this.handleDragEnd();
+					return;
+				}
+
+				this.reorderByDrag(this.draggingId, tag.id);
+			},
+
+			handleDragEnd() {
+				this.draggingId = null;
+				this.dragOverId = null;
+			},
+
+			reorderByDrag(draggedID, targetID) {
+				const fromIndex = this.tags.findIndex(item => item.id === draggedID);
+				const targetIndex = this.tags.findIndex(item => item.id === targetID);
+				if (fromIndex < 0 || targetIndex < 0) {
+					this.handleDragEnd();
+					return;
+				}
+
+				const toIndex = targetIndex;
+				if (fromIndex === toIndex) {
+					this.handleDragEnd();
+					return;
+				}
+
+				const previous = this.tags.map(item => ({ ...item }));
+				const next = this.tags.map(item => ({ ...item }));
+				const [moved] = next.splice(fromIndex, 1);
+				next.splice(toIndex, 0, moved);
+				this.tags = next.map((item, index) => ({ ...item, sortOrder: index }));
+				this.handleDragEnd();
+				this.persistOrder(previous);
+			},
+
+			persistOrder(previous) {
+				this.ordering = true;
+				const ids = this.tags.map(item => item.id);
+
+				fetch('/admin/api/tags/order', {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ ids })
+				})
+					.then(async res => {
+						const data = await res.json().catch(() => ({}));
+						if (!res.ok) {
+							throw new Error(data.error || '更新标签顺序失败');
+						}
+						this.toastSuccess(data.message || '标签顺序更新成功');
+					})
+					.catch(err => {
+						this.tags = this.sortTags(previous.map(item => ({ ...item })));
+						this.toastError(err.message || '更新标签顺序失败');
+					})
+					.finally(() => {
+						this.ordering = false;
 					});
 			},
 

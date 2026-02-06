@@ -188,7 +188,7 @@ func (s *GalleryService) Delete(id uint) error {
 		}
 		return err
 	}
-	return s.db.Delete(&item).Error
+	return s.db.Unscoped().Delete(&item).Error
 }
 
 func validateGalleryInput(input GalleryInput) error {
