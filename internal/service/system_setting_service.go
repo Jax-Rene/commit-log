@@ -63,6 +63,7 @@ type SystemSettings struct {
 	SiteLogoURL      string
 	SiteLogoURLLight string
 	SiteLogoURLDark  string
+	SiteFaviconURL   string
 	SiteDescription  string
 	SiteKeywords     string
 	SiteSocialImage  string
@@ -90,6 +91,7 @@ type SystemSettingsInput struct {
 	SiteLogoURL      string
 	SiteLogoURLLight string
 	SiteLogoURLDark  string
+	SiteFaviconURL   string
 	SiteDescription  string
 	SiteKeywords     string
 	SiteSocialImage  string
@@ -132,6 +134,7 @@ var settingKeys = []string{
 	db.SettingKeySiteLogoURL,
 	db.SettingKeySiteLogoURLLight,
 	db.SettingKeySiteLogoURLDark,
+	db.SettingKeySiteFaviconURL,
 	db.SettingKeySiteDescription,
 	db.SettingKeySiteKeywords,
 	db.SettingKeySiteSocialImage,
@@ -168,6 +171,7 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 		return result, fmt.Errorf("load system settings: %w", err)
 	}
 
+	hasFaviconSetting := false
 	for _, record := range records {
 		switch record.Key {
 		case db.SettingKeySiteName:
@@ -180,6 +184,9 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 			result.SiteLogoURLLight = record.Value
 		case db.SettingKeySiteLogoURLDark:
 			result.SiteLogoURLDark = record.Value
+		case db.SettingKeySiteFaviconURL:
+			hasFaviconSetting = true
+			result.SiteFaviconURL = strings.TrimSpace(record.Value)
 		case db.SettingKeySiteDescription:
 			if trimmed := strings.TrimSpace(record.Value); trimmed != "" {
 				result.SiteDescription = trimmed
@@ -244,6 +251,12 @@ func (s *SystemSettingService) GetSettings() (SystemSettings, error) {
 	if strings.TrimSpace(result.SiteLogoURLDark) == "" {
 		result.SiteLogoURLDark = result.SiteLogoURLLight
 	}
+	if !hasFaviconSetting {
+		result.SiteFaviconURL = strings.TrimSpace(result.SiteLogoURLLight)
+		if result.SiteFaviconURL == "" {
+			result.SiteFaviconURL = strings.TrimSpace(result.SiteLogoURLDark)
+		}
+	}
 	if strings.TrimSpace(result.SiteDescription) == "" {
 		result.SiteDescription = defaultSiteDescription
 	}
@@ -280,6 +293,7 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 		SiteLogoURL:      strings.TrimSpace(input.SiteLogoURL),
 		SiteLogoURLLight: strings.TrimSpace(input.SiteLogoURLLight),
 		SiteLogoURLDark:  strings.TrimSpace(input.SiteLogoURLDark),
+		SiteFaviconURL:   strings.TrimSpace(input.SiteFaviconURL),
 		SiteDescription:  strings.TrimSpace(input.SiteDescription),
 		SiteKeywords:     NormalizeKeywords(input.SiteKeywords),
 		SiteSocialImage:  strings.TrimSpace(input.SiteSocialImage),
@@ -349,6 +363,9 @@ func (s *SystemSettingService) UpdateSettings(input SystemSettingsInput) (System
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeySiteLogoURLDark, sanitized.SiteLogoURLDark); err != nil {
+			return err
+		}
+		if err := upsertSetting(tx, db.SettingKeySiteFaviconURL, sanitized.SiteFaviconURL); err != nil {
 			return err
 		}
 		if err := upsertSetting(tx, db.SettingKeySiteDescription, sanitized.SiteDescription); err != nil {

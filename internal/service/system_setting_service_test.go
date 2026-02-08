@@ -54,7 +54,7 @@ func TestSystemSettingServiceDefaults(t *testing.T) {
 	if settings.SiteKeywords != NormalizeKeywords(defaultSiteKeywords) {
 		t.Fatalf("expected default keywords %q, got %q", NormalizeKeywords(defaultSiteKeywords), settings.SiteKeywords)
 	}
-	if settings.SiteLogoURL != "" || settings.SiteLogoURLLight != "" || settings.SiteLogoURLDark != "" || settings.OpenAIAPIKey != "" || settings.DeepSeekAPIKey != "" {
+	if settings.SiteLogoURL != "" || settings.SiteLogoURLLight != "" || settings.SiteLogoURLDark != "" || settings.SiteFaviconURL != "" || settings.OpenAIAPIKey != "" || settings.DeepSeekAPIKey != "" {
 		t.Fatalf("expected keys to be empty, got %#v", settings)
 	}
 	if settings.SiteSocialImage != "" {
@@ -101,6 +101,7 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 		SiteLogoURL:      "https://example.com/logo.png",
 		SiteLogoURLLight: "https://example.com/logo-light.png",
 		SiteLogoURLDark:  "https://example.com/logo-dark.png",
+		SiteFaviconURL:   "https://example.com/favicon.png",
 		SiteDescription:  " 致力于分享 AI 工程实战 ",
 		SiteKeywords:     "AI, 工程, 博客, AI",
 		SiteSocialImage:  "https://example.com/og.png",
@@ -140,6 +141,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	}
 	if saved.SiteSocialImage != "https://example.com/og.png" {
 		t.Fatalf("expected social image %q, got %q", input.SiteSocialImage, saved.SiteSocialImage)
+	}
+	if saved.SiteFaviconURL != "https://example.com/favicon.png" {
+		t.Fatalf("expected favicon %q, got %q", input.SiteFaviconURL, saved.SiteFaviconURL)
 	}
 	if saved.AIProvider != AIProviderDeepSeek {
 		t.Fatalf("expected provider to be deepseek, got %q", saved.AIProvider)
@@ -191,6 +195,9 @@ func TestSystemSettingServiceUpdateAndRetrieve(t *testing.T) {
 	}
 	if fetched.SiteLogoURLDark != strings.TrimSpace(input.SiteLogoURLDark) {
 		t.Fatalf("expected dark logo %q, got %q", input.SiteLogoURLDark, fetched.SiteLogoURLDark)
+	}
+	if fetched.SiteFaviconURL != strings.TrimSpace(input.SiteFaviconURL) {
+		t.Fatalf("expected favicon %q, got %q", strings.TrimSpace(input.SiteFaviconURL), fetched.SiteFaviconURL)
 	}
 	if fetched.SiteDescription != "致力于分享 AI 工程实战" {
 		t.Fatalf("expected description %q, got %q", "致力于分享 AI 工程实战", fetched.SiteDescription)
@@ -261,6 +268,9 @@ func TestSystemSettingServiceFallbackSiteName(t *testing.T) {
 	if saved.SiteSocialImage != "" {
 		t.Fatalf("expected social image fallback to empty string, got %q", saved.SiteSocialImage)
 	}
+	if saved.SiteFaviconURL != "" {
+		t.Fatalf("expected favicon fallback to empty string, got %q", saved.SiteFaviconURL)
+	}
 	if saved.AIProvider != AIProviderOpenAI {
 		t.Fatalf("expected provider fallback to openai, got %q", saved.AIProvider)
 	}
@@ -278,6 +288,51 @@ func TestSystemSettingServiceFallbackSiteName(t *testing.T) {
 	}
 	if len(saved.NavButtons) != 3 {
 		t.Fatalf("expected nav buttons fallback to default, got %#v", saved.NavButtons)
+	}
+}
+
+func TestSystemSettingServiceFaviconSemantics(t *testing.T) {
+	cleanup := setupSystemSettingTestDB(t)
+	defer cleanup()
+
+	svc := NewSystemSettingService(db.DB)
+	saved, err := svc.UpdateSettings(SystemSettingsInput{
+		SiteName:         "语义测试站点",
+		SiteLogoURLLight: "https://example.com/logo-light.png",
+		SiteLogoURLDark:  "https://example.com/logo-dark.png",
+		SiteFaviconURL:   "",
+	})
+	if err != nil {
+		t.Fatalf("update settings failed: %v", err)
+	}
+	if saved.SiteFaviconURL != "" {
+		t.Fatalf("expected explicit empty favicon to be preserved, got %q", saved.SiteFaviconURL)
+	}
+
+	fetched, err := svc.GetSettings()
+	if err != nil {
+		t.Fatalf("get settings failed: %v", err)
+	}
+	if fetched.SiteFaviconURL != "" {
+		t.Fatalf("expected fetched favicon to remain empty, got %q", fetched.SiteFaviconURL)
+	}
+}
+
+func TestSystemSettingServiceLegacyLogoFallbackForFavicon(t *testing.T) {
+	cleanup := setupSystemSettingTestDB(t)
+	defer cleanup()
+
+	if err := db.DB.Create(&db.SystemSetting{Key: db.SettingKeySiteLogoURLLight, Value: "https://example.com/logo-light.png"}).Error; err != nil {
+		t.Fatalf("seed light logo failed: %v", err)
+	}
+
+	svc := NewSystemSettingService(db.DB)
+	fetched, err := svc.GetSettings()
+	if err != nil {
+		t.Fatalf("get settings failed: %v", err)
+	}
+	if fetched.SiteFaviconURL != "https://example.com/logo-light.png" {
+		t.Fatalf("expected legacy fallback favicon, got %q", fetched.SiteFaviconURL)
 	}
 }
 

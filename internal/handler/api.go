@@ -35,6 +35,7 @@ type siteViewModel struct {
 	Name            string
 	LogoLight       string
 	LogoDark        string
+	Favicon         string
 	Avatar          string
 	AdminFooter     string
 	PublicFooter    string
@@ -99,6 +100,7 @@ func (a *API) siteSettings(c *gin.Context) siteViewModel {
 		Name:            strings.TrimSpace(settings.SiteName),
 		LogoLight:       strings.TrimSpace(settings.SiteLogoURLLight),
 		LogoDark:        strings.TrimSpace(settings.SiteLogoURLDark),
+		Favicon:         strings.TrimSpace(settings.SiteFaviconURL),
 		AdminFooter:     strings.TrimSpace(settings.AdminFooterText),
 		PublicFooter:    strings.TrimSpace(settings.PublicFooterText),
 		Description:     strings.TrimSpace(settings.SiteDescription),
@@ -122,10 +124,7 @@ func (a *API) siteSettings(c *gin.Context) siteViewModel {
 		view.LogoDark = view.LogoLight
 	}
 	if view.Avatar == "" {
-		view.Avatar = view.LogoLight
-	}
-	if view.Avatar == "" {
-		view.Avatar = view.LogoDark
+		view.Avatar = view.Favicon
 	}
 	if view.AdminFooter == "" {
 		view.AdminFooter = "日拱一卒，功不唐捐"
@@ -221,6 +220,7 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 		"logoUrl":         view.LogoLight,
 		"logoUrlLight":    view.LogoLight,
 		"logoUrlDark":     view.LogoDark,
+		"favicon":         view.Favicon,
 		"avatar":          view.Avatar,
 		"adminFooter":     view.AdminFooter,
 		"publicFooter":    view.PublicFooter,
@@ -273,6 +273,9 @@ func (a *API) renderHTML(c *gin.Context, status int, templateName string, data g
 	}
 	if _, exists := payload["siteAvatar"]; !exists {
 		payload["siteAvatar"] = view.Avatar
+	}
+	if _, exists := payload["siteFaviconUrl"]; !exists {
+		payload["siteFaviconUrl"] = view.Favicon
 	}
 	if _, exists := payload["siteAdminFooter"]; !exists {
 		payload["siteAdminFooter"] = view.AdminFooter

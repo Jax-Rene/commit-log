@@ -43,6 +43,33 @@
     return normalizeKeywordList([...current, ...splitKeywordTokens(draftInput)]);
   }
 
+  function removeKeywordToken(currentList, tokenToRemove) {
+    const current = Array.isArray(currentList) ? currentList : [];
+    const target = String(tokenToRemove || '')
+      .trim()
+      .toLowerCase();
+    if (!target) {
+      return normalizeKeywordList(current);
+    }
+
+    let removed = false;
+    const next = [];
+
+    for (const token of current) {
+      const candidate = String(token || '').trim();
+      if (!candidate) {
+        continue;
+      }
+      if (!removed && candidate.toLowerCase() === target) {
+        removed = true;
+        continue;
+      }
+      next.push(candidate);
+    }
+
+    return normalizeKeywordList(next);
+  }
+
   function stringifyKeywordList(input) {
     return normalizeKeywordList(input).join(', ');
   }
@@ -51,6 +78,7 @@
     splitKeywordTokens,
     normalizeKeywordList,
     mergeKeywordList,
+    removeKeywordToken,
     stringifyKeywordList,
   };
 });

@@ -43,7 +43,7 @@
                 基础信息
             </h2>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-                站点名称与 Logo 将出现在前台和后台导航。
+                站点名称、Favicon 与 Logo 将出现在不同展示场景。
             </p>
         </header>
         <div class="grid grid-cols-1 gap-6">
@@ -77,18 +77,22 @@
                     >搜索引擎摘要与社交分享默认文案，会出现在未填写专属描述的页面。</span
                 >
             </label>
-            <label class="flex flex-col gap-2">
-                <span
+            <div class="flex flex-col gap-2">
+                <label
+                    for="site-keywords-input"
                     class="text-sm font-medium text-slate-700 dark:text-slate-200"
-                    >默认关键词</span
+                    >默认关键词</label
                 >
                 <div
                     class="rounded-xl border border-slate-200 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:focus-within:border-blue-400 dark:focus-within:ring-blue-500/20"
                 >
-                    <div class="flex flex-wrap items-center gap-2 px-3 py-2">
+                    <div
+                        class="flex flex-wrap items-center gap-2 px-3 py-2"
+                        @click="$refs.keywordInput && $refs.keywordInput.focus()"
+                    >
                         <template
-                            x-for="(tag, index) in keywordTags"
-                            :key="`keyword-${tag}-${index}`"
+                            x-for="tag in keywordTags"
+                            :key="`keyword-${String(tag).toLowerCase()}`"
                         >
                             <span
                                 class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-500/15 dark:text-blue-200"
@@ -97,7 +101,8 @@
                                 <button
                                     type="button"
                                     class="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-blue-500 transition-colors hover:bg-blue-100 hover:text-blue-700 dark:text-blue-300 dark:hover:bg-blue-500/30 dark:hover:text-blue-100"
-                                    @click="removeKeywordTag(index)"
+                                    @mousedown.prevent.stop
+                                    @click.prevent.stop="removeKeywordTag(tag)"
                                     :aria-label="`删除关键词 ${tag}`"
                                 >
                                     <span aria-hidden="true">&times;</span>
@@ -105,10 +110,11 @@
                             </span>
                         </template>
                         <input
+                            id="site-keywords-input"
                             type="text"
+                            x-ref="keywordInput"
                             x-model="keywordDraft"
                             @keydown.enter.prevent="commitKeywordDraft()"
-                            @blur="commitKeywordDraft()"
                             class="min-w-[10rem] flex-1 border-0 bg-transparent py-1 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-500"
                             placeholder="输入关键词后按回车添加标签"
                         />
@@ -118,7 +124,87 @@
                 <span class="text-xs text-slate-500 dark:text-slate-400"
                     >按回车添加标签，系统会自动去重与规范格式。</span
                 >
-            </label>
+            </div>
+            <div class="space-y-2">
+                <span
+                    class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                    >站点 Favicon</span
+                >
+                <div class="flex items-center gap-4">
+                    <div
+                        class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60"
+                    >
+                        <template x-if="form.siteFaviconUrl">
+                            <img
+                                :src="form.siteFaviconUrl"
+                                alt="Favicon 预览"
+                                class="h-full w-full object-cover"
+                                @error="form.siteFaviconUrl = ''"
+                            />
+                        </template>
+                        <template x-if="!form.siteFaviconUrl">
+                            <span
+                                class="text-xs font-medium text-slate-400 dark:text-slate-500"
+                                >暂无图标</span
+                            >
+                        </template>
+                    </div>
+                    <div
+                        class="max-w-sm space-y-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400"
+                    >
+                        <p>
+                            用于浏览器标签页、书签与快捷方式图标，建议上传正方形
+                            PNG（至少 256×256px）。
+                        </p>
+                        <p
+                            x-show="form.siteFaviconUrl"
+                            x-text="form.siteFaviconUrl"
+                            class="truncate text-[11px] text-slate-400 dark:text-slate-500"
+                            x-cloak
+                        ></p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <input
+                        type="file"
+                        accept="image/*"
+                        class="hidden"
+                        x-ref="faviconInput"
+                        @change="handleFaviconSelected($event)"
+                    />
+                    <button
+                        type="button"
+                        class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"
+                        @click="triggerFaviconUpload()"
+                        :disabled="faviconUploading"
+                    >
+                        <span x-show="!faviconUploading">上传图标</span>
+                        <span
+                            x-show="faviconUploading"
+                            class="ui-loading ui-loading-sm"
+                            >上传中...</span
+                        >
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300"
+                        @click="clearFavicon()"
+                        x-show="form.siteFaviconUrl"
+                        x-cloak
+                    >
+                        移除图标
+                    </button>
+                </div>
+                <input
+                    type="url"
+                    x-model="form.siteFaviconUrl"
+                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
+                    placeholder="https://example.com/favicon.png"
+                />
+                <span class="text-xs text-slate-500 dark:text-slate-400"
+                    >可直接粘贴网络地址或后台上传的图片链接。</span
+                >
+            </div>
             <div class="space-y-2">
                 <span
                     class="text-sm font-medium text-slate-700 dark:text-slate-200"
@@ -868,6 +954,7 @@
                 siteLogoUrl: "",
                 siteLogoUrlLight: "",
                 siteLogoUrlDark: "",
+                siteFaviconUrl: "",
                 siteDescription: "",
                 siteKeywords: "",
                 siteSocialImage: "",
@@ -884,6 +971,7 @@
             },
             logoUploadingLight: false,
             logoUploadingDark: false,
+            faviconUploading: false,
             socialImageUploading: false,
             init() {
                 this.fetchSettings();
@@ -1000,15 +1088,37 @@
                 this.keywordDraft = "";
                 this.syncSiteKeywordsFromTags();
             },
-            removeKeywordTag(index) {
-                if (
-                    !Number.isInteger(index) ||
-                    index < 0 ||
-                    index >= this.keywordTags.length
-                ) {
+            removeKeywordTag(tag) {
+                const target = String(tag || "").trim();
+                if (!target) {
                     return;
                 }
-                this.keywordTags.splice(index, 1);
+                const helper = this.keywordHelper();
+                if (
+                    helper &&
+                    typeof helper.removeKeywordToken === "function"
+                ) {
+                    this.keywordTags = helper.removeKeywordToken(
+                        this.keywordTags,
+                        target,
+                    );
+                } else {
+                    let removed = false;
+                    this.keywordTags = this.keywordTags.filter((item) => {
+                        const candidate = String(item || "").trim();
+                        if (!candidate) {
+                            return false;
+                        }
+                        if (
+                            !removed &&
+                            candidate.toLowerCase() === target.toLowerCase()
+                        ) {
+                            removed = true;
+                            return false;
+                        }
+                        return true;
+                    });
+                }
                 this.syncSiteKeywordsFromTags();
             },
             fetchSettings() {
@@ -1058,6 +1168,72 @@
                     this.form.siteLogoUrlLight ||
                     this.form.siteLogoUrlDark ||
                     "";
+            },
+            triggerFaviconUpload() {
+                if (this.faviconUploading) {
+                    return;
+                }
+                const input = this.$refs.faviconInput;
+                if (input) {
+                    input.click();
+                }
+            },
+            handleFaviconSelected(event) {
+                const files = event?.target?.files;
+                if (!files || files.length === 0) {
+                    return;
+                }
+                const [file] = files;
+                event.target.value = "";
+                if (!file || !file.type.startsWith("image/")) {
+                    window.AdminUI.toast({
+                        message: "请选择图片文件",
+                        type: "warning",
+                    });
+                    return;
+                }
+                this.uploadFavicon(file);
+            },
+            async uploadFavicon(file) {
+                this.faviconUploading = true;
+                const formData = new FormData();
+                formData.append("image", file);
+                try {
+                    const response = await fetch("/admin/api/upload/image", {
+                        method: "POST",
+                        body: formData,
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (
+                        !response.ok ||
+                        data.error ||
+                        !data.data ||
+                        !data.data.url
+                    ) {
+                        const message =
+                            data && (data.error || data.message)
+                                ? data.error || data.message
+                                : "Favicon 上传失败，请稍后重试";
+                        window.AdminUI.toast({ message, type: "error" });
+                        return;
+                    }
+                    this.form.siteFaviconUrl = data.data.url;
+                    window.AdminUI.toast({
+                        message: "Favicon 上传成功",
+                        type: "success",
+                    });
+                } catch (error) {
+                    const message =
+                        error && error.message
+                            ? error.message
+                            : "Favicon 上传失败，请稍后重试";
+                    window.AdminUI.toast({ message, type: "error" });
+                } finally {
+                    this.faviconUploading = false;
+                }
+            },
+            clearFavicon() {
+                this.form.siteFaviconUrl = "";
             },
             triggerSocialImageUpload() {
                 if (this.socialImageUploading) {
@@ -1440,6 +1616,7 @@
                             "",
                         siteLogoUrlLight: this.form.siteLogoUrlLight,
                         siteLogoUrlDark: this.form.siteLogoUrlDark,
+                        siteFaviconUrl: this.form.siteFaviconUrl,
                         siteDescription: this.form.siteDescription,
                         siteKeywords: this.form.siteKeywords,
                         siteSocialImage: this.form.siteSocialImage,
