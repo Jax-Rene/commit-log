@@ -1,195 +1,195 @@
 {{template "base" .}}
 
 {{define "content"}}
-<div class="space-y-10" x-data="aboutForm({{printf "%q" .content}}, {{printf "%q" .updatedAt}})" x-init="init()">
-	<header class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
-		<div>
-			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">编辑About Me</h1>
-			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">使用 Markdown 撰写个人介绍，支持实时预览。</p>
-			<p class="mt-1 text-xs text-slate-400 dark:text-slate-500" x-show="updatedAt" x-cloak>最近保存：<span x-text="updatedAt"></span></p>
-		</div>
-		<a href="/about" target="_blank" class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">查看前台页面</a>
-	</header>
+{{$initial := dict "mode" "about" "content" .content "updatedAt" .updatedAt}}
 
-	{{if .error}}
-	<div class="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-600 dark:border-rose-500/50 dark:bg-rose-500/10 dark:text-rose-200">{{.error}}</div>
-	{{end}}
+<style>
+    .about-editor-shell .milkdown {
+        min-height: 64vh;
+        border-radius: 1rem;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        background: rgba(255, 255, 255, 0.94);
+        --crepe-color-background: transparent;
+    }
 
-	<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80">
-		<label class="flex flex-col gap-2">
-			<span class="text-sm font-medium text-slate-700 dark:text-slate-200">About Me内容<span class="ml-1 text-rose-500">*</span></span>
-			<p class="text-xs text-slate-500 dark:text-slate-400">支持 Markdown 语法，建议包含个人背景、擅长方向与联系渠道。</p>
-			<textarea id="about-content" class="hidden">{{- .content -}}</textarea>
-		</label>
-	</section>
+    .about-editor-shell .milkdown .ProseMirror {
+        min-height: 60vh;
+        padding: 1.25rem 1rem 1.5rem;
+    }
 
-	<section class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
-		<div class="space-y-1">
-			<h2 class="text-sm font-semibold text-slate-900 dark:text-slate-100">操作</h2>
-			<p class="text-xs text-slate-500 dark:text-slate-400">先预览确认排版，再保存到数据库。</p>
-		</div>
-		<div class="flex flex-col gap-3 sm:flex-row">
-			<button type="button" @click="preview()" class="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100">预览</button>
-			<button type="button" @click="submit()" :disabled="loading" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/80">
-				<span x-show="!loading">保存</span>
-				<span x-show="loading" class="ui-loading ui-loading-sm">保存中...</span>
-			</button>
-		</div>
-	</section>
+    @media (prefers-color-scheme: dark) {
+        .about-editor-shell .milkdown {
+            border-color: rgba(71, 85, 105, 0.75);
+            background: rgba(15, 23, 42, 0.82);
+        }
+    }
+</style>
+
+<div
+    class="about-editor-shell space-y-6"
+    x-data="aboutMiniEditor({{$initial | toJSON}})"
+    x-init="init()"
+    x-cloak
+>
+    <header
+        class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 lg:flex-row lg:items-center lg:justify-between"
+    >
+        <div class="space-y-2">
+            <h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">
+                编辑 About Me
+            </h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+                使用与文章一致的编辑器，已移除摘要和全文优化，仅保留排版与图片上传能力。
+            </p>
+            <p
+                x-show="updatedAt"
+                x-cloak
+                class="text-xs text-slate-400 dark:text-slate-500"
+            >
+                最近保存：<span x-text="updatedAt"></span>
+            </p>
+        </div>
+        <div class="flex flex-col gap-3 sm:flex-row">
+            <a
+                href="/about"
+                target="_blank"
+                class="inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                >查看前台页面</a
+            >
+            <button
+                type="button"
+                @click="save()"
+                :disabled="saving || !editorReady"
+                class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 dark:hover:bg-blue-500/90 dark:disabled:bg-slate-700/80"
+            >
+                <span x-show="!saving">保存</span>
+                <span x-show="saving" class="ui-loading ui-loading-sm">保存中...</span>
+            </button>
+        </div>
+    </header>
+
+    {{if .error}}
+    <div
+        class="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-600 dark:border-rose-500/50 dark:bg-rose-500/10 dark:text-rose-200"
+    >
+        {{.error}}
+    </div>
+    {{end}}
+
+    <section
+        class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:p-6"
+    >
+        <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">
+            支持 Markdown 排版、表格与图片上传，保存后将立即生效到 About Me 页面。
+        </p>
+        <div id="milkdown-app" class="milkdown"></div>
+    </section>
 </div>
 
 <script>
-	function aboutForm(initialContent, initialUpdatedAt) {
-		return {
-			editor: null,
-			fullscreenWatcher: null,
-			loading: false,
-			form: {
-				content: initialContent ? initialContent : ''
-			},
-			updatedAt: initialUpdatedAt ? initialUpdatedAt : '',
+    window.__MILKDOWN_V2__ = {{$initial | toJSON}};
 
-			init() {
-				this.initializeEditor();
-			},
+    document.addEventListener("alpine:init", () => {
+        const toast =
+            window.AdminUI?.toast ||
+            ((payload) => {
+                const message =
+                    typeof payload === "string" ? payload : payload?.message;
+                if (message) {
+                    console.log("[toast]", message);
+                }
+            });
 
-			initializeEditor() {
-				if (this.editor) {
-					return;
-				}
-				const textarea = document.getElementById('about-content');
-				if (!textarea) {
-					return;
-				}
-				const easyMDE = new EasyMDE({
-					element: textarea,
-					spellChecker: false,
-					autosave: {
-						enabled: true,
-						uniqueId: 'about-page',
-						delay: 1000,
-					},
-					status: ['words'],
-					renderingConfig: {
-						singleLineBreaks: false,
-					},
-					toolbar: ['bold', 'italic', 'heading', '|', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'table', 'code', '|', 'preview', 'side-by-side', 'fullscreen'],
-					initialValue: this.form.content || ''
-				});
+        Alpine.data("aboutMiniEditor", (initialState = {}) => ({
+            saving: false,
+            editorReady: false,
+            updatedAt:
+                typeof initialState.updatedAt === "string"
+                    ? initialState.updatedAt
+                    : "",
+            init() {
+                this.waitForEditor();
+                this.bindCleanup();
+            },
+            waitForEditor(retry = 0) {
+                const editor = window.MilkdownV2;
+                if (
+                    editor &&
+                    editor.mode === "about" &&
+                    typeof editor.saveAbout === "function"
+                ) {
+                    this.editorReady = true;
+                    const latest = editor.controller?.updatedAt;
+                    if (typeof latest === "string" && latest.trim()) {
+                        this.updatedAt = latest;
+                    }
+                    return;
+                }
+                if (retry >= 100) {
+                    toast({
+                        message: "编辑器加载超时，请刷新页面重试",
+                        type: "error",
+                    });
+                    return;
+                }
+                window.setTimeout(() => this.waitForEditor(retry + 1), 100);
+            },
+            async save() {
+                if (this.saving) {
+                    return;
+                }
+                const saveAbout = window.MilkdownV2?.saveAbout;
+                if (typeof saveAbout !== "function") {
+                    toast({
+                        message: "编辑器尚未就绪，请稍后再试",
+                        type: "warning",
+                    });
+                    return;
+                }
 
-				easyMDE.codemirror.on('change', () => {
-					this.form.content = easyMDE.value();
-				});
-
-				easyMDE.codemirror.on('refresh', () => this.syncFullscreenState());
-				this.fullscreenWatcher = () => this.syncFullscreenState();
-				window.addEventListener('keyup', this.fullscreenWatcher);
-				window.addEventListener('resize', this.fullscreenWatcher);
-				window.addEventListener('click', this.fullscreenWatcher);
-				this.syncFullscreenState();
-
-				this.editor = easyMDE;
-			},
-
-			syncFullscreenState() {
-				if (!this.editor) {
-					document.body.classList.remove('mde-fullscreen');
-					return;
-				}
-				const isFull = this.editor.isFullscreenActive && this.editor.isFullscreenActive();
-				document.body.classList.toggle('mde-fullscreen', !!isFull);
-			},
-
-			destroy() {
-				if (this.fullscreenWatcher) {
-					window.removeEventListener('keyup', this.fullscreenWatcher);
-					window.removeEventListener('resize', this.fullscreenWatcher);
-					window.removeEventListener('click', this.fullscreenWatcher);
-					this.fullscreenWatcher = null;
-				}
-				document.body.classList.remove('mde-fullscreen');
-			},
-
-			submit() {
-				const content = this.editor ? this.editor.value() : this.form.content;
-				if (!content || !content.trim()) {
-					window.AdminUI.toast({ message: '请填写About Me内容', type: 'warning' });
-					return;
-				}
-
-				this.loading = true;
-				fetch('/admin/api/pages/about', {
-					method: 'PUT',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ content })
-				})
-					.then(response => response.json())
-					.then(data => {
-						if (data.error) {
-							window.AdminUI.toast({ message: data.error, type: 'error' });
-							return;
-						}
-						if (data.message) {
-							this.form.content = content;
-							window.AdminUI.toast({ message: data.message, type: 'success' });
-							this.updatedAt = data.page && data.page.updatedAt ? data.page.updatedAt : this.updatedAt;
-							if (this.editor && this.editor.clearAutosavedValue) {
-								this.editor.clearAutosavedValue();
-							}
-						}
-					})
-					.catch(() => {
-						window.AdminUI.toast({ message: '保存失败，请稍后重试', type: 'error' });
-					})
-					.finally(() => {
-						this.loading = false;
-					});
-			},
-
-			preview() {
-				const markdown = this.editor ? this.editor.value() : this.form.content;
-				const previewWindow = window.open('', '_blank');
-				const parsed = this.editor ? this.editor.markdown(markdown) : markdown;
-				previewWindow.document.write(`
-					<html>
-					<head>
-						<title>预览 · About Me</title>
-                                                <link rel="stylesheet" href="/static/dist/assets/input.css">
-                                                <link rel="stylesheet" href="/static/dist/assets/admin.css">
-						<style>
-							:root { color-scheme: light dark; }
-                                                    body { font-family: var(--font-body); max-width: 780px; margin: 0 auto; padding: 2rem; color: #1f2937; background: #ffffff; line-height: 1.65; transition: color 0.2s ease, background 0.2s ease; }
-							h1, h2, h3, h4 { margin-top: 1.5rem; margin-bottom: 0.75rem; }
-							p { margin: 1rem 0; line-height: 1.7; }
-							code { background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 0.25rem; }
-							pre { background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
-							img { max-width: 100%; border-radius: 0.5rem; }
-							@media (prefers-color-scheme: dark) {
-								body { color: #e2e8f0; background: #020617; }
-								code { background: rgba(148, 163, 184, 0.12); color: #e2e8f0; }
-							}
-						</style>
-                                                <script>window.hljs = window.hljs || (window.opener && window.opener.hljs);</script>
-					</head>
-					<body>
-						<h1>About Me</h1>
-						<div>${parsed}</div>
-                                                <script>
-                                                        const highlight = window.hljs || (window.opener && window.opener.hljs);
-                                                        if (highlight) {
-                                                                document.querySelectorAll('pre code').forEach(block => highlight.highlightElement(block));
-                                                        }
-                                                </script>
-					</body>
-					</html>
-				`);
-				previewWindow.document.close();
-			}
-		};
-	}
-
-	window.addEventListener('beforeunload', () => {
-		document.body.classList.remove('mde-fullscreen');
-	});
+                this.saving = true;
+                try {
+                    const saved = await saveAbout();
+                    if (saved) {
+                        const latest = window.MilkdownV2?.controller?.updatedAt;
+                        if (typeof latest === "string" && latest.trim()) {
+                            this.updatedAt = latest;
+                        }
+                    }
+                } finally {
+                    this.saving = false;
+                }
+            },
+            bindCleanup() {
+                let cleaned = false;
+                const cleanup = () => {
+                    if (cleaned) {
+                        return;
+                    }
+                    cleaned = true;
+                    const controller = window.MilkdownV2?.controller;
+                    if (controller && typeof controller.dispose === "function") {
+                        try {
+                            controller.dispose();
+                        } catch (error) {
+                            console.error(
+                                "[milkdown] 清理 About 控制器失败",
+                                error,
+                            );
+                        }
+                    }
+                    const crepe = window.MilkdownV2?.crepe;
+                    if (crepe && typeof crepe.destroy === "function") {
+                        void crepe.destroy();
+                    }
+                };
+                window.addEventListener("pagehide", cleanup, { once: true });
+                window.addEventListener("beforeunload", cleanup, {
+                    once: true,
+                });
+            },
+        }));
+    });
 </script>
+<script type="module" src="/static/dist/assets/milkdown_v2.js"></script>
 {{end}}
