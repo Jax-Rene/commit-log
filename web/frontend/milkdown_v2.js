@@ -253,6 +253,19 @@ function getInitialMarkdown() {
   return "# ";
 }
 
+function resolveEditorMode(initialData = {}) {
+  if (!initialData || typeof initialData !== "object") {
+    return "post";
+  }
+  const mode =
+    typeof initialData.mode === "string"
+      ? initialData.mode
+      : typeof initialData.editorMode === "string"
+        ? initialData.editorMode
+        : "";
+  return mode.trim().toLowerCase() === "about" ? "about" : "post";
+}
+
 const DEFAULT_CHANGE_POLL_INTERVAL = 3000;
 const DEFAULT_AUTOSAVE_INTERVAL = 60000;
 
@@ -2363,6 +2376,122 @@ function applyMilkdownPlugins(editor, toast) {
   }
 }
 
+class AboutPageController {
+  constructor(crepe, initialData = {}) {
+    this.crepe = crepe;
+    this.editor = crepe?.editor ?? null;
+    this.getMarkdown =
+      typeof crepe?.getMarkdown === "function"
+        ? () => crepe.getMarkdown()
+        : () => "";
+    this.toast = createToast();
+    this.initialData = initialData || {};
+    this.currentContent = coerceString(this.initialData.content, "");
+    this.lastSavedContent = this.currentContent;
+    this.updatedAt = coerceString(this.initialData.updatedAt, "");
+    this.loading = false;
+    this.eventTarget = typeof window !== "undefined" ? window : null;
+  }
+
+  safeGetMarkdown() {
+    try {
+      const value = this.getMarkdown();
+      return typeof value === "string" ? value : "";
+    } catch (error) {
+      console.error("[milkdown] 获取 About Markdown 内容失败", error);
+      return "";
+    }
+  }
+
+  emitAboutEvent(type, detail = {}) {
+    if (
+      !this.eventTarget ||
+      typeof this.eventTarget.dispatchEvent !== "function" ||
+      !type
+    ) {
+      return;
+    }
+    try {
+      this.eventTarget.dispatchEvent(
+        new CustomEvent(`about-editor:${type}`, {
+          detail: {
+            controller: this,
+            updatedAt: this.updatedAt,
+            ...detail,
+          },
+        }),
+      );
+    } catch (error) {
+      console.warn("[milkdown] 分发 About 编辑器事件失败", type, error);
+    }
+  }
+
+  async save(options = {}) {
+    const { silent = false } = options || {};
+    if (this.loading) {
+      return false;
+    }
+
+    const content = this.safeGetMarkdown();
+    if (!content.trim()) {
+      if (!silent) {
+        this.toast({ message: "请填写About Me内容", type: "warning" });
+      }
+      return false;
+    }
+
+    this.loading = true;
+    try {
+      const response = await fetch("/admin/api/pages/about", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+
+      let data = {};
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+
+      if (!response.ok) {
+        const message = data?.error || data?.message || "保存失败，请稍后重试";
+        if (!silent) {
+          this.toast({ message, type: "error" });
+        }
+        return false;
+      }
+
+      const savedContent =
+        typeof data?.page?.content === "string" ? data.page.content : content;
+      this.currentContent = savedContent;
+      this.lastSavedContent = savedContent;
+      const nextUpdatedAt = coerceString(data?.page?.updatedAt, "").trim();
+      if (nextUpdatedAt) {
+        this.updatedAt = nextUpdatedAt;
+      }
+
+      if (!silent && data?.message) {
+        this.toast({ message: data.message, type: "success" });
+      }
+
+      this.emitAboutEvent("saved", { content: savedContent, page: data?.page });
+      return true;
+    } catch (error) {
+      const message = error?.message || "保存失败，请稍后重试";
+      if (!silent) {
+        this.toast({ message, type: "error" });
+      }
+      return false;
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  dispose() {}
+}
+
 class PostDraftController {
   constructor(crepe, initialData = {}) {
     this.crepe = crepe;
@@ -3382,6 +3511,12 @@ async function initialize() {
   ensureStyles();
 
   const initial = getInitialMarkdown();
+  const initialData =
+    typeof window !== "undefined" && typeof window.__MILKDOWN_V2__ === "object"
+      ? window.__MILKDOWN_V2__
+      : {};
+  const editorMode = resolveEditorMode(initialData);
+  const isAboutMode = editorMode === "about";
 
   try {
     const toast = createToast();
@@ -3406,6 +3541,9 @@ async function initialize() {
     const featureConfigs = {
       [toolbarKey]: {
         buildToolbar(builder) {
+          if (isAboutMode) {
+            return;
+          }
           try {
             if (!builder || typeof builder.getGroup !== "function") {
               return;
@@ -3438,6 +3576,9 @@ async function initialize() {
       },
       [blockEditKey]: {
         buildMenu(builder) {
+          if (isAboutMode) {
+            return;
+          }
           try {
             registerCalloutSlashMenu(builder);
           } catch (error) {
@@ -3481,10 +3622,25 @@ async function initialize() {
     }
 
     if (typeof window !== "undefined") {
-      const initialData =
-        typeof window.__MILKDOWN_V2__ === "object"
-          ? window.__MILKDOWN_V2__
-          : {};
+      if (isAboutMode) {
+        const controller = new AboutPageController(crepe, initialData);
+        window.MilkdownV2 = {
+          mode: "about",
+          crepe,
+          editor: crepe.editor,
+          getMarkdown: crepe.getMarkdown,
+          controller,
+          createReadOnlyViewer,
+          deriveTitleFromMarkdown,
+          saveAbout: controller.save.bind(controller),
+        };
+        controller.emitAboutEvent("ready", {
+          content: controller.currentContent,
+          updatedAt: controller.updatedAt,
+        });
+        return;
+      }
+
       const controller = new PostDraftController(crepe, initialData);
       controller.init();
 
@@ -3521,11 +3677,13 @@ async function initialize() {
       });
 
       window.MilkdownV2 = {
+        mode: "post",
         crepe,
         editor: crepe.editor,
         getMarkdown: crepe.getMarkdown,
         controller,
         createReadOnlyViewer,
+        deriveTitleFromMarkdown,
         saveDraft: controller.saveDraft.bind(controller),
         publish: controller.publish.bind(controller),
         inlineAI: inlineAI

@@ -145,7 +145,7 @@ function loadMilkdownTestingModule(overrides = {}) {
   Object.assign(context, overrides);
   context.globalThis = context;
 
-  const scriptContent = `${sanitized}\n;globalThis.__milkdownTesting = {\n        normalizePreviewFeatures,\n        applyMarkdownToInstance,\n        ensureSetMarkdown,\n        calculateContentMetrics,\n        splitMarkdownTableRow,\n        parseMarkdownTable,\n        buildTableNodeFromMarkdown,\n        handleMarkdownTablePaste,\n        handleVideoEmbedPaste,\n        alignmentFromToken,\n        clamp,\n        normalizeSelectionContent,\n        pickProperty,\n        cloneValue,\n        coerceNumber,\n        coerceString,\n        readInlineSelection,\n        applyInlineAIResult,\n        createToast,\n        parseVideoEmbedSource,\n        videoEmbedSandboxForPlatform,\n        extractVideoEmbedNode,\n        buildVideoEmbedTitle,\n        parseCalloutMarker,\n        buildCalloutMarker,\n        normalizeCalloutEmoji,\n        readParagraphText,\n        buildCalloutNodeFromBlockquote,\n        convertBlockquoteCallouts,\n        convertParagraphVideoEmbeds,\n        initializeVideoEmbedLoadingState,\n        DEFAULT_CHANGE_POLL_INTERVAL,\n        DEFAULT_AUTOSAVE_INTERVAL,\n        PostDraftController,\n};`;
+  const scriptContent = `${sanitized}\n;globalThis.__milkdownTesting = {\n        normalizePreviewFeatures,\n        applyMarkdownToInstance,\n        ensureSetMarkdown,\n        calculateContentMetrics,\n        splitMarkdownTableRow,\n        parseMarkdownTable,\n        buildTableNodeFromMarkdown,\n        handleMarkdownTablePaste,\n        handleVideoEmbedPaste,\n        alignmentFromToken,\n        clamp,\n        normalizeSelectionContent,\n        pickProperty,\n        cloneValue,\n        coerceNumber,\n        coerceString,\n        readInlineSelection,\n        applyInlineAIResult,\n        createToast,\n        parseVideoEmbedSource,\n        videoEmbedSandboxForPlatform,\n        extractVideoEmbedNode,\n        buildVideoEmbedTitle,\n        parseCalloutMarker,\n        buildCalloutMarker,\n        normalizeCalloutEmoji,\n        readParagraphText,\n        buildCalloutNodeFromBlockquote,\n        convertBlockquoteCallouts,\n        convertParagraphVideoEmbeds,\n        initializeVideoEmbedLoadingState,\n        DEFAULT_CHANGE_POLL_INTERVAL,\n        DEFAULT_AUTOSAVE_INTERVAL,\n        resolveEditorMode,\n        PostDraftController,\n        AboutPageController,\n};`;
 
   const script = new vm.Script(scriptContent, { filename: "milkdown_v2.js" });
   const contextified = vm.createContext(context);
@@ -737,6 +737,95 @@ test("buildPayload includes draft session id", () => {
   });
   const payload = controller.buildPayload("# 标题\n\n内容");
   assert.strictEqual(payload.draft_session_id, "session-123");
+});
+
+test("resolveEditorMode defaults to post and accepts about", () => {
+  const { api } = loadMilkdownTestingModule();
+  assert.strictEqual(api.resolveEditorMode(), "post");
+  assert.strictEqual(api.resolveEditorMode({ mode: "about" }), "about");
+  assert.strictEqual(api.resolveEditorMode({ mode: "post" }), "post");
+  assert.strictEqual(api.resolveEditorMode({ mode: " ABOUT " }), "about");
+  assert.strictEqual(api.resolveEditorMode({ mode: "other" }), "post");
+});
+
+test("AboutPageController save validates empty content", async () => {
+  const { api, context } = loadMilkdownTestingModule();
+  const toasts = [];
+  context.window.AdminUI = {
+    toast(payload) {
+      toasts.push(payload);
+    },
+  };
+
+  const crepe = {
+    editor: {},
+    getMarkdown() {
+      return " \n\t ";
+    },
+  };
+
+  const controller = new api.AboutPageController(crepe, {
+    content: "旧内容",
+  });
+  const saved = await controller.save();
+  assert.strictEqual(saved, false);
+  assert.ok(
+    toasts.some((payload) => {
+      const message = payload?.message || "";
+      return payload?.type === "warning" || message.includes("内容");
+    }),
+  );
+});
+
+test("AboutPageController save sends about endpoint payload and updates state", async () => {
+  const { api, context } = loadMilkdownTestingModule({
+    fetch: async (url, init) => {
+      assert.strictEqual(url, "/admin/api/pages/about");
+      assert.strictEqual(init?.method, "PUT");
+      assert.strictEqual(init?.headers?.["Content-Type"], "application/json");
+      const payload = JSON.parse(init.body);
+      assert.deepStrictEqual(payload, { content: "# 关于我\n\n新的内容" });
+      return {
+        ok: true,
+        async json() {
+          return {
+            message: "关于页面已更新",
+            page: {
+              content: "# 关于我\n\n新的内容",
+              updatedAt: "2026-02-08 12:00",
+            },
+          };
+        },
+      };
+    },
+  });
+  const toasts = [];
+  context.window.AdminUI = {
+    toast(payload) {
+      toasts.push(payload);
+    },
+  };
+
+  const crepe = {
+    editor: {},
+    getMarkdown() {
+      return "# 关于我\n\n新的内容";
+    },
+  };
+
+  const controller = new api.AboutPageController(crepe, {
+    content: "旧内容",
+    updatedAt: "2025-01-01 00:00",
+  });
+  const saved = await controller.save();
+  assert.strictEqual(saved, true);
+  assert.strictEqual(controller.currentContent, "# 关于我\n\n新的内容");
+  assert.strictEqual(controller.lastSavedContent, "# 关于我\n\n新的内容");
+  assert.strictEqual(controller.updatedAt, "2026-02-08 12:00");
+  assert.ok(
+    toasts.some((payload) => payload?.type === "success"),
+    "expected success toast after about page save",
+  );
 });
 
 test("parseVideoEmbedSource resolves YouTube watch links", () => {
