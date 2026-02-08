@@ -27,3 +27,18 @@ test("默认分享图上传方法已定义", () => {
     assert.match(content, /async\s+uploadSocialImage\(file\)\s*{/);
     assert.match(content, /clearSocialImage\(\)\s*{/);
 });
+
+test("站点 Favicon 区域包含上传控件", () => {
+    assert.match(content, /x-ref="faviconInput"/);
+    assert.match(content, /@change="handleFaviconSelected\(\$event\)"/);
+    assert.match(content, /@click="triggerFaviconUpload\(\)"/);
+    assert.match(content, /@click="clearFavicon\(\)"/);
+});
+
+test("站点 Favicon 上传方法已定义", () => {
+    assert.match(content, /faviconUploading:\s*false/);
+    assert.match(content, /triggerFaviconUpload\(\)\s*{/);
+    assert.match(content, /handleFaviconSelected\(event\)\s*{/);
+    assert.match(content, /async\s+uploadFavicon\(file\)\s*{/);
+    assert.match(content, /clearFavicon\(\)\s*{/);
+});

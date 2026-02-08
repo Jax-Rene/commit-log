@@ -23,6 +23,8 @@ const (
 	SettingKeySiteLogoURLLight = "site_logo_url_light"
 	// SettingKeySiteLogoURLDark 表示深色模式下的站点 Logo 链接。
 	SettingKeySiteLogoURLDark = "site_logo_url_dark"
+	// SettingKeySiteFaviconURL 表示站点 Favicon 链接。
+	SettingKeySiteFaviconURL = "site_favicon_url"
 	// SettingKeySiteDescription 表示站点默认描述文案。
 	SettingKeySiteDescription = "site_description"
 	// SettingKeySiteKeywords 表示站点默认关键词列表。

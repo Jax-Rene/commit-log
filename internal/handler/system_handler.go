@@ -47,6 +47,7 @@ type systemSettingsRequest struct {
 	SiteLogoURL      string              `json:"siteLogoUrl"`
 	SiteLogoURLLight string              `json:"siteLogoUrlLight"`
 	SiteLogoURLDark  string              `json:"siteLogoUrlDark"`
+	SiteFaviconURL   string              `json:"siteFaviconUrl"`
 	SiteDescription  string              `json:"siteDescription"`
 	SiteKeywords     string              `json:"siteKeywords"`
 	SiteSocialImage  string              `json:"siteSocialImage"`
@@ -103,6 +104,7 @@ func (r systemSettingsRequest) toInput() service.SystemSettingsInput {
 		SiteLogoURL:      r.SiteLogoURL,
 		SiteLogoURLLight: r.SiteLogoURLLight,
 		SiteLogoURLDark:  r.SiteLogoURLDark,
+		SiteFaviconURL:   r.SiteFaviconURL,
 		SiteDescription:  r.SiteDescription,
 		SiteKeywords:     r.SiteKeywords,
 		SiteSocialImage:  r.SiteSocialImage,
@@ -125,6 +127,7 @@ func systemSettingsPayload(settings service.SystemSettings) gin.H {
 		"siteLogoUrl":      settings.SiteLogoURL,
 		"siteLogoUrlLight": settings.SiteLogoURLLight,
 		"siteLogoUrlDark":  settings.SiteLogoURLDark,
+		"siteFaviconUrl":   settings.SiteFaviconURL,
 		"siteDescription":  settings.SiteDescription,
 		"siteKeywords":     settings.SiteKeywords,
 		"siteSocialImage":  settings.SiteSocialImage,

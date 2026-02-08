@@ -502,6 +502,7 @@ func (s *e2eSuite) testAdminAPIs(t *testing.T) {
 		"siteLogoUrl":      "https://example.com/logo.png",
 		"siteLogoUrlLight": "https://example.com/logo-light.png",
 		"siteLogoUrlDark":  "https://example.com/logo-dark.png",
+		"siteFaviconUrl":   "https://example.com/favicon.png",
 		"siteDescription":  "端到端测试站点",
 		"siteKeywords":     "e2e,commitlog",
 		"siteSocialImage":  "https://example.com/social.png",
@@ -518,9 +519,18 @@ func (s *e2eSuite) testAdminAPIs(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("update system settings expected 200, got %d", resp.StatusCode)
 	}
-	body := readBody(t, resp)
-	if !strings.Contains(body, "E2E 站点") {
-		t.Fatalf("system settings response missing site name: %s", body)
+	var settingsResult struct {
+		Settings struct {
+			SiteName       string `json:"siteName"`
+			SiteFaviconURL string `json:"siteFaviconUrl"`
+		} `json:"settings"`
+	}
+	decodeJSON(t, resp, &settingsResult)
+	if settingsResult.Settings.SiteName != "E2E 站点" {
+		t.Fatalf("expected site name %q, got %q", "E2E 站点", settingsResult.Settings.SiteName)
+	}
+	if settingsResult.Settings.SiteFaviconURL != "https://example.com/favicon.png" {
+		t.Fatalf("expected favicon %q, got %q", "https://example.com/favicon.png", settingsResult.Settings.SiteFaviconURL)
 	}
 
 	emptyLogoPayload := map[string]interface{}{
@@ -528,6 +538,7 @@ func (s *e2eSuite) testAdminAPIs(t *testing.T) {
 		"siteLogoUrl":      "",
 		"siteLogoUrlLight": "",
 		"siteLogoUrlDark":  "",
+		"siteFaviconUrl":   "",
 		"siteDescription":  "端到端测试站点",
 		"siteKeywords":     "e2e,commitlog",
 		"siteSocialImage":  "https://example.com/social.png",
