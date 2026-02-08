@@ -82,14 +82,41 @@
                     class="text-sm font-medium text-slate-700 dark:text-slate-200"
                     >默认关键词</span
                 >
-                <input
-                    type="text"
-                    x-model="form.siteKeywords"
-                    class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-500/20"
-                    placeholder="例如：AI, 全栈工程师, 博客"
-                />
+                <div
+                    class="rounded-xl border border-slate-200 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:focus-within:border-blue-400 dark:focus-within:ring-blue-500/20"
+                >
+                    <div class="flex flex-wrap items-center gap-2 px-3 py-2">
+                        <template
+                            x-for="(tag, index) in keywordTags"
+                            :key="`keyword-${tag}-${index}`"
+                        >
+                            <span
+                                class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-500/15 dark:text-blue-200"
+                            >
+                                <span x-text="tag"></span>
+                                <button
+                                    type="button"
+                                    class="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-blue-500 transition-colors hover:bg-blue-100 hover:text-blue-700 dark:text-blue-300 dark:hover:bg-blue-500/30 dark:hover:text-blue-100"
+                                    @click="removeKeywordTag(index)"
+                                    :aria-label="`删除关键词 ${tag}`"
+                                >
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </span>
+                        </template>
+                        <input
+                            type="text"
+                            x-model="keywordDraft"
+                            @keydown.enter.prevent="commitKeywordDraft()"
+                            @blur="commitKeywordDraft()"
+                            class="min-w-[10rem] flex-1 border-0 bg-transparent py-1 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-500"
+                            placeholder="输入关键词后按回车添加标签"
+                        />
+                    </div>
+                </div>
+                <input type="hidden" x-model="form.siteKeywords" />
                 <span class="text-xs text-slate-500 dark:text-slate-400"
-                    >使用逗号、空格或分号分隔，系统会自动去重与规范格式。</span
+                    >按回车添加标签，系统会自动去重与规范格式。</span
                 >
             </label>
             <div class="space-y-2">
@@ -130,6 +157,37 @@
                             x-cloak
                         ></p>
                     </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <input
+                        type="file"
+                        accept="image/*"
+                        class="hidden"
+                        x-ref="socialImageInput"
+                        @change="handleSocialImageSelected($event)"
+                    />
+                    <button
+                        type="button"
+                        class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400/50 dark:hover:text-blue-200"
+                        @click="triggerSocialImageUpload()"
+                        :disabled="socialImageUploading"
+                    >
+                        <span x-show="!socialImageUploading">上传图片</span>
+                        <span
+                            x-show="socialImageUploading"
+                            class="ui-loading ui-loading-sm"
+                            >上传中...</span
+                        >
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-rose-500/40 dark:hover:text-rose-300"
+                        @click="clearSocialImage()"
+                        x-show="form.siteSocialImage"
+                        x-cloak
+                    >
+                        移除图片
+                    </button>
                 </div>
                 <input
                     type="url"
@@ -784,6 +842,7 @@
 
 <script src="/static/js/system_settings_tabs.js"></script>
 <script src="/static/js/system_settings_nav.js"></script>
+<script src="/static/js/system_settings_keywords.js"></script>
 <script>
     function systemSettingsForm() {
         return {
@@ -802,6 +861,8 @@
                 { id: "ai", label: "AI 服务" },
             ],
             activeTab: "basic",
+            keywordTags: [],
+            keywordDraft: "",
             form: {
                 siteName: "",
                 siteLogoUrl: "",
@@ -823,6 +884,7 @@
             },
             logoUploadingLight: false,
             logoUploadingDark: false,
+            socialImageUploading: false,
             init() {
                 this.fetchSettings();
                 this.syncTabFromHash();
@@ -868,6 +930,87 @@
                 }
                 window.location.hash = hash;
             },
+            keywordHelper() {
+                const helper = window.SystemSettingsKeywords;
+                if (
+                    helper &&
+                    typeof helper.normalizeKeywordList === "function" &&
+                    typeof helper.stringifyKeywordList === "function" &&
+                    typeof helper.mergeKeywordList === "function"
+                ) {
+                    return helper;
+                }
+                return null;
+            },
+            normalizeKeywordTokens(input) {
+                const helper = this.keywordHelper();
+                if (helper) {
+                    return helper.normalizeKeywordList(input);
+                }
+                const source = Array.isArray(input)
+                    ? input.join(" ")
+                    : String(input || "");
+                const seen = new Set();
+                const normalized = [];
+                for (const token of source
+                    .split(/[\s,，;；]+/)
+                    .map((item) => item.trim())
+                    .filter(Boolean)) {
+                    const lowered = token.toLowerCase();
+                    if (seen.has(lowered)) {
+                        continue;
+                    }
+                    seen.add(lowered);
+                    normalized.push(token);
+                }
+                return normalized;
+            },
+            syncSiteKeywordsFromTags() {
+                const helper = this.keywordHelper();
+                if (helper) {
+                    this.form.siteKeywords = helper.stringifyKeywordList(
+                        this.keywordTags,
+                    );
+                    return;
+                }
+                this.form.siteKeywords = this.keywordTags.join(", ");
+            },
+            syncKeywordTagsFromSiteKeywords(rawKeywords) {
+                this.keywordTags = this.normalizeKeywordTokens(rawKeywords);
+                this.syncSiteKeywordsFromTags();
+            },
+            commitKeywordDraft() {
+                const draft = String(this.keywordDraft || "").trim();
+                if (!draft) {
+                    this.keywordDraft = "";
+                    return;
+                }
+                const helper = this.keywordHelper();
+                if (helper) {
+                    this.keywordTags = helper.mergeKeywordList(
+                        this.keywordTags,
+                        draft,
+                    );
+                } else {
+                    this.keywordTags = this.normalizeKeywordTokens([
+                        ...this.keywordTags,
+                        ...this.normalizeKeywordTokens(draft),
+                    ]);
+                }
+                this.keywordDraft = "";
+                this.syncSiteKeywordsFromTags();
+            },
+            removeKeywordTag(index) {
+                if (
+                    !Number.isInteger(index) ||
+                    index < 0 ||
+                    index >= this.keywordTags.length
+                ) {
+                    return;
+                }
+                this.keywordTags.splice(index, 1);
+                this.syncSiteKeywordsFromTags();
+            },
             fetchSettings() {
                 fetch("/admin/api/system/settings")
                     .then((response) => response.json())
@@ -886,6 +1029,9 @@
                             }
                             this.applyLogoFallbacks();
                             this.normalizeProvider();
+                            this.syncKeywordTagsFromSiteKeywords(
+                                this.form.siteKeywords,
+                            );
                         }
                     })
                     .catch(() => {
@@ -904,26 +1050,80 @@
                 }
             },
             applyLogoFallbacks() {
-                const light = this.form.siteLogoUrlLight?.trim() || "";
-                const dark = this.form.siteLogoUrlDark?.trim() || "";
-                const legacy = this.form.siteLogoUrl?.trim() || "";
-                if (!light && legacy) {
-                    this.form.siteLogoUrlLight = legacy;
-                }
-                if (!this.form.siteLogoUrlDark?.trim()) {
-                    this.form.siteLogoUrlDark =
-                        this.form.siteLogoUrlLight ||
-                        legacy ||
-                        this.form.siteLogoUrlDark;
-                }
-                if (!this.form.siteLogoUrlLight?.trim()) {
-                    this.form.siteLogoUrlLight =
-                        this.form.siteLogoUrlDark || legacy;
-                }
+                this.form.siteLogoUrlLight =
+                    this.form.siteLogoUrlLight?.trim() || "";
+                this.form.siteLogoUrlDark =
+                    this.form.siteLogoUrlDark?.trim() || "";
                 this.form.siteLogoUrl =
                     this.form.siteLogoUrlLight ||
                     this.form.siteLogoUrlDark ||
                     "";
+            },
+            triggerSocialImageUpload() {
+                if (this.socialImageUploading) {
+                    return;
+                }
+                const input = this.$refs.socialImageInput;
+                if (input) {
+                    input.click();
+                }
+            },
+            handleSocialImageSelected(event) {
+                const files = event?.target?.files;
+                if (!files || files.length === 0) {
+                    return;
+                }
+                const [file] = files;
+                event.target.value = "";
+                if (!file || !file.type.startsWith("image/")) {
+                    window.AdminUI.toast({
+                        message: "请选择图片文件",
+                        type: "warning",
+                    });
+                    return;
+                }
+                this.uploadSocialImage(file);
+            },
+            async uploadSocialImage(file) {
+                this.socialImageUploading = true;
+                const formData = new FormData();
+                formData.append("image", file);
+                try {
+                    const response = await fetch("/admin/api/upload/image", {
+                        method: "POST",
+                        body: formData,
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (
+                        !response.ok ||
+                        data.error ||
+                        !data.data ||
+                        !data.data.url
+                    ) {
+                        const message =
+                            data && (data.error || data.message)
+                                ? data.error || data.message
+                                : "分享图上传失败，请稍后重试";
+                        window.AdminUI.toast({ message, type: "error" });
+                        return;
+                    }
+                    this.form.siteSocialImage = data.data.url;
+                    window.AdminUI.toast({
+                        message: "分享图上传成功",
+                        type: "success",
+                    });
+                } catch (error) {
+                    const message =
+                        error && error.message
+                            ? error.message
+                            : "分享图上传失败，请稍后重试";
+                    window.AdminUI.toast({ message, type: "error" });
+                } finally {
+                    this.socialImageUploading = false;
+                }
+            },
+            clearSocialImage() {
+                this.form.siteSocialImage = "";
             },
             triggerLogoUpload(mode) {
                 const flag =
@@ -1200,6 +1400,7 @@
                 }
             },
             submit() {
+                this.commitKeywordDraft();
                 if (!this.form.siteName.trim()) {
                     window.AdminUI.toast({
                         message: "请填写站点名称",
@@ -1215,20 +1416,6 @@
                     return;
                 }
                 this.applyLogoFallbacks();
-                if (!this.form.siteLogoUrlLight?.trim()) {
-                    window.AdminUI.toast({
-                        message: "请上传浅色模式 Logo",
-                        type: "warning",
-                    });
-                    return;
-                }
-                if (!this.form.siteLogoUrlDark?.trim()) {
-                    window.AdminUI.toast({
-                        message: "请上传深色模式 Logo",
-                        type: "warning",
-                    });
-                    return;
-                }
                 this.normalizeProvider();
                 for (const button of this.form.navButtons) {
                     if (button.type === "custom") {
@@ -1247,7 +1434,10 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         siteName: this.form.siteName,
-                        siteLogoUrl: this.form.siteLogoUrlLight,
+                        siteLogoUrl:
+                            this.form.siteLogoUrlLight ||
+                            this.form.siteLogoUrlDark ||
+                            "",
                         siteLogoUrlLight: this.form.siteLogoUrlLight,
                         siteLogoUrlDark: this.form.siteLogoUrlDark,
                         siteDescription: this.form.siteDescription,
@@ -1278,6 +1468,9 @@
                             this.form = Object.assign(this.form, data.settings);
                             this.applyLogoFallbacks();
                             this.normalizeProvider();
+                            this.syncKeywordTagsFromSiteKeywords(
+                                this.form.siteKeywords,
+                            );
                         }
                         window.AdminUI.toast({
                             message: data.message || "系统设置已保存",

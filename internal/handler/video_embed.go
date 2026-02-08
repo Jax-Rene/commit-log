@@ -13,13 +13,12 @@ import (
 
 const (
 	videoAspectLandscape = "16:9"
-	videoAspectPortrait  = "9:16"
 )
 
 var (
 	videoEmbedLinePattern = regexp.MustCompile(`^\s*<?((?:https?://)?[^\s]+)>?\s*$`)
 	videoEmbedSrcPattern  = regexp.MustCompile(
-		`^https://(?:www\.)?(?:youtube\.com/embed/|youtube-nocookie\.com/embed/|player\.bilibili\.com/player\.html(?:\?|$)|www\.iesdouyin\.com/share/video/|www\.douyin\.com/video/|v\.douyin\.com/)`,
+		`^https://(?:www\.)?(?:youtube\.com/embed/|youtube-nocookie\.com/embed/|player\.bilibili\.com/player\.html(?:\?|$)|open\.douyin\.com/player/video(?:\?|$)|www\.iesdouyin\.com/share/video/|www\.douyin\.com/video/|v\.douyin\.com/)`,
 	)
 	videoEmbedTimePattern = regexp.MustCompile(`(?i)(\d+)(h|m|s)`) // for YouTube t=1h2m3s
 )
@@ -157,9 +156,6 @@ func parseVideoEmbed(raw string) (videoEmbed, bool) {
 	if embed, ok := parseBilibiliEmbed(parsed, trimmed); ok {
 		return embed, true
 	}
-	if embed, ok := parseDouyinEmbed(parsed, trimmed); ok {
-		return embed, true
-	}
 	return videoEmbed{}, false
 }
 
@@ -174,6 +170,7 @@ func normalizeVideoURL(raw string) string {
 	knownPrefixes := []string{
 		"douyin.com/",
 		"www.douyin.com/",
+		"open.douyin.com/",
 		"iesdouyin.com/",
 		"www.iesdouyin.com/",
 		"v.douyin.com/",
@@ -343,47 +340,6 @@ func parseBilibiliEmbed(u *url.URL, source string) (videoEmbed, bool) {
 		Source:   source,
 		EmbedURL: embedURL,
 		Aspect:   videoAspectLandscape,
-	}, true
-}
-
-func parseDouyinEmbed(u *url.URL, source string) (videoEmbed, bool) {
-	host := strings.ToLower(u.Hostname())
-	if !isHostOrSubdomain(host, "douyin.com") && !isHostOrSubdomain(host, "iesdouyin.com") {
-		return videoEmbed{}, false
-	}
-
-	segments := strings.Split(strings.Trim(u.Path, "/"), "/")
-	videoID := ""
-	for idx, segment := range segments {
-		if segment == "video" && idx+1 < len(segments) {
-			videoID = segments[idx+1]
-			break
-		}
-		if strings.HasPrefix(segment, "modal_id=") {
-			videoID = strings.TrimPrefix(segment, "modal_id=")
-			break
-		}
-	}
-	if videoID == "" {
-		if candidate := u.Query().Get("modal_id"); candidate != "" {
-			videoID = candidate
-		}
-	}
-
-	embedURL := ""
-	if videoID != "" {
-		embedURL = fmt.Sprintf("https://www.iesdouyin.com/share/video/%s", videoID)
-	} else if host == "v.douyin.com" {
-		embedURL = source
-	} else {
-		return videoEmbed{}, false
-	}
-
-	return videoEmbed{
-		Platform: "douyin",
-		Source:   source,
-		EmbedURL: embedURL,
-		Aspect:   videoAspectPortrait,
 	}, true
 }
 

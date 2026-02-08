@@ -446,7 +446,7 @@ export function createTocController(rawOptions = {}) {
                         lockScrollOffset = getScrollOffset();
                         try {
                                 heading.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-                        } catch (error) {
+                        } catch {
                                 const targetTop = getScrollOffset() + heading.getBoundingClientRect().top - 120;
                                 window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
                         }

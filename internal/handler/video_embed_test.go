@@ -16,30 +16,21 @@ func TestRenderMarkdown_VideoEmbeds(t *testing.T) {
 		markdown   string
 		wantSrc    string
 		wantVendor string
+		wantAspect string
 	}{
 		{
 			name:       "youtube",
 			markdown:   "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
 			wantSrc:    "https://www.youtube.com/embed/dQw4w9WgXcQ",
 			wantVendor: "youtube",
+			wantAspect: "16:9",
 		},
 		{
 			name:       "bilibili",
 			markdown:   "https://www.bilibili.com/video/BV1x5411c7mD",
 			wantSrc:    "player.bilibili.com/player.html",
 			wantVendor: "bilibili",
-		},
-		{
-			name:       "douyin",
-			markdown:   "https://www.iesdouyin.com/share/video/7234567890123456789",
-			wantSrc:    "iesdouyin.com/share/video/7234567890123456789",
-			wantVendor: "douyin",
-		},
-		{
-			name:       "douyin-modal-id",
-			markdown:   "douyin.com/modal_id=7602245594001771802",
-			wantSrc:    "iesdouyin.com/share/video/7602245594001771802",
-			wantVendor: "douyin",
+			wantAspect: "16:9",
 		},
 	}
 
@@ -71,6 +62,51 @@ func TestRenderMarkdown_VideoEmbeds(t *testing.T) {
 			}
 			if !strings.Contains(html, "data-video-platform=\""+tt.wantVendor+"\"") {
 				t.Fatalf("expected platform %q marker, got: %s", tt.wantVendor, html)
+			}
+			if !strings.Contains(html, "data-video-aspect=\""+tt.wantAspect+"\"") {
+				t.Fatalf("expected aspect %q marker, got: %s", tt.wantAspect, html)
+			}
+		})
+	}
+}
+
+func TestRenderMarkdown_SkipsDouyinEmbed(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		markdown string
+	}{
+		{
+			name:     "douyin-share",
+			markdown: "https://www.iesdouyin.com/share/video/7234567890123456789",
+		},
+		{
+			name:     "douyin-modal-id",
+			markdown: "douyin.com/modal_id=7602245594001771802",
+		},
+		{
+			name:     "douyin-player",
+			markdown: "https://open.douyin.com/player/video?vid=7602245594001771802",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			rendered, err := renderMarkdown(tt.markdown)
+			if err != nil {
+				t.Fatalf("render markdown: %v", err)
+			}
+
+			html := string(rendered)
+			if strings.Contains(html, "<iframe") {
+				t.Fatalf("expected no iframe for douyin links, got: %s", html)
+			}
+			if !strings.Contains(html, "douyin.com/") {
+				t.Fatalf("expected douyin content to remain as plain text or link, got: %s", html)
 			}
 		})
 	}

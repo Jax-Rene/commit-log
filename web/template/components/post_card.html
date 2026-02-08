@@ -30,7 +30,9 @@
             class="text-lg font-semibold text-slate-900 transition-colors hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400"
             >{{$post.Title}}</a
         >
-        <p class="text-sm leading-6 text-slate-600 dark:text-slate-400">
+        <p
+            class="post-card-summary text-sm leading-6 text-slate-600 dark:text-slate-400"
+        >
             {{if $post.Summary}}{{truncate $post.Summary 120}}{{else}}{{truncate
             $post.Content 120}}{{end}}
         </p>

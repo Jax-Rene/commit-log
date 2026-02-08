@@ -329,15 +329,14 @@ function parseVideoEmbedSource(value) {
   }
   return (
     parseYouTubeEmbed(parsed, raw) ||
-    parseBilibiliEmbed(parsed, raw) ||
-    parseDouyinEmbed(parsed, raw)
+    parseBilibiliEmbed(parsed, raw)
   );
 }
 
 function safeParseUrl(value) {
   try {
     return new URL(value);
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -353,6 +352,7 @@ function normalizeVideoURL(value) {
   const knownPrefixes = [
     "douyin.com/",
     "www.douyin.com/",
+    "open.douyin.com/",
     "iesdouyin.com/",
     "www.iesdouyin.com/",
     "v.douyin.com/",
@@ -500,43 +500,6 @@ function parseBilibiliEmbed(url, source) {
     source,
     embed,
     aspect: VIDEO_EMBED_PLATFORMS.bilibili.aspect,
-  };
-}
-
-function parseDouyinEmbed(url, source) {
-  const host = url.hostname.toLowerCase();
-  if (
-    !isHostOrSubdomain(host, "douyin.com") &&
-    !isHostOrSubdomain(host, "iesdouyin.com")
-  ) {
-    return null;
-  }
-  const segments = stripLeadingSlash(url.pathname).split("/");
-  let videoId = "";
-  segments.forEach((segment, index) => {
-    if (segment === "video" && index + 1 < segments.length) {
-      videoId = segments[index + 1];
-    }
-    if (segment.startsWith("modal_id=")) {
-      videoId = segment.replace("modal_id=", "");
-    }
-  });
-  if (!videoId) {
-    videoId = url.searchParams.get("modal_id") || "";
-  }
-  let embed = "";
-  if (videoId) {
-    embed = `https://www.iesdouyin.com/share/video/${videoId}`;
-  } else if (host === "v.douyin.com") {
-    embed = source;
-  } else {
-    return null;
-  }
-  return {
-    platform: "douyin",
-    source,
-    embed,
-    aspect: VIDEO_EMBED_PLATFORMS.douyin.aspect,
   };
 }
 
@@ -1883,7 +1846,7 @@ function registerEmojiSlashMenu(builder) {
   let groupInstance = null;
   try {
     groupInstance = builder.addGroup("emoji", "Emoji 表情");
-  } catch (error) {
+  } catch {
     try {
       groupInstance = builder.getGroup("emoji");
     } catch (innerError) {
@@ -1916,7 +1879,7 @@ function registerCalloutSlashMenu(builder) {
   let groupInstance = null;
   try {
     groupInstance = builder.addGroup("callout", "高亮块");
-  } catch (error) {
+  } catch {
     try {
       groupInstance = builder.getGroup("callout");
     } catch (innerError) {
@@ -1974,7 +1937,7 @@ function readInlineSelection(editor, controller) {
         width: right - left,
         height: bottom - top,
       };
-    } catch (error) {
+    } catch {
       coords = null;
     }
 
@@ -1989,7 +1952,7 @@ function readInlineSelection(editor, controller) {
           contextText = block;
         }
       }
-    } catch (error) {
+    } catch {
       // ignore block range issues
     }
 
@@ -3175,7 +3138,7 @@ class PostDraftController {
       let data = {};
       try {
         data = await response.json();
-      } catch (error) {
+      } catch {
         data = {};
       }
       if (!response.ok) {
