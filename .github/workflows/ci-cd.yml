@@ -2,9 +2,7 @@ name: CI & Deploy (Fly.io)
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "**" ]
+    branches: ['main']
 
 permissions:
   contents: read

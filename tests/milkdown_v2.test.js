@@ -421,7 +421,7 @@ test("handleMarkdownTablePaste intercepts plain text tables", () => {
       return { type: "text", text };
     },
   };
-  const { editor, view } = createProseMirrorStubs(context, "示例文档");
+  const { view } = createProseMirrorStubs(context, "示例文档");
   view.state.schema = schema;
   const table = `| A | B |\n| --- | --- |\n| 1 | 2 |`;
   const event = {
@@ -538,7 +538,7 @@ test("default autosave intervals throttle draft updates", () => {
 });
 
 test("cloneValue falls back when structuredClone unavailable", () => {
-  const { api, context } = loadMilkdownTestingModule({
+  const { api } = loadMilkdownTestingModule({
     structuredClone: undefined,
   });
   const original = { nested: { value: 1 } };
@@ -772,24 +772,28 @@ test("videoEmbedSandboxForPlatform returns strict sandbox for bilibili", () => {
   assert.strictEqual(api.videoEmbedSandboxForPlatform("youtube"), "");
 });
 
-test("parseVideoEmbedSource resolves Douyin share links", () => {
+test("parseVideoEmbedSource skips Douyin share links", () => {
   const { api } = loadMilkdownTestingModule();
   const embed = api.parseVideoEmbedSource(
     "https://www.iesdouyin.com/share/video/7234567890123456789",
   );
-  assert.ok(embed);
-  assert.strictEqual(embed.platform, "douyin");
-  assert.ok(embed.embed.includes("iesdouyin.com/share/video/7234567890123456789"));
+  assert.strictEqual(embed, null);
 });
 
-test("parseVideoEmbedSource resolves Douyin modal_id links", () => {
+test("parseVideoEmbedSource skips Douyin modal_id links", () => {
   const { api } = loadMilkdownTestingModule();
   const embed = api.parseVideoEmbedSource(
     "douyin.com/modal_id=7602245594001771802",
   );
-  assert.ok(embed);
-  assert.strictEqual(embed.platform, "douyin");
-  assert.ok(embed.embed.includes("iesdouyin.com/share/video/7602245594001771802"));
+  assert.strictEqual(embed, null);
+});
+
+test("parseVideoEmbedSource skips Douyin player links with vid", () => {
+  const { api } = loadMilkdownTestingModule();
+  const embed = api.parseVideoEmbedSource(
+    "https://open.douyin.com/player/video?vid=7602245594001771802",
+  );
+  assert.strictEqual(embed, null);
 });
 
 test("parseVideoEmbedSource supports angle-bracket autolink", () => {

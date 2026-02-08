@@ -523,6 +523,41 @@ func (s *e2eSuite) testAdminAPIs(t *testing.T) {
 		t.Fatalf("system settings response missing site name: %s", body)
 	}
 
+	emptyLogoPayload := map[string]interface{}{
+		"siteName":         "E2E 空图标站点",
+		"siteLogoUrl":      "",
+		"siteLogoUrlLight": "",
+		"siteLogoUrlDark":  "",
+		"siteDescription":  "端到端测试站点",
+		"siteKeywords":     "e2e,commitlog",
+		"siteSocialImage":  "https://example.com/social.png",
+		"aiProvider":       "openai",
+		"openaiApiKey":     "",
+		"deepseekApiKey":   "",
+		"adminFooterText":  "footer admin",
+		"publicFooterText": "footer public",
+		"aiSummaryPrompt":  "summary prompt",
+		"aiRewritePrompt":  "rewrite prompt",
+	}
+	resp = s.mustRequestJSON(t, s.admin, http.MethodPut, "/admin/api/system/settings", emptyLogoPayload)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("update system settings with empty logos expected 200, got %d", resp.StatusCode)
+	}
+	var emptyLogoResult struct {
+		Settings struct {
+			SiteLogoURL      string `json:"siteLogoUrl"`
+			SiteLogoURLLight string `json:"siteLogoUrlLight"`
+			SiteLogoURLDark  string `json:"siteLogoUrlDark"`
+		} `json:"settings"`
+	}
+	decodeJSON(t, resp, &emptyLogoResult)
+	if emptyLogoResult.Settings.SiteLogoURL != "" ||
+		emptyLogoResult.Settings.SiteLogoURLLight != "" ||
+		emptyLogoResult.Settings.SiteLogoURLDark != "" {
+		t.Fatalf("expected empty logo fields after update, got %+v", emptyLogoResult.Settings)
+	}
+
 	resp = s.mustRequestJSON(t, s.admin, http.MethodPost, "/admin/api/system/settings/ai/test", map[string]interface{}{
 		"provider": "openai",
 		"apiKey":   "",

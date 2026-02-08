@@ -1,0 +1,8 @@
+node_modules
+web/static/dist
+web/static/uploads
+.cache
+.gocache
+uploads
+*.db
+pnpm-lock.yaml
