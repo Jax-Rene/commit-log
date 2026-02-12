@@ -739,6 +739,34 @@ test("buildPayload includes draft session id", () => {
   assert.strictEqual(payload.draft_session_id, "session-123");
 });
 
+test("buildPayload includes visibility and normalizes legacy values", () => {
+  const { api } = loadMilkdownTestingModule();
+  const { PostDraftController } = api;
+  const crepe = {
+    editor: {},
+    getMarkdown() {
+      return "# 标题\n\n内容";
+    },
+    setMarkdown() {
+      return true;
+    },
+  };
+
+  const controller = new PostDraftController(crepe, {
+    post: {
+      Content: "# 标题\n\n内容",
+      visibility: "UNLISTED",
+    },
+  });
+
+  const payload = controller.buildPayload("# 标题\n\n内容");
+  assert.strictEqual(payload.visibility, "unlisted");
+
+  controller.setVisibility("not-supported");
+  const normalized = controller.buildPayload("# 标题\n\n内容");
+  assert.strictEqual(normalized.visibility, "public");
+});
+
 test("resolveEditorMode defaults to post and accepts about", () => {
   const { api } = loadMilkdownTestingModule();
   assert.strictEqual(api.resolveEditorMode(), "post");

@@ -24,6 +24,7 @@ type postPayload struct {
 	Title          string `json:"title"`
 	Content        string `json:"content"`
 	Summary        string `json:"summary"`
+	Visibility     string `json:"visibility"`
 	TagIDs         []uint `json:"tag_ids"`
 	CoverURL       string `json:"cover_url"`
 	CoverWidth     int    `json:"cover_width"`
@@ -47,6 +48,7 @@ func (p postPayload) toInput(userID uint) service.PostInput {
 		Title:          p.Title,
 		Content:        p.Content,
 		Summary:        p.Summary,
+		Visibility:     p.Visibility,
 		TagIDs:         p.TagIDs,
 		UserID:         userID,
 		CoverURL:       p.CoverURL,
@@ -128,6 +130,8 @@ func (a *API) CreatePost(c *gin.Context) {
 		switch {
 		case errors.Is(err, service.ErrTagNotFound):
 			respondError(c, http.StatusBadRequest, "部分标签不存在")
+		case errors.Is(err, service.ErrVisibilityInvalid):
+			respondError(c, http.StatusBadRequest, "文章可见度不合法")
 		case errors.Is(err, service.ErrCoverRequired):
 			respondError(c, http.StatusBadRequest, "请上传文章封面")
 		case errors.Is(err, service.ErrCoverInvalid):
@@ -161,6 +165,8 @@ func (a *API) UpdatePost(c *gin.Context) {
 			respondError(c, http.StatusNotFound, "文章不存在")
 		case errors.Is(err, service.ErrTagNotFound):
 			respondError(c, http.StatusBadRequest, "部分标签不存在")
+		case errors.Is(err, service.ErrVisibilityInvalid):
+			respondError(c, http.StatusBadRequest, "文章可见度不合法")
 		case errors.Is(err, service.ErrCoverRequired):
 			respondError(c, http.StatusBadRequest, "请上传文章封面")
 		case errors.Is(err, service.ErrCoverInvalid):

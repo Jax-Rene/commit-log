@@ -268,6 +268,8 @@ function resolveEditorMode(initialData = {}) {
 
 const DEFAULT_CHANGE_POLL_INTERVAL = 3000;
 const DEFAULT_AUTOSAVE_INTERVAL = 60000;
+const POST_VISIBILITY_PUBLIC = "public";
+const POST_VISIBILITY_UNLISTED = "unlisted";
 
 function generateDraftSessionId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -301,6 +303,14 @@ function coerceString(value, fallback = "") {
     return String(value);
   }
   return fallback;
+}
+
+function normalizePostVisibility(value) {
+  const normalized = coerceString(value, "").trim().toLowerCase();
+  if (normalized === POST_VISIBILITY_UNLISTED) {
+    return POST_VISIBILITY_UNLISTED;
+  }
+  return POST_VISIBILITY_PUBLIC;
 }
 
 function deriveTitleFromMarkdown(content) {
@@ -2599,6 +2609,12 @@ class PostDraftController {
     if (source.Status === undefined && typeof source.status === "string") {
       source.Status = source.status;
     }
+    if (
+      source.Visibility === undefined &&
+      typeof source.visibility === "string"
+    ) {
+      source.Visibility = source.visibility;
+    }
     if (source.UserID === undefined && source.user_id !== undefined) {
       source.UserID = source.user_id;
     }
@@ -2610,11 +2626,19 @@ class PostDraftController {
     source.Tags = primaryTags;
     source.tags = primaryTags.map((tag) => cloneValue(tag) || { ...tag });
 
+    const visibility = normalizePostVisibility(
+      pickProperty(source, ["Visibility", "visibility"], POST_VISIBILITY_PUBLIC),
+    );
+    source.Visibility = visibility;
+    source.visibility = visibility;
+
     return {
       Title: "",
       Summary: "",
       Content: "",
       Status: "draft",
+      Visibility: POST_VISIBILITY_PUBLIC,
+      visibility: POST_VISIBILITY_PUBLIC,
       Tags: [],
       CoverURL: "",
       CoverWidth: 0,
@@ -3014,6 +3038,21 @@ class PostDraftController {
     return normalized;
   }
 
+  setVisibility(value) {
+    const normalized = normalizePostVisibility(value);
+    const previous = normalizePostVisibility(
+      pickProperty(this.postData, ["Visibility", "visibility"], ""),
+    );
+    if (previous === normalized) {
+      return normalized;
+    }
+    this.postData.Visibility = normalized;
+    this.postData.visibility = normalized;
+    this.markDirty();
+    this.notifyPostChange("visibility");
+    return normalized;
+  }
+
   setCover(info = {}) {
     const nextUrl = coerceString(
       pickProperty(info, ["url", "CoverURL", "cover_url"], ""),
@@ -3082,6 +3121,9 @@ class PostDraftController {
       pickProperty(publication, ["Summary", "summary"], ""),
       "",
     );
+    const visibility = normalizePostVisibility(
+      pickProperty(publication, ["Visibility", "visibility"], ""),
+    );
     const coverUrl = coerceString(
       pickProperty(publication, ["CoverURL", "cover_url"], ""),
       "",
@@ -3116,6 +3158,8 @@ class PostDraftController {
     this.postData.content = content;
     this.postData.Summary = summary;
     this.postData.summary = summary;
+    this.postData.Visibility = visibility;
+    this.postData.visibility = visibility;
     this.postData.CoverURL = coverUrl;
     this.postData.cover_url = coverUrl;
     this.postData.CoverWidth = coverWidth;
@@ -3152,6 +3196,11 @@ class PostDraftController {
       pickProperty(post, ["Summary", "summary"], ""),
       "",
     );
+    const visibility = normalizePostVisibility(
+      pickProperty(post, ["Visibility", "visibility"], POST_VISIBILITY_PUBLIC),
+    );
+    post.Visibility = visibility;
+    post.visibility = visibility;
     const coverUrl = coerceString(
       pickProperty(post, ["CoverURL", "cover_url"], ""),
       "",
@@ -3176,6 +3225,7 @@ class PostDraftController {
     return {
       title,
       summary,
+      visibility,
       content,
       tag_ids: tagIds,
       cover_url: coverUrl,
