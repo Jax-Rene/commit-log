@@ -10,12 +10,18 @@ import (
 // markdownEmphasisReplacer 用于去除 Markdown 斜体和粗体标记。
 var markdownEmphasisReplacer = strings.NewReplacer("**", "", "*", "")
 
+const (
+	PostVisibilityPublic   = "public"
+	PostVisibilityUnlisted = "unlisted"
+)
+
 // Post 定义了文章模型
 type Post struct {
 	gorm.Model
 	Content     string
 	Summary     string
 	Status      string `gorm:"default:draft"` // draft, published
+	Visibility  string `gorm:"size:16;not null;default:public"`
 	ReadingTime int
 	CoverURL    string
 	CoverWidth  int
@@ -39,6 +45,7 @@ type PostPublication struct {
 	Post        Post
 	Content     string
 	Summary     string
+	Visibility  string `gorm:"size:16;not null;default:public"`
 	ReadingTime int
 	CoverURL    string
 	CoverWidth  int
@@ -61,6 +68,7 @@ type PostDraftVersion struct {
 	ContentHash string
 	SessionID   string `gorm:"index;size:64"`
 	Summary     string
+	Visibility  string `gorm:"size:16;not null;default:public"`
 	ReadingTime int
 	CoverURL    string
 	CoverWidth  int
@@ -76,6 +84,7 @@ type PostDraftVersion struct {
 // PopulateDerivedFields 根据内容动态生成标题等衍生信息。
 func (p *Post) PopulateDerivedFields() {
 	p.Title = DeriveTitleFromContent(p.Content)
+	p.Visibility = NormalizePostVisibility(p.Visibility)
 }
 
 // AfterFind 在查询后填充衍生字段。
@@ -87,6 +96,7 @@ func (p *Post) AfterFind(tx *gorm.DB) error {
 // PopulateDerivedFields 根据内容动态生成标题等衍生信息。
 func (pp *PostPublication) PopulateDerivedFields() {
 	pp.Title = DeriveTitleFromContent(pp.Content)
+	pp.Visibility = NormalizePostVisibility(pp.Visibility)
 }
 
 // AfterFind 在查询后填充衍生字段。
@@ -98,6 +108,7 @@ func (pp *PostPublication) AfterFind(tx *gorm.DB) error {
 // PopulateDerivedFields 根据内容动态生成标题等衍生信息。
 func (pv *PostDraftVersion) PopulateDerivedFields() {
 	pv.Title = DeriveTitleFromContent(pv.Content)
+	pv.Visibility = NormalizePostVisibility(pv.Visibility)
 }
 
 // AfterFind 在查询后填充衍生字段。
@@ -138,4 +149,14 @@ func DeriveTitleFromContent(content string) string {
 // stripMarkdownEmphasis 去除 Markdown 斜体和粗体标记。
 func stripMarkdownEmphasis(text string) string {
 	return markdownEmphasisReplacer.Replace(text)
+}
+
+func NormalizePostVisibility(raw string) string {
+	normalized := strings.ToLower(strings.TrimSpace(raw))
+	switch normalized {
+	case PostVisibilityUnlisted:
+		return PostVisibilityUnlisted
+	default:
+		return PostVisibilityPublic
+	}
 }

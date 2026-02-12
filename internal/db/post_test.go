@@ -39,3 +39,26 @@ func TestDeriveTitleFromContentStripsEmphasis(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizePostVisibility(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{name: "empty defaults public", input: "", want: PostVisibilityPublic},
+		{name: "public keeps public", input: "public", want: PostVisibilityPublic},
+		{name: "unlisted keeps unlisted", input: "unlisted", want: PostVisibilityUnlisted},
+		{name: "case insensitive", input: "UNLISTED", want: PostVisibilityUnlisted},
+		{name: "unknown fallback public", input: "private", want: PostVisibilityPublic},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NormalizePostVisibility(tt.input)
+			if got != tt.want {
+				t.Fatalf("expected %q, got %q", tt.want, got)
+			}
+		})
+	}
+}

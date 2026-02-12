@@ -75,6 +75,51 @@ func TestPostService_ListCountsDrafts(t *testing.T) {
 	}
 }
 
+func TestPostService_ListHidesAboutDraft(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "about-draft-hider"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	if _, err := svc.Create(PostInput{
+		Content: "# About Me\n这是 About 页草稿",
+		Summary: "about",
+		UserID:  user.ID,
+	}); err != nil {
+		t.Fatalf("create about draft: %v", err)
+	}
+
+	visibleDraft, err := svc.Create(PostInput{
+		Content: "# 正常草稿\n这篇应该保留在列表中",
+		Summary: "normal",
+		UserID:  user.ID,
+	})
+	if err != nil {
+		t.Fatalf("create visible draft: %v", err)
+	}
+
+	list, err := svc.List(PostFilter{Page: 1, PerPage: 10})
+	if err != nil {
+		t.Fatalf("list posts: %v", err)
+	}
+
+	if list.Total != 1 {
+		t.Fatalf("expected total 1 after hiding about draft, got %d", list.Total)
+	}
+	if list.DraftCount != 1 {
+		t.Fatalf("expected draft count 1 after hiding about draft, got %d", list.DraftCount)
+	}
+	if len(list.Posts) != 1 {
+		t.Fatalf("expected 1 visible post, got %d", len(list.Posts))
+	}
+	if list.Posts[0].ID != visibleDraft.ID {
+		t.Fatalf("expected visible draft %d, got %d", visibleDraft.ID, list.Posts[0].ID)
+	}
+}
+
 func TestPostService_ListDefaultsToCreatedDesc(t *testing.T) {
 	gdb := setupPostServiceTestDB(t)
 	svc := NewPostService(gdb)
@@ -266,6 +311,81 @@ func TestPostService_ListPublishedSplitsSearchTokens(t *testing.T) {
 	}
 	if len(list.Publications) != 1 {
 		t.Fatalf("expected 1 publication, got %d", len(list.Publications))
+	}
+}
+
+func TestPostService_ListPublishedExcludesUnlisted(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "discoverability"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	publicPost, err := svc.Create(PostInput{
+		Content:     "# 公开文章\n内容",
+		Summary:     "公开摘要",
+		UserID:      user.ID,
+		CoverURL:    "https://example.com/public.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+		Visibility:  db.PostVisibilityPublic,
+	})
+	if err != nil {
+		t.Fatalf("create public post: %v", err)
+	}
+	if _, err := svc.Publish(publicPost.ID, user.ID, nil); err != nil {
+		t.Fatalf("publish public post: %v", err)
+	}
+
+	unlistedPost, err := svc.Create(PostInput{
+		Content:     "# 隐藏文章\n内容",
+		Summary:     "隐藏摘要",
+		UserID:      user.ID,
+		CoverURL:    "https://example.com/unlisted.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+		Visibility:  db.PostVisibilityUnlisted,
+	})
+	if err != nil {
+		t.Fatalf("create unlisted post: %v", err)
+	}
+	if _, err := svc.Publish(unlistedPost.ID, user.ID, nil); err != nil {
+		t.Fatalf("publish unlisted post: %v", err)
+	}
+
+	list, err := svc.ListPublished(PostFilter{Page: 1, PerPage: 10})
+	if err != nil {
+		t.Fatalf("list published: %v", err)
+	}
+	if list.Total != 1 {
+		t.Fatalf("expected 1 discoverable publication, got %d", list.Total)
+	}
+	if len(list.Publications) != 1 {
+		t.Fatalf("expected 1 discoverable publication item, got %d", len(list.Publications))
+	}
+	if list.Publications[0].PostID != publicPost.ID {
+		t.Fatalf("expected discoverable post id %d, got %d", publicPost.ID, list.Publications[0].PostID)
+	}
+
+	all, err := svc.ListAllPublished()
+	if err != nil {
+		t.Fatalf("list all published: %v", err)
+	}
+	if len(all) != 1 {
+		t.Fatalf("expected 1 discoverable publication from sitemap/rss source, got %d", len(all))
+	}
+	if all[0].PostID != publicPost.ID {
+		t.Fatalf("expected discoverable post id %d in list all, got %d", publicPost.ID, all[0].PostID)
+	}
+
+	latestUnlisted, err := svc.LatestPublication(unlistedPost.ID)
+	if err != nil {
+		t.Fatalf("latest publication for unlisted post: %v", err)
+	}
+	if latestUnlisted.PostID != unlistedPost.ID {
+		t.Fatalf("expected unlisted latest publication post id %d, got %d", unlistedPost.ID, latestUnlisted.PostID)
 	}
 }
 

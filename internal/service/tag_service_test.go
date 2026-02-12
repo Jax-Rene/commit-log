@@ -20,7 +20,7 @@ func setupTagServiceTestDB(t *testing.T) (*gorm.DB, func()) {
 		t.Fatalf("failed to open test db: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.Tag{}, &db.Post{}); err != nil {
+	if err := gdb.AutoMigrate(&db.Tag{}, &db.Post{}, &db.PostPublication{}); err != nil {
 		t.Fatalf("failed to migrate test db: %v", err)
 	}
 
@@ -107,5 +107,86 @@ func TestTagServiceReorderUpdatesSortOrder(t *testing.T) {
 	}
 	if list[0].SortOrder != 0 || list[1].SortOrder != 1 || list[2].SortOrder != 2 {
 		t.Fatalf("unexpected sort_order after reorder: %+v", []int{list[0].SortOrder, list[1].SortOrder, list[2].SortOrder})
+	}
+}
+
+func TestTagService_PublishedUsageExcludesUnlistedPosts(t *testing.T) {
+	gdb, cleanup := setupTagServiceTestDB(t)
+	defer cleanup()
+
+	publicTag := db.Tag{Name: "公开标签", SortOrder: 0}
+	unlistedTag := db.Tag{Name: "隐藏标签", SortOrder: 1}
+	if err := gdb.Create(&publicTag).Error; err != nil {
+		t.Fatalf("create public tag: %v", err)
+	}
+	if err := gdb.Create(&unlistedTag).Error; err != nil {
+		t.Fatalf("create unlisted tag: %v", err)
+	}
+
+	publicPost := db.Post{
+		Content:    "# 公开\n正文",
+		Status:     "published",
+		UserID:     1,
+		Visibility: db.PostVisibilityPublic,
+	}
+	if err := gdb.Create(&publicPost).Error; err != nil {
+		t.Fatalf("create public post: %v", err)
+	}
+	publicPublication := db.PostPublication{
+		PostID:      publicPost.ID,
+		Content:     publicPost.Content,
+		UserID:      1,
+		PublishedAt: time.Now().Add(-time.Hour),
+		Version:     1,
+		Visibility:  db.PostVisibilityPublic,
+	}
+	if err := gdb.Create(&publicPublication).Error; err != nil {
+		t.Fatalf("create public publication: %v", err)
+	}
+	if err := gdb.Model(&publicPost).Update("latest_publication_id", publicPublication.ID).Error; err != nil {
+		t.Fatalf("update public latest publication: %v", err)
+	}
+	if err := gdb.Model(&publicPublication).Association("Tags").Append(&publicTag); err != nil {
+		t.Fatalf("associate public tag: %v", err)
+	}
+
+	unlistedPost := db.Post{
+		Content:    "# 隐藏\n正文",
+		Status:     "published",
+		UserID:     1,
+		Visibility: db.PostVisibilityUnlisted,
+	}
+	if err := gdb.Create(&unlistedPost).Error; err != nil {
+		t.Fatalf("create unlisted post: %v", err)
+	}
+	unlistedPublication := db.PostPublication{
+		PostID:      unlistedPost.ID,
+		Content:     unlistedPost.Content,
+		UserID:      1,
+		PublishedAt: time.Now(),
+		Version:     1,
+		Visibility:  db.PostVisibilityUnlisted,
+	}
+	if err := gdb.Create(&unlistedPublication).Error; err != nil {
+		t.Fatalf("create unlisted publication: %v", err)
+	}
+	if err := gdb.Model(&unlistedPost).Update("latest_publication_id", unlistedPublication.ID).Error; err != nil {
+		t.Fatalf("update unlisted latest publication: %v", err)
+	}
+	if err := gdb.Model(&unlistedPublication).Association("Tags").Append(&unlistedTag); err != nil {
+		t.Fatalf("associate unlisted tag: %v", err)
+	}
+
+	svc := NewTagService(gdb)
+	usages, err := svc.PublishedUsage()
+	if err != nil {
+		t.Fatalf("published usage: %v", err)
+	}
+
+	if len(usages) != 1 {
+		t.Fatalf("expected only discoverable tags, got %d", len(usages))
+	}
+	if usages[0].Name != publicTag.Name {
+		t.Fatalf("expected discoverable tag %s, got %s", publicTag.Name, usages[0].Name)
 	}
 }

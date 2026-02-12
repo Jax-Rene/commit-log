@@ -19,12 +19,15 @@ var (
 	ErrCoverInvalid        = errors.New("cover dimensions are invalid")
 	ErrPublicationNotFound = errors.New("post publication not found")
 	ErrInvalidPublishState = errors.New("post is missing required fields for publishing")
+	ErrVisibilityInvalid   = errors.New("post visibility is invalid")
 	linkPattern            = regexp.MustCompile(`\[[^\]]+\]\([^\)]+\)`)
 	imagePattern           = regexp.MustCompile(`!\[[^\]]*\]\([^\)]+\)`)
 	bareURLPattern         = regexp.MustCompile(`https?://\S+`)
 )
 
 const maxDraftVersions = 10
+
+const hiddenLegacyDraftTitle = "about me"
 
 // PostService wraps post related database operations.
 type PostService struct {
@@ -68,6 +71,7 @@ type PostInput struct {
 	Title          string
 	Content        string
 	Summary        string
+	Visibility     string
 	TagIDs         []uint
 	UserID         uint
 	CoverURL       string
@@ -111,11 +115,16 @@ func (s *PostService) Create(input PostInput) (*db.Post, error) {
 	if err != nil {
 		return nil, err
 	}
+	visibility, err := normalizeVisibilityInput(input.Visibility, db.PostVisibilityPublic)
+	if err != nil {
+		return nil, err
+	}
 
 	post := db.Post{
 		Content:     input.Content,
 		Summary:     strings.TrimSpace(input.Summary),
 		Status:      "draft",
+		Visibility:  visibility,
 		UserID:      input.UserID,
 		CoverURL:    coverURL,
 		CoverWidth:  coverWidth,
@@ -140,9 +149,14 @@ func (s *PostService) Update(id uint, input PostInput) (*db.Post, error) {
 	if err != nil {
 		return nil, err
 	}
+	visibility, err := normalizeVisibilityInput(input.Visibility, existing.Visibility)
+	if err != nil {
+		return nil, err
+	}
 
 	existing.Content = input.Content
 	existing.Summary = strings.TrimSpace(input.Summary)
+	existing.Visibility = visibility
 	existing.CoverURL = coverURL
 	existing.CoverWidth = coverWidth
 	existing.CoverHeight = coverHeight
@@ -295,6 +309,7 @@ func (s *PostService) Publish(postID, userID uint, publishedAt *time.Time) (*db.
 		PostID:      post.ID,
 		Content:     post.Content,
 		Summary:     post.Summary,
+		Visibility:  post.Visibility,
 		ReadingTime: readingTime,
 		CoverURL:    post.CoverURL,
 		CoverWidth:  post.CoverWidth,
@@ -362,6 +377,7 @@ func (s *PostService) LatestPublication(postID uint) (*db.PostPublication, error
 // LatestDraft 返回指定用户最近编辑的草稿。
 func (s *PostService) LatestDraft(userID uint) (*db.Post, error) {
 	query := s.db.Preload("Tags").Preload("User").Where("status = ?", "draft")
+	query = s.applyHiddenDraftFilter(query, "posts")
 	if userID > 0 {
 		query = query.Where("user_id = ?", userID)
 	}
@@ -391,6 +407,7 @@ func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, 
 	baseQuery := s.db.Model(&db.PostPublication{}).
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.status = ?", "published")
+	baseQuery = s.applyDiscoverablePublicationFilter(baseQuery, "posts")
 	baseQuery = s.applyPublicationFilters(baseQuery, filter)
 
 	if err := baseQuery.Count(&result.Total).Error; err != nil {
@@ -405,6 +422,7 @@ func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, 
 		Preload("User").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.status = ?", "published")
+	dataQuery = s.applyDiscoverablePublicationFilter(dataQuery, "posts")
 	dataQuery = s.applyPublicationFilters(dataQuery, filter)
 
 	if err := dataQuery.
@@ -431,10 +449,13 @@ func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, 
 
 // ListAllPublished 返回所有文章的最新发布快照
 func (s *PostService) ListAllPublished() ([]db.PostPublication, error) {
-	var publications []db.PostPublication
-	if err := s.db.Preload("Tags").
+	query := s.db.Preload("Tags").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
-		Where("posts.status = ?", "published").
+		Where("posts.status = ?", "published")
+	query = s.applyDiscoverablePublicationFilter(query, "posts")
+
+	var publications []db.PostPublication
+	if err := query.
 		Order("post_publications.published_at desc, post_publications.id desc").
 		Find(&publications).Error; err != nil {
 		return nil, err
@@ -560,6 +581,7 @@ func (s *PostService) recordDraftVersion(tx *gorm.DB, post *db.Post, userID uint
 		ContentHash: contentHash,
 		SessionID:   sessionID,
 		Summary:     post.Summary,
+		Visibility:  post.Visibility,
 		ReadingTime: calculateReadingTime(post.Content),
 		CoverURL:    post.CoverURL,
 		CoverWidth:  post.CoverWidth,
@@ -617,6 +639,7 @@ func (s *PostService) updateDraftVersion(tx *gorm.DB, draft *db.PostDraftVersion
 		"content_hash": contentHash,
 		"session_id":   sessionID,
 		"summary":      post.Summary,
+		"visibility":   post.Visibility,
 		"reading_time": calculateReadingTime(post.Content),
 		"cover_url":    post.CoverURL,
 		"cover_width":  post.CoverWidth,
@@ -641,6 +664,8 @@ func hashDraftContent(content string) string {
 }
 
 func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeStatus bool) *gorm.DB {
+	query = s.applyHiddenDraftFilter(query, "posts")
+
 	if tokens := splitSearchTokens(filter.Search); len(tokens) > 0 {
 		alias := "posts"
 		titleExpr := derivedTitleQueryExpr(alias)
@@ -674,6 +699,20 @@ func (s *PostService) applyFilters(query *gorm.DB, filter PostFilter, includeSta
 	}
 
 	return query
+}
+
+func (s *PostService) applyHiddenDraftFilter(query *gorm.DB, alias string) *gorm.DB {
+	titleExpr := derivedTitleQueryExpr(alias)
+	clause := fmt.Sprintf("NOT (%s.status = ? AND LOWER(%s) = ?)", alias, titleExpr)
+	return query.Where(clause, "draft", hiddenLegacyDraftTitle)
+}
+
+func (s *PostService) applyDiscoverablePublicationFilter(query *gorm.DB, alias string) *gorm.DB {
+	if query == nil {
+		return nil
+	}
+	visibilityExpr := normalizedVisibilityQueryExpr(alias)
+	return query.Where(fmt.Sprintf("%s = ?", visibilityExpr), db.PostVisibilityPublic)
 }
 
 func (s *PostService) applyPublicationFilters(query *gorm.DB, filter PostFilter) *gorm.DB {
@@ -759,6 +798,25 @@ func calculateReadingTime(content string) int {
 // CalculateReadingTime exposes the reading time estimator for other packages.
 func CalculateReadingTime(content string) int {
 	return calculateReadingTime(content)
+}
+
+func normalizeVisibilityInput(raw, fallback string) (string, error) {
+	trimmed := strings.ToLower(strings.TrimSpace(raw))
+	if trimmed == "" {
+		resolvedFallback := db.NormalizePostVisibility(fallback)
+		return resolvedFallback, nil
+	}
+
+	switch trimmed {
+	case db.PostVisibilityPublic, db.PostVisibilityUnlisted:
+		return trimmed, nil
+	default:
+		return "", ErrVisibilityInvalid
+	}
+}
+
+func normalizedVisibilityQueryExpr(alias string) string {
+	return fmt.Sprintf("COALESCE(NULLIF(LOWER(TRIM(%s.visibility)), ''), '%s')", alias, db.PostVisibilityPublic)
 }
 
 func derivedTitleQueryExpr(alias string) string {

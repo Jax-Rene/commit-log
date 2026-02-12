@@ -16,8 +16,8 @@
         overflow-x: hidden;
     }
 
-    body.milkdown-immersive header,
-    body.milkdown-immersive footer {
+    body.milkdown-immersive > header,
+    body.milkdown-immersive > footer {
         display: none !important;
     }
 
@@ -877,7 +877,7 @@
                                 d="M8.25 6.75h7.5M8.25 12h7.5M8.25 17.25h4.5"
                             ></path>
                         </svg>
-                        <span>文章设置</span>
+                        <span>高级设置</span>
                     </button>
                 </div>
                 <div
@@ -963,23 +963,46 @@
             x-transition:leave-start="translate-x-0"
             x-transition:leave-end="translate-x-full"
         >
-            <header
+            <div
                 class="flex items-start justify-between border-b border-slate-200 px-6 pb-4 pt-6 dark:border-slate-800"
             >
-                <div class="space-y-1">
-                    <h2
-                        class="text-lg font-semibold text-slate-900 dark:text-slate-100"
+                <div class="flex items-start gap-3">
+                    <button
+                        type="button"
+                        class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-slate-100 dark:focus:ring-slate-700/60"
+                        @click="closePanel()"
+                        aria-label="返回写作助手"
                     >
-                        文章设置
-                    </h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">
-                        管理文章摘要、封面与标签等元数据。
-                    </p>
+                        <svg
+                            class="h-4 w-4"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1.6"
+                                d="M12.5 4.5L7 10l5.5 5.5"
+                            ></path>
+                        </svg>
+                    </button>
+                    <div class="space-y-1">
+                        <h2
+                            class="text-lg font-semibold text-slate-900 dark:text-slate-100"
+                        >
+                            高级设置
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            管理文章摘要、封面与标签等元数据。
+                        </p>
+                    </div>
                 </div>
                 <button
                     type="button"
                     class="rounded-full p-2 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:text-slate-500 dark:hover:text-slate-200 dark:focus:ring-slate-700/60"
                     @click="closePanel()"
+                    aria-label="关闭设置面板"
                 >
                     <svg
                         class="h-4 w-4"
@@ -994,7 +1017,7 @@
                         ></path>
                     </svg>
                 </button>
-            </header>
+            </div>
             <div class="flex-1 space-y-6 overflow-y-auto px-6 pb-10 pt-6">
                 <section class="space-y-3">
                     <div
@@ -1051,6 +1074,34 @@
                             ></span>
                         </p>
                     </template>
+                </section>
+
+                <section class="space-y-3">
+                    <div>
+                        <h3
+                            class="text-sm font-semibold text-slate-900 dark:text-slate-100"
+                        >
+                            文章可见度
+                        </h3>
+                        <p
+                            class="text-xs text-slate-500 dark:text-slate-400"
+                        >
+                            控制文章是否进入推荐流与站内搜索。URL 直达访问不受影响。
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        <select
+                            id="post-visibility"
+                            x-model="metadata.visibility"
+                            @change="handleVisibilityChange($event.target.value)"
+                            class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-blue-500/60 dark:focus:ring-blue-500/30"
+                        >
+                            <option value="public">公开（推荐与搜索可见）</option>
+                            <option value="unlisted">
+                                不公开（仅通过 URL 可见，不进入推荐与搜索）
+                            </option>
+                        </select>
+                    </div>
                 </section>
 
                 <section class="space-y-4">
@@ -1983,6 +2034,10 @@
             const parsed = Number(value);
             return Number.isFinite(parsed) ? parsed : 0;
         };
+        const normalizeVisibility = (value) => {
+            const normalized = sanitizeString(value).trim().toLowerCase();
+            return normalized === "unlisted" ? "unlisted" : "public";
+        };
         const toDate = (value) => {
             if (!value) {
                 return null;
@@ -2033,6 +2088,7 @@
             quickActionsExpanded: false,
             quickActionsHovering: false,
             quickActionsTimer: null,
+            quickActionsPinned: false,
             statisticsMenuOpen: false,
             availableTags: [],
             selectedTagIDs: [],
@@ -2041,6 +2097,7 @@
             postUpdatedAt: "",
             metadata: {
                 summary: "",
+                visibility: "public",
                 cover: { url: "", width: 0, height: 0 },
                 tags: [],
             },
@@ -2349,6 +2406,7 @@
                 });
             },
             toggleQuickActions() {
+                this.quickActionsPinned = false;
                 this.quickActionsExpanded = !this.quickActionsExpanded;
                 if (this.quickActionsExpanded) {
                     this.closeStatisticsMenu();
@@ -2363,14 +2421,20 @@
                 if (!this.quickActionsExpanded) {
                     return;
                 }
+                this.quickActionsPinned = false;
                 this.quickActionsExpanded = false;
                 this.closeStatisticsMenu();
                 this.cancelQuickActionsTimer();
             },
             scheduleQuickActionsCollapse() {
+                if (this.quickActionsPinned || this.panelOpen) {
+                    return;
+                }
                 this.cancelQuickActionsTimer();
                 this.quickActionsTimer = window.setTimeout(() => {
                     if (
+                        !this.quickActionsPinned &&
+                        !this.panelOpen &&
                         !this.quickActionsHovering &&
                         !this.statisticsMenuOpen
                     ) {
@@ -2390,6 +2454,9 @@
             },
             handleQuickActionsMouseLeave() {
                 this.quickActionsHovering = false;
+                if (this.quickActionsPinned || this.panelOpen) {
+                    return;
+                }
                 if (this.quickActionsExpanded) {
                     this.scheduleQuickActionsCollapse();
                 }
@@ -2401,6 +2468,9 @@
                 }
             },
             handleQuickActionsOutside() {
+                if (this.quickActionsPinned || this.panelOpen) {
+                    return;
+                }
                 this.collapseQuickActions();
             },
             toggleStatisticsMenu() {
@@ -2421,8 +2491,10 @@
                 }
             },
             openMetadataPanel() {
+                this.quickActionsPinned = true;
+                this.quickActionsExpanded = true;
+                this.cancelQuickActionsTimer();
                 this.togglePanel(true);
-                this.collapseQuickActions();
             },
             openDraftHistory() {
                 if (this.draftHistoryOpen) {
@@ -2731,6 +2803,9 @@
                 const summary = sanitizeString(
                     version.Summary ?? version.summary ?? "",
                 );
+                const visibility = normalizeVisibility(
+                    version.Visibility ?? version.visibility ?? "public",
+                );
                 const coverUrl = sanitizeString(
                     version.CoverURL ?? version.cover_url ?? "",
                 );
@@ -2770,6 +2845,9 @@
                 if (typeof controller.setSummary === "function") {
                     controller.setSummary(summary);
                 }
+                if (typeof controller.setVisibility === "function") {
+                    controller.setVisibility(visibility);
+                }
                 if (typeof controller.setCover === "function") {
                     controller.setCover({
                         url: coverUrl,
@@ -2792,6 +2870,7 @@
                 }
 
                 this.metadata.summary = summary;
+                this.metadata.visibility = visibility;
                 this.metadata.cover = {
                     url: coverUrl,
                     width: coverWidth,
@@ -3169,6 +3248,9 @@
                 this.metadata.summary = sanitizeString(
                     post.Summary ?? post.summary ?? "",
                 );
+                this.metadata.visibility = normalizeVisibility(
+                    post.Visibility ?? post.visibility ?? "public",
+                );
                 const coverUrl = sanitizeString(
                     post.CoverURL ?? post.cover_url ?? "",
                 );
@@ -3218,7 +3300,7 @@
                 ).trim();
                 this.postId = resolvedId || "new";
                 this.savingDraft = !!controller.loading;
-                this.publishing = !!controller.publishing;
+                this.publishing = this.publishing || !!controller.publishing;
                 if (typeof controller.getLatestPublication === "function") {
                     this.latestPublication =
                         controller.getLatestPublication() || null;
@@ -3534,6 +3616,10 @@
             },
             closePanel() {
                 this.panelOpen = false;
+                if (this.quickActionsPinned) {
+                    this.quickActionsExpanded = true;
+                    this.cancelQuickActionsTimer();
+                }
             },
             handleSummaryChange(value) {
                 const controller = this.ensureController();
@@ -3544,6 +3630,18 @@
                     return;
                 }
                 controller.setSummary(value);
+            },
+            handleVisibilityChange(value) {
+                const normalized = normalizeVisibility(value);
+                this.metadata.visibility = normalized;
+                const controller = this.ensureController();
+                if (
+                    !controller ||
+                    typeof controller.setVisibility !== "function"
+                ) {
+                    return;
+                }
+                controller.setVisibility(normalized);
             },
             summaryUsageLabel() {
                 if (!this.summaryUsage) {

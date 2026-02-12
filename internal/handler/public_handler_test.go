@@ -138,6 +138,22 @@ func seedDraftPost(t *testing.T, title string) db.Post {
 	return post
 }
 
+func markPostUnlisted(t *testing.T, postID uint) {
+	t.Helper()
+
+	if err := db.DB.Model(&db.Post{}).
+		Where("id = ?", postID).
+		Update("visibility", db.PostVisibilityUnlisted).Error; err != nil {
+		t.Fatalf("failed to mark post unlisted: %v", err)
+	}
+
+	if err := db.DB.Model(&db.PostPublication{}).
+		Where("post_id = ?", postID).
+		Update("visibility", db.PostVisibilityUnlisted).Error; err != nil {
+		t.Fatalf("failed to mark publication unlisted: %v", err)
+	}
+}
+
 func urlSafe(input string) string {
 	return strings.ReplaceAll(input, " ", "+")
 }
@@ -235,6 +251,62 @@ func TestSearchSuggestionsRendersResults(t *testing.T) {
 	}
 }
 
+func TestShowHomeExcludesUnlistedPosts(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	publicPost := seedPublishedPost(t, "Public Discoverable", "内容")
+	unlistedPost := seedPublishedPost(t, "Hidden By Discoverability", "内容")
+	markPostUnlisted(t, unlistedPost.ID)
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	publicURL := "/posts/" + strconv.Itoa(int(publicPost.ID))
+	unlistedURL := "/posts/" + strconv.Itoa(int(unlistedPost.ID))
+	if !strings.Contains(body, publicURL) {
+		t.Fatalf("expected public post to render on home")
+	}
+	if strings.Contains(body, unlistedURL) {
+		t.Fatalf("expected unlisted post to be excluded from home")
+	}
+}
+
+func TestSearchSuggestionsExcludeUnlistedPosts(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	publicPost := seedPublishedPost(t, "Alpha Engineering", "# Alpha Engineering\n内容")
+	unlistedPost := seedPublishedPost(t, "Beta Engineering", "# Beta Engineering\n内容")
+	markPostUnlisted(t, unlistedPost.ID)
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/search/suggestions?search=Engineering", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	publicURL := "/posts/" + strconv.Itoa(int(publicPost.ID))
+	unlistedURL := "/posts/" + strconv.Itoa(int(unlistedPost.ID))
+	if !strings.Contains(body, publicURL) {
+		t.Fatalf("expected discoverable post in suggestions")
+	}
+	if strings.Contains(body, unlistedURL) {
+		t.Fatalf("expected unlisted post to be excluded from suggestions")
+	}
+}
+
 func TestShowPostDetailRejectsDraft(t *testing.T) {
 	cleanup := setupPublicTestDB(t)
 	defer cleanup()
@@ -248,6 +320,31 @@ func TestShowPostDetailRejectsDraft(t *testing.T) {
 
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("expected 404 for draft post, got %d", w.Code)
+	}
+}
+
+func TestShowPostDetailAllowsUnlistedAndSetsNoindex(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	unlisted := seedPublishedPost(t, "Unlisted Detail", "# Unlisted Detail\n正文")
+	markPostUnlisted(t, unlisted.ID)
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/posts/"+strconv.Itoa(int(unlisted.ID)), nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200 for unlisted detail, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "Unlisted Detail") {
+		t.Fatalf("expected unlisted detail page content to render")
+	}
+	if !strings.Contains(body, `name="robots" content="noindex,follow"`) {
+		t.Fatalf("expected unlisted detail page to set noindex robots meta")
 	}
 }
 
@@ -564,6 +661,64 @@ func TestRSSFeedIncludesPublishedPosts(t *testing.T) {
 	}
 	if !strings.Contains(body, fmt.Sprintf("<media:content url=\"%s\"", published.CoverURL)) {
 		t.Fatalf("expected feed to include cover media content, body=%s", body)
+	}
+}
+
+func TestRSSFeedExcludesUnlistedPosts(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	publicPost := seedPublishedPostAt(t, "RSS Public", "# RSS Public\n正文", time.Date(2024, 11, 23, 10, 0, 0, 0, time.UTC))
+	unlistedPost := seedPublishedPostAt(t, "RSS Hidden", "# RSS Hidden\n正文", time.Date(2024, 11, 24, 10, 0, 0, 0, time.UTC))
+	markPostUnlisted(t, unlistedPost.ID)
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/rss.xml", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "<title>RSS Public</title>") {
+		t.Fatalf("expected discoverable post in rss feed")
+	}
+	if strings.Contains(body, "<title>RSS Hidden</title>") {
+		t.Fatalf("expected unlisted post to be excluded from rss feed")
+	}
+	if strings.Contains(body, fmt.Sprintf("/posts/%d", unlistedPost.ID)) {
+		t.Fatalf("expected unlisted post url to be excluded from rss feed")
+	}
+	if !strings.Contains(body, fmt.Sprintf("/posts/%d", publicPost.ID)) {
+		t.Fatalf("expected discoverable post url in rss feed")
+	}
+}
+
+func TestSitemapExcludesUnlistedPosts(t *testing.T) {
+	cleanup := setupPublicTestDB(t)
+	defer cleanup()
+
+	publicPost := seedPublishedPost(t, "Sitemap Public", "# Sitemap Public\n正文")
+	unlistedPost := seedPublishedPost(t, "Sitemap Hidden", "# Sitemap Hidden\n正文")
+	markPostUnlisted(t, unlistedPost.ID)
+
+	r := router.SetupRouter("test-secret", "web/static/uploads", "/static/uploads", "")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/sitemap.xml", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, fmt.Sprintf("/posts/%d", publicPost.ID)) {
+		t.Fatalf("expected discoverable post in sitemap")
+	}
+	if strings.Contains(body, fmt.Sprintf("/posts/%d", unlistedPost.ID)) {
+		t.Fatalf("expected unlisted post to be excluded from sitemap")
 	}
 }
 

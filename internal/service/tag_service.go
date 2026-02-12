@@ -71,7 +71,7 @@ func (s *TagService) PublishedUsage() ([]TagUsage, error) {
 		Joins("JOIN post_publication_tags ON post_publication_tags.tag_id = tags.id").
 		Joins("JOIN post_publications ON post_publications.id = post_publication_tags.post_publication_id").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
-		Where("posts.status = ?", "published").
+		Where("posts.status = ? AND COALESCE(NULLIF(LOWER(TRIM(posts.visibility)), ''), ?) = ?", "published", db.PostVisibilityPublic, db.PostVisibilityPublic).
 		Group("tags.id, tags.name").
 		Order("tags.sort_order asc").
 		Order("tags.name asc").

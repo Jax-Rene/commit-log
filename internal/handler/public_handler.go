@@ -312,6 +312,9 @@ func (a *API) ShowPostDetail(c *gin.Context) {
 		"metaModifiedAt":  modifiedAt,
 		"canonical":       canonicalPath,
 	}
+	if db.NormalizePostVisibility(publication.Visibility) == db.PostVisibilityUnlisted {
+		payload["noindex"] = true
+	}
 	if description != "" {
 		payload["metaDescription"] = description
 	}

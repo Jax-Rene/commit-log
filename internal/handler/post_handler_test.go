@@ -98,7 +98,7 @@ func setupTestDB(t *testing.T) (*API, func()) {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.PostDraftVersion{}, &db.Tag{}, &db.Page{}, &db.ProfileContact{}, &db.SystemSetting{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.PostDraftVersion{}, &db.PostPublication{}, &db.Tag{}, &db.Page{}, &db.ProfileContact{}, &db.SystemSetting{}); err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 
@@ -257,6 +257,42 @@ func TestCreatePostRejectsUnknownTags(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestCreatePostWithUnlistedVisibility(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	payload := map[string]any{
+		"content":      "# Hidden Post\nContent",
+		"summary":      "Summary",
+		"visibility":   db.PostVisibilityUnlisted,
+		"cover_url":    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+		"cover_width":  1200,
+		"cover_height": 800,
+	}
+
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/admin/api/posts", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	api.CreatePost(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var created db.Post
+	if err := db.DB.First(&created).Error; err != nil {
+		t.Fatalf("failed to load created post: %v", err)
+	}
+	if created.Visibility != db.PostVisibilityUnlisted {
+		t.Fatalf("expected visibility %s, got %s", db.PostVisibilityUnlisted, created.Visibility)
 	}
 }
 
@@ -580,6 +616,58 @@ func TestUpdatePostRejectsUnknownTags(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestUpdatePostVisibility(t *testing.T) {
+	api, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	post := db.Post{
+		Content:     "# Original\nOriginal content",
+		Status:      "draft",
+		UserID:      1,
+		Visibility:  db.PostVisibilityPublic,
+		CoverURL:    "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
+		CoverWidth:  1280,
+		CoverHeight: 720,
+	}
+
+	if err := db.DB.Create(&post).Error; err != nil {
+		t.Fatalf("failed to seed post: %v", err)
+	}
+
+	payload := map[string]any{
+		"content":      "# Updated\nUpdated content",
+		"summary":      "Updated summary",
+		"visibility":   db.PostVisibilityUnlisted,
+		"tag_ids":      []uint{},
+		"cover_url":    "https://images.unsplash.com/photo-1523475472560-d2df97ec485c",
+		"cover_width":  1440,
+		"cover_height": 960,
+	}
+
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPut, "/admin/api/posts/"+strconv.Itoa(int(post.ID)), bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Params = gin.Params{gin.Param{Key: "id", Value: strconv.Itoa(int(post.ID))}}
+
+	api.UpdatePost(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+
+	var updated db.Post
+	if err := db.DB.First(&updated, post.ID).Error; err != nil {
+		t.Fatalf("failed to load updated post: %v", err)
+	}
+	if updated.Visibility != db.PostVisibilityUnlisted {
+		t.Fatalf("expected visibility %s, got %s", db.PostVisibilityUnlisted, updated.Visibility)
 	}
 }
 
