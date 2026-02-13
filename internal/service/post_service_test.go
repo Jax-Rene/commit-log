@@ -389,6 +389,88 @@ func TestPostService_ListPublishedExcludesUnlisted(t *testing.T) {
 	}
 }
 
+func TestPostService_DiscoverabilityUsesLatestPublicationVisibility(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "visibility-consistency"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	post, err := svc.Create(PostInput{
+		Content:     "# 可见度测试\n初始内容",
+		Summary:     "摘要",
+		UserID:      user.ID,
+		CoverURL:    "https://example.com/cover.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+		Visibility:  db.PostVisibilityPublic,
+	})
+	if err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+	if _, err := svc.Publish(post.ID, user.ID, nil); err != nil {
+		t.Fatalf("publish post: %v", err)
+	}
+
+	listBeforeUpdate, err := svc.ListPublished(PostFilter{Page: 1, PerPage: 10})
+	if err != nil {
+		t.Fatalf("list published before update: %v", err)
+	}
+	if len(listBeforeUpdate.Publications) != 1 {
+		t.Fatalf("expected 1 discoverable publication before update, got %d", len(listBeforeUpdate.Publications))
+	}
+
+	if _, err := svc.Update(post.ID, PostInput{
+		Content:     "# 可见度测试\n草稿阶段仅改可见度",
+		Summary:     "摘要",
+		UserID:      user.ID,
+		CoverURL:    "https://example.com/cover.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+		Visibility:  db.PostVisibilityUnlisted,
+	}); err != nil {
+		t.Fatalf("update post visibility without republish: %v", err)
+	}
+
+	listAfterDraftUpdate, err := svc.ListPublished(PostFilter{Page: 1, PerPage: 10})
+	if err != nil {
+		t.Fatalf("list published after draft update: %v", err)
+	}
+	if len(listAfterDraftUpdate.Publications) != 1 {
+		t.Fatalf("expected discoverability to follow latest publication before republish, got %d", len(listAfterDraftUpdate.Publications))
+	}
+
+	allAfterDraftUpdate, err := svc.ListAllPublished()
+	if err != nil {
+		t.Fatalf("list all published after draft update: %v", err)
+	}
+	if len(allAfterDraftUpdate) != 1 {
+		t.Fatalf("expected sitemap/rss source to remain discoverable before republish, got %d", len(allAfterDraftUpdate))
+	}
+
+	if _, err := svc.Publish(post.ID, user.ID, nil); err != nil {
+		t.Fatalf("republish as unlisted: %v", err)
+	}
+
+	listAfterRepublish, err := svc.ListPublished(PostFilter{Page: 1, PerPage: 10})
+	if err != nil {
+		t.Fatalf("list published after republish: %v", err)
+	}
+	if len(listAfterRepublish.Publications) != 0 {
+		t.Fatalf("expected unlisted latest publication to be excluded, got %d", len(listAfterRepublish.Publications))
+	}
+
+	allAfterRepublish, err := svc.ListAllPublished()
+	if err != nil {
+		t.Fatalf("list all published after republish: %v", err)
+	}
+	if len(allAfterRepublish) != 0 {
+		t.Fatalf("expected sitemap/rss source to exclude unlisted latest publication, got %d", len(allAfterRepublish))
+	}
+}
+
 func TestPostService_ListSortsByHot(t *testing.T) {
 	gdb := setupPostServiceTestDB(t)
 	svc := NewPostService(gdb)

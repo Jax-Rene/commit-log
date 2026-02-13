@@ -190,3 +190,75 @@ func TestTagService_PublishedUsageExcludesUnlistedPosts(t *testing.T) {
 		t.Fatalf("expected discoverable tag %s, got %s", publicTag.Name, usages[0].Name)
 	}
 }
+
+func TestTagService_PublishedUsageUsesLatestPublicationVisibility(t *testing.T) {
+	gdb, cleanup := setupTagServiceTestDB(t)
+	defer cleanup()
+
+	tag := db.Tag{Name: "可见标签", SortOrder: 0}
+	if err := gdb.Create(&tag).Error; err != nil {
+		t.Fatalf("create tag: %v", err)
+	}
+
+	post := db.Post{
+		Content:    "# 可见度\n正文",
+		Status:     "published",
+		UserID:     1,
+		Visibility: db.PostVisibilityPublic,
+	}
+	if err := gdb.Create(&post).Error; err != nil {
+		t.Fatalf("create post: %v", err)
+	}
+
+	publication := db.PostPublication{
+		PostID:      post.ID,
+		Content:     post.Content,
+		UserID:      1,
+		PublishedAt: time.Now(),
+		Version:     1,
+		Visibility:  db.PostVisibilityPublic,
+	}
+	if err := gdb.Create(&publication).Error; err != nil {
+		t.Fatalf("create publication: %v", err)
+	}
+	if err := gdb.Model(&post).Update("latest_publication_id", publication.ID).Error; err != nil {
+		t.Fatalf("update latest publication id: %v", err)
+	}
+	if err := gdb.Model(&publication).Association("Tags").Append(&tag); err != nil {
+		t.Fatalf("associate tag: %v", err)
+	}
+
+	svc := NewTagService(gdb)
+
+	beforeDraftUpdate, err := svc.PublishedUsage()
+	if err != nil {
+		t.Fatalf("published usage before draft update: %v", err)
+	}
+	if len(beforeDraftUpdate) != 1 {
+		t.Fatalf("expected 1 discoverable tag before draft update, got %d", len(beforeDraftUpdate))
+	}
+
+	if err := gdb.Model(&db.Post{}).Where("id = ?", post.ID).Update("visibility", db.PostVisibilityUnlisted).Error; err != nil {
+		t.Fatalf("update post visibility for draft change: %v", err)
+	}
+
+	afterDraftUpdate, err := svc.PublishedUsage()
+	if err != nil {
+		t.Fatalf("published usage after draft update: %v", err)
+	}
+	if len(afterDraftUpdate) != 1 {
+		t.Fatalf("expected tag usage to follow latest publication visibility before republish, got %d", len(afterDraftUpdate))
+	}
+
+	if err := gdb.Model(&db.PostPublication{}).Where("id = ?", publication.ID).Update("visibility", db.PostVisibilityUnlisted).Error; err != nil {
+		t.Fatalf("update publication visibility for republish snapshot: %v", err)
+	}
+
+	afterRepublishSnapshot, err := svc.PublishedUsage()
+	if err != nil {
+		t.Fatalf("published usage after republish snapshot: %v", err)
+	}
+	if len(afterRepublishSnapshot) != 0 {
+		t.Fatalf("expected unlisted latest publication to be excluded, got %d", len(afterRepublishSnapshot))
+	}
+}

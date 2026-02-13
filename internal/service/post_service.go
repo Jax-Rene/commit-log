@@ -407,7 +407,7 @@ func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, 
 	baseQuery := s.db.Model(&db.PostPublication{}).
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.status = ?", "published")
-	baseQuery = s.applyDiscoverablePublicationFilter(baseQuery, "posts")
+	baseQuery = s.applyDiscoverablePublicationFilter(baseQuery, "post_publications")
 	baseQuery = s.applyPublicationFilters(baseQuery, filter)
 
 	if err := baseQuery.Count(&result.Total).Error; err != nil {
@@ -422,7 +422,7 @@ func (s *PostService) ListPublished(filter PostFilter) (*PublicationListResult, 
 		Preload("User").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.status = ?", "published")
-	dataQuery = s.applyDiscoverablePublicationFilter(dataQuery, "posts")
+	dataQuery = s.applyDiscoverablePublicationFilter(dataQuery, "post_publications")
 	dataQuery = s.applyPublicationFilters(dataQuery, filter)
 
 	if err := dataQuery.
@@ -452,7 +452,7 @@ func (s *PostService) ListAllPublished() ([]db.PostPublication, error) {
 	query := s.db.Preload("Tags").
 		Joins("JOIN posts ON posts.latest_publication_id = post_publications.id").
 		Where("posts.status = ?", "published")
-	query = s.applyDiscoverablePublicationFilter(query, "posts")
+	query = s.applyDiscoverablePublicationFilter(query, "post_publications")
 
 	var publications []db.PostPublication
 	if err := query.
