@@ -12,6 +12,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	dashboardCreationHeatmapDays     = 365
+	dashboardCreationHeatmapTimezone = "Asia/Shanghai"
+)
+
 // ShowLoginPage 渲染登录页面
 func (a *API) ShowLoginPage(c *gin.Context) {
 	a.renderHTML(c, http.StatusOK, "login.html", gin.H{
@@ -109,14 +114,33 @@ func (a *API) ShowDashboard(c *gin.Context) {
 		}
 	}
 
+	creationHeatmap := make([]service.DailyCreationPoint, 0, dashboardCreationHeatmapDays)
+	if a.posts != nil {
+		heatmapLoc := time.FixedZone("UTC+8", 8*60*60)
+		if loadedLoc, err := time.LoadLocation(dashboardCreationHeatmapTimezone); err == nil {
+			heatmapLoc = loadedLoc
+		} else {
+			c.Error(err)
+		}
+
+		if points, err := a.posts.DailyCreationHeatmap(time.Now(), dashboardCreationHeatmapDays, heatmapLoc); err == nil {
+			creationHeatmap = points
+		} else {
+			c.Error(err)
+		}
+	}
+
 	a.renderHTML(c, http.StatusOK, "dashboard.html", gin.H{
-		"title":       "管理面板",
-		"username":    username,
-		"postCount":   postCount,
-		"tagCount":    tagCount,
-		"overview":    overview,
-		"trend":       hourlyTrend,
-		"latestDraft": latestDraft,
+		"title":            "管理面板",
+		"username":         username,
+		"postCount":        postCount,
+		"tagCount":         tagCount,
+		"overview":         overview,
+		"trend":            hourlyTrend,
+		"latestDraft":      latestDraft,
+		"creationHeatmap":  creationHeatmap,
+		"heatmapTimezone":  dashboardCreationHeatmapTimezone,
+		"heatmapRangeDays": dashboardCreationHeatmapDays,
 	})
 }
 
