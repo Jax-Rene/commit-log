@@ -76,7 +76,7 @@ func setupAdminHandlerTestDB(t *testing.T) (*gorm.DB, func()) {
 		t.Fatalf("failed to open test db: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.Tag{}, &db.SystemSetting{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Post{}, &db.PostPublication{}, &db.Tag{}, &db.SystemSetting{}); err != nil {
 		t.Fatalf("failed to migrate test db: %v", err)
 	}
 
@@ -194,5 +194,121 @@ func TestShowDashboardIncludesLatestDraft(t *testing.T) {
 	}
 	if latest.ID != first.ID {
 		t.Fatalf("expected latest draft %d, got %d", first.ID, latest.ID)
+	}
+}
+
+func TestShowDashboardIncludesCreationHeatmap(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	gdb, cleanup := setupAdminHandlerTestDB(t)
+	t.Cleanup(cleanup)
+
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		t.Fatalf("load timezone: %v", err)
+	}
+
+	user := db.User{Username: "heatmap-admin"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	post := db.Post{
+		Content:             "# 热力图文章\n内容",
+		Status:              "published",
+		UserID:              user.ID,
+		CoverURL:            "https://example.com/cover.jpg",
+		CoverWidth:          1200,
+		CoverHeight:         800,
+		PublicationCount:    2,
+		LatestPublicationID: nil,
+	}
+	if err := gdb.Create(&post).Error; err != nil {
+		t.Fatalf("failed to create post: %v", err)
+	}
+
+	firstPublishedAt := time.Date(2026, 2, 20, 10, 0, 0, 0, loc)
+	firstPublication := db.PostPublication{
+		PostID:      post.ID,
+		Content:     post.Content,
+		Visibility:  db.PostVisibilityPublic,
+		UserID:      user.ID,
+		PublishedAt: firstPublishedAt,
+		Version:     1,
+	}
+	if err := gdb.Create(&firstPublication).Error; err != nil {
+		t.Fatalf("failed to create first publication: %v", err)
+	}
+
+	secondPublishedAt := firstPublishedAt.Add(24 * time.Hour)
+	secondPublication := db.PostPublication{
+		PostID:      post.ID,
+		Content:     "# 热力图文章（第二版）\n内容",
+		Visibility:  db.PostVisibilityPublic,
+		UserID:      user.ID,
+		PublishedAt: secondPublishedAt,
+		Version:     2,
+	}
+	if err := gdb.Create(&secondPublication).Error; err != nil {
+		t.Fatalf("failed to create second publication: %v", err)
+	}
+
+	if err := gdb.Model(&db.Post{}).Where("id = ?", post.ID).Updates(map[string]interface{}{
+		"latest_publication_id": secondPublication.ID,
+		"published_at":          secondPublishedAt,
+		"publication_count":     2,
+	}).Error; err != nil {
+		t.Fatalf("failed to update post publication pointers: %v", err)
+	}
+
+	api := &API{
+		db:     gdb,
+		posts:  service.NewPostService(gdb),
+		system: service.NewSystemSettingService(gdb),
+	}
+
+	router := gin.New()
+	renderer := &stubHTMLRender{}
+	router.HTMLRender = renderer
+	router.Use(sessions.Sessions("commitlog_session", cookie.NewStore([]byte("test-secret"))))
+	router.GET("/admin/dashboard", api.ShowDashboard)
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/admin/dashboard", nil)
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, recorder.Code)
+	}
+
+	payload, ok := renderer.lastData.(gin.H)
+	if !ok {
+		t.Fatalf("expected render payload to be gin.H, got %T", renderer.lastData)
+	}
+
+	raw, exists := payload["creationHeatmap"]
+	if !exists {
+		t.Fatal("expected creationHeatmap in payload")
+	}
+
+	heatmap, ok := raw.([]service.DailyCreationPoint)
+	if !ok {
+		t.Fatalf("expected creationHeatmap to be []service.DailyCreationPoint, got %T", raw)
+	}
+	if len(heatmap) != 365 {
+		t.Fatalf("expected 365 heatmap points, got %d", len(heatmap))
+	}
+
+	creationDate := firstPublishedAt.Format("2006-01-02")
+	creationCount := 0
+	for _, point := range heatmap {
+		if point.Date != creationDate {
+			continue
+		}
+		creationCount = point.Count
+		break
+	}
+	if creationCount != 1 {
+		t.Fatalf("expected first publication day count 1, got %d", creationCount)
 	}
 }

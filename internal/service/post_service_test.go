@@ -277,6 +277,98 @@ func TestPostService_LatestDraftReturnsNotFoundWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestPostService_DailyCreationHeatmapCountsFirstPublicationOnly(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		t.Fatalf("load timezone: %v", err)
+	}
+
+	user := db.User{Username: "heatmap-publisher"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	firstPost, err := svc.Create(PostInput{
+		Content:     "# 第一篇\n内容",
+		Summary:     "第一篇摘要",
+		UserID:      user.ID,
+		CoverURL:    "https://example.com/first.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+	})
+	if err != nil {
+		t.Fatalf("create first post: %v", err)
+	}
+
+	secondPost, err := svc.Create(PostInput{
+		Content:     "# 第二篇\n内容",
+		Summary:     "第二篇摘要",
+		UserID:      user.ID,
+		CoverURL:    "https://example.com/second.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 800,
+	})
+	if err != nil {
+		t.Fatalf("create second post: %v", err)
+	}
+
+	firstPublishAt := time.Date(2026, 3, 1, 1, 0, 0, 0, loc)
+	if _, err := svc.Publish(firstPost.ID, user.ID, &firstPublishAt); err != nil {
+		t.Fatalf("publish first post first time: %v", err)
+	}
+
+	// 再次发布同一篇文章，热力图口径不应重复计数。
+	republishAt := time.Date(2026, 3, 2, 2, 0, 0, 0, loc)
+	if _, err := svc.Publish(firstPost.ID, user.ID, &republishAt); err != nil {
+		t.Fatalf("republish first post: %v", err)
+	}
+
+	secondPublishAt := time.Date(2026, 3, 1, 10, 0, 0, 0, loc)
+	if _, err := svc.Publish(secondPost.ID, user.ID, &secondPublishAt); err != nil {
+		t.Fatalf("publish second post first time: %v", err)
+	}
+
+	end := time.Date(2026, 3, 2, 12, 0, 0, 0, loc)
+	points, err := svc.DailyCreationHeatmap(end, 2, loc)
+	if err != nil {
+		t.Fatalf("query creation heatmap: %v", err)
+	}
+
+	if len(points) != 2 {
+		t.Fatalf("expected 2 heatmap points, got %d", len(points))
+	}
+
+	if points[0].Date != "2026-03-01" {
+		t.Fatalf("expected first day to be 2026-03-01, got %s", points[0].Date)
+	}
+	if points[1].Date != "2026-03-02" {
+		t.Fatalf("expected second day to be 2026-03-02, got %s", points[1].Date)
+	}
+
+	if points[0].Count != 2 {
+		t.Fatalf("expected 2 first-publication creations on 2026-03-01, got %d", points[0].Count)
+	}
+	if points[1].Count != 0 {
+		t.Fatalf("expected republish day count to stay 0, got %d", points[1].Count)
+	}
+
+	if len(points[0].Titles) != 2 {
+		t.Fatalf("expected 2 titles on 2026-03-01, got %d", len(points[0].Titles))
+	}
+	if points[0].Titles[0] != "第一篇" {
+		t.Fatalf("expected first title 第一篇, got %s", points[0].Titles[0])
+	}
+	if points[0].Titles[1] != "第二篇" {
+		t.Fatalf("expected second title 第二篇, got %s", points[0].Titles[1])
+	}
+	if len(points[1].Titles) != 0 {
+		t.Fatalf("expected empty titles on 2026-03-02, got %d", len(points[1].Titles))
+	}
+}
+
 func TestPostService_ListPublishedSplitsSearchTokens(t *testing.T) {
 	gdb := setupPostServiceTestDB(t)
 	svc := NewPostService(gdb)

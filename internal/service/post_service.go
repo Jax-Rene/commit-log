@@ -66,6 +66,13 @@ type PublicationListResult struct {
 	PerPage      int
 }
 
+// DailyCreationPoint 表示某天首次发布文章的创作活跃度。
+type DailyCreationPoint struct {
+	Date   string   `json:"Date"`
+	Count  int      `json:"Count"`
+	Titles []string `json:"Titles"`
+}
+
 // PostInput represents fields accepted when creating or updating a post.
 type PostInput struct {
 	Title          string
@@ -392,6 +399,78 @@ func (s *PostService) LatestDraft(userID uint) (*db.Post, error) {
 
 	post.PopulateDerivedFields()
 	return &post, nil
+}
+
+// DailyCreationHeatmap 返回按天聚合的首次发布热力图数据。
+func (s *PostService) DailyCreationHeatmap(end time.Time, days int, loc *time.Location) ([]DailyCreationPoint, error) {
+	if days <= 0 {
+		days = 365
+	}
+
+	if loc == nil {
+		loc = time.UTC
+	}
+
+	if end.IsZero() {
+		end = time.Now()
+	}
+
+	endInLoc := end.In(loc)
+	endExclusive := time.Date(endInLoc.Year(), endInLoc.Month(), endInLoc.Day(), 0, 0, 0, 0, loc).AddDate(0, 0, 1)
+	start := endExclusive.AddDate(0, 0, -days)
+
+	var publications []db.PostPublication
+	if err := s.db.Model(&db.PostPublication{}).
+		Select("content", "published_at").
+		Where("version = ?", 1).
+		Where("published_at >= ? AND published_at < ?", start.UTC(), endExclusive.UTC()).
+		Order("published_at asc, id asc").
+		Find(&publications).Error; err != nil {
+		return nil, err
+	}
+
+	type dayBucket struct {
+		count  int
+		titles []string
+	}
+
+	buckets := make(map[string]*dayBucket, len(publications))
+	for i := range publications {
+		dayKey := publications[i].PublishedAt.In(loc).Format("2006-01-02")
+
+		bucket, exists := buckets[dayKey]
+		if !exists {
+			bucket = &dayBucket{
+				count:  0,
+				titles: make([]string, 0, 1),
+			}
+			buckets[dayKey] = bucket
+		}
+
+		bucket.count++
+		title := strings.TrimSpace(db.DeriveTitleFromContent(publications[i].Content))
+		if title == "" {
+			title = "未命名文章"
+		}
+		bucket.titles = append(bucket.titles, title)
+	}
+
+	points := make([]DailyCreationPoint, 0, days)
+	for cursor := start; cursor.Before(endExclusive); cursor = cursor.AddDate(0, 0, 1) {
+		dayKey := cursor.Format("2006-01-02")
+		point := DailyCreationPoint{
+			Date:   dayKey,
+			Count:  0,
+			Titles: []string{},
+		}
+		if bucket, exists := buckets[dayKey]; exists {
+			point.Count = bucket.count
+			point.Titles = bucket.titles
+		}
+		points = append(points, point)
+	}
+
+	return points, nil
 }
 
 // ListPublished 返回最新发布的文章快照列表
