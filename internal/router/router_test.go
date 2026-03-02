@@ -37,6 +37,23 @@ func TestSetupRouterServesUploadsAlias(t *testing.T) {
 	}
 }
 
+func TestSetupRouterHasPostTemplateAdminRoute(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db.DB = nil
+
+	r := SetupRouter("test-secret", "", "/uploads", "")
+	req := httptest.NewRequest(http.MethodGet, "/admin/post-templates", nil)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusFound {
+		t.Fatalf("expected status %d, got %d", http.StatusFound, rr.Code)
+	}
+	if location := rr.Header().Get("Location"); location != "/admin/login" {
+		t.Fatalf("expected redirect to /admin/login, got %s", location)
+	}
+}
+
 func TestFormatRelativeTime(t *testing.T) {
 	now := time.Date(2025, 12, 1, 12, 0, 0, 0, time.UTC)
 

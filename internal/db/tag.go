@@ -9,6 +9,7 @@ type Tag struct {
 	SortOrder      int               `gorm:"default:0" json:"sort_order"`
 	Posts          []Post            `gorm:"many2many:post_tags;"`
 	Publications   []PostPublication `gorm:"many2many:post_publication_tags;"`
+	Templates      []PostTemplate    `gorm:"many2many:post_template_tags;"`
 	PostCount      int64             `gorm:"->;column:post_count" json:"post_count"`
 	PublishedCount int64             `gorm:"-" json:"published_count"`
 }

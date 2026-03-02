@@ -17,6 +17,7 @@ import (
 type API struct {
 	db              *gorm.DB
 	posts           *service.PostService
+	templates       *service.TemplateService
 	tags            *service.TagService
 	pages           *service.PageService
 	galleries       *service.GalleryService
@@ -64,6 +65,7 @@ func NewAPI(db *gorm.DB, uploadDir, uploadURL, baseURL string) *API {
 	return &API{
 		db:              db,
 		posts:           service.NewPostService(db),
+		templates:       service.NewTemplateService(db),
 		tags:            service.NewTagService(db),
 		pages:           service.NewPageService(db),
 		galleries:       service.NewGalleryService(db),

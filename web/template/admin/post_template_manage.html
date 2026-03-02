@@ -1,0 +1,209 @@
+{{template "base" .}}
+{{define "content"}}
+<div class="space-y-6" x-data="postTemplateManager()">
+    <header class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 dark:border-slate-800">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">模板管理</h1>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">维护创作模板，并可一键从模板创建草稿。</p>
+        </div>
+        <a href="/admin/posts" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">返回文章管理</a>
+    </header>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/70">
+        <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-100" x-text="form.id ? '编辑模板' : '新建模板'"></h2>
+        <div class="mt-4 grid gap-3">
+            <label class="grid gap-1 text-sm text-slate-600 dark:text-slate-300">
+                <span>模板名称</span>
+                <input x-model="form.name" type="text" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" placeholder="例如：每周复盘模板" />
+            </label>
+            <label class="grid gap-1 text-sm text-slate-600 dark:text-slate-300">
+                <span>描述</span>
+                <input x-model="form.description" type="text" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" placeholder="可选，用于解释模板用途" />
+            </label>
+            <label class="grid gap-1 text-sm text-slate-600 dark:text-slate-300">
+                <span>正文模板（支持 &#123;&#123;date&#125;&#125; &#123;&#123;datetime&#125;&#125; &#123;&#123;title&#125;&#125;）</span>
+                <textarea x-model="form.content" rows="8" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" placeholder="# &#123;&#123;title&#125;&#125;\n日期：&#123;&#123;date&#125;&#125;"></textarea>
+            </label>
+            <label class="grid gap-1 text-sm text-slate-600 dark:text-slate-300">
+                <span>默认摘要</span>
+                <textarea x-model="form.summary" rows="3" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"></textarea>
+            </label>
+            <label class="grid gap-1 text-sm text-slate-600 dark:text-slate-300">
+                <span>可见性</span>
+                <select x-model="form.visibility" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                    <option value="public">公开</option>
+                    <option value="unlisted">不公开（仅直链访问）</option>
+                </select>
+            </label>
+            <div class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <span>默认标签</span>
+                <div class="flex flex-wrap gap-2">
+                    {{range .allTags}}
+                    <button type="button"
+                        @click="toggleTag({{.ID}})"
+                        :class="isTagChecked({{.ID}}) ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200' : 'border-slate-300 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'"
+                        class="rounded-full border px-3 py-1 text-xs transition-colors">
+                        {{.Name}}
+                    </button>
+                    {{end}}
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" @click="submitForm()" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500">保存模板</button>
+                <button type="button" @click="resetForm()" class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">清空</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/70">
+        <div class="mb-3 flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-100">模板列表</h2>
+            <span class="text-xs text-slate-500 dark:text-slate-400">共 {{len .templates}} 个模板</span>
+        </div>
+        {{if .error}}
+        <p class="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-900/30 dark:text-rose-200">{{.error}}</p>
+        {{else}}
+        <div class="divide-y divide-slate-200 dark:divide-slate-800">
+            <template x-for="item in templates" :key="item.ID">
+                <article class="py-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <h3 class="truncate text-base font-semibold text-slate-900 dark:text-slate-100" x-text="item.Name"></h3>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400" x-text="item.Description || '无描述'"></p>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                已使用 <span x-text="item.UsageCount || 0"></span> 次
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" @click="useTemplate(item)" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500">从模板创建</button>
+                            <button type="button" @click="editTemplate(item)" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">编辑</button>
+                            <button type="button" @click="deleteTemplate(item)" class="rounded-lg border border-rose-300 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 dark:border-rose-700 dark:text-rose-300 dark:hover:bg-rose-900/30">删除</button>
+                        </div>
+                    </div>
+                </article>
+            </template>
+            <p x-show="templates.length === 0" class="py-10 text-center text-sm text-slate-500 dark:text-slate-400">暂无模板</p>
+        </div>
+        {{end}}
+    </section>
+</div>
+
+<script>
+    function postTemplateManager() {
+        return {
+            templates: {{toJSON .templates}},
+            form: {
+                id: 0,
+                name: "",
+                description: "",
+                content: "",
+                summary: "",
+                visibility: "public",
+                tag_ids: [],
+                cover_url: "",
+                cover_width: 0,
+                cover_height: 0,
+            },
+            resetForm() {
+                this.form = {
+                    id: 0,
+                    name: "",
+                    description: "",
+                    content: "",
+                    summary: "",
+                    visibility: "public",
+                    tag_ids: [],
+                    cover_url: "",
+                    cover_width: 0,
+                    cover_height: 0,
+                };
+            },
+            toast(message, type = "info") {
+                if (window.AdminUI && typeof window.AdminUI.toast === "function") {
+                    window.AdminUI.toast({ message, type });
+                    return;
+                }
+                console.log(type, message);
+            },
+            isTagChecked(id) {
+                return this.form.tag_ids.includes(id);
+            },
+            toggleTag(id) {
+                if (this.form.tag_ids.includes(id)) {
+                    this.form.tag_ids = this.form.tag_ids.filter((item) => item !== id);
+                    return;
+                }
+                this.form.tag_ids = [...this.form.tag_ids, id];
+            },
+            editTemplate(item) {
+                this.form = {
+                    id: item.ID || item.id || 0,
+                    name: item.Name || item.name || "",
+                    description: item.Description || item.description || "",
+                    content: item.Content || item.content || "",
+                    summary: item.Summary || item.summary || "",
+                    visibility: item.Visibility || item.visibility || "public",
+                    tag_ids: Array.isArray(item.Tags)
+                        ? item.Tags.map((tag) => Number(tag.ID || tag.id)).filter((id) => Number.isFinite(id))
+                        : [],
+                    cover_url: item.CoverURL || item.cover_url || "",
+                    cover_width: Number(item.CoverWidth || item.cover_width || 0),
+                    cover_height: Number(item.CoverHeight || item.cover_height || 0),
+                };
+            },
+            async submitForm() {
+                const isUpdate = Number(this.form.id) > 0;
+                const url = isUpdate
+                    ? `/admin/api/post-templates/${this.form.id}`
+                    : "/admin/api/post-templates";
+                const method = isUpdate ? "PUT" : "POST";
+                const response = await fetch(url, {
+                    method,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(this.form),
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    this.toast(data.error || data.message || "模板保存失败", "error");
+                    return;
+                }
+                this.toast(data.message || "模板保存成功", "success");
+                window.location.reload();
+            },
+            async deleteTemplate(item) {
+                const id = item.ID || item.id;
+                if (!id) {
+                    return;
+                }
+                if (!window.confirm("确认删除该模板吗？")) {
+                    return;
+                }
+                const response = await fetch(`/admin/api/post-templates/${id}`, {
+                    method: "DELETE",
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    this.toast(data.error || data.message || "删除模板失败", "error");
+                    return;
+                }
+                this.toast(data.message || "模板删除成功", "success");
+                this.templates = this.templates.filter((tpl) => (tpl.ID || tpl.id) !== id);
+                if ((this.form.id || 0) === id) {
+                    this.resetForm();
+                }
+            },
+            async useTemplate(item) {
+                const id = item.ID || item.id;
+                if (!id) {
+                    return;
+                }
+                if (!window.AdminUI || typeof window.AdminUI.openTemplateCreate !== "function") {
+                    this.toast("模板创建弹窗未就绪，请刷新后重试", "warning");
+                    return;
+                }
+                window.AdminUI.openTemplateCreate({ templateId: id });
+            },
+        };
+    }
+</script>
+{{end}}

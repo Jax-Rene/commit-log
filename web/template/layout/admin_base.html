@@ -340,6 +340,180 @@
             </div>
         </div>
 
+        <div
+            x-data="commitLogTemplateCreateLayer()"
+            x-show="creator.open"
+            x-cloak
+            class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+            x-transition.opacity
+            @keydown.escape.window="close()"
+        >
+            <div
+                class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+                x-transition.opacity
+                @click="close()"
+            ></div>
+            <div
+                x-show="creator.open"
+                x-transition
+                class="relative z-10 w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-2xl transition-colors dark:border-slate-700/70 dark:bg-slate-900/90"
+            >
+                <button
+                    type="button"
+                    class="absolute right-4 top-4 rounded-full p-1 text-slate-400 transition-colors hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:text-slate-500 dark:hover:text-slate-200 dark:focus:ring-slate-700/60"
+                    @click="close()"
+                    aria-label="关闭弹窗"
+                >
+                    <svg
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        stroke="currentColor"
+                        class="h-4 w-4"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-width="1.6"
+                            d="M5.5 5.5l9 9m0-9l-9 9"
+                        ></path>
+                    </svg>
+                </button>
+
+                <div class="space-y-5 px-6 pb-6 pt-7">
+                    <div class="space-y-1">
+                        <h3
+                            class="text-lg font-semibold text-slate-900 dark:text-slate-100"
+                        >
+                            从模板创建文章
+                        </h3>
+                        <p
+                            class="text-sm text-slate-600 dark:text-slate-300"
+                        >
+                            选择模板后将生成一篇新的草稿，后续编辑不会影响模板。
+                        </p>
+                    </div>
+
+                    <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+                        <label class="grid gap-1">
+                            <span
+                                class="text-xs font-medium text-slate-500 dark:text-slate-400"
+                                >搜索模板</span
+                            >
+                            <input
+                                type="text"
+                                :value="creator.keyword"
+                                @input="setKeyword($event.target.value)"
+                                placeholder="按名称或描述筛选"
+                                class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                            />
+                        </label>
+                        <button
+                            type="button"
+                            class="self-end rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                            @click="reload()"
+                            :disabled="creator.loading || creator.submitting"
+                        >
+                            刷新模板
+                        </button>
+                    </div>
+
+                    <div
+                        class="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40"
+                    >
+                        <template x-if="creator.loading">
+                            <p
+                                class="py-8 text-center text-sm text-slate-500 dark:text-slate-400"
+                            >
+                                模板加载中...
+                            </p>
+                        </template>
+                        <template x-if="!creator.loading">
+                            <div class="space-y-2">
+                                <template
+                                    x-for="item in creator.visibleTemplates"
+                                    :key="item.id"
+                                >
+                                    <button
+                                        type="button"
+                                        class="w-full rounded-lg border px-3 py-2 text-left transition-colors"
+                                        :class="item.id === creator.selectedTemplateId ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' : 'border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/60 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10'"
+                                        @click="select(item.id)"
+                                    >
+                                        <div
+                                            class="flex items-start justify-between gap-3"
+                                        >
+                                            <div class="min-w-0">
+                                                <p
+                                                    class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100"
+                                                    x-text="item.name"
+                                                ></p>
+                                                <p
+                                                    class="mt-1 text-xs text-slate-500 dark:text-slate-400"
+                                                    x-text="item.description || '无描述'"
+                                                ></p>
+                                            </div>
+                                            <span
+                                                class="shrink-0 text-[11px] text-slate-400 dark:text-slate-500"
+                                                x-text="usageLabel(item)"
+                                            ></span>
+                                        </div>
+                                    </button>
+                                </template>
+
+                                <p
+                                    x-show="creator.visibleTemplates.length === 0"
+                                    class="py-8 text-center text-sm text-slate-500 dark:text-slate-400"
+                                >
+                                    当前没有可用模板
+                                </p>
+                            </div>
+                        </template>
+                    </div>
+
+                    <label class="grid gap-1">
+                        <span
+                            class="text-xs font-medium text-slate-500 dark:text-slate-400"
+                            >本次标题（可选）</span
+                        >
+                        <input
+                            type="text"
+                            :value="creator.title"
+                            @input="setTitle($event.target.value)"
+                            placeholder="可用于填充模板中的 &#123;&#123;title&#125;&#125;"
+                            class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        />
+                    </label>
+
+                    <template x-if="creator.error">
+                        <p
+                            class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:border-rose-700/50 dark:bg-rose-900/20 dark:text-rose-200"
+                            x-text="creator.error"
+                        ></p>
+                    </template>
+
+                    <div class="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            class="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100 dark:focus:ring-slate-700/60"
+                            @click="close()"
+                            :disabled="creator.submitting"
+                        >
+                            取消
+                        </button>
+                        <button
+                            type="button"
+                            class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/30"
+                            @click="submit()"
+                            :disabled="creator.submitting || creator.loading"
+                        >
+                            <span
+                                x-text="creator.submitting ? '创建中...' : '创建草稿'"
+                            ></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <footer
             class="border-slate-200 bg-white/80 backdrop-blur supports-backdrop-blur:bg-white/60 dark:border-slate-800 dark:bg-slate-950/70"
         >
@@ -357,6 +531,8 @@
             window.AdminUI = window.AdminUI || {};
             window.AdminUI.__toastQueue = window.AdminUI.__toastQueue || [];
             window.AdminUI.__dialogQueue = window.AdminUI.__dialogQueue || [];
+            window.AdminUI.__templateCreateQueue =
+                window.AdminUI.__templateCreateQueue || [];
             window.AdminUI.toast =
                 window.AdminUI.toast ||
                 function (options) {
@@ -378,6 +554,11 @@
                     window.AdminUI.__dialogQueue.push({ payload, resolve });
                 });
             };
+            window.AdminUI.openTemplateCreate =
+                window.AdminUI.openTemplateCreate ||
+                function (options = {}) {
+                    window.AdminUI.__templateCreateQueue.push(options || {});
+                };
 
             document.addEventListener("alpine:init", () => {
                 Alpine.data("commitLogToastLayer", () => ({
@@ -437,6 +618,66 @@
                         return tone === "danger"
                             ? "bg-rose-600 hover:bg-rose-500 dark:hover:bg-rose-500/90 focus:ring-rose-200 dark:focus:ring-rose-500/30"
                             : "bg-blue-600 hover:bg-blue-500 dark:hover:bg-blue-500/90 focus:ring-blue-200 dark:focus:ring-blue-500/30";
+                    },
+                }));
+
+                Alpine.data("commitLogTemplateCreateLayer", () => ({
+                    get creator() {
+                        return (
+                            Alpine.store("templateCreator") || {
+                                open: false,
+                                loading: false,
+                                submitting: false,
+                                error: "",
+                                keyword: "",
+                                title: "",
+                                selectedTemplateId: null,
+                                visibleTemplates: [],
+                            }
+                        );
+                    },
+                    close() {
+                        const store = Alpine.store("templateCreator");
+                        if (store) {
+                            store.close();
+                        }
+                    },
+                    reload() {
+                        const store = Alpine.store("templateCreator");
+                        if (store) {
+                            store.loadTemplates();
+                        }
+                    },
+                    setKeyword(value) {
+                        const store = Alpine.store("templateCreator");
+                        if (store) {
+                            store.setKeyword(value);
+                        }
+                    },
+                    setTitle(value) {
+                        const store = Alpine.store("templateCreator");
+                        if (store) {
+                            store.title = typeof value === "string" ? value : "";
+                        }
+                    },
+                    select(templateId) {
+                        const store = Alpine.store("templateCreator");
+                        if (store) {
+                            store.select(templateId);
+                        }
+                    },
+                    submit() {
+                        const store = Alpine.store("templateCreator");
+                        if (store) {
+                            void store.submit();
+                        }
+                    },
+                    usageLabel(item) {
+                        const usage = Number(item?.usageCount || 0);
+                        if (!Number.isFinite(usage) || usage <= 0) {
+                            return "未使用";
+                        }
+                        return `已使用 ${usage} 次`;
                     },
                 }));
 
@@ -538,8 +779,227 @@
                     },
                 };
 
+                const templateCreatorStore = {
+                    open: false,
+                    loading: false,
+                    submitting: false,
+                    error: "",
+                    templates: [],
+                    visibleTemplates: [],
+                    keyword: "",
+                    selectedTemplateId: null,
+                    title: "",
+                    normalizeTemplate(raw) {
+                        const source =
+                            raw && typeof raw === "object" ? raw : {};
+                        const id = Number(source.ID ?? source.id ?? 0);
+                        if (!Number.isFinite(id) || id <= 0) {
+                            return null;
+                        }
+                        return {
+                            id,
+                            name: String(source.Name ?? source.name ?? "").trim(),
+                            description: String(
+                                source.Description ?? source.description ?? "",
+                            ).trim(),
+                            usageCount: Number(
+                                source.UsageCount ?? source.usage_count ?? 0,
+                            ),
+                        };
+                    },
+                    setKeyword(value) {
+                        this.keyword = typeof value === "string" ? value : "";
+                        this.applyFilter();
+                    },
+                    applyFilter() {
+                        const keyword = this.keyword.trim().toLowerCase();
+                        if (!keyword) {
+                            this.visibleTemplates = [...this.templates];
+                            return;
+                        }
+                        this.visibleTemplates = this.templates.filter((item) => {
+                            const name = String(item.name || "").toLowerCase();
+                            const description = String(
+                                item.description || "",
+                            ).toLowerCase();
+                            return (
+                                name.includes(keyword) ||
+                                description.includes(keyword)
+                            );
+                        });
+                    },
+                    select(templateId) {
+                        const id = Number(templateId);
+                        if (!Number.isFinite(id) || id <= 0) {
+                            return;
+                        }
+                        this.selectedTemplateId = id;
+                        this.error = "";
+                    },
+                    async loadTemplates() {
+                        this.loading = true;
+                        this.error = "";
+                        try {
+                            const response = await fetch(
+                                "/admin/api/post-templates?page=1&per_page=100",
+                                {
+                                    headers: {
+                                        Accept: "application/json",
+                                    },
+                                },
+                            );
+                            const data = await response
+                                .json()
+                                .catch(() => ({}));
+                            if (!response.ok) {
+                                throw new Error(
+                                    data?.error ||
+                                        data?.message ||
+                                        "模板加载失败，请稍后重试",
+                                );
+                            }
+                            const source = Array.isArray(data?.templates)
+                                ? data.templates
+                                : [];
+                            this.templates = source
+                                .map((item) => this.normalizeTemplate(item))
+                                .filter(Boolean);
+                            this.applyFilter();
+                            if (
+                                this.selectedTemplateId &&
+                                !this.templates.some(
+                                    (item) =>
+                                        item.id === this.selectedTemplateId,
+                                )
+                            ) {
+                                this.selectedTemplateId = null;
+                            }
+                            if (
+                                !this.selectedTemplateId &&
+                                this.templates.length === 1
+                            ) {
+                                this.selectedTemplateId = this.templates[0].id;
+                            }
+                        } catch (error) {
+                            this.templates = [];
+                            this.visibleTemplates = [];
+                            this.error =
+                                error?.message || "模板加载失败，请稍后重试";
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+                    async openDialog(options = {}) {
+                        const payload =
+                            options && typeof options === "object"
+                                ? options
+                                : {};
+                        const templateID = Number(
+                            payload.templateId ?? payload.template_id ?? 0,
+                        );
+                        this.open = true;
+                        this.error = "";
+                        this.submitting = false;
+                        this.keyword = "";
+                        this.title =
+                            typeof payload.title === "string"
+                                ? payload.title
+                                : "";
+                        this.selectedTemplateId =
+                            Number.isFinite(templateID) && templateID > 0
+                                ? templateID
+                                : null;
+                        await this.loadTemplates();
+                    },
+                    close() {
+                        this.open = false;
+                        this.submitting = false;
+                        this.error = "";
+                        this.keyword = "";
+                        this.title = "";
+                        this.visibleTemplates = [...this.templates];
+                    },
+                    async submit() {
+                        if (this.submitting || this.loading) {
+                            return;
+                        }
+                        if (!this.selectedTemplateId) {
+                            this.error = "请先选择一个模板";
+                            return;
+                        }
+
+                        this.submitting = true;
+                        this.error = "";
+                        try {
+                            const response = await fetch(
+                                "/admin/api/posts/from-template",
+                                {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                        template_id: this.selectedTemplateId,
+                                        title: this.title.trim(),
+                                    }),
+                                },
+                            );
+                            const data = await response
+                                .json()
+                                .catch(() => ({}));
+                            if (!response.ok) {
+                                throw new Error(
+                                    data?.error ||
+                                        data?.message ||
+                                        "从模板创建失败，请稍后重试",
+                                );
+                            }
+
+                            const post = data?.post || {};
+                            const postID = Number(post.ID ?? post.id ?? 0);
+                            if (!Number.isFinite(postID) || postID <= 0) {
+                                throw new Error(
+                                    "创建成功但未返回文章 ID，请稍后重试",
+                                );
+                            }
+
+                            if (
+                                window.AdminUI &&
+                                typeof window.AdminUI.toast === "function"
+                            ) {
+                                window.AdminUI.toast({
+                                    message:
+                                        data?.message ||
+                                        "已根据模板创建草稿，正在跳转编辑器",
+                                    type: "success",
+                                });
+                            }
+
+                            this.close();
+                            window.location.href = `/admin/posts/${postID}/edit`;
+                        } catch (error) {
+                            const message =
+                                error?.message ||
+                                "从模板创建失败，请稍后重试";
+                            this.error = message;
+                            if (
+                                window.AdminUI &&
+                                typeof window.AdminUI.toast === "function"
+                            ) {
+                                window.AdminUI.toast({
+                                    message,
+                                    type: "error",
+                                });
+                            }
+                        } finally {
+                            this.submitting = false;
+                        }
+                    },
+                };
+
                 Alpine.store("toast", toastStore);
                 Alpine.store("dialog", dialogStore);
+                Alpine.store("templateCreator", templateCreatorStore);
 
                 window.AdminUI.toast = function (options = {}) {
                     const payload =
@@ -575,6 +1035,13 @@
                             return confirmed;
                         });
                 };
+                window.AdminUI.openTemplateCreate = function (options = {}) {
+                    const payload =
+                        options && typeof options === "object"
+                            ? options
+                            : {};
+                    return Alpine.store("templateCreator").openDialog(payload);
+                };
 
                 if (
                     Array.isArray(window.AdminUI.__toastQueue) &&
@@ -595,6 +1062,16 @@
                         window.AdminUI.confirm(entry.payload).then((result) => {
                             entry.resolve(result);
                         });
+                    });
+                }
+                if (
+                    Array.isArray(window.AdminUI.__templateCreateQueue) &&
+                    window.AdminUI.__templateCreateQueue.length > 0
+                ) {
+                    const pendingCreates =
+                        window.AdminUI.__templateCreateQueue.splice(0);
+                    pendingCreates.forEach((payload) => {
+                        window.AdminUI.openTemplateCreate(payload);
                     });
                 }
             });

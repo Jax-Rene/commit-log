@@ -26,10 +26,13 @@ type Post struct {
 	CoverURL    string
 	CoverWidth  int
 	CoverHeight int
-	UserID      uint
-	User        User
-	Tags        []Tag `gorm:"many2many:post_tags;"`
-	PublishedAt time.Time
+	// SourceTemplateID 记录草稿的来源模板。
+	SourceTemplateID *uint
+	SourceTemplate   *PostTemplate
+	UserID           uint
+	User             User
+	Tags             []Tag `gorm:"many2many:post_tags;"`
+	PublishedAt      time.Time
 	// PublicationCount 记录文章发布次数，用于版本号展示
 	PublicationCount int
 	// LatestPublicationID 指向最近一次发布的快照

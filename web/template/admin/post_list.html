@@ -2,18 +2,40 @@
 
 {{define "content"}}
 <div class="space-y-8">
-	<header class="flex flex-col gap-4 border-b border-slate-200 pb-6 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-		<div>
-			<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">文章管理</h1>
-			<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">筛选、检索并维护你的内容资产。</p>
-		</div>
-		<div class="flex flex-wrap items-center justify-start gap-3 sm:justify-end">
-			<a href="/admin/posts/new" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
-					<path d="M12 5v14" stroke-width="1.5" stroke-linecap="round"></path>
-					<path d="M5 12h14" stroke-width="1.5" stroke-linecap="round"></path>
+		<header class="flex flex-col gap-4 border-b border-slate-200 pb-6 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+			<div>
+				<h1 class="text-3xl font-semibold text-slate-900 dark:text-slate-100">文章管理</h1>
+				<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">筛选、检索并维护你的内容资产。</p>
+			</div>
+			<div class="flex flex-wrap items-center justify-start gap-3 sm:justify-end">
+				<div class="relative" x-data="{ createMenuOpen: false }" @mouseenter="createMenuOpen = true" @mouseleave="createMenuOpen = false" @focusin="createMenuOpen = true" @focusout="if (!$el.contains($event.relatedTarget)) createMenuOpen = false" @keydown.escape.window="createMenuOpen = false">
+					<div class="inline-flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+						<a href="/admin/posts/new" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-800">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
+								<path d="M12 5v14" stroke-width="1.5" stroke-linecap="round"></path>
+								<path d="M5 12h14" stroke-width="1.5" stroke-linecap="round"></path>
+							</svg>
+							<span>新建文章</span>
+						</a>
+						<span class="inline-flex items-center px-2.5 py-2 text-slate-500 dark:text-slate-300" aria-hidden="true">
+							<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" class="h-4 w-4">
+								<path d="M6 8.5l4 4 4-4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+							</svg>
+						</span>
+					</div>
+					<div x-show="createMenuOpen" x-cloak x-transition.origin.top.right class="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+						<button type="button" class="flex w-full items-center rounded-lg px-3 py-2 text-left text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-slate-100" @click="createMenuOpen = false; if (window.AdminUI && typeof window.AdminUI.openTemplateCreate === 'function') { window.AdminUI.openTemplateCreate(); }">
+							从模板创建
+						</button>
+					</div>
+				</div>
+				<a href="/admin/post-templates" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
+						<path d="M4 6.5h7v11H4z" stroke-width="1.5"></path>
+						<path d="M13 6.5h7v11h-7z" stroke-width="1.5"></path>
+					<path d="M11 9.5h2M11 13h2" stroke-width="1.5" stroke-linecap="round"></path>
 				</svg>
-				<span>新建文章</span>
+				<span>模板管理</span>
 			</a>
 		</div>
 	</header>
