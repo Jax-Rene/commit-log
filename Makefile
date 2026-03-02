@@ -37,7 +37,10 @@ fix:
 	pnpm run format
 
 run:
-	GIN_MODE=release go run cmd/server/main.go
+	@port="$${PORT:-8080}"; \
+	url="http://localhost:$$port"; \
+	printf "address: %s\n" "$$url"; \
+	GIN_MODE=release PORT=$$port go run cmd/server/main.go
 
 deploy: fly-deploy
 

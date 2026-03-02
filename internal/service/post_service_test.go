@@ -22,7 +22,7 @@ func setupPostServiceTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
-	if err := gdb.AutoMigrate(&db.User{}, &db.Tag{}, &db.Post{}, &db.PostPublication{}, &db.PostDraftVersion{}, &db.PostStatistic{}); err != nil {
+	if err := gdb.AutoMigrate(&db.User{}, &db.Tag{}, &db.PostTemplate{}, &db.Post{}, &db.PostPublication{}, &db.PostDraftVersion{}, &db.PostStatistic{}); err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 	return gdb
@@ -1142,6 +1142,103 @@ func TestPostService_DeriveTitleFromContent(t *testing.T) {
 	}
 	if preserved.Title != "正文没有标题" {
 		t.Fatalf("expected title to fall back to first line, got %q", preserved.Title)
+	}
+}
+
+func TestPostService_CreateFromTemplate(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "template-author"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	tag := db.Tag{Name: "模板标签"}
+	if err := gdb.Create(&tag).Error; err != nil {
+		t.Fatalf("create tag: %v", err)
+	}
+
+	template := db.PostTemplate{
+		Name:        "每周模板",
+		Description: "用于固定结构",
+		Content:     "# {{title}}\n今天是 {{date}}\n时间 {{datetime}}",
+		Summary:     "默认摘要",
+		Visibility:  db.PostVisibilityUnlisted,
+		CoverURL:    "https://example.com/t-cover.jpg",
+		CoverWidth:  1200,
+		CoverHeight: 630,
+		Tags:        []db.Tag{tag},
+	}
+	if err := gdb.Create(&template).Error; err != nil {
+		t.Fatalf("create template: %v", err)
+	}
+
+	now := time.Date(2026, 3, 1, 9, 30, 0, 0, time.FixedZone("CST", 8*60*60))
+	post, err := svc.CreateFromTemplate(CreatePostFromTemplateInput{
+		TemplateID: template.ID,
+		UserID:     user.ID,
+		Title:      "周报 2026-W09",
+		Now:        now,
+	})
+	if err != nil {
+		t.Fatalf("create from template: %v", err)
+	}
+
+	if post.SourceTemplateID == nil || *post.SourceTemplateID != template.ID {
+		t.Fatalf("expected source template id %d, got %+v", template.ID, post.SourceTemplateID)
+	}
+	if post.Visibility != db.PostVisibilityUnlisted {
+		t.Fatalf("expected visibility %s, got %s", db.PostVisibilityUnlisted, post.Visibility)
+	}
+	if post.CoverURL != template.CoverURL || post.CoverWidth != template.CoverWidth || post.CoverHeight != template.CoverHeight {
+		t.Fatalf("expected cover copied from template")
+	}
+	if len(post.Tags) != 1 || post.Tags[0].ID != tag.ID {
+		t.Fatalf("expected template tag copied")
+	}
+	if post.Summary != template.Summary {
+		t.Fatalf("expected template summary copied, got %s", post.Summary)
+	}
+	if post.Status != "draft" {
+		t.Fatalf("expected created post draft status, got %s", post.Status)
+	}
+	if post.Content == template.Content {
+		t.Fatalf("expected placeholders rendered")
+	}
+	if post.Title != "周报 2026-W09" {
+		t.Fatalf("expected derived title from rendered markdown, got %s", post.Title)
+	}
+
+	var refreshedTemplate db.PostTemplate
+	if err := gdb.First(&refreshedTemplate, template.ID).Error; err != nil {
+		t.Fatalf("reload template: %v", err)
+	}
+	if refreshedTemplate.UsageCount != 1 {
+		t.Fatalf("expected usage count 1, got %d", refreshedTemplate.UsageCount)
+	}
+	if refreshedTemplate.LastUsedAt == nil {
+		t.Fatalf("expected last_used_at to be set")
+	}
+}
+
+func TestPostService_CreateFromTemplateNotFound(t *testing.T) {
+	gdb := setupPostServiceTestDB(t)
+	svc := NewPostService(gdb)
+
+	user := db.User{Username: "template-author"}
+	if err := gdb.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	_, err := svc.CreateFromTemplate(CreatePostFromTemplateInput{
+		TemplateID: 9999,
+		UserID:     user.ID,
+		Title:      "任意标题",
+		Now:        time.Now(),
+	})
+	if !errors.Is(err, ErrTemplateNotFound) {
+		t.Fatalf("expected ErrTemplateNotFound, got %v", err)
 	}
 }
 

@@ -34,6 +34,7 @@ func Init(databasePath string) error {
 	// 自动迁移模式，为核心模型创建表
 	if err = DB.AutoMigrate(
 		&User{},
+		&PostTemplate{},
 		&Post{},
 		&PostDraftVersion{},
 		&PostPublication{},

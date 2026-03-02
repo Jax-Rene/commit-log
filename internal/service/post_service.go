@@ -87,6 +87,15 @@ type PostInput struct {
 	DraftSessionID string
 }
 
+// CreatePostFromTemplateInput 表示从模板创建文章时的输入参数。
+type CreatePostFromTemplateInput struct {
+	TemplateID     uint
+	Title          string
+	UserID         uint
+	DraftSessionID string
+	Now            time.Time
+}
+
 // NewPostService creates a PostService instance.
 func NewPostService(gdb *gorm.DB) *PostService {
 	return &PostService{db: gdb}
@@ -140,6 +149,71 @@ func (s *PostService) Create(input PostInput) (*db.Post, error) {
 	}
 
 	return s.saveWithTags(&post, input.TagIDs, input.UserID, input.DraftSessionID)
+}
+
+// CreateFromTemplate 根据模板创建一篇新的草稿文章。
+func (s *PostService) CreateFromTemplate(input CreatePostFromTemplateInput) (*db.Post, error) {
+	if input.TemplateID == 0 {
+		return nil, ErrTemplateNotFound
+	}
+
+	var template db.PostTemplate
+	if err := s.db.Preload("Tags").First(&template, input.TemplateID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrTemplateNotFound
+		}
+		return nil, err
+	}
+
+	now := input.Now
+	if now.IsZero() {
+		now = time.Now()
+	}
+
+	renderedContent := renderTemplateContent(template.Content, TemplateRenderInput{
+		Title: input.Title,
+		Now:   now,
+	})
+
+	visibility, err := normalizeVisibilityInput(template.Visibility, db.PostVisibilityPublic)
+	if err != nil {
+		return nil, err
+	}
+
+	sourceTemplateID := template.ID
+	post := &db.Post{
+		Content:          renderedContent,
+		Summary:          strings.TrimSpace(template.Summary),
+		Status:           "draft",
+		Visibility:       visibility,
+		ReadingTime:      calculateReadingTime(renderedContent),
+		CoverURL:         strings.TrimSpace(template.CoverURL),
+		CoverWidth:       template.CoverWidth,
+		CoverHeight:      template.CoverHeight,
+		SourceTemplateID: &sourceTemplateID,
+		UserID:           input.UserID,
+	}
+
+	tagIDs := make([]uint, 0, len(template.Tags))
+	for _, tag := range template.Tags {
+		tagIDs = append(tagIDs, tag.ID)
+	}
+
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := s.saveWithTagsInTx(tx, post, tagIDs, input.UserID, input.DraftSessionID); err != nil {
+			return err
+		}
+		return tx.Model(&db.PostTemplate{}).
+			Where("id = ?", template.ID).
+			Updates(map[string]interface{}{
+				"usage_count":  gorm.Expr("usage_count + ?", 1),
+				"last_used_at": now,
+			}).Error
+	}); err != nil {
+		return nil, err
+	}
+
+	return post, nil
 }
 
 // Update applies updates to an existing post.
@@ -577,35 +651,43 @@ func (s *PostService) ListDraftVersions(postID uint, limit int) ([]db.PostDraftV
 
 func (s *PostService) saveWithTags(post *db.Post, tagIDs []uint, userID uint, draftSessionID string) (*db.Post, error) {
 	return post, s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Save(post).Error; err != nil {
-			return err
-		}
-
-		var tags []db.Tag
-		if len(tagIDs) > 0 {
-			if err := tx.Where("id IN ?", tagIDs).Find(&tags).Error; err != nil {
-				return err
-			}
-
-			if len(tags) != len(tagIDs) {
-				return ErrTagNotFound
-			}
-		}
-
-		if err := tx.Model(post).Association("Tags").Replace(tags); err != nil {
-			return err
-		}
-
-		if err := tx.Preload("Tags").First(post, post.ID).Error; err != nil {
-			return err
-		}
-
-		post.PopulateDerivedFields()
-		if err := s.recordDraftVersion(tx, post, userID, draftSessionID); err != nil {
-			return err
-		}
-		return nil
+		return s.saveWithTagsInTx(tx, post, tagIDs, userID, draftSessionID)
 	})
+}
+
+func (s *PostService) saveWithTagsInTx(tx *gorm.DB, post *db.Post, tagIDs []uint, userID uint, draftSessionID string) error {
+	if tx == nil {
+		return errors.New("save post requires valid transaction")
+	}
+
+	if err := tx.Save(post).Error; err != nil {
+		return err
+	}
+
+	var tags []db.Tag
+	if len(tagIDs) > 0 {
+		if err := tx.Where("id IN ?", tagIDs).Find(&tags).Error; err != nil {
+			return err
+		}
+
+		if len(tags) != len(tagIDs) {
+			return ErrTagNotFound
+		}
+	}
+
+	if err := tx.Model(post).Association("Tags").Replace(tags); err != nil {
+		return err
+	}
+
+	if err := tx.Preload("Tags").First(post, post.ID).Error; err != nil {
+		return err
+	}
+
+	post.PopulateDerivedFields()
+	if err := s.recordDraftVersion(tx, post, userID, draftSessionID); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *PostService) recordDraftVersion(tx *gorm.DB, post *db.Post, userID uint, draftSessionID string) error {

@@ -27,16 +27,63 @@
                         </p>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
-                        <a
-                            href="/admin/posts/new"
-                            class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-lg shadow-slate-900/20 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-xl"
+                        <div
+                            class="relative"
+                            x-data="{ createMenuOpen: false }"
+                            @mouseenter="createMenuOpen = true"
+                            @mouseleave="createMenuOpen = false"
+                            @focusin="createMenuOpen = true"
+                            @focusout="if (!$el.contains($event.relatedTarget)) createMenuOpen = false"
+                            @keydown.escape.window="createMenuOpen = false"
                         >
-                            <span
-                                class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-slate-900 text-xs text-white"
-                                >＋</span
+                            <div
+                                class="inline-flex items-center overflow-hidden rounded-xl bg-white shadow-lg shadow-slate-900/20 transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-xl"
                             >
-                            <span>开始新文章</span>
-                        </a>
+                                <a
+                                    href="/admin/posts/new"
+                                    class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-900"
+                                >
+                                    <span
+                                        class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-slate-900 text-xs text-white"
+                                        >＋</span
+                                    >
+                                    <span>开始新文章</span>
+                                </a>
+                                <span
+                                    class="inline-flex items-center px-3 py-2.5 text-slate-500"
+                                    aria-hidden="true"
+                                >
+                                    <svg
+                                        viewBox="0 0 20 20"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        class="h-4 w-4"
+                                    >
+                                        <path
+                                            d="M6 8.5l4 4 4-4"
+                                            stroke-width="1.6"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        ></path>
+                                    </svg>
+                                </span>
+                            </div>
+
+                            <div
+                                x-show="createMenuOpen"
+                                x-cloak
+                                x-transition.origin.top.left
+                                class="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+                            >
+                                <button
+                                    type="button"
+                                    class="flex w-full items-center rounded-lg px-3 py-2 text-left text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                                    @click="createMenuOpen = false; if (window.AdminUI && typeof window.AdminUI.openTemplateCreate === 'function') { window.AdminUI.openTemplateCreate(); }"
+                                >
+                                    从模板创建
+                                </button>
+                            </div>
+                        </div>
                         <a
                             href="/admin/posts"
                             class="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/10"
@@ -584,7 +631,7 @@
             </div>
             <div class="relative" x-ref="heatmapSurface" @mouseleave="hideTooltip()">
                 <div
-                    class="overflow-x-auto rounded-xl bg-slate-100/80 p-3 dark:bg-slate-950/40"
+                    class="overflow-x-auto rounded-xl p-3"
                 >
                     <div class="inline-flex gap-2">
                         <div
@@ -814,6 +861,13 @@
                     class="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 transition-colors hover:border-blue-200 hover:bg-blue-50 dark:border-slate-700 dark:text-slate-100 dark:hover:border-blue-400/40 dark:hover:bg-blue-500/10"
                 >
                     <span>标签管理</span>
+                    <span class="text-blue-500">→</span>
+                </a>
+                <a
+                    href="/admin/post-templates"
+                    class="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-900 transition-colors hover:border-blue-200 hover:bg-blue-50 dark:border-slate-700 dark:text-slate-100 dark:hover:border-blue-400/40 dark:hover:bg-blue-500/10"
+                >
+                    <span>模板管理</span>
                     <span class="text-blue-500">→</span>
                 </a>
                 <a
